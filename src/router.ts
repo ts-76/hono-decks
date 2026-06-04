@@ -192,21 +192,151 @@ function renderDeckIndex(decks: Awaited<ReturnType<DeckSource["listDecks"]>>, mo
 }
 
 function renderEditorPage(input: { slug: string; markdown: string; mountPath: string }): string {
+  const saveUrl = `${input.mountPath}/${encodeURIComponent(input.slug)}/save`;
+  const agentUrl = `${input.mountPath}/${encodeURIComponent(input.slug)}/agent/chat`;
+  const applyUrl = `${input.mountPath}/${encodeURIComponent(input.slug)}/apply`;
   return `<!doctype html>
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapeHtml(input.slug)} editor</title>
+  <style>
+    :root { color-scheme: light; font-family: ui-sans-serif, system-ui, sans-serif; color: #172033; background: #f7f8fb; }
+    body { margin: 0; }
+    main { display: grid; grid-template-columns: minmax(320px, 1fr) minmax(280px, 380px); gap: 16px; min-height: 100vh; padding: 16px; }
+    form, aside { min-width: 0; }
+    label { display: block; margin: 0 0 6px; font-size: 13px; color: #4f5f79; }
+    textarea, input { width: 100%; border: 1px solid #cfd7e6; border-radius: 8px; padding: 10px; background: #fff; color: inherit; }
+    textarea { min-height: calc(100vh - 108px); resize: vertical; font: 14px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    button { border: 1px solid #b9c4d8; border-radius: 8px; padding: 8px 12px; background: #fff; color: #172033; cursor: pointer; }
+    button.primary { border-color: #315fce; background: #315fce; color: #fff; }
+    button:disabled { opacity: .55; cursor: wait; }
+    .toolbar { display: flex; gap: 8px; align-items: center; margin: 10px 0 0; }
+    .panel { border: 1px solid #d9e0ec; border-radius: 8px; background: #fff; padding: 12px; }
+    .panel + .panel { margin-top: 12px; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 8px 0 0; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  </style>
 </head>
 <body>
   <main data-hono-slides-editor data-deck-slug="${escapeHtml(input.slug)}" data-mount-path="${escapeHtml(input.mountPath)}">
-    <form method="post" action="${escapeHtml(`${input.mountPath}/${encodeURIComponent(input.slug)}/save`)}">
-      <textarea name="markdown">${escapeHtml(input.markdown)}</textarea>
-      <button type="submit">Save</button>
+    <form id="editorForm" method="post" action="${escapeHtml(saveUrl)}">
+      <label for="markdown">MDX</label>
+      <textarea id="markdown" name="markdown" spellcheck="false">${escapeHtml(input.markdown)}</textarea>
+      <div class="toolbar">
+        <button class="primary" id="saveButton" type="submit">Save</button>
+        <span id="saveStatus" role="status"></span>
+      </div>
     </form>
-    <section data-agent-chat></section>
+    <aside>
+      <section class="panel" data-agent-chat>
+        <label for="instruction">Agent instruction</label>
+        <input id="instruction" value="このデックを読みやすくして" />
+        <div class="toolbar">
+          <button id="agentButton" type="button">Ask Agent</button>
+          <button id="applyProposalButton" type="button" disabled>Apply</button>
+        </div>
+        <pre id="agentOutput" aria-live="polite"></pre>
+      </section>
+      <section class="panel">
+        <pre id="eventOutput" aria-live="polite"></pre>
+      </section>
+    </aside>
   </main>
+  <script>
+    const root = document.querySelector("[data-hono-slides-editor]");
+    const markdown = document.querySelector("#markdown");
+    const instruction = document.querySelector("#instruction");
+    const form = document.querySelector("#editorForm");
+    const saveButton = document.querySelector("#saveButton");
+    const saveStatus = document.querySelector("#saveStatus");
+    const agentButton = document.querySelector("#agentButton");
+    const applyProposalButton = document.querySelector("#applyProposalButton");
+    const agentOutput = document.querySelector("#agentOutput");
+    const eventOutput = document.querySelector("#eventOutput");
+    const slug = root.dataset.deckSlug;
+    const mountPath = root.dataset.mountPath;
+    const saveUrl = ${JSON.stringify(saveUrl)};
+    const agentUrl = ${JSON.stringify(agentUrl)};
+    const applyUrl = ${JSON.stringify(applyUrl)};
+    const eventsUrl = mountPath + "/" + encodeURIComponent(slug) + "/events";
+    let pendingProposal;
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      saveButton.disabled = true;
+      saveStatus.textContent = "Saving...";
+      try {
+        const response = await fetch(saveUrl, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ markdown: markdown.value }),
+        });
+        if (!response.ok) throw new Error(await response.text());
+        saveStatus.textContent = "Saved";
+      } catch (error) {
+        saveStatus.textContent = error instanceof Error ? error.message : String(error);
+      } finally {
+        saveButton.disabled = false;
+      }
+    });
+
+    agentButton.addEventListener("click", async () => {
+      agentButton.disabled = true;
+      applyProposalButton.disabled = true;
+      pendingProposal = undefined;
+      agentOutput.textContent = "Thinking...";
+      try {
+        const response = await fetch(agentUrl, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ instruction: instruction.value, mode: "code" }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(JSON.stringify(data));
+        pendingProposal = data.proposal;
+        agentOutput.textContent = data.suggestion || data.message || JSON.stringify(data, null, 2);
+        applyProposalButton.disabled = !pendingProposal;
+      } catch (error) {
+        agentOutput.textContent = error instanceof Error ? error.message : String(error);
+      } finally {
+        agentButton.disabled = false;
+      }
+    });
+
+    applyProposalButton.addEventListener("click", async () => {
+      if (!pendingProposal) return;
+      applyProposalButton.disabled = true;
+      try {
+        const response = await fetch(applyUrl, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ proposal: pendingProposal }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(JSON.stringify(data));
+        if (pendingProposal.type === "replacement") markdown.value = pendingProposal.markdown;
+        if (pendingProposal.type === "patch") {
+          for (const patch of pendingProposal.patches || []) {
+            markdown.value = markdown.value.replace(patch.oldText, patch.newText);
+          }
+        }
+        agentOutput.textContent = "Applied";
+        pendingProposal = undefined;
+      } catch (error) {
+        agentOutput.textContent = error instanceof Error ? error.message : String(error);
+        applyProposalButton.disabled = false;
+      }
+    });
+
+    try {
+      const events = new EventSource(eventsUrl);
+      events.addEventListener("deck:updated", (event) => { eventOutput.textContent = event.data; });
+      events.addEventListener("deck:error", (event) => { eventOutput.textContent = event.data; });
+    } catch {
+      eventOutput.textContent = "";
+    }
+  </script>
 </body>
 </html>`;
 }

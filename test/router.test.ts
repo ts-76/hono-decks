@@ -102,7 +102,17 @@ describe("honoSlidesRouter", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/html");
-    expect(await response.text()).toContain("# Raw Deck");
+    const html = await response.text();
+    expect(html).toContain("# Raw Deck");
+    expect(html).toContain('id="markdown"');
+    expect(html).toContain('id="instruction"');
+    expect(html).toContain('id="agentButton"');
+    expect(html).toContain('id="applyProposalButton"');
+    expect(html).toContain('fetch(saveUrl');
+    expect(html).toContain('fetch(agentUrl');
+    expect(html).toContain('fetch(applyUrl');
+    expect(html).toContain("/agent/chat");
+    expect(html).toContain("/apply");
   });
 
   it("enables development routes in auto mode when LocalDeckIO is configured", async () => {
