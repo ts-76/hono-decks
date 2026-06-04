@@ -344,6 +344,7 @@ describe("honoSlidesRouter", () => {
     expect(typeof mod.resolveDeckFiles).toBe("function");
     expect(typeof mod.createDeckAgentInstanceName).toBe("function");
     expect(typeof mod.parseDeckAgentMode).toBe("function");
+    expect(typeof mod.createDeckAgentToolProvider).toBe("function");
   });
 });
 
