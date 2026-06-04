@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/mod.ts",
+    "./node": "./src/node.ts",
     "./worker": "./src/index.ts"
   },
   "files": [
@@ -15,7 +16,7 @@
   "scripts": {
     "dev": "wrangler dev --local",
     "deploy": "wrangler deploy",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.worker.json",
     "test": "vitest run",
     "check": "npm run typecheck && npm run test"
   },
