@@ -1,6 +1,7 @@
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
-import type { DeckManifest } from "./deck";
+import type { DeckFileEntry, DeckManifest, LocalDeckIO } from "./deck";
+import { resolveDeckFiles } from "./file-routing";
 import { buildDeckManifest, emitDeckManifestModule } from "./manifest-generator";
 
 export interface BuildDeckManifestFromFileSystemInput {
@@ -18,6 +19,11 @@ export interface CompileDecksInput extends BuildDeckManifestFromFileSystemInput 
   out: string;
 }
 
+export interface CreateLocalDeckIOInput {
+  cwd: string;
+  root: string;
+}
+
 export async function compileDecks(input: CompileDecksInput): Promise<DeckManifest> {
   const out = normalizeRelativePath(input.out, "Output path");
   const manifest = await buildDeckManifestFromFileSystem(input);
@@ -26,6 +32,26 @@ export async function compileDecks(input: CompileDecksInput): Promise<DeckManife
     outFile: join(input.cwd, out),
   });
   return manifest;
+}
+
+export function createLocalDeckIO(input: CreateLocalDeckIOInput): LocalDeckIO {
+  return {
+    async listFiles() {
+      return listDeckEntries(input);
+    },
+
+    async readMarkdown(slug) {
+      const entry = await findDeckEntry(input, slug);
+      if (!entry) return null;
+      return readFile(join(input.cwd, entry.sourcePath), "utf8");
+    },
+
+    async writeMarkdown(slug, markdown) {
+      const entry = await findDeckEntry(input, slug);
+      if (!entry) throw new Error(`Unknown deck slug: "${slug}"`);
+      await writeFile(join(input.cwd, entry.sourcePath), markdown, "utf8");
+    },
+  };
 }
 
 export async function buildDeckManifestFromFileSystem(
@@ -47,6 +73,20 @@ export async function buildDeckManifestFromFileSystem(
 export async function writeDeckManifestModule(input: WriteDeckManifestModuleInput): Promise<void> {
   await mkdir(dirname(input.outFile), { recursive: true });
   await writeFile(input.outFile, emitDeckManifestModule(input.manifest), "utf8");
+}
+
+async function listDeckEntries(input: CreateLocalDeckIOInput): Promise<DeckFileEntry[]> {
+  const root = normalizeDeckRoot(input.root);
+  const paths = await listFiles(input.cwd, join(input.cwd, root));
+  return resolveDeckFiles(paths, root).map(({ slug, sourcePath, kind }) => ({
+    slug,
+    sourcePath,
+    kind,
+  }));
+}
+
+async function findDeckEntry(input: CreateLocalDeckIOInput, slug: string): Promise<DeckFileEntry | undefined> {
+  return (await listDeckEntries(input)).find((entry) => entry.slug === slug);
 }
 
 async function listFiles(cwd: string, dir: string): Promise<string[]> {

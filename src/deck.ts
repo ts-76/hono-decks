@@ -72,6 +72,25 @@ export interface DeckEntry {
   sourcePath: string;
 }
 
+export interface DeckFileEntry {
+  slug: string;
+  sourcePath: string;
+  kind: DeckKind;
+}
+
+export interface DeckFileChange {
+  type: "created" | "changed" | "deleted";
+  path: string;
+  slug?: string;
+}
+
+export interface LocalDeckIO {
+  listFiles(): Promise<DeckFileEntry[]>;
+  readMarkdown(slug: string): Promise<string | null>;
+  writeMarkdown(slug: string, markdown: string): Promise<void>;
+  watch?(onFileChange: (event: DeckFileChange) => void): () => void;
+}
+
 export interface DeckSource {
   listDecks(c: Context): Promise<DeckEntry[]>;
   getCompiledDeck(c: Context, slug: string): Promise<CompiledDeck | null>;

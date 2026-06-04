@@ -20,9 +20,12 @@ export type {
   CompileWarning,
   DeckCompiler,
   DeckEntry,
+  DeckFileChange,
+  DeckFileEntry,
   DeckFrontmatter,
   DeckManifest,
   DeckSource,
+  LocalDeckIO,
   SlideFrontmatter,
 } from "./deck";
 export type { Slide, SlideBlock, SlideDeck } from "./types";
