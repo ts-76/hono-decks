@@ -23,7 +23,7 @@ export async function buildDeckManifest(input: BuildDeckManifestInput): Promise<
       });
       return {
         ...deck,
-        assets: await buildAssetRefs(entry.slug, entry.assetPaths, input),
+        assets: [...(await buildAssetRefs(entry.slug, entry.assetPaths, input)), ...deck.assets],
       };
     }),
   );

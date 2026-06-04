@@ -8,6 +8,7 @@ import type {
   ComponentPlaceholder,
   DeckFrontmatter,
   SlideFrontmatter,
+  AssetRef,
 } from "./deck";
 import type { SlideBlock } from "./types";
 
@@ -25,7 +26,7 @@ export async function compileMarkdown(input: CompileDeckInput): Promise<Compiled
     kind: input.kind,
     meta: toDeckFrontmatter(deckAttrs),
     slides,
-    assets: [],
+    assets: collectExternalAssetRefs(input.markdown),
     warnings,
   };
 }
@@ -211,10 +212,68 @@ function assertSingleFileAssetRules(input: CompileDeckInput, markdown: string): 
 }
 
 function hasLocalRelativeAssetReference(markdown: string): boolean {
-  return (
-    /(?:src=|background:\s*)["']?(?:\.{1,2}\/|[A-Za-z0-9_-]+\.(?:png|jpe?g|gif|svg|webp))/i.test(markdown) ||
-    /!\[[^\]]*\]\((?:\.{1,2}\/)?[^):\s]+\.(?:png|jpe?g|gif|svg|webp)(?:\s+["'][^"']*["'])?\)/i.test(markdown)
-  );
+  return collectAssetCandidates(markdown).some(isLocalRelativeAssetCandidate);
+}
+
+function collectExternalAssetRefs(markdown: string): AssetRef[] {
+  const refs = new Map<string, AssetRef>();
+  for (const candidate of collectAssetCandidates(markdown)) {
+    const type = assetRefType(candidate);
+    if (!type || refs.has(candidate)) continue;
+    refs.set(candidate, {
+      sourcePath: candidate,
+      publicPath: candidate,
+      type,
+      ...(contentTypeForPath(candidate) ? { contentType: contentTypeForPath(candidate) } : {}),
+    });
+  }
+  return [...refs.values()];
+}
+
+function collectAssetCandidates(markdown: string): string[] {
+  const candidates: string[] = [];
+
+  for (const match of markdown.matchAll(/^\s*(?:background|image|src|asset):\s*['"]?([^'"\n]+)['"]?\s*$/gim)) {
+    candidates.push(match[1].trim());
+  }
+
+  for (const match of markdown.matchAll(/!\[[^\]]*\]\(([^)\s]+)(?:\s+["'][^"']*["'])?\)/g)) {
+    candidates.push(match[1].trim());
+  }
+
+  for (const match of markdown.matchAll(/\b(?:src|href|image|background)=["']([^"']+)["']/g)) {
+    candidates.push(match[1].trim());
+  }
+
+  return candidates;
+}
+
+function assetRefType(value: string): AssetRef["type"] | undefined {
+  if (/^https?:\/\//i.test(value)) return "remote";
+  if (/^r2:\/\//i.test(value)) return "r2";
+  if (value.startsWith("/")) return "public";
+  return undefined;
+}
+
+function isLocalRelativeAssetCandidate(value: string): boolean {
+  if (assetRefType(value)) return false;
+  if (value.startsWith("./") || value.startsWith("../")) return true;
+  return /^[^/:?#]+\.(?:png|jpe?g|gif|svg|webp)(?:[?#].*)?$/i.test(value);
+}
+
+function contentTypeForPath(path: string): string | undefined {
+  const pathname = stripAssetQuery(path).toLowerCase();
+  if (pathname.endsWith(".png")) return "image/png";
+  if (pathname.endsWith(".jpg") || pathname.endsWith(".jpeg")) return "image/jpeg";
+  if (pathname.endsWith(".gif")) return "image/gif";
+  if (pathname.endsWith(".svg")) return "image/svg+xml";
+  if (pathname.endsWith(".webp")) return "image/webp";
+  return undefined;
+}
+
+function stripAssetQuery(path: string): string {
+  const queryIndex = path.search(/[?#]/);
+  return queryIndex === -1 ? path : path.slice(0, queryIndex);
 }
 
 function isFrontmatterStart(lines: string[], index: number): boolean {
