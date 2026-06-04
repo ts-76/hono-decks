@@ -111,6 +111,7 @@ app.route(
     dev: true,
     localDeckIO,
     previewEvents,
+    onFileChange: runtime.handleFileChange,
     agentChat: createCloudflareDeckAgentChat({
       agentPath: "slide-assistant",
       routeAgentRequest,

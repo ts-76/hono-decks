@@ -5,7 +5,7 @@ import { applyDeckAgentProposal } from "./agent-apply";
 import { createDeckAgentInstanceName, createDeckMarkdownHash, parseDeckAgentMode } from "./agent-contract";
 import type { DeckAgentChatResult, DeckAgentMode } from "./agent-contract";
 import { renderCompiledDeckPage } from "./compiled-render";
-import type { DeckSource, LocalDeckIO } from "./deck";
+import type { DeckFileChange, DeckSource, LocalDeckIO } from "./deck";
 import type { PreviewEvent, PreviewEventHub } from "./preview-events";
 
 export interface HonoSlidesAgentChatInput {
@@ -25,6 +25,7 @@ export interface HonoSlidesRouterOptions {
   dev?: boolean | "auto";
   localDeckIO?: LocalDeckIO;
   previewEvents?: PreviewEventHub;
+  onFileChange?(event: DeckFileChange, c: Context): Promise<void> | void;
   agentChat?(input: HonoSlidesAgentChatInput, c: Context): Promise<DeckAgentChatResult | Response> | DeckAgentChatResult | Response;
   style?: string;
 }
@@ -65,7 +66,7 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
       if (typeof payload.markdown !== "string") return c.json({ error: "markdown must be a string" }, 400);
 
       await options.localDeckIO.writeMarkdown(slug, payload.markdown);
-      options.previewEvents?.publish({ type: "deck:updated", slug, data: { source: "save" } });
+      await publishOrHandleFileChange(options, c, { type: "changed", path: await sourcePathForSlug(options, c, slug), slug }, "save");
       return c.json({ ok: true, slug });
     });
 
@@ -160,7 +161,12 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
       if (!applied.ok) return c.json({ error: applied.error }, applied.status);
 
       await options.localDeckIO.writeMarkdown(slug, applied.markdown);
-      options.previewEvents?.publish({ type: "deck:updated", slug, data: { source: "apply" } });
+      await publishOrHandleFileChange(
+        options,
+        c,
+        { type: "changed", path: deck?.sourcePath ?? defaultSourcePath(slug), slug },
+        "apply",
+      );
       return c.json({ ok: true, slug, baseMarkdownHash: applied.baseMarkdownHash });
     });
   }
@@ -187,6 +193,24 @@ function isDevEnabled(options: HonoSlidesRouterOptions): boolean {
 
 function defaultSourcePath(slug: string): string {
   return `decks/${slug}.mdx`;
+}
+
+async function sourcePathForSlug(options: HonoSlidesRouterOptions, c: Context, slug: string): Promise<string> {
+  const deck = await options.source.getCompiledDeck(c, slug);
+  return deck?.sourcePath ?? defaultSourcePath(slug);
+}
+
+async function publishOrHandleFileChange(
+  options: HonoSlidesRouterOptions,
+  c: Context,
+  event: DeckFileChange,
+  fallbackSource: "save" | "apply",
+): Promise<void> {
+  if (options.onFileChange) {
+    await options.onFileChange(event, c);
+    return;
+  }
+  options.previewEvents?.publish({ type: "deck:updated", slug: event.slug ?? "", data: { source: fallbackSource } });
 }
 
 function extractAssetPath(path: string, slug: string): string {

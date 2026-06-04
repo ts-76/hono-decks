@@ -210,8 +210,9 @@ Editor save flow:
 1. The editor sends raw MDX to the Hono save route.
 2. Hono calls `LocalDeckIO.writeMarkdown(slug, markdown)`.
 3. The local I/O adapter writes only the raw `.mdx`.
-4. The file watcher emits a file event.
-5. Hono handles the file event, calls `DeckCompiler`, updates the in-memory compiled deck, and emits a preview event.
+4. Hono forwards a synthetic `DeckFileChange` to the development runtime when the router is configured with `onFileChange`.
+5. If no direct hook is configured, the file watcher emits the raw file event.
+6. Hono handles the file event, calls `DeckCompiler`, updates the in-memory compiled deck, and emits a preview event.
 
 Hot reload event ownership:
 
