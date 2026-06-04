@@ -43,7 +43,7 @@ export function emitDeckManifestModule(manifest: DeckManifest): string {
     serializable,
     null,
     2,
-  )} satisfies DeckManifest;\n`;
+  )} satisfies DeckManifest;\n\nexport const manifest = deckManifest;\n`;
 }
 
 async function buildAssetRefs(

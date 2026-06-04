@@ -118,6 +118,7 @@ describe("emitDeckManifestModule", () => {
 
     expect(source).toContain('import type { DeckManifest } from "hono-slides";');
     expect(source).toContain("export const deckManifest =");
+    expect(source).toContain("export const manifest = deckManifest;");
     expect(source).toContain('"slug": "deck1"');
     expect(source).toContain('"publicPath": "/decks/deck1/assets/image.png"');
     expect(source).not.toContain("body");
