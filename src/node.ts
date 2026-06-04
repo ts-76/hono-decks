@@ -14,6 +14,20 @@ export interface WriteDeckManifestModuleInput {
   outFile: string;
 }
 
+export interface CompileDecksInput extends BuildDeckManifestFromFileSystemInput {
+  out: string;
+}
+
+export async function compileDecks(input: CompileDecksInput): Promise<DeckManifest> {
+  const out = normalizeRelativePath(input.out, "Output path");
+  const manifest = await buildDeckManifestFromFileSystem(input);
+  await writeDeckManifestModule({
+    manifest,
+    outFile: join(input.cwd, out),
+  });
+  return manifest;
+}
+
 export async function buildDeckManifestFromFileSystem(
   input: BuildDeckManifestFromFileSystemInput,
 ): Promise<DeckManifest> {
@@ -59,17 +73,26 @@ function normalizePath(path: string): string {
 }
 
 function normalizeDeckRoot(root: string): string {
-  const normalized = normalizePath(root).replace(/\/$/, "");
+  const normalized = normalizeRelativePath(root, "Deck root").replace(/\/$/, "");
+
+  if (normalized === ".") {
+    throw new Error("Deck root must be a relative path inside the current working directory");
+  }
+
+  return normalized;
+}
+
+function normalizeRelativePath(path: string, label: string): string {
+  const normalized = normalizePath(path).replace(/\/$/, "");
   const segments = normalized.split("/");
 
   if (
     normalized === "" ||
-    normalized === "." ||
     normalized.startsWith("/") ||
     /^[A-Za-z]:\//.test(normalized) ||
     segments.includes("..")
   ) {
-    throw new Error("Deck root must be a relative path inside the current working directory");
+    throw new Error(`${label} must be a relative path inside the current working directory`);
   }
 
   return normalized;
