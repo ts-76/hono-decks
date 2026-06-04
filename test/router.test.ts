@@ -38,6 +38,46 @@ describe("honoSlidesRouter", () => {
     expect(await response.text()).toContain("<h1>Intro</h1>");
   });
 
+  it("hides draft decks from production index and direct viewing routes", async () => {
+    const draftDeck = {
+      ...deck,
+      slug: "draft",
+      meta: { ...deck.meta, title: "Draft Deck", draft: true },
+    } satisfies CompiledDeck;
+    const app = new Hono();
+    app.route("/slides", honoSlidesRouter({ source: manifestDeckSource({ decks: [deck, draftDeck] }), dev: false }));
+
+    const index = await app.request("/slides");
+    expect(await index.text()).not.toContain("/slides/draft");
+
+    const response = await app.request("/slides/draft");
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: "Deck not found", slug: "draft" });
+  });
+
+  it("shows draft decks in development mode", async () => {
+    const draftDeck = {
+      ...deck,
+      slug: "draft",
+      meta: { ...deck.meta, title: "Draft Deck", draft: true },
+    } satisfies CompiledDeck;
+    const app = new Hono();
+    app.route(
+      "/slides",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [draftDeck] }),
+        dev: true,
+        localDeckIO: createMemoryDeckIO({ draft: "# Draft" }),
+      }),
+    );
+
+    const index = await app.request("/slides");
+    expect(await index.text()).toContain("/slides/draft");
+
+    const response = await app.request("/slides/draft");
+    expect(response.status).toBe(200);
+  });
+
   it("serves local deck assets and returns 404 for missing slugs", async () => {
     const app = new Hono();
     app.route("/decks", honoSlidesRouter({ source: manifestDeckSource({ decks: [deck] }), dev: false }));

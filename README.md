@@ -34,6 +34,8 @@ decks/
 
 同じ slug の `deck1.mdx` と `deck1/deck.mdx` は衝突として扱います。
 
+`draft: true` の deck は production の index/direct viewing route から隠し、development router では表示します。
+
 ## Production Router
 
 build 時に manifest を生成し、runtime では `DeckSource` から compiled deck を返します。
