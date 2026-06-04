@@ -10,8 +10,15 @@ import type { AgentSuggestRequest, Env } from "./types";
 
 export { SlideAssistant, honoSlides, honoSlidesRouter };
 
-const sampleDeck = `title: Hono Slides
+const sampleDeck = `---
+title: Hono Slides
+description: Hono + Cloudflare Workers で動く MDX-like slide runtime
+---
+
+---
+title: Hono Slides
 layout: cover
+---
 
 # Hono Slides
 
