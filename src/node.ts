@@ -1,6 +1,7 @@
+import { existsSync, watch } from "node:fs";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
-import type { DeckFileEntry, DeckManifest, LocalDeckIO } from "./deck";
+import type { DeckFileChange, DeckFileEntry, DeckManifest, LocalDeckIO } from "./deck";
 import { resolveDeckFiles } from "./file-routing";
 import { buildDeckManifest, emitDeckManifestModule } from "./manifest-generator";
 
@@ -22,6 +23,12 @@ export interface CompileDecksInput extends BuildDeckManifestFromFileSystemInput 
 export interface CreateLocalDeckIOInput {
   cwd: string;
   root: string;
+  pathExists?(path: string): boolean;
+  watchFileSystem?(
+    path: string,
+    options: { recursive: boolean },
+    listener: (eventType: "rename" | "change", filename: string | null) => void,
+  ): { close(): void };
 }
 
 export async function compileDecks(input: CompileDecksInput): Promise<DeckManifest> {
@@ -50,6 +57,22 @@ export function createLocalDeckIO(input: CreateLocalDeckIOInput): LocalDeckIO {
       const entry = await findDeckEntry(input, slug);
       if (!entry) throw new Error(`Unknown deck slug: "${slug}"`);
       await writeFile(join(input.cwd, entry.sourcePath), markdown, "utf8");
+    },
+
+    watch(onFileChange) {
+      const root = normalizeDeckRoot(input.root);
+      const rootDir = join(input.cwd, root);
+      const watchFileSystem = input.watchFileSystem ?? watch;
+      const watcher = watchFileSystem(rootDir, { recursive: true }, (eventType, filename) => {
+        if (!filename) return;
+        const path = normalizePath(join(root, filename));
+        onFileChange({
+          type: fileChangeType(eventType, join(input.cwd, path), input.pathExists ?? existsSync),
+          path,
+          slug: slugForDeckPath(path, root),
+        });
+      });
+      return () => watcher.close();
     },
   };
 }
@@ -87,6 +110,27 @@ async function listDeckEntries(input: CreateLocalDeckIOInput): Promise<DeckFileE
 
 async function findDeckEntry(input: CreateLocalDeckIOInput, slug: string): Promise<DeckFileEntry | undefined> {
   return (await listDeckEntries(input)).find((entry) => entry.slug === slug);
+}
+
+function fileChangeType(
+  eventType: "rename" | "change",
+  fullPath: string,
+  pathExists: (path: string) => boolean,
+): DeckFileChange["type"] {
+  if (eventType === "change") return "changed";
+  return pathExists(fullPath) ? "created" : "deleted";
+}
+
+function slugForDeckPath(path: string, root: string): string | undefined {
+  const normalizedRoot = normalizeDeckRoot(root);
+  if (path !== normalizedRoot && !path.startsWith(`${normalizedRoot}/`)) return undefined;
+
+  const relativePath = path.slice(normalizedRoot.length + 1);
+  const segments = relativePath.split("/");
+  if (segments.length === 1 && segments[0].endsWith(".mdx")) return segments[0].replace(/\.mdx$/, "");
+  if (segments.length >= 2 && segments[1] === "deck.mdx") return segments[0];
+  if (segments.length >= 3 && segments[1] === "assets") return segments[0];
+  return undefined;
 }
 
 async function listFiles(cwd: string, dir: string): Promise<string[]> {

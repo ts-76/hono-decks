@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import type { DeckFileChange } from "../src/deck";
 import { buildDeckManifestFromFileSystem, compileDecks, createLocalDeckIO, writeDeckManifestModule } from "../src/node";
 
 describe("Node filesystem deck adapter", () => {
@@ -175,6 +176,92 @@ title: Raw Save
     } finally {
       await rm(cwd, { recursive: true, force: true });
     }
+  });
+
+  it("emits raw file change events through LocalDeckIO.watch", () => {
+    let listener: ((eventType: "rename" | "change", filename: string | null) => void) | undefined;
+    let closed = false;
+    const io = createLocalDeckIO({
+      cwd: "/workspace",
+      root: "decks",
+      pathExists: () => true,
+      watchFileSystem: (_rootDir, _options, next) => {
+        listener = next;
+        return {
+          close() {
+            closed = true;
+          },
+        };
+      },
+    });
+
+    expect(typeof io.watch).toBe("function");
+
+    const events: DeckFileChange[] = [];
+    const unwatch = io.watch!((event) => events.push(event));
+    listener?.("change", "deck1/deck.mdx");
+    unwatch();
+
+    expect(events).toEqual([
+      {
+        type: "changed",
+        path: "decks/deck1/deck.mdx",
+        slug: "deck1",
+      },
+    ]);
+    expect(closed).toBe(true);
+  });
+
+  it("maps directory deck asset watch events back to their deck slug", () => {
+    let listener: ((eventType: "rename" | "change", filename: string | null) => void) | undefined;
+    const io = createLocalDeckIO({
+      cwd: "/workspace",
+      root: "decks",
+      pathExists: () => true,
+      watchFileSystem: (_rootDir, _options, next) => {
+        listener = next;
+        return { close() {} };
+      },
+    });
+    const events: DeckFileChange[] = [];
+    const unwatch = io.watch!((event) => events.push(event));
+
+    listener?.("rename", "deck1/assets/image.png");
+    unwatch();
+
+    expect(events).toEqual([
+      {
+        type: "created",
+        path: "decks/deck1/assets/image.png",
+        slug: "deck1",
+      },
+    ]);
+  });
+
+  it("does not assign a slug to the assets directory itself", () => {
+    let listener: ((eventType: "rename" | "change", filename: string | null) => void) | undefined;
+    const io = createLocalDeckIO({
+      cwd: "/workspace",
+      root: "decks",
+      pathExists: () => true,
+      watchFileSystem: (_rootDir, _options, next) => {
+        listener = next;
+        return { close() {} };
+      },
+    });
+    const events: DeckFileChange[] = [];
+    const unwatch = io.watch!((event) => events.push(event));
+
+    listener?.("rename", "deck1/assets");
+    unwatch();
+
+    expect(events).toEqual([
+      {
+        type: "created",
+        path: "decks/deck1/assets",
+        slug: undefined,
+      },
+    ]);
   });
 });
 
