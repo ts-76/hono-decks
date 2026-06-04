@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { buildDeckManifestFromFileSystem, compileDecks, writeDeckManifestModule } from "../src/node";
+import { buildDeckManifestFromFileSystem, compileDecks, createLocalDeckIO, writeDeckManifestModule } from "../src/node";
 
 describe("Node filesystem deck adapter", () => {
   it("discovers deck files, compiles decks, and maps local assets", async () => {
@@ -83,6 +83,7 @@ describe("Node filesystem deck adapter", () => {
     const mod = await import("hono-slides/node");
 
     expect(typeof mod.compileDecks).toBe("function");
+    expect(typeof mod.createLocalDeckIO).toBe("function");
     expect(typeof mod.buildDeckManifestFromFileSystem).toBe("function");
     expect(typeof mod.writeDeckManifestModule).toBe("function");
   });
@@ -116,6 +117,61 @@ describe("Node filesystem deck adapter", () => {
           out: "../hono-slides-manifest.ts",
         }),
       ).rejects.toThrow("Output path must be a relative path inside the current working directory");
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("lists and reads raw markdown through LocalDeckIO", async () => {
+    const cwd = await createFixture();
+    const io = createLocalDeckIO({ cwd, root: "decks" });
+
+    try {
+      await expect(io.listFiles()).resolves.toEqual([
+        {
+          slug: "deck1",
+          sourcePath: "decks/deck1/deck.mdx",
+          kind: "directory",
+        },
+        {
+          slug: "deck2",
+          sourcePath: "decks/deck2.mdx",
+          kind: "single-file",
+        },
+      ]);
+
+      await expect(io.readMarkdown("deck1")).resolves.toContain("title: Deck One");
+      await expect(io.readMarkdown("missing")).resolves.toBeNull();
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("writes raw markdown through LocalDeckIO without compiling", async () => {
+    const cwd = await createFixture();
+    const io = createLocalDeckIO({ cwd, root: "decks" });
+    const markdown = `---
+title: Raw Save
+---
+
+# Raw <Hero title="Saved" />`;
+
+    try {
+      await io.writeMarkdown("deck1", markdown);
+
+      await expect(readFile(join(cwd, "decks", "deck1", "deck.mdx"), "utf8")).resolves.toBe(markdown);
+      await expect(io.readMarkdown("deck1")).resolves.toBe(markdown);
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects LocalDeckIO writes for unknown slugs", async () => {
+    const cwd = await createFixture();
+    const io = createLocalDeckIO({ cwd, root: "decks" });
+
+    try {
+      await expect(io.writeMarkdown("missing", "# Missing")).rejects.toThrow('Unknown deck slug: "missing"');
     } finally {
       await rm(cwd, { recursive: true, force: true });
     }
