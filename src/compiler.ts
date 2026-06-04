@@ -171,7 +171,12 @@ function parseFrontmatterAttrs(source: string): Record<string, unknown> {
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i];
     const match = /^([A-Za-z_][A-Za-z0-9_-]*):\s*(.*)$/.exec(line);
-    if (!match) continue;
+    if (!match) {
+      if (line.trim()) {
+        throw new CompileError(`Invalid frontmatter line ${i + 1}: "${line.trim()}"`, "frontmatter-invalid-line");
+      }
+      continue;
+    }
 
     const key = match[1];
     const value = match[2];
