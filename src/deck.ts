@@ -81,3 +81,24 @@ export interface DeckSource {
 export interface DeckManifest {
   decks: CompiledDeck[];
 }
+
+export interface CompileDeckInput {
+  slug: string;
+  sourcePath: string;
+  kind: DeckKind;
+  markdown: string;
+}
+
+export interface DeckCompiler {
+  compileMarkdown(input: CompileDeckInput): Promise<CompiledDeck>;
+}
+
+export class CompileError extends Error {
+  constructor(
+    message: string,
+    public readonly code: string,
+  ) {
+    super(message);
+    this.name = "CompileError";
+  }
+}
