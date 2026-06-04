@@ -58,4 +58,11 @@ describe("honoSlidesRouter", () => {
     expect((await app.request("/decks/deck1/events")).status).toBe(404);
     expect((await app.request("/decks/deck1/save", { method: "POST" })).status).toBe(404);
   });
+
+  it("exports the production router from the public module", async () => {
+    const mod = await import("../src/mod");
+    expect(typeof mod.honoSlidesRouter).toBe("function");
+    expect(typeof mod.manifestDeckSource).toBe("function");
+    expect(typeof mod.resolveDeckFiles).toBe("function");
+  });
 });
