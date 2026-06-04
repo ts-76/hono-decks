@@ -113,6 +113,45 @@ customSlideKey: kept
     });
   });
 
+  it("rejects malformed frontmatter lines", async () => {
+    await expect(
+      compileMarkdown({
+        slug: "deck1",
+        sourcePath: "decks/deck1.mdx",
+        kind: "single-file",
+        markdown: `---
+title Hono Slides
+---
+
+# One`,
+      }),
+    ).rejects.toMatchObject({
+      name: "CompileError",
+      code: "frontmatter-invalid-line",
+      message: 'Invalid frontmatter line 1: "title Hono Slides"',
+    });
+
+    await expect(
+      compileMarkdown({
+        slug: "deck1",
+        sourcePath: "decks/deck1/deck.mdx",
+        kind: "directory",
+        markdown: `# One
+
+---
+title: Two
+broken line
+---
+
+## Two`,
+      }),
+    ).rejects.toMatchObject({
+      name: "CompileError",
+      code: "frontmatter-invalid-line",
+      message: 'Invalid frontmatter line 2: "broken line"',
+    });
+  });
+
   it("rejects parent and bare local asset references in single-file decks", async () => {
     await expect(
       compileMarkdown({
