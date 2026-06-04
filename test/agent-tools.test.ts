@@ -128,4 +128,27 @@ describe("createDeckAgentToolProvider", () => {
       errors: ["Patch targets mdx-stale but current deck is mdx-d2750450."],
     });
   });
+
+  it("rejects patch proposals that would fail the Hono apply route", async () => {
+    const provider = createDeckAgentToolProvider({
+      slug: "deck1",
+      markdown: "Same\nSame",
+      compiledDeck,
+    });
+
+    await expect(
+      provider.tools.validatePatch.execute({
+        type: "patch",
+        baseMarkdownHash: "mdx-51fcc1d",
+        patches: [{ path: "decks/other.mdx", oldText: "Same", newText: "Next" }],
+      }),
+    ).resolves.toEqual({
+      ok: false,
+      errors: [
+        "Patch path must match current deck source: decks/deck1.mdx.",
+        "Patch oldText is ambiguous: Same",
+      ],
+      warnings: [],
+    });
+  });
 });
