@@ -154,11 +154,12 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
       const slug = c.req.param("slug");
       if (!options.localDeckIO) return c.json({ error: "Local deck IO is not configured" }, 501);
 
-      const markdown = await options.localDeckIO.readMarkdown(slug);
-      if (markdown == null) return c.json({ error: "Deck source not found", slug }, 404);
+      const savedMarkdown = await options.localDeckIO.readMarkdown(slug);
+      if (savedMarkdown == null) return c.json({ error: "Deck source not found", slug }, 404);
       const deck = await options.source.getCompiledDeck(c, slug);
 
-      const payload = (await c.req.json()) as { proposal?: unknown };
+      const payload = (await c.req.json()) as { proposal?: unknown; markdown?: unknown };
+      const markdown = typeof payload.markdown === "string" ? payload.markdown : savedMarkdown;
       const applied = applyDeckAgentProposal(markdown, payload.proposal, { sourcePath: deck?.sourcePath ?? defaultSourcePath(slug) });
       if (!applied.ok) return c.json({ error: applied.error }, applied.status);
 
@@ -400,7 +401,7 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
         const response = await fetch(applyUrl, {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ proposal: pendingProposal }),
+          body: JSON.stringify({ proposal: pendingProposal, markdown: markdown.value }),
         });
         const data = await response.json();
         if (!response.ok) throw new Error(JSON.stringify(data));

@@ -201,6 +201,7 @@ describe("honoSlidesRouter", () => {
     expect(html).toContain('body: JSON.stringify({ instruction: instruction.value, mode: "code", markdown: markdown.value })');
     expect(html).toContain('fetch(applyUrl');
     expect(html).toContain("markdown.value = data.markdown");
+    expect(html).toContain("proposal: pendingProposal, markdown: markdown.value");
     expect(html).toContain("/agent/chat");
     expect(html).toContain("/apply");
   });
@@ -698,6 +699,39 @@ describe("honoSlidesRouter", () => {
     expect(writes).toEqual([{ slug: "deck1", markdown: "# Raw Deck\n\nBetter body" }]);
     await expect(response.json()).resolves.toMatchObject({
       markdown: "# Raw Deck\n\nBetter body",
+    });
+  });
+
+  it("applies proposals against the current editor markdown when provided", async () => {
+    const writes: Array<{ slug: string; markdown: string }> = [];
+    const currentMarkdown = "# Unsaved Deck\n\nBody";
+    const app = new Hono();
+    app.route(
+      "/decks",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: true,
+        localDeckIO: createMemoryDeckIO({ deck1: "# Saved Deck" }, writes),
+      }),
+    );
+
+    const response = await app.request("/decks/deck1/apply", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        markdown: currentMarkdown,
+        proposal: {
+          type: "patch",
+          baseMarkdownHash: createDeckMarkdownHash(currentMarkdown),
+          patches: [{ path: "decks/deck1/deck.mdx", oldText: "Body", newText: "Better body" }],
+        },
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(writes).toEqual([{ slug: "deck1", markdown: "# Unsaved Deck\n\nBetter body" }]);
+    await expect(response.json()).resolves.toMatchObject({
+      markdown: "# Unsaved Deck\n\nBetter body",
     });
   });
 
