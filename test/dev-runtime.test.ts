@@ -111,6 +111,38 @@ describe("createDevDeckRuntime", () => {
     expect(await response?.arrayBuffer()).toEqual(new Uint8Array([4, 5, 6]).buffer);
   });
 
+  it("adds a new local asset after an asset file create event", async () => {
+    const runtime = createDevDeckRuntime({
+      initialDecks: [initialDeck],
+      localDeckIO: createMemoryDeckIO(
+        { deck1: "# Before" },
+        undefined,
+        { "decks/deck1/assets/new image.svg": new Uint8Array([7, 8, 9]) },
+      ),
+      compiler: {
+        async compileMarkdown() {
+          throw new Error("asset creates should not recompile markdown");
+        },
+      },
+    });
+
+    await runtime.handleFileChange({ type: "created", path: "decks/deck1/assets/new image.svg", slug: "deck1" });
+
+    const response = await runtime.source.getAsset?.({} as never, "deck1", "new%20image.svg");
+    expect(response?.headers.get("content-type")).toBe("image/svg+xml");
+    expect(await response?.arrayBuffer()).toEqual(new Uint8Array([7, 8, 9]).buffer);
+    await expect(runtime.source.getCompiledDeck({} as never, "deck1")).resolves.toMatchObject({
+      assets: [
+        {
+          sourcePath: "decks/deck1/assets/new image.svg",
+          publicPath: "/decks/deck1/assets/new%20image.svg",
+          type: "local",
+          contentType: "image/svg+xml",
+        },
+      ],
+    });
+  });
+
   it("removes an existing local asset after an asset file delete", async () => {
     const runtime = createDevDeckRuntime({
       initialDecks: [
