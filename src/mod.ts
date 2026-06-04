@@ -5,6 +5,8 @@ export { renderDeck, renderSlide } from "./render";
 export { compileMarkdown } from "./compiler";
 export { buildDeckManifest, emitDeckManifestModule } from "./manifest-generator";
 export type { BuildDeckManifestInput } from "./manifest-generator";
+export { createPreviewEventHub } from "./preview-events";
+export type { PreviewEvent, PreviewEventHub, PreviewEventType } from "./preview-events";
 export { honoSlidesRouter } from "./router";
 export type { HonoSlidesAgentChatInput, HonoSlidesRouterOptions } from "./router";
 export { manifestDeckSource } from "./manifest-source";
