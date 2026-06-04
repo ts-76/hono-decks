@@ -1,27 +1,141 @@
 # hono-slides
 
-Hono + Cloudflare Workers で動く、Slidev 風の Markdown/MDX-like スライドデック生成 PoC です。
+Hono + Cloudflare Workers で動く、MDX-like スライドデック runtime です。
 
 ## できること
 
-- `---` 区切りの Markdown をスライドへ変換
-- `title/layout/class` などの簡易 frontmatter をスライド単位で指定
-- `<Hero title="..." />` のような MDX 風コンポーネント記法を安全なプレースホルダとして描画
-- ブラウザ編集ページでライブプレビュー
-- `/api/agent/suggest` と Cloudflare Agents の `/agents/slide-assistant/{deck-session}/suggest` に、AI 編集支援を差し込む口を用意
+- `---` 区切りの Markdown/MDX-like をスライドへ compile
+- deck/slide frontmatter、presenter notes、MDX component placeholder を manifest として保持
+- `decks/deck1/deck.mdx` と `decks/deck1.mdx` の file-based routing
+- production では slug route で閲覧と presentation controls のみを提供
+- development では edit/save、hot reload、Agent chat、proposal apply を提供
+- Cloudflare Agents と Workers AI Code Mode を使った編集 proposal の入口を提供
 
-## ローカル起動
+## Deck Files
 
-```bash
-npm install
-npm run dev
+Directory deck はローカル asset を同じ slug 配下で扱えます。
+
+```txt
+decks/
+  deck1/
+    deck.mdx
+    assets/
+      image.png
 ```
 
-ブラウザで `http://localhost:8787` を開きます。
+Single-file deck は remote/R2/public asset を前提にできます。
 
-## Hono middleware として使う
+```txt
+decks/
+  deck2.mdx
+```
 
-`honoSlides()` を任意の Hono route に mount できます。
+同じ slug の `deck1.mdx` と `deck1/deck.mdx` は衝突として扱います。
+
+## Production Router
+
+build 時に manifest を生成し、runtime では `DeckSource` から compiled deck を返します。
+
+```ts
+import { Hono } from "hono";
+import { honoSlidesRouter, manifestDeckSource } from "hono-slides";
+import { manifest } from "./generated/deck-manifest";
+
+const app = new Hono();
+
+app.route(
+  "/slides",
+  honoSlidesRouter({
+    source: manifestDeckSource(manifest),
+    dev: false,
+  }),
+);
+
+export default app;
+```
+
+Node 側の I/O は build/dev に閉じます。
+
+```ts
+import { compileDecks } from "hono-slides/node";
+
+await compileDecks({
+  cwd: process.cwd(),
+  root: "decks",
+  mountPath: "/slides",
+  out: "src/generated/deck-manifest.ts",
+});
+```
+
+## Development Router
+
+development では raw MDX の read/write/watch だけを `LocalDeckIO` に任せ、compile、preview event、HMR surface は Hono 側で扱います。
+
+```ts
+import { Hono } from "hono";
+import {
+  compileMarkdown,
+  createCloudflareDeckAgentChat,
+  createDevDeckRuntime,
+  createPreviewEventHub,
+  honoSlidesRouter,
+} from "hono-slides";
+import { buildDeckManifestFromFileSystem, createLocalDeckIO } from "hono-slides/node";
+
+const cwd = process.cwd();
+const localDeckIO = createLocalDeckIO({ cwd, root: "decks" });
+const previewEvents = createPreviewEventHub();
+const initial = await buildDeckManifestFromFileSystem({ cwd, root: "decks", mountPath: "/slides" });
+const runtime = createDevDeckRuntime({
+  initialDecks: initial.decks,
+  localDeckIO,
+  previewEvents,
+  compiler: { compileMarkdown },
+});
+
+runtime.start();
+
+const app = new Hono();
+app.route(
+  "/slides",
+  honoSlidesRouter({
+    source: runtime.source,
+    dev: true,
+    localDeckIO,
+    previewEvents,
+    agentChat: createCloudflareDeckAgentChat({ agentPath: "slide-assistant" }),
+  }),
+);
+```
+
+- `GET /slides/:slug` は閲覧画面
+- `GET /slides/:slug/edit` は開発用 editor
+- `POST /slides/:slug/save` は raw MDX 保存
+- `GET /slides/:slug/events` は preview event stream
+- `POST /slides/:slug/agent/chat` は Agent への chat/proposal request
+- `POST /slides/:slug/apply` は proposal を raw MDX に適用
+
+## Cloudflare Agents
+
+`SlideAssistant` Durable Object を export しています。
+
+- `/agents/slide-assistant/{deck-session}/suggest`
+- `/agents/slide-assistant/{deck-session}/chat`
+
+development router の `agentChat` callback には `slug`, `sessionId`, `agentInstanceName`, `mode`, `baseMarkdownHash`, `sourcePath`, `markdown`, `instruction`, `activeSlide` が渡ります。`agentInstanceName` は deck slug と session id から生成されるため、会話履歴を deck/user session ごとに分けられます。
+
+`mode: "code"` では Workers AI + Code Mode tool を試し、編集 proposal を返します。保存は行わず、`/apply` と `/save` だけが local file I/O を実行します。`AI` または `LOADER` binding がない場合、または model/tool 実行に失敗した場合は heuristic proposal に fallback します。
+
+`wrangler.toml` では Code Mode の worker loader を有効化しています。Workers AI を使う場合は `AI` binding を有効化してください。
+
+```toml
+[ai]
+binding = "AI"
+```
+
+## Legacy Middleware
+
+単一 deck を route middleware として扱う `honoSlides()` も引き続き使えます。
 
 ```ts
 import { Hono } from "hono";
@@ -29,14 +143,15 @@ import { honoSlides } from "hono-slides";
 
 const app = new Hono();
 
-app.use("/deck", honoSlides({
-  markdown: `# Hello\n\n---\n\n## Second`,
-}));
-
-export default app;
+app.use(
+  "/deck",
+  honoSlides({
+    markdown: `# Hello\n\n---\n\n## Second`,
+  }),
+);
 ```
 
-下流 handler で自分の API レスポンスにしたい場合は `respond: false` を使います。
+下流 handler で自分の API response にしたい場合は `respond: false` を使います。
 
 ```ts
 app.post("/api/preview", honoSlides({ respond: false }), (c) => {
@@ -47,29 +162,7 @@ app.post("/api/preview", honoSlides({ respond: false }), (c) => {
 });
 ```
 
-`markdown` には文字列だけでなく loader 関数も渡せます。
-
-```ts
-app.get("/decks/:id", honoSlides({
-  markdown: async (c) => await loadMarkdownFromD1(c.req.param("id")),
-}));
-```
-
-## Cloudflare Agents の差し込み口
-
-この PoC は `agents` SDK の `SlideAssistant` Durable Object を export しています。
-
-- 標準ルート: `/agents/slide-assistant/{deck-session}/suggest`
-- 複数デック用 chat route: `/agents/slide-assistant/{deck-session}/chat`
-- エディタ用 API: `/api/agent/suggest`
-
-`wrangler.toml` では Durable Object binding を設定済みです。Workers AI などを使いたい場合は、`wrangler.toml` の `[ai] binding = "AI"` を有効化し、`src/agent.ts` の `suggestWithWorkersAI()` を好みのモデル/プロンプトに差し替えてください。
-
-複数デック用の development router では、`agentChat` callback に `slug`, `sessionId`, `agentInstanceName`, `mode`, `baseMarkdownHash`, `sourcePath`, `markdown`, `instruction`, `activeSlide` が渡されます。`agentInstanceName` は deck slug と session id から生成されるため、同じデックを複数ユーザーが編集しても Agent の会話履歴を分けられます。`mode: "code"` は Workers AI Code Mode などで編集 proposal を作る用途に予約し、保存は Hono の apply/save route 経由で行います。
-
-## MDX-like 記法
-
-完全な MDX 実行ではなく、Worker 上で安全に扱いやすい subset として実装しています。
+## MDX-like Example
 
 ```md
 ---
@@ -82,6 +175,9 @@ layout: cover
 <Hero title="Fast decks on Workers" />
 
 ---
+title: Speaker Notes
+notes: Keep this hidden in normal viewing.
+---
 
 ## Slide 2
 
@@ -89,7 +185,7 @@ layout: cover
 - `code`
 ```
 
-## 品質確認
+## Quality
 
 ```bash
 npm run check
