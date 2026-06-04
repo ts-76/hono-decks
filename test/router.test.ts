@@ -316,6 +316,7 @@ describe("honoSlidesRouter", () => {
         sessionId: "session-1",
         instruction: "Improve this",
         activeSlide: 0,
+        mode: "code",
       }),
     });
 
@@ -325,6 +326,9 @@ describe("honoSlidesRouter", () => {
       {
         slug: "deck1",
         sessionId: "session-1",
+        agentInstanceName: "deck-5-deck1-session-9-session-1",
+        mode: "code",
+        baseMarkdownHash: "mdx-b5765d09",
         markdown: "# Raw Deck",
         instruction: "Improve this",
         activeSlide: 0,
@@ -338,6 +342,8 @@ describe("honoSlidesRouter", () => {
     expect(typeof mod.manifestDeckSource).toBe("function");
     expect(typeof mod.createPreviewEventHub).toBe("function");
     expect(typeof mod.resolveDeckFiles).toBe("function");
+    expect(typeof mod.createDeckAgentInstanceName).toBe("function");
+    expect(typeof mod.parseDeckAgentMode).toBe("function");
   });
 });
 

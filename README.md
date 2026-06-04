@@ -64,6 +64,8 @@ app.get("/decks/:id", honoSlides({
 
 `wrangler.toml` では Durable Object binding を設定済みです。Workers AI などを使いたい場合は、`wrangler.toml` の `[ai] binding = "AI"` を有効化し、`src/agent.ts` の `suggestWithWorkersAI()` を好みのモデル/プロンプトに差し替えてください。
 
+複数デック用の development router では、`agentChat` callback に `slug`, `sessionId`, `agentInstanceName`, `mode`, `baseMarkdownHash`, `markdown`, `instruction`, `activeSlide` が渡されます。`agentInstanceName` は deck slug と session id から生成されるため、同じデックを複数ユーザーが編集しても Agent の会話履歴を分けられます。`mode: "code"` は Workers AI Code Mode などで編集 proposal を作る用途に予約し、保存は Hono の save route 経由で行います。
+
 ## MDX-like 記法
 
 完全な MDX 実行ではなく、Worker 上で安全に扱いやすい subset として実装しています。
