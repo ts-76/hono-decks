@@ -195,6 +195,7 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
   const saveUrl = `${input.mountPath}/${encodeURIComponent(input.slug)}/save`;
   const agentUrl = `${input.mountPath}/${encodeURIComponent(input.slug)}/agent/chat`;
   const applyUrl = `${input.mountPath}/${encodeURIComponent(input.slug)}/apply`;
+  const previewUrl = `${input.mountPath}/${encodeURIComponent(input.slug)}`;
   return `<!doctype html>
 <html lang="ja">
 <head>
@@ -204,8 +205,8 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
   <style>
     :root { color-scheme: light; font-family: ui-sans-serif, system-ui, sans-serif; color: #172033; background: #f7f8fb; }
     body { margin: 0; }
-    main { display: grid; grid-template-columns: minmax(320px, 1fr) minmax(280px, 380px); gap: 16px; min-height: 100vh; padding: 16px; }
-    form, aside { min-width: 0; }
+    main { display: grid; grid-template-columns: minmax(320px, 1fr) minmax(360px, 1fr); gap: 16px; min-height: 100vh; padding: 16px; }
+    form, aside, iframe { min-width: 0; }
     label { display: block; margin: 0 0 6px; font-size: 13px; color: #4f5f79; }
     textarea, input { width: 100%; border: 1px solid #cfd7e6; border-radius: 8px; padding: 10px; background: #fff; color: inherit; }
     textarea { min-height: calc(100vh - 108px); resize: vertical; font: 14px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; }
@@ -215,6 +216,7 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
     .toolbar { display: flex; gap: 8px; align-items: center; margin: 10px 0 0; }
     .panel { border: 1px solid #d9e0ec; border-radius: 8px; background: #fff; padding: 12px; }
     .panel + .panel { margin-top: 12px; }
+    iframe { width: 100%; aspect-ratio: 16 / 9; border: 1px solid #d9e0ec; border-radius: 8px; background: #0b1020; }
     pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 8px 0 0; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
   </style>
 </head>
@@ -239,6 +241,7 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
         <pre id="agentOutput" aria-live="polite"></pre>
       </section>
       <section class="panel">
+        <iframe id="previewFrame" title="Deck preview" src="${escapeHtml(previewUrl)}"></iframe>
         <pre id="eventOutput" aria-live="polite"></pre>
       </section>
     </aside>
@@ -254,13 +257,20 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
     const applyProposalButton = document.querySelector("#applyProposalButton");
     const agentOutput = document.querySelector("#agentOutput");
     const eventOutput = document.querySelector("#eventOutput");
+    const previewFrame = document.querySelector("#previewFrame");
     const slug = root.dataset.deckSlug;
     const mountPath = root.dataset.mountPath;
     const saveUrl = ${JSON.stringify(saveUrl)};
     const agentUrl = ${JSON.stringify(agentUrl)};
     const applyUrl = ${JSON.stringify(applyUrl)};
+    const previewUrl = ${JSON.stringify(previewUrl)};
     const eventsUrl = mountPath + "/" + encodeURIComponent(slug) + "/events";
     let pendingProposal;
+
+    function reloadPreview() {
+      if (!previewFrame) return;
+      previewFrame.src = previewUrl + "?t=" + String(Date.now());
+    }
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -274,6 +284,7 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
         });
         if (!response.ok) throw new Error(await response.text());
         saveStatus.textContent = "Saved";
+        reloadPreview();
       } catch (error) {
         saveStatus.textContent = error instanceof Error ? error.message : String(error);
       } finally {
@@ -322,6 +333,7 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
           }
         }
         agentOutput.textContent = "Applied";
+        reloadPreview();
         pendingProposal = undefined;
       } catch (error) {
         agentOutput.textContent = error instanceof Error ? error.message : String(error);
@@ -331,7 +343,7 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
 
     try {
       const events = new EventSource(eventsUrl);
-      events.addEventListener("deck:updated", (event) => { eventOutput.textContent = event.data; });
+      events.addEventListener("deck:updated", (event) => { eventOutput.textContent = event.data; reloadPreview(); });
       events.addEventListener("deck:error", (event) => { eventOutput.textContent = event.data; });
     } catch {
       eventOutput.textContent = "";

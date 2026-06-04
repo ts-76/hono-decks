@@ -108,6 +108,9 @@ describe("honoSlidesRouter", () => {
     expect(html).toContain('id="instruction"');
     expect(html).toContain('id="agentButton"');
     expect(html).toContain('id="applyProposalButton"');
+    expect(html).toContain('id="previewFrame"');
+    expect(html).toContain('src="/decks/deck1"');
+    expect(html).toContain("reloadPreview()");
     expect(html).toContain('fetch(saveUrl');
     expect(html).toContain('fetch(agentUrl');
     expect(html).toContain('fetch(applyUrl');
