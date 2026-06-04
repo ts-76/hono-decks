@@ -81,6 +81,83 @@ describe("SlideAssistant", () => {
     expect(generateCodeModeResult).toHaveBeenCalledWith(testEnv(), { ...chatInput, mode: "code" });
   });
 
+  it("falls back when code mode returns an invalid edit proposal", async () => {
+    const generateCodeModeResult = vi.fn().mockResolvedValue({
+      source: "workers-ai-codemode",
+      message: "Code Mode proposal ready.",
+      proposal: {
+        type: "patch",
+        baseMarkdownHash: "mdx-stale",
+        summary: "Tighten the title",
+        patches: [
+          {
+            path: "decks/deck1/deck.mdx",
+            oldText: "# Raw Deck",
+            newText: "# Sharper Deck",
+          },
+        ],
+      },
+    });
+
+    await expect(
+      buildChatResult(testEnv(), { ...chatInput, mode: "code" }, { generateCodeModeResult }),
+    ).resolves.toMatchObject({
+      source: "heuristic",
+      message: "編集 proposal を作成しました。保存は Hono の apply/save route で行ってください。",
+      proposal: {
+        type: "patch",
+        baseMarkdownHash: "mdx-b5765d09",
+      },
+    });
+  });
+
+  it("falls back when code mode returns no edit proposal", async () => {
+    const generateCodeModeResult = vi.fn().mockResolvedValue({
+      source: "workers-ai-codemode",
+      message: "No concrete edits.",
+    });
+
+    await expect(
+      buildChatResult(testEnv(), { ...chatInput, mode: "code" }, { generateCodeModeResult }),
+    ).resolves.toMatchObject({
+      source: "heuristic",
+      proposal: {
+        type: "patch",
+        baseMarkdownHash: "mdx-b5765d09",
+      },
+    });
+  });
+
+  it("falls back when code mode returns a patch for another path without sourcePath input", async () => {
+    const generateCodeModeResult = vi.fn().mockResolvedValue({
+      source: "workers-ai-codemode",
+      message: "Code Mode proposal ready.",
+      proposal: {
+        type: "patch",
+        baseMarkdownHash: "mdx-b5765d09",
+        summary: "Wrong path",
+        patches: [
+          {
+            path: "decks/other.mdx",
+            oldText: "# Raw Deck",
+            newText: "# Other Deck",
+          },
+        ],
+      },
+    });
+
+    await expect(
+      buildChatResult(testEnv(), { ...chatInput, sourcePath: undefined, mode: "code" }, { generateCodeModeResult }),
+    ).resolves.toMatchObject({
+      source: "heuristic",
+      proposal: {
+        type: "patch",
+        baseMarkdownHash: "mdx-b5765d09",
+        patches: [{ path: "decks/deck1.mdx" }],
+      },
+    });
+  });
+
   it("falls back to the local code proposal when code mode generation fails", async () => {
     const generateCodeModeResult = vi.fn().mockRejectedValue(new Error("model unavailable"));
 

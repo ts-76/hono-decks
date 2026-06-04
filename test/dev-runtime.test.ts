@@ -336,6 +336,52 @@ describe("createDevDeckRuntime", () => {
     expect(await response?.arrayBuffer()).toEqual(new Uint8Array([9]).buffer);
   });
 
+  it("keeps the latest asset bytes when a source compile finishes after an asset change", async () => {
+    let releaseCompile: (() => void) | undefined;
+    const runtime = createDevDeckRuntime({
+      initialDecks: [
+        {
+          ...initialDeck,
+          assets: [
+            {
+              sourcePath: "decks/deck1/assets/image.png",
+              publicPath: "/decks/deck1/assets/image.png",
+              type: "local",
+              contentType: "image/png",
+              body: new Uint8Array([1]),
+            },
+          ],
+        },
+      ],
+      localDeckIO: createMemoryDeckIO(
+        { deck1: "# Source Update" },
+        undefined,
+        { "decks/deck1/assets/image.png": new Uint8Array([9, 10]) },
+      ),
+      compiler: {
+        async compileMarkdown(input) {
+          await new Promise<void>((resolve) => {
+            releaseCompile = resolve;
+          });
+          return {
+            ...initialDeck,
+            meta: { title: input.markdown.replace("# ", ""), meta: {} },
+          };
+        },
+      },
+    });
+
+    const compile = runtime.handleFileChange({ type: "changed", path: "decks/deck1/deck.mdx", slug: "deck1" });
+    await waitForAsyncWatchHandler();
+    await runtime.handleFileChange({ type: "changed", path: "decks/deck1/assets/image.png", slug: "deck1" });
+    releaseCompile?.();
+    await compile;
+
+    const response = await runtime.source.getAsset?.({} as never, "deck1", "image.png");
+    const bytes = new Uint8Array(await response!.arrayBuffer());
+    expect([...bytes]).toEqual([9, 10]);
+  });
+
   it("merges compiled external asset references with existing local asset bodies after source changes", async () => {
     const runtime = createDevDeckRuntime({
       initialDecks: [

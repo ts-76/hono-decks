@@ -10,7 +10,7 @@ export interface DeckFrontmatter {
   date?: string;
   theme?: string;
   draft?: boolean;
-  assets?: string;
+  assets?: string | string[];
   presenter?: boolean;
   meta: Record<string, unknown>;
 }

@@ -71,6 +71,31 @@ describe("createCloudflareDeckAgentChat", () => {
     ).resolves.toEqual({ source: "heuristic", suggestion: "Fallback" });
   });
 
+  it("passes through non-ok Agent responses without converting them to chat results", async () => {
+    const agentChat = createCloudflareDeckAgentChat({
+      agentPath: "slide-assistant",
+      routeAgentRequest: async () => Response.json({ error: "Agent failed" }, { status: 503 }),
+      fallback: async () => ({ source: "heuristic", suggestion: "Fallback" }),
+    });
+
+    const result = await agentChat(
+      {
+        slug: "deck1",
+        sessionId: "default",
+        agentInstanceName: "deck-5-deck1-session-7-default",
+        mode: "chat",
+        baseMarkdownHash: "mdx-b5765d09",
+        markdown: "# Raw Deck",
+        instruction: "",
+      },
+      { req: { url: "https://slides.example.test/decks/deck1/agent/chat" }, env: {} } as never,
+    );
+
+    expect(result).toBeInstanceOf(Response);
+    expect((result as Response).status).toBe(503);
+    await expect((result as Response).json()).resolves.toEqual({ error: "Agent failed" });
+  });
+
   it("returns a 501 response when no Agent route or fallback handles the request", async () => {
     const agentChat = createCloudflareDeckAgentChat({
       agentPath: "slide-assistant",

@@ -30,7 +30,10 @@ export function createCloudflareDeckAgentChat(input: CreateCloudflareDeckAgentCh
       c.env,
     );
 
-    if (response) return response.json() as Promise<DeckAgentChatResult>;
+    if (response) {
+      if (!response.ok) return response;
+      return response.json() as Promise<DeckAgentChatResult>;
+    }
     if (input.fallback) return input.fallback(chatInput, c);
 
     return Response.json({ error: "Agent route was not handled" }, { status: 501 });

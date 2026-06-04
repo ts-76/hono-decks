@@ -14,7 +14,7 @@ import type { SlideBlock } from "./types";
 
 export async function compileMarkdown(input: CompileDeckInput): Promise<CompiledDeck> {
   const { attrs: deckAttrs, body } = readFrontmatter(input.markdown);
-  assertSingleFileAssetRules(input, input.markdown);
+  assertSingleFileAssetRules(input, input.markdown, deckAttrs);
 
   const slideSources = splitSlideSources(body);
   const warnings: CompiledDeck["warnings"] = [];
@@ -26,7 +26,7 @@ export async function compileMarkdown(input: CompileDeckInput): Promise<Compiled
     kind: input.kind,
     meta: toDeckFrontmatter(deckAttrs),
     slides,
-    assets: collectExternalAssetRefs(input.markdown),
+    assets: collectExternalAssetRefs(input.markdown, deckAttrs),
     warnings,
   };
 }
@@ -168,7 +168,7 @@ function toDeckFrontmatter(attrs: Record<string, unknown>): DeckFrontmatter {
   deck.author = takeString(meta, "author");
   deck.date = takeString(meta, "date");
   deck.theme = takeString(meta, "theme");
-  deck.assets = takeString(meta, "assets");
+  deck.assets = takeStringOrStringArray(meta, "assets");
   deck.draft = takeBoolean(meta, "draft");
   deck.presenter = takeBoolean(meta, "presenter");
 
@@ -201,9 +201,9 @@ function toSlideFrontmatter(
   return slide;
 }
 
-function assertSingleFileAssetRules(input: CompileDeckInput, markdown: string): void {
+function assertSingleFileAssetRules(input: CompileDeckInput, markdown: string, deckAttrs: Record<string, unknown>): void {
   if (input.kind !== "single-file") return;
-  if (hasLocalRelativeAssetReference(markdown)) {
+  if (hasLocalRelativeAssetReference(markdown, deckAttrs)) {
     throw new CompileError(
       `Single-file deck ${input.sourcePath} cannot reference local relative assets.`,
       "single-file-local-asset",
@@ -211,13 +211,15 @@ function assertSingleFileAssetRules(input: CompileDeckInput, markdown: string): 
   }
 }
 
-function hasLocalRelativeAssetReference(markdown: string): boolean {
-  return collectAssetCandidates(markdown).some(isLocalRelativeAssetCandidate);
+function hasLocalRelativeAssetReference(markdown: string, deckAttrs: Record<string, unknown>): boolean {
+  return [...collectAssetCandidates(markdown), ...collectFrontmatterAssetCandidates(deckAttrs)].some(
+    isLocalRelativeAssetCandidate,
+  );
 }
 
-function collectExternalAssetRefs(markdown: string): AssetRef[] {
+function collectExternalAssetRefs(markdown: string, deckAttrs: Record<string, unknown>): AssetRef[] {
   const refs = new Map<string, AssetRef>();
-  for (const candidate of collectAssetCandidates(markdown)) {
+  for (const candidate of [...collectAssetCandidates(markdown), ...collectFrontmatterAssetCandidates(deckAttrs)]) {
     const type = assetRefType(candidate);
     if (!type || refs.has(candidate)) continue;
     refs.set(candidate, {
@@ -228,6 +230,13 @@ function collectExternalAssetRefs(markdown: string): AssetRef[] {
     });
   }
   return [...refs.values()];
+}
+
+function collectFrontmatterAssetCandidates(attrs: Record<string, unknown>): string[] {
+  const value = attrs.assets;
+  if (Array.isArray(value)) return value.map(String).map((item) => item.trim()).filter(Boolean);
+  if (typeof value === "string") return [value.trim()].filter(Boolean);
+  return [];
 }
 
 function collectAssetCandidates(markdown: string): string[] {
@@ -302,6 +311,19 @@ function takeString(attrs: Record<string, unknown>, key: string): string | undef
   if (typeof value !== "string") return undefined;
   delete attrs[key];
   return value;
+}
+
+function takeStringOrStringArray(attrs: Record<string, unknown>, key: string): string | string[] | undefined {
+  const value = attrs[key];
+  if (typeof value === "string") {
+    delete attrs[key];
+    return value;
+  }
+  if (Array.isArray(value)) {
+    delete attrs[key];
+    return value.map(String);
+  }
+  return undefined;
 }
 
 function takeBoolean(attrs: Record<string, unknown>, key: string): boolean | undefined {

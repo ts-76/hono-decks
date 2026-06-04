@@ -32,17 +32,11 @@ export async function buildDeckManifest(input: BuildDeckManifestInput): Promise<
 }
 
 export function emitDeckManifestModule(manifest: DeckManifest): string {
-  const serializable = {
-    decks: manifest.decks.map((deck) => ({
-      ...deck,
-      assets: deck.assets.map(({ body: _body, ...asset }) => asset),
-    })),
-  };
+  const serializable = { decks: manifest.decks };
 
-  return `import type { DeckManifest } from "hono-slides";\n\nexport const deckManifest = ${JSON.stringify(
+  return `import type { DeckManifest } from "hono-slides";\n\nexport const deckManifest = ${serializeManifestValue(
     serializable,
-    null,
-    2,
+    0,
   )} satisfies DeckManifest;\n\nexport const manifest = deckManifest;\n`;
 }
 
@@ -94,4 +88,25 @@ function contentTypeForPath(path: string): string | undefined {
   if (lower.endsWith(".svg")) return "image/svg+xml";
   if (lower.endsWith(".webp")) return "image/webp";
   return undefined;
+}
+
+function serializeManifestValue(value: unknown, depth: number): string {
+  const indent = "  ".repeat(depth);
+  const nextIndent = "  ".repeat(depth + 1);
+
+  if (value instanceof Uint8Array) {
+    return `new Uint8Array([${[...value].join(", ")}])`;
+  }
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "[]";
+    return `[\n${value.map((item) => `${nextIndent}${serializeManifestValue(item, depth + 1)}`).join(",\n")}\n${indent}]`;
+  }
+  if (typeof value === "object" && value !== null) {
+    const entries = Object.entries(value).filter(([, item]) => item !== undefined);
+    if (entries.length === 0) return "{}";
+    return `{\n${entries
+      .map(([key, item]) => `${nextIndent}${JSON.stringify(key)}: ${serializeManifestValue(item, depth + 1)}`)
+      .join(",\n")}\n${indent}}`;
+  }
+  return JSON.stringify(value);
 }
