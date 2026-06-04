@@ -83,4 +83,29 @@ describe("compiled deck rendering", () => {
     expect(html).toContain('src="/slides/deck1/assets/image.png"');
     expect(html).not.toContain('src="./assets/image.png"');
   });
+
+  it("renders slide background frontmatter with local asset public paths", () => {
+    const html = renderCompiledDeckPage({
+      deck: {
+        ...deck,
+        slides: [
+          {
+            ...deck.slides[0],
+            meta: { ...deck.slides[0].meta, background: "./assets/bg.png" },
+          },
+        ],
+        assets: [
+          {
+            sourcePath: "decks/deck1/assets/bg.png",
+            publicPath: "/slides/deck1/assets/bg.png",
+            type: "local",
+            contentType: "image/png",
+          },
+        ],
+      },
+      mountPath: "/slides",
+    });
+
+    expect(html).toContain('style="background-image:url(&quot;/slides/deck1/assets/bg.png&quot;)"');
+  });
 });
