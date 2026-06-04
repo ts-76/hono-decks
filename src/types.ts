@@ -33,6 +33,9 @@ export interface AgentSuggestRequest {
   markdown: string;
   instruction: string;
   activeSlide?: number;
+  slug?: string;
+  sessionId?: string;
+  mode?: "chat" | "code";
 }
 
 export interface AgentSuggestResponse {
