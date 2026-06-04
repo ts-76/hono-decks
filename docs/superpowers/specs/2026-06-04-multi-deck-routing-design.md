@@ -251,6 +251,8 @@ Code Mode tools:
 - `createPatch`
 - `validatePatch`
 
+`validatePatch` uses the same source-path, base-hash, missing-text, and ambiguous-text rejection rules as the Hono apply route.
+
 Code Mode does not receive a direct filesystem write tool. User-approved changes are sent back to Hono as a patch set or raw MDX update, then persisted through the save route.
 
 Simple chat tasks can use normal Agent tool calling. Code Mode is reserved for deck-wide or multi-step edits, such as updating frontmatter and notes across several slides, validating the resulting compile output, or repairing asset references after inspection.

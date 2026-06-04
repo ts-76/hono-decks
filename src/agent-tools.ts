@@ -68,7 +68,7 @@ export function createDeckAgentToolProvider(input: CreateDeckAgentToolProviderIn
       },
       validatePatch: {
         description: "Validate that a patch proposal targets the current deck revision and text.",
-        execute: async (args: unknown) => validatePatchProposal(input.markdown, baseMarkdownHash, args),
+        execute: async (args: unknown) => validatePatchProposal(input.markdown, baseMarkdownHash, sourcePath, args),
       },
     },
   };
@@ -131,6 +131,7 @@ function createPatchProposal(
 function validatePatchProposal(
   markdown: string,
   currentHash: string,
+  sourcePath: string,
   args: unknown,
 ): DeckAgentProposalValidation {
   const proposal = args as Partial<DeckAgentEditProposal>;
@@ -143,13 +144,16 @@ function validatePatchProposal(
 
   const patches = "patches" in proposal && Array.isArray(proposal.patches) ? proposal.patches : [];
   for (const patch of patches as Partial<DeckAgentPatch>[]) {
+    if (patch.path !== sourcePath) {
+      errors.push(`Patch path must match current deck source: ${sourcePath}.`);
+    }
     if (typeof patch.oldText !== "string" || patch.oldText.length === 0) {
       errors.push("Patch oldText must be a non-empty string.");
       continue;
     }
     const matchCount = markdown.split(patch.oldText).length - 1;
     if (matchCount === 0) errors.push(`Patch oldText was not found: ${patch.oldText}`);
-    if (matchCount > 1) warnings.push(`Patch oldText appears ${matchCount} times: ${patch.oldText}`);
+    if (matchCount > 1) errors.push(`Patch oldText is ambiguous: ${patch.oldText}`);
   }
 
   return { ok: errors.length === 0, errors, warnings };
