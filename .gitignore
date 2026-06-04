@@ -5,3 +5,4 @@ dist-dry-run/
 .dev.vars
 .env
 .DS_Store
+.superpowers/
