@@ -206,6 +206,54 @@ assets: [https://cdn.example.com/front.png, r2://slides-bucket/front.webp, /publ
     ]);
   });
 
+  it("supports multiline frontmatter lists and shallow metadata objects", async () => {
+    const deck = await compileMarkdown({
+      slug: "deck1",
+      sourcePath: "decks/deck1.mdx",
+      kind: "single-file",
+      markdown: `---
+title: Multiline Meta
+tags:
+  - hono
+  - workers
+assets:
+  - https://cdn.example.com/front.png
+  - /public/front.svg
+custom:
+  intent: demo
+  priority: high
+---
+
+# One`,
+    });
+
+    expect(deck.meta).toMatchObject({
+      title: "Multiline Meta",
+      tags: ["hono", "workers"],
+      assets: ["https://cdn.example.com/front.png", "/public/front.svg"],
+      meta: {
+        custom: {
+          intent: "demo",
+          priority: "high",
+        },
+      },
+    });
+    expect(deck.assets).toEqual([
+      {
+        sourcePath: "https://cdn.example.com/front.png",
+        publicPath: "https://cdn.example.com/front.png",
+        type: "remote",
+        contentType: "image/png",
+      },
+      {
+        sourcePath: "/public/front.svg",
+        publicPath: "/public/front.svg",
+        type: "public",
+        contentType: "image/svg+xml",
+      },
+    ]);
+  });
+
   it("rejects local relative frontmatter assets in single-file decks", async () => {
     await expect(
       compileMarkdown({

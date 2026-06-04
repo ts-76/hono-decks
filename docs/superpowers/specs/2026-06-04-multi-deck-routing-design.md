@@ -85,6 +85,8 @@ Presenter mode is implemented as an in-page mode. Speaker notes can be present i
 
 Deck-level and slide-level frontmatter are both supported.
 
+The parser supports scalar values, inline arrays, multiline lists, shallow objects, and `|` block text. It is intentionally lightweight rather than a full YAML implementation.
+
 Deck-level known keys:
 
 - `title`
