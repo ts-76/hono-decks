@@ -527,6 +527,35 @@ describe("honoSlidesRouter", () => {
     expect(calls.map((call) => (call as { activeSlide?: number }).activeSlide)).toEqual([undefined, undefined, undefined]);
   });
 
+  it("drops activeSlide values outside the compiled deck slide range", async () => {
+    const calls: unknown[] = [];
+    const app = new Hono();
+    app.route(
+      "/decks",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: true,
+        localDeckIO: createMemoryDeckIO({ deck1: "# Raw Deck" }),
+        agentChat: async (input) => {
+          calls.push(input);
+          return { source: "test", suggestion: "Tighten the title." };
+        },
+      }),
+    );
+
+    await app.request("/decks/deck1/agent/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        instruction: "Improve this",
+        activeSlide: 1,
+      }),
+    });
+
+    expect(calls).toHaveLength(1);
+    expect((calls[0] as { activeSlide?: number }).activeSlide).toBeUndefined();
+  });
+
   it("applies a replacement proposal through LocalDeckIO when dev is true", async () => {
     const writes: Array<{ slug: string; markdown: string }> = [];
     const previewEvents = createPreviewEventHub();
