@@ -420,6 +420,38 @@ describe("honoSlidesRouter", () => {
     expect(order).toEqual(["write", "publish"]);
   });
 
+  it("awaits the dev file-change hook after saving instead of publishing a duplicate save event", async () => {
+    const previewEvents = createPreviewEventHub();
+    const fileChanges: unknown[] = [];
+    const app = new Hono();
+    app.route(
+      "/decks",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: true,
+        localDeckIO: createMemoryDeckIO({ deck1: "# Before" }),
+        previewEvents,
+        async onFileChange(event) {
+          fileChanges.push(event);
+          previewEvents.publish({ type: "deck:updated", slug: event.slug ?? "", data: { source: "watch", path: event.path } });
+        },
+      }),
+    );
+
+    const response = await app.request("/decks/deck1/save", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ markdown: "# After" }),
+    });
+    const events = await app.request("/decks/deck1/events?once=1");
+    const text = await events.text();
+
+    expect(response.status).toBe(200);
+    expect(fileChanges).toEqual([{ type: "changed", path: "decks/deck1/deck.mdx", slug: "deck1" }]);
+    expect(text).toContain('"source":"watch"');
+    expect(text).not.toContain('"source":"save"');
+  });
+
   it("passes deck context to the development agent chat callback", async () => {
     const calls: unknown[] = [];
     const app = new Hono();
@@ -495,6 +527,45 @@ describe("honoSlidesRouter", () => {
     expect(writes).toEqual([{ slug: "deck1", markdown: "# Applied Deck" }]);
     expect(previewEvents.drain("deck1")).toEqual([
       { type: "deck:updated", slug: "deck1", data: { source: "apply" } },
+    ]);
+  });
+
+  it("awaits the dev file-change hook after applying a proposal", async () => {
+    const writes: Array<{ slug: string; markdown: string }> = [];
+    const previewEvents = createPreviewEventHub();
+    const fileChanges: unknown[] = [];
+    const app = new Hono();
+    app.route(
+      "/decks",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: true,
+        localDeckIO: createMemoryDeckIO({ deck1: "# Raw Deck" }, writes),
+        previewEvents,
+        async onFileChange(event) {
+          fileChanges.push(event);
+          previewEvents.publish({ type: "deck:updated", slug: event.slug ?? "", data: { source: "watch", path: event.path } });
+        },
+      }),
+    );
+
+    const response = await app.request("/decks/deck1/apply", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        proposal: {
+          type: "replacement",
+          baseMarkdownHash: "mdx-b5765d09",
+          markdown: "# Applied Deck",
+        },
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(writes).toEqual([{ slug: "deck1", markdown: "# Applied Deck" }]);
+    expect(fileChanges).toEqual([{ type: "changed", path: "decks/deck1/deck.mdx", slug: "deck1" }]);
+    expect(previewEvents.drain("deck1")).toEqual([
+      { type: "deck:updated", slug: "deck1", data: { source: "watch", path: "decks/deck1/deck.mdx" } },
     ]);
   });
 
