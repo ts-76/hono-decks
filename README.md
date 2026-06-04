@@ -203,6 +203,31 @@ notes: Keep this hidden in normal viewing.
 - `code`
 ```
 
+## 対応残件
+
+現時点の実装は multi-deck routing、compiled manifest、dev editor、hot reload、Cloudflare Agent proposal の土台までを対象にしています。次に残している主な対応は次の通りです。
+
+- `route` frontmatter はまだ canonical slug には使いません。将来入れる場合も file-based slug の alias として扱い、衝突検出を追加します。
+- MDX component は実行せず placeholder と warning として扱います。実 component 実行や theme-driven renderer は今後の拡張です。
+- remote/R2 asset は `AssetRef` と warning までを生成します。存在確認、署名 URL 化、R2 bucket 連携は custom `DeckSource` や配信側で実装します。
+- production sample は閲覧 route のみです。local file-based dev sample、R2/custom source sample、packaging/export 向け CLI は今後追加します。
+- PDF export、remote control、share/QR、presenter view の別 route 化は初期実装の範囲外です。
+
+## Sample 起動確認
+
+同梱 Worker sample は production router surface の確認用です。
+
+```bash
+npm run dev -- --port 8791
+```
+
+起動後に次の route を確認できます。
+
+- `GET /` は `/decks` に redirect
+- `GET /decks` は sample deck index
+- `GET /decks/sample` は presentation controls 付きの閲覧ページ
+- `GET /decks/sample/edit` は production sample では `404`
+
 ## Quality
 
 ```bash
