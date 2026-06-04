@@ -14,8 +14,9 @@ export function renderCompiledSlide(slide: CompiledSlide, assets: AssetRef[] = [
   const notes = slide.notes ?? slide.meta.notes;
   const notesHtml = notes ? `<aside class="speaker-notes" hidden>${escapeHtml(notes)}</aside>` : "";
   const html = rewriteLocalAssetUrls(slide.html, assets);
+  const style = slide.meta.background ? ` style="${escapeHtml(backgroundStyle(slide.meta.background, assets))}"` : "";
 
-  return `<section class="${classes}" data-slide-index="${slide.index}"${slide.meta.title ? ` aria-label="${escapeHtml(slide.meta.title)}"` : ""}>${html}${notesHtml}</section>`;
+  return `<section class="${classes}" data-slide-index="${slide.index}"${slide.meta.title ? ` aria-label="${escapeHtml(slide.meta.title)}"` : ""}${style}>${html}${notesHtml}</section>`;
 }
 
 export function renderCompiledDeckPage(input: { deck: CompiledDeck; mountPath: string; style?: string }): string {
@@ -153,12 +154,22 @@ function rewriteLocalAssetUrls(html: string, assets: AssetRef[]): string {
   });
 }
 
+function backgroundStyle(value: string, assets: AssetRef[]): string {
+  const asset = findAssetForHtmlUrl(assets.filter((candidate) => candidate.type === "local"), value);
+  const url = asset?.publicPath ?? value;
+  return `background-image:url("${escapeCssUrl(url)}")`;
+}
+
 function findAssetForHtmlUrl(assets: AssetRef[], value: string): AssetRef | undefined {
   const normalized = decodeURIComponent(value).replace(/^\.?\//, "");
   return assets.find((asset) => {
     const assetPath = localAssetRelativePath(asset);
     return normalized === assetPath || normalized === `assets/${assetPath}`;
   });
+}
+
+function escapeCssUrl(value: string): string {
+  return value.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
 }
 
 function localAssetRelativePath(asset: AssetRef): string {
