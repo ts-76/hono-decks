@@ -50,6 +50,32 @@ describe("honoSlidesRouter", () => {
     expect(await missing.json()).toEqual({ error: "Deck not found", slug: "missing" });
   });
 
+  it("preserves nested asset paths that repeat the route marker", async () => {
+    const source = manifestDeckSource({
+      decks: [
+        {
+          ...deck,
+          assets: [
+            {
+              sourcePath: "decks/deck1/assets/foo/deck1/assets/bar.png",
+              publicPath: "/decks/deck1/assets/foo/deck1/assets/bar.png",
+              type: "local",
+              contentType: "image/png",
+              body: new Uint8Array([1]),
+            },
+          ],
+        },
+      ],
+    });
+    const app = new Hono();
+    app.route("/decks", honoSlidesRouter({ source, dev: false }));
+
+    const response = await app.request("/decks/deck1/assets/foo/deck1/assets/bar.png");
+
+    expect(response.status).toBe(200);
+    expect(await response.arrayBuffer()).toEqual(new Uint8Array([1]).buffer);
+  });
+
   it("does not expose development routes when dev is false", async () => {
     const app = new Hono();
     app.route("/decks", honoSlidesRouter({ source: manifestDeckSource({ decks: [deck] }), dev: false }));

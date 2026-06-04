@@ -18,7 +18,7 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
 
   router.get("/:slug/assets/*", async (c) => {
     const slug = c.req.param("slug");
-    const assetPath = c.req.path.split(`/${slug}/assets/`)[1] ?? "";
+    const assetPath = extractAssetPath(c.req.path, slug);
     const response = await options.source.getAsset?.(c, slug, assetPath);
     if (!response) return c.json({ error: "Asset not found", slug, assetPath }, 404);
     return response;
@@ -38,6 +38,13 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
   });
 
   return router;
+}
+
+function extractAssetPath(path: string, slug: string): string {
+  const marker = `/${slug}/assets/`;
+  const markerIndex = path.indexOf(marker);
+  if (markerIndex === -1) return "";
+  return path.slice(markerIndex + marker.length);
 }
 
 function renderDeckIndex(decks: Awaited<ReturnType<DeckSource["listDecks"]>>, mountPath: string): string {
