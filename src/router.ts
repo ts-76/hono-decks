@@ -35,7 +35,7 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
     return response;
   });
 
-  if (isDevEnabled(options.dev)) {
+  if (isDevEnabled(options)) {
     router.get("/:slug/edit", async (c) => {
       const slug = c.req.param("slug");
       const markdown = await options.localDeckIO?.readMarkdown(slug);
@@ -107,8 +107,8 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
   return router;
 }
 
-function isDevEnabled(dev: HonoSlidesRouterOptions["dev"]): boolean {
-  return dev === true;
+function isDevEnabled(options: HonoSlidesRouterOptions): boolean {
+  return options.dev === true || (options.dev === "auto" && Boolean(options.localDeckIO));
 }
 
 function extractAssetPath(path: string, slug: string): string {
