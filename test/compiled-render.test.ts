@@ -39,6 +39,20 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("Say hello");
   });
 
+  it("renders slide transition frontmatter as stable DOM metadata", () => {
+    const html = renderCompiledDeck({
+      ...deck,
+      slides: [
+        {
+          ...deck.slides[0],
+          meta: { ...deck.slides[0].meta, transition: "fade fast" },
+        },
+      ],
+    });
+
+    expect(html).toContain('data-transition="fade-fast"');
+  });
+
   it("renders a full page with presentation controls and warnings", () => {
     const html = renderCompiledDeckPage({ deck, mountPath: "/decks" });
 
