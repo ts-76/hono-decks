@@ -152,6 +152,26 @@ broken line
     });
   });
 
+  it("rejects unclosed slide frontmatter blocks", async () => {
+    await expect(
+      compileMarkdown({
+        slug: "deck1",
+        sourcePath: "decks/deck1/deck.mdx",
+        kind: "directory",
+        markdown: `# One
+
+---
+title: Two
+
+## Two`,
+      }),
+    ).rejects.toMatchObject({
+      name: "CompileError",
+      code: "frontmatter-unclosed",
+      message: "Frontmatter block is not closed.",
+    });
+  });
+
   it("rejects parent and bare local asset references in single-file decks", async () => {
     await expect(
       compileMarkdown({
