@@ -21,6 +21,8 @@ export type {
 } from "./agent-contract";
 export { applyDeckAgentProposal } from "./agent-apply";
 export type { ApplyDeckAgentProposalResult } from "./agent-apply";
+export { createCloudflareDeckAgentChat } from "./cloudflare-agent-chat";
+export type { CreateCloudflareDeckAgentChatInput, RouteAgentRequest } from "./cloudflare-agent-chat";
 export { createDeckAgentToolProvider } from "./agent-tools";
 export type { CompiledDeckSummary, CompiledSlideSummary, CreateDeckAgentToolProviderInput } from "./agent-tools";
 export { honoSlidesRouter } from "./router";

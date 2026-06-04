@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { routeAgentRequest } from "agents";
+import { createDeckAgentInstanceName } from "./agent-contract";
 import { buildSuggestion, SlideAssistant } from "./agent";
 import { honoSlides } from "./middleware";
 import type { AgentSuggestRequest, Env } from "./types";
@@ -50,7 +51,10 @@ app.post("/api/agent/suggest", async (c) => {
   const payload = (await c.req.json()) as AgentSuggestRequest;
 
   // Prefer the Cloudflare Agents Durable Object route when the binding is configured.
-  const agentUrl = new URL("/agents/slide-assistant/default/suggest", c.req.url);
+  const slug = payload.slug || "default";
+  const sessionId = payload.sessionId || "default";
+  const agentName = createDeckAgentInstanceName({ slug, sessionId });
+  const agentUrl = new URL(`/agents/slide-assistant/${encodeURIComponent(agentName)}/suggest`, c.req.url);
   const agentResponse = await routeAgentRequest(new Request(agentUrl, { method: "POST", body: JSON.stringify(payload) }), c.env);
   if (agentResponse) return agentResponse;
 

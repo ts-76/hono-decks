@@ -505,6 +505,7 @@ describe("honoSlidesRouter", () => {
     expect(typeof mod.parseDeckAgentMode).toBe("function");
     expect(typeof mod.createDeckAgentToolProvider).toBe("function");
     expect(typeof mod.applyDeckAgentProposal).toBe("function");
+    expect(typeof mod.createCloudflareDeckAgentChat).toBe("function");
   });
 });
 
