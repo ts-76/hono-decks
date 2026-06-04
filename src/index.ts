@@ -37,6 +37,7 @@ title: Editing
 
 ---
 layout: statement
+---
 
 ## 次にやること
 

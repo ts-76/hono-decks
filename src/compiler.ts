@@ -111,6 +111,10 @@ function splitSlideSources(source: string): string[] {
 
   while (cursor < lines.length) {
     if (isFence(lines[cursor])) {
+      if (looksLikeFrontmatterFence(lines, cursor) && findFrontmatterEnd(lines, cursor) === -1) {
+        throw new CompileError("Frontmatter block is not closed.", "frontmatter-unclosed");
+      }
+
       if (isFrontmatterStart(lines, cursor)) {
         if (hasMeaningfulLines(current)) {
           slides.push(current.join("\n").trim());
@@ -364,9 +368,13 @@ function stripAssetQuery(path: string): string {
 }
 
 function isFrontmatterStart(lines: string[], index: number): boolean {
+  return looksLikeFrontmatterFence(lines, index) && findFrontmatterEnd(lines, index) > index;
+}
+
+function looksLikeFrontmatterFence(lines: string[], index: number): boolean {
   if (!isFence(lines[index])) return false;
   const next = lines[index + 1];
-  return next != null && /^([A-Za-z_][A-Za-z0-9_-]*):\s*/.test(next) && findFrontmatterEnd(lines, index) > index;
+  return next != null && /^([A-Za-z_][A-Za-z0-9_-]*):\s*/.test(next);
 }
 
 function findFrontmatterEnd(lines: string[], start: number): number {
