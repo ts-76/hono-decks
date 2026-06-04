@@ -77,6 +77,19 @@ customSlideKey: kept
     });
     expect(deck.slides[1].html).toContain("<h2>Details</h2>");
     expect(deck.slides[1].html).toContain("<li>One</li>");
+    expect(deck.warnings).toEqual(
+      expect.arrayContaining([
+        {
+          code: "unknown-frontmatter-key",
+          message: 'Unknown deck frontmatter key "customDeckKey" is preserved in meta.',
+        },
+        {
+          code: "unknown-frontmatter-key",
+          message: 'Unknown slide frontmatter key "customSlideKey" is preserved in meta.',
+          slideIndex: 1,
+        },
+      ]),
+    );
   });
 
   it("rejects local relative assets in single-file decks", async () => {

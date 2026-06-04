@@ -14,19 +14,22 @@ import type { SlideBlock } from "./types";
 
 export async function compileMarkdown(input: CompileDeckInput): Promise<CompiledDeck> {
   const { attrs: deckAttrs, body } = readFrontmatter(input.markdown);
+  const deckAttrsForAssets = { ...deckAttrs };
   assertSingleFileAssetRules(input, input.markdown, deckAttrs);
 
   const slideSources = splitSlideSources(body);
   const warnings: CompiledDeck["warnings"] = [];
+  const meta = toDeckFrontmatter(deckAttrs);
+  addUnknownFrontmatterWarnings(warnings, meta.meta, "deck");
   const slides: CompiledSlide[] = slideSources.map((source, index) => compileSlide(input.slug, source, index, warnings));
 
   return {
     slug: input.slug,
     sourcePath: input.sourcePath,
     kind: input.kind,
-    meta: toDeckFrontmatter(deckAttrs),
+    meta,
     slides,
-    assets: collectExternalAssetRefs(input.markdown, deckAttrs),
+    assets: collectExternalAssetRefs(input.markdown, deckAttrsForAssets),
     warnings,
   };
 }
@@ -46,6 +49,7 @@ function compileSlide(
   const components = collectComponents(slug, index, blocks);
   const firstParsedSlide = parsed.slides[0];
   const meta = toSlideFrontmatter(attrs, firstParsedSlide?.title, firstParsedSlide?.layout, firstParsedSlide?.className);
+  addUnknownFrontmatterWarnings(warnings, meta.meta, "slide", index);
 
   return {
     index,
@@ -54,6 +58,21 @@ function compileSlide(
     components,
     notes: meta.notes,
   };
+}
+
+function addUnknownFrontmatterWarnings(
+  warnings: CompiledDeck["warnings"],
+  meta: Record<string, unknown>,
+  scope: "deck" | "slide",
+  slideIndex?: number,
+): void {
+  for (const key of Object.keys(meta)) {
+    warnings.push({
+      code: "unknown-frontmatter-key",
+      message: `Unknown ${scope} frontmatter key "${key}" is preserved in meta.`,
+      ...(slideIndex !== undefined ? { slideIndex } : {}),
+    });
+  }
 }
 
 function splitSlideSources(source: string): string[] {
