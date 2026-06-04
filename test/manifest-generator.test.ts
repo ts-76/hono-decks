@@ -10,7 +10,9 @@ describe("buildDeckManifest", () => {
 title: Deck One
 ---
 
-# Deck One`,
+# Deck One
+
+![Remote](https://cdn.example.com/deck-one.png)`,
       ],
       ["decks/deck1/assets/image.png", new Uint8Array([1, 2, 3])],
       [
@@ -53,6 +55,12 @@ title: Deck Two
         type: "local",
         contentType: "image/png",
         body: new Uint8Array([1, 2, 3]),
+      },
+      {
+        sourcePath: "https://cdn.example.com/deck-one.png",
+        publicPath: "https://cdn.example.com/deck-one.png",
+        type: "remote",
+        contentType: "image/png",
       },
     ]);
     expect(manifest.decks[1]).toMatchObject({

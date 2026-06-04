@@ -30,6 +30,8 @@ decks/
   deck2.mdx
 ```
 
+`https://...`, `r2://...`, `/public/...` のような参照は manifest の `AssetRef` として保持します。存在確認や署名 URL 化は custom `DeckSource` や配信側で扱います。
+
 同じ slug の `deck1.mdx` と `deck1/deck.mdx` は衝突として扱います。
 
 ## Production Router

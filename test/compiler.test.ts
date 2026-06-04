@@ -121,6 +121,52 @@ background: ../hero.png
     ).rejects.toMatchObject({ code: "single-file-local-asset" });
   });
 
+  it("collects remote and public asset references without embedding bodies", async () => {
+    const deck = await compileMarkdown({
+      slug: "deck1",
+      sourcePath: "decks/deck1.mdx",
+      kind: "single-file",
+      markdown: `---
+background: /public/hero.jpg
+---
+
+# One
+
+![Logo](https://cdn.example.com/logo.png)
+
+![Public](/public/diagram.svg)
+
+<Hero image="r2://slides-bucket/hero.webp" />`,
+    });
+
+    expect(deck.assets).toEqual([
+      {
+        sourcePath: "/public/hero.jpg",
+        publicPath: "/public/hero.jpg",
+        type: "public",
+        contentType: "image/jpeg",
+      },
+      {
+        sourcePath: "https://cdn.example.com/logo.png",
+        publicPath: "https://cdn.example.com/logo.png",
+        type: "remote",
+        contentType: "image/png",
+      },
+      {
+        sourcePath: "/public/diagram.svg",
+        publicPath: "/public/diagram.svg",
+        type: "public",
+        contentType: "image/svg+xml",
+      },
+      {
+        sourcePath: "r2://slides-bucket/hero.webp",
+        publicPath: "r2://slides-bucket/hero.webp",
+        type: "r2",
+        contentType: "image/webp",
+      },
+    ]);
+  });
+
   it("preserves parser warnings on compiled decks", async () => {
     const deck = await compileMarkdown({
       slug: "deck1",
