@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { streamSSE } from "hono/streaming";
 import type { Context } from "hono";
 import { applyDeckAgentProposal } from "./agent-apply";
 import { createDeckAgentInstanceName, createDeckMarkdownHash, parseDeckAgentMode } from "./agent-contract";
@@ -66,9 +67,40 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
 
     router.get("/:slug/events", (c) => {
       const slug = c.req.param("slug");
+      if (c.req.query("once") === "1" || !options.previewEvents?.subscribe) {
+        return oneShotEventResponse(slug, options.previewEvents);
+      }
+
+      return streamSSE(c, async (stream) => {
+        let unsubscribe = () => {};
+        const aborted = new Promise<void>((resolve) => {
+          stream.onAbort(() => {
+            resolve();
+          });
+        });
+        unsubscribe = options.previewEvents!.subscribe!(slug, (event) => {
+          void stream.writeSSE(toServerSentMessage(event)).catch(() => {
+            unsubscribe();
+            stream.abort();
+          });
+        });
+
+        try {
+          await stream.writeSSE(toServerSentMessage({ type: "ready", slug }));
+          for (const event of options.previewEvents?.drain(slug) ?? []) {
+            await stream.writeSSE(toServerSentMessage(event));
+          }
+          await aborted;
+        } finally {
+          unsubscribe();
+        }
+      });
+    });
+
+    function oneShotEventResponse(slug: string, previewEvents: PreviewEventHub | undefined): Response {
       const events: PreviewEvent[] = [
         { type: "ready", slug },
-        ...(options.previewEvents?.drain(slug) ?? []),
+        ...(previewEvents?.drain(slug) ?? []),
       ];
       return new Response(events.map(formatServerSentEvent).join(""), {
         headers: {
@@ -76,7 +108,7 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
           "cache-control": "no-cache",
         },
       });
-    });
+    }
 
     router.post("/:slug/agent/chat", async (c) => {
       const slug = c.req.param("slug");
@@ -162,6 +194,13 @@ function stripPathSuffix(path: string, suffix: string): string {
 
 function formatServerSentEvent(event: PreviewEvent): string {
   return `event: ${event.type}\ndata: ${JSON.stringify({ slug: event.slug, ...(event.data !== undefined ? { data: event.data } : {}) })}\n\n`;
+}
+
+function toServerSentMessage(event: PreviewEvent): { event: PreviewEvent["type"]; data: string } {
+  return {
+    event: event.type,
+    data: JSON.stringify({ slug: event.slug, ...(event.data !== undefined ? { data: event.data } : {}) }),
+  };
 }
 
 function renderDeckIndex(decks: Awaited<ReturnType<DeckSource["listDecks"]>>, mountPath: string): string {
