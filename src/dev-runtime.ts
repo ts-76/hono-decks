@@ -5,6 +5,7 @@ import type {
   DeckCompiler,
   DeckEntry,
   DeckFileChange,
+  DeckFileEntry,
   DeckSource,
   LocalDeckIO,
 } from "./deck";
@@ -81,11 +82,12 @@ export function createDevDeckRuntime(input: DevDeckRuntimeInput): DevDeckRuntime
       try {
         const markdown = await input.localDeckIO.readMarkdown(event.slug);
         if (markdown == null) return;
+        const fileEntry = current ? undefined : await findDeckFileEntry(input.localDeckIO, event.slug);
 
         const compiled = await input.compiler.compileMarkdown({
           slug: event.slug,
-          sourcePath: current?.sourcePath ?? event.path,
-          kind: current?.kind ?? "directory",
+          sourcePath: current?.sourcePath ?? fileEntry?.sourcePath ?? event.path,
+          kind: current?.kind ?? fileEntry?.kind ?? "directory",
           markdown,
         } satisfies CompileDeckInput);
         if (version !== sourceChangeVersions.get(event.slug)) return;
@@ -118,6 +120,10 @@ function nextSourceChangeVersion(versions: Map<string, number>, slug: string): n
   const next = (versions.get(slug) ?? 0) + 1;
   versions.set(slug, next);
   return next;
+}
+
+async function findDeckFileEntry(localDeckIO: LocalDeckIO, slug: string): Promise<DeckFileEntry | undefined> {
+  return (await localDeckIO.listFiles()).find((entry) => entry.slug === slug);
 }
 
 async function applyAssetChange(

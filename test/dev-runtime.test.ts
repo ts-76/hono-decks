@@ -327,6 +327,53 @@ describe("createDevDeckRuntime", () => {
     });
   });
 
+  it("uses LocalDeckIO file entries when a new single-file deck is created", async () => {
+    const previewEvents = createPreviewEventHub();
+    const compileInputs: Array<{ sourcePath: string; kind: string }> = [];
+    const runtime = createDevDeckRuntime({
+      initialDecks: [],
+      localDeckIO: {
+        async listFiles() {
+          return [{ slug: "deck2", sourcePath: "decks/deck2.mdx", kind: "single-file" }];
+        },
+        async readMarkdown(slug) {
+          return slug === "deck2" ? "# Deck Two\n\n![Remote](https://cdn.example.com/deck2.png)" : null;
+        },
+        async writeMarkdown() {},
+      },
+      compiler: {
+        async compileMarkdown(input) {
+          compileInputs.push({ sourcePath: input.sourcePath, kind: input.kind });
+          return {
+            ...initialDeck,
+            slug: input.slug,
+            sourcePath: input.sourcePath,
+            kind: input.kind,
+            meta: { title: input.markdown.replace(/^#\s*/, "").split("\n")[0], meta: {} },
+          };
+        },
+      },
+      previewEvents,
+    });
+
+    await runtime.handleFileChange({ type: "created", path: "decks/deck2.mdx", slug: "deck2" });
+
+    expect(compileInputs).toEqual([{ sourcePath: "decks/deck2.mdx", kind: "single-file" }]);
+    await expect(runtime.source.getCompiledDeck({} as never, "deck2")).resolves.toMatchObject({
+      slug: "deck2",
+      sourcePath: "decks/deck2.mdx",
+      kind: "single-file",
+      meta: { title: "Deck Two" },
+    });
+    expect(previewEvents.drain("deck2")).toEqual([
+      {
+        type: "deck:updated",
+        slug: "deck2",
+        data: { source: "watch", path: "decks/deck2.mdx" },
+      },
+    ]);
+  });
+
   it("publishes an error event when reading raw markdown fails", async () => {
     const previewEvents = createPreviewEventHub();
     const runtime = createDevDeckRuntime({
