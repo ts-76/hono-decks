@@ -132,7 +132,7 @@ async function applyAssetChange(
   event: DeckFileChange,
 ): Promise<CompiledDeck | undefined> {
   const asset = deck.assets.find((candidate) => candidate.sourcePath === event.path);
-  if (!asset) return deck;
+  if (!asset) return addNewLocalAsset(localDeckIO, deck, event);
 
   if (event.type === "deleted") {
     return {
@@ -153,6 +153,31 @@ async function applyAssetChange(
   };
 }
 
+async function addNewLocalAsset(
+  localDeckIO: LocalDeckIO,
+  deck: CompiledDeck,
+  event: DeckFileChange,
+): Promise<CompiledDeck> {
+  if (event.type === "deleted" || !event.slug || !localDeckIO.readAsset) return deck;
+
+  const body = await localDeckIO.readAsset(event.path);
+  if (body == null) return deck;
+
+  return {
+    ...deck,
+    assets: [
+      ...deck.assets,
+      {
+        sourcePath: event.path,
+        publicPath: publicPathForLocalAsset(event.slug, event.path),
+        type: "local",
+        contentType: contentTypeForPath(event.path),
+        body: body as BodyInit,
+      },
+    ],
+  };
+}
+
 function isDeckSourceDelete(event: DeckFileChange, deck: CompiledDeck): boolean {
   return event.type === "deleted" && event.path === deck.sourcePath;
 }
@@ -170,6 +195,24 @@ function mergeCompiledAndLocalAssets(compiledAssets: AssetRef[], currentAssets: 
 
 function isAssetPath(path: string): boolean {
   return path.includes("/assets/");
+}
+
+function publicPathForLocalAsset(slug: string, sourcePath: string): string {
+  const marker = `/${slug}/assets/`;
+  const normalized = sourcePath.replaceAll("\\", "/");
+  const markerIndex = normalized.indexOf(marker);
+  const assetPath = markerIndex === -1 ? (normalized.split("/").at(-1) ?? normalized) : normalized.slice(markerIndex + marker.length);
+  return `/decks/${encodeURIComponent(slug)}/assets/${assetPath.split("/").map(encodeURIComponent).join("/")}`;
+}
+
+function contentTypeForPath(path: string): string | undefined {
+  const lower = path.toLowerCase();
+  if (lower.endsWith(".png")) return "image/png";
+  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+  if (lower.endsWith(".gif")) return "image/gif";
+  if (lower.endsWith(".svg")) return "image/svg+xml";
+  if (lower.endsWith(".webp")) return "image/webp";
+  return undefined;
 }
 
 function publishUpdate(
