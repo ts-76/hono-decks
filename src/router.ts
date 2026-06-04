@@ -141,7 +141,7 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
           sourcePath: deck?.sourcePath,
           markdown,
           instruction: typeof payload.instruction === "string" ? payload.instruction : "",
-          activeSlide: parseActiveSlide(payload.activeSlide),
+          activeSlide: parseActiveSlide(payload.activeSlide, deck?.slides.length),
         },
         c,
       );
@@ -195,8 +195,9 @@ function defaultSourcePath(slug: string): string {
   return `decks/${slug}.mdx`;
 }
 
-function parseActiveSlide(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : undefined;
+function parseActiveSlide(value: unknown, slideCount?: number): number | undefined {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0) return undefined;
+  return slideCount == null || value < slideCount ? value : undefined;
 }
 
 async function sourcePathForSlug(options: HonoSlidesRouterOptions, c: Context, slug: string): Promise<string> {
