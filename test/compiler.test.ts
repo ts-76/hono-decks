@@ -95,6 +95,50 @@ customSlideKey: kept
     });
   });
 
+  it("rejects parent and bare local asset references in single-file decks", async () => {
+    await expect(
+      compileMarkdown({
+        slug: "deck1",
+        sourcePath: "decks/deck1.mdx",
+        kind: "single-file",
+        markdown: `---
+background: ../hero.png
+---
+
+# One`,
+      }),
+    ).rejects.toMatchObject({ code: "single-file-local-asset" });
+
+    await expect(
+      compileMarkdown({
+        slug: "deck1",
+        sourcePath: "decks/deck1.mdx",
+        kind: "single-file",
+        markdown: `# One
+
+![Local](image.png)`,
+      }),
+    ).rejects.toMatchObject({ code: "single-file-local-asset" });
+  });
+
+  it("preserves parser warnings on compiled decks", async () => {
+    const deck = await compileMarkdown({
+      slug: "deck1",
+      sourcePath: "decks/deck1/deck.mdx",
+      kind: "directory",
+      markdown: `# One
+
+\`\`\`ts
+const unclosed = true;`,
+    });
+
+    expect(deck.warnings).toContainEqual({
+      code: "parse-warning",
+      message: "Slide 1: code fence is not closed.",
+      slideIndex: 0,
+    });
+  });
+
   it("exports the compiler from the public module", async () => {
     const mod = await import("../src/mod");
     expect(typeof mod.compileMarkdown).toBe("function");

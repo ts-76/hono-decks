@@ -13,10 +13,11 @@ import type { SlideBlock } from "./types";
 
 export async function compileMarkdown(input: CompileDeckInput): Promise<CompiledDeck> {
   const { attrs: deckAttrs, body } = readFrontmatter(input.markdown);
-  assertSingleFileAssetRules(input, body);
+  assertSingleFileAssetRules(input, input.markdown);
 
   const slideSources = splitSlideSources(body);
-  const slides: CompiledSlide[] = slideSources.map((source, index) => compileSlide(input.slug, source, index));
+  const warnings: CompiledDeck["warnings"] = [];
+  const slides: CompiledSlide[] = slideSources.map((source, index) => compileSlide(input.slug, source, index, warnings));
 
   return {
     slug: input.slug,
@@ -25,13 +26,21 @@ export async function compileMarkdown(input: CompileDeckInput): Promise<Compiled
     meta: toDeckFrontmatter(deckAttrs),
     slides,
     assets: [],
-    warnings: [],
+    warnings,
   };
 }
 
-function compileSlide(slug: string, source: string, index: number): CompiledSlide {
+function compileSlide(
+  slug: string,
+  source: string,
+  index: number,
+  warnings: CompiledDeck["warnings"],
+): CompiledSlide {
   const { attrs, body } = readFrontmatter(source);
   const parsed = parseDeck(body);
+  for (const warning of parsed.warnings) {
+    warnings.push({ code: "parse-warning", message: warning, slideIndex: index });
+  }
   const blocks = parsed.slides[0]?.blocks ?? [];
   const components = collectComponents(slug, index, blocks);
   const firstParsedSlide = parsed.slides[0];
@@ -193,12 +202,19 @@ function toSlideFrontmatter(
 
 function assertSingleFileAssetRules(input: CompileDeckInput, markdown: string): void {
   if (input.kind !== "single-file") return;
-  if (/(?:src=|background:\s*)["']?\.\//.test(markdown) || /!\[[^\]]*\]\(\.\//.test(markdown)) {
+  if (hasLocalRelativeAssetReference(markdown)) {
     throw new CompileError(
       `Single-file deck ${input.sourcePath} cannot reference local relative assets.`,
       "single-file-local-asset",
     );
   }
+}
+
+function hasLocalRelativeAssetReference(markdown: string): boolean {
+  return (
+    /(?:src=|background:\s*)["']?(?:\.{1,2}\/|[A-Za-z0-9_-]+\.(?:png|jpe?g|gif|svg|webp))/i.test(markdown) ||
+    /!\[[^\]]*\]\((?:\.{1,2}\/)?[^):\s]+\.(?:png|jpe?g|gif|svg|webp)(?:\s+["'][^"']*["'])?\)/i.test(markdown)
+  );
 }
 
 function isFrontmatterStart(lines: string[], index: number): boolean {
