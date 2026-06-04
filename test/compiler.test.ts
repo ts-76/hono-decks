@@ -178,6 +178,22 @@ background: /public/hero.jpg
         contentType: "image/webp",
       },
     ]);
+    expect(deck.warnings).toEqual(
+      expect.arrayContaining([
+        {
+          code: "external-asset-unverified",
+          message: "Remote asset existence cannot be verified at compile time: https://cdn.example.com/logo.png",
+        },
+        {
+          code: "external-asset-unverified",
+          message: "R2 asset existence cannot be verified at compile time: r2://slides-bucket/hero.webp",
+        },
+      ]),
+    );
+    expect(deck.warnings).not.toContainEqual({
+      code: "external-asset-unverified",
+      message: "Public asset existence cannot be verified at compile time: /public/diagram.svg",
+    });
   });
 
   it("collects external asset references from deck frontmatter assets", async () => {

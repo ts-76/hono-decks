@@ -22,6 +22,8 @@ export async function compileMarkdown(input: CompileDeckInput): Promise<Compiled
   const meta = toDeckFrontmatter(deckAttrs);
   addUnknownFrontmatterWarnings(warnings, meta.meta, "deck");
   const slides: CompiledSlide[] = slideSources.map((source, index) => compileSlide(input.slug, source, index, warnings));
+  const assets = collectExternalAssetRefs(input.markdown, deckAttrsForAssets);
+  addExternalAssetWarnings(warnings, assets);
 
   return {
     slug: input.slug,
@@ -29,7 +31,7 @@ export async function compileMarkdown(input: CompileDeckInput): Promise<Compiled
     kind: input.kind,
     meta,
     slides,
-    assets: collectExternalAssetRefs(input.markdown, deckAttrsForAssets),
+    assets,
     warnings,
   };
 }
@@ -71,6 +73,17 @@ function addUnknownFrontmatterWarnings(
       code: "unknown-frontmatter-key",
       message: `Unknown ${scope} frontmatter key "${key}" is preserved in meta.`,
       ...(slideIndex !== undefined ? { slideIndex } : {}),
+    });
+  }
+}
+
+function addExternalAssetWarnings(warnings: CompiledDeck["warnings"], assets: AssetRef[]): void {
+  for (const asset of assets) {
+    if (asset.type !== "remote" && asset.type !== "r2") continue;
+    const label = asset.type === "r2" ? "R2" : "Remote";
+    warnings.push({
+      code: "external-asset-unverified",
+      message: `${label} asset existence cannot be verified at compile time: ${asset.sourcePath}`,
     });
   }
 }
