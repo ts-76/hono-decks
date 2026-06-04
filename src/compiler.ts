@@ -139,10 +139,36 @@ function parseFrontmatterAttrs(source: string): Record<string, unknown> {
       attrs[key] = block.join("\n").trim();
       continue;
     }
+    if (value.trim() === "") {
+      const nested: string[] = [];
+      i += 1;
+      while (i < lines.length && /^\s+/.test(lines[i])) {
+        nested.push(lines[i]);
+        i += 1;
+      }
+      i -= 1;
+      attrs[key] = parseNestedFrontmatterValue(nested);
+      continue;
+    }
     attrs[key] = parseScalar(value);
   }
 
   return attrs;
+}
+
+function parseNestedFrontmatterValue(lines: string[]): unknown {
+  const meaningful = lines.map((line) => line.trim()).filter(Boolean);
+  if (meaningful.every((line) => line.startsWith("- "))) {
+    return meaningful.map((line) => parseScalar(line.slice(2)));
+  }
+
+  const object: Record<string, unknown> = {};
+  for (const line of meaningful) {
+    const match = /^([A-Za-z_][A-Za-z0-9_-]*):\s*(.*)$/.exec(line);
+    if (!match) continue;
+    object[match[1]] = parseScalar(match[2]);
+  }
+  return object;
 }
 
 function parseScalar(value: string): unknown {
