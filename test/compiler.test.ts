@@ -88,6 +88,11 @@ customSlideKey: kept
           message: 'Unknown slide frontmatter key "customSlideKey" is preserved in meta.',
           slideIndex: 1,
         },
+        {
+          code: "unsupported-mdx-component",
+          message: 'MDX component "Hero" is rendered as a placeholder.',
+          slideIndex: 0,
+        },
       ]),
     );
   });

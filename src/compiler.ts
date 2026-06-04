@@ -49,6 +49,7 @@ function compileSlide(
   }
   const blocks = parsed.slides[0]?.blocks ?? [];
   const components = collectComponents(slug, index, blocks);
+  addComponentPlaceholderWarnings(warnings, components, index);
   const firstParsedSlide = parsed.slides[0];
   const meta = toSlideFrontmatter(attrs, firstParsedSlide?.title, firstParsedSlide?.layout, firstParsedSlide?.className);
   addUnknownFrontmatterWarnings(warnings, meta.meta, "slide", index);
@@ -73,6 +74,20 @@ function addUnknownFrontmatterWarnings(
       code: "unknown-frontmatter-key",
       message: `Unknown ${scope} frontmatter key "${key}" is preserved in meta.`,
       ...(slideIndex !== undefined ? { slideIndex } : {}),
+    });
+  }
+}
+
+function addComponentPlaceholderWarnings(
+  warnings: CompiledDeck["warnings"],
+  components: ComponentPlaceholder[],
+  slideIndex: number,
+): void {
+  for (const component of components) {
+    warnings.push({
+      code: "unsupported-mdx-component",
+      message: `MDX component "${component.name}" is rendered as a placeholder.`,
+      slideIndex,
     });
   }
 }
