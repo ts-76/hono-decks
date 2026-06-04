@@ -16,6 +16,7 @@ export interface DevDeckRuntimeInput {
   localDeckIO: LocalDeckIO;
   compiler: DeckCompiler;
   previewEvents?: PreviewEventHub;
+  mountPath?: string;
 }
 
 export interface DevDeckRuntime {
@@ -72,7 +73,7 @@ export function createDevDeckRuntime(input: DevDeckRuntimeInput): DevDeckRuntime
       }
 
       if (current && isAssetPath(event.path)) {
-        const next = await applyAssetChange(input.localDeckIO, current, event);
+        const next = await applyAssetChange(input.localDeckIO, current, event, input.mountPath);
         if (next) decks.set(event.slug, next);
         publishUpdate(input.previewEvents, event);
         return;
@@ -130,9 +131,10 @@ async function applyAssetChange(
   localDeckIO: LocalDeckIO,
   deck: CompiledDeck,
   event: DeckFileChange,
+  mountPath?: string,
 ): Promise<CompiledDeck | undefined> {
   const asset = deck.assets.find((candidate) => candidate.sourcePath === event.path);
-  if (!asset) return addNewLocalAsset(localDeckIO, deck, event);
+  if (!asset) return addNewLocalAsset(localDeckIO, deck, event, mountPath);
 
   if (event.type === "deleted") {
     return {
@@ -157,6 +159,7 @@ async function addNewLocalAsset(
   localDeckIO: LocalDeckIO,
   deck: CompiledDeck,
   event: DeckFileChange,
+  mountPath?: string,
 ): Promise<CompiledDeck> {
   if (event.type === "deleted" || !event.slug || !localDeckIO.readAsset) return deck;
 
@@ -169,7 +172,7 @@ async function addNewLocalAsset(
       ...deck.assets,
       {
         sourcePath: event.path,
-        publicPath: publicPathForLocalAsset(event.slug, event.path),
+        publicPath: publicPathForLocalAsset(event.slug, event.path, mountPath),
         type: "local",
         contentType: contentTypeForPath(event.path),
         body: body as BodyInit,
@@ -197,12 +200,17 @@ function isAssetPath(path: string): boolean {
   return path.includes("/assets/");
 }
 
-function publicPathForLocalAsset(slug: string, sourcePath: string): string {
+function publicPathForLocalAsset(slug: string, sourcePath: string, mountPath = "/decks"): string {
   const marker = `/${slug}/assets/`;
   const normalized = sourcePath.replaceAll("\\", "/");
   const markerIndex = normalized.indexOf(marker);
   const assetPath = markerIndex === -1 ? (normalized.split("/").at(-1) ?? normalized) : normalized.slice(markerIndex + marker.length);
-  return `/decks/${encodeURIComponent(slug)}/assets/${assetPath.split("/").map(encodeURIComponent).join("/")}`;
+  return `${normalizeMountPath(mountPath)}/${encodeURIComponent(slug)}/assets/${assetPath.split("/").map(encodeURIComponent).join("/")}`;
+}
+
+function normalizeMountPath(value: string): string {
+  const withLeadingSlash = value.startsWith("/") ? value : `/${value}`;
+  return withLeadingSlash.replace(/\/$/, "");
 }
 
 function contentTypeForPath(path: string): string | undefined {
