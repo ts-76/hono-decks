@@ -178,11 +178,13 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
     const slug = c.req.param("slug");
     const deck = await options.source.getCompiledDeck(c, slug);
     if (!deck || (!isDevEnabled(options) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
+    const mountPath = stripPathSuffix(c.req.path, `/${slug}`);
     return c.html(
       renderCompiledDeckPage({
         deck,
-        mountPath: stripPathSuffix(c.req.path, `/${slug}`),
+        mountPath,
         style: options.style,
+        liveReloadPath: isDevEnabled(options) ? `${mountPath}/${encodeURIComponent(slug)}/events` : undefined,
       }),
     );
   });
