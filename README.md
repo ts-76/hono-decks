@@ -93,6 +93,7 @@ const runtime = createDevDeckRuntime({
   localDeckIO,
   previewEvents,
   compiler: { compileMarkdown },
+  mountPath: "/slides",
 });
 
 runtime.start();

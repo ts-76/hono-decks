@@ -143,6 +143,35 @@ describe("createDevDeckRuntime", () => {
     });
   });
 
+  it("uses the configured mount path for new local asset public paths", async () => {
+    const runtime = createDevDeckRuntime({
+      initialDecks: [initialDeck],
+      localDeckIO: createMemoryDeckIO(
+        { deck1: "# Before" },
+        undefined,
+        { "decks/deck1/assets/new.png": new Uint8Array([1]) },
+      ),
+      compiler: {
+        async compileMarkdown() {
+          throw new Error("asset creates should not recompile markdown");
+        },
+      },
+      mountPath: "/slides",
+    });
+
+    await runtime.handleFileChange({ type: "created", path: "decks/deck1/assets/new.png", slug: "deck1" });
+
+    await expect(runtime.source.getCompiledDeck({} as never, "deck1")).resolves.toMatchObject({
+      assets: [
+        {
+          sourcePath: "decks/deck1/assets/new.png",
+          publicPath: "/slides/deck1/assets/new.png",
+          type: "local",
+        },
+      ],
+    });
+  });
+
   it("removes an existing local asset after an asset file delete", async () => {
     const runtime = createDevDeckRuntime({
       initialDecks: [
