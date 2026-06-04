@@ -2,6 +2,7 @@ name = "hono-slides"
 main = "src/index.ts"
 compatibility_date = "2026-06-01"
 compatibility_flags = ["nodejs_compat"]
+worker_loaders = [{ binding = "LOADER" }]
 
 [assets]
 directory = "./public"

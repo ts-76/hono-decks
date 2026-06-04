@@ -1,6 +1,7 @@
 export interface Env {
   ASSETS: Fetcher;
   SlideAssistant: DurableObjectNamespace;
+  LOADER: WorkerLoader;
   AI?: {
     run(model: string, input: unknown): Promise<unknown>;
   };
