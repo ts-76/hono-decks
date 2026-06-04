@@ -329,6 +329,7 @@ describe("honoSlidesRouter", () => {
         agentInstanceName: "deck-5-deck1-session-9-session-1",
         mode: "code",
         baseMarkdownHash: "mdx-b5765d09",
+        sourcePath: "decks/deck1/deck.mdx",
         markdown: "# Raw Deck",
         instruction: "Improve this",
         activeSlide: 0,
