@@ -182,7 +182,7 @@ describe("honoSlidesRouter", () => {
       }),
     );
 
-    const response = await app.request("/decks/deck1/events");
+    const response = await app.request("/decks/deck1/events?once=1");
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/event-stream");
@@ -204,7 +204,7 @@ describe("honoSlidesRouter", () => {
       }),
     );
 
-    const response = await app.request("/decks/deck1/events");
+    const response = await app.request("/decks/deck1/events?once=1");
     const text = await response.text();
 
     expect(response.status).toBe(200);
@@ -229,12 +229,12 @@ describe("honoSlidesRouter", () => {
       }),
     );
 
-    await app.request("/decks/deck1/events");
+    await app.request("/decks/deck1/events?once=1");
 
-    const deck1Again = await app.request("/decks/deck1/events");
+    const deck1Again = await app.request("/decks/deck1/events?once=1");
     expect(await deck1Again.text()).not.toContain("event: deck:updated");
 
-    const other = await app.request("/decks/other/events");
+    const other = await app.request("/decks/other/events?once=1");
     const otherText = await other.text();
     expect(otherText).toContain("event: deck:updated");
     expect(otherText).toContain('"slug":"other"');
@@ -258,12 +258,42 @@ describe("honoSlidesRouter", () => {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ markdown: "# After" }),
     });
-    const events = await app.request("/decks/deck1/events");
+    const events = await app.request("/decks/deck1/events?once=1");
     const text = await events.text();
 
     expect(save.status).toBe(200);
     expect(text).toContain("event: deck:updated");
     expect(text).toContain('"source":"save"');
+  });
+
+  it("keeps the development event stream open for future preview events", async () => {
+    const previewEvents = createPreviewEventHub();
+    const app = new Hono();
+    app.route(
+      "/decks",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: true,
+        localDeckIO: createMemoryDeckIO({ deck1: "# Raw Deck" }),
+        previewEvents,
+      }),
+    );
+
+    const response = await app.request("/decks/deck1/events");
+    const reader = response.body?.getReader();
+    expect(reader).toBeTruthy();
+
+    const decoder = new TextDecoder();
+    const first = await reader!.read();
+    expect(decoder.decode(first.value)).toContain("event: ready");
+
+    previewEvents.publish({ type: "deck:updated", slug: "deck1", data: { source: "watch" } });
+    const second = await reader!.read();
+    expect(decoder.decode(second.value)).toContain("event: deck:updated");
+
+    await reader!.cancel();
+    const replay = await app.request("/decks/deck1/events?once=1");
+    expect(await replay.text()).not.toContain("event: deck:updated");
   });
 
   it("publishes a save preview update after LocalDeckIO write completes", async () => {
