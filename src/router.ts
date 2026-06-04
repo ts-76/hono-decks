@@ -33,7 +33,7 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
   const router = new Hono();
 
   router.get("/", async (c) => {
-    const decks = await options.source.listDecks(c);
+    const decks = (await options.source.listDecks(c)).filter((deck) => isDevEnabled(options) || !deck.draft);
     return c.html(renderDeckIndex(decks, c.req.path));
   });
 
@@ -164,7 +164,7 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
   router.get("/:slug", async (c) => {
     const slug = c.req.param("slug");
     const deck = await options.source.getCompiledDeck(c, slug);
-    if (!deck) return c.json({ error: "Deck not found", slug }, 404);
+    if (!deck || (!isDevEnabled(options) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
     return c.html(
       renderCompiledDeckPage({
         deck,
