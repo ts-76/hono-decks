@@ -40,6 +40,10 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
   router.get("/:slug/assets/*", async (c) => {
     const slug = c.req.param("slug");
     const assetPath = extractAssetPath(c.req.path, slug);
+    const deck = await options.source.getCompiledDeck(c, slug);
+    if (!deck || (!isDevEnabled(options) && deck.meta.draft)) {
+      return c.json({ error: "Asset not found", slug, assetPath }, 404);
+    }
     const response = await options.source.getAsset?.(c, slug, assetPath);
     if (!response) return c.json({ error: "Asset not found", slug, assetPath }, 404);
     return response;

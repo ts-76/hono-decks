@@ -43,6 +43,15 @@ describe("honoSlidesRouter", () => {
       ...deck,
       slug: "draft",
       meta: { ...deck.meta, title: "Draft Deck", draft: true },
+      assets: [
+        {
+          sourcePath: "decks/draft/assets/image.png",
+          publicPath: "/slides/draft/assets/image.png",
+          type: "local",
+          contentType: "image/png",
+          body: new Uint8Array([1, 2, 3]),
+        },
+      ],
     } satisfies CompiledDeck;
     const app = new Hono();
     app.route("/slides", honoSlidesRouter({ source: manifestDeckSource({ decks: [deck, draftDeck] }), dev: false }));
@@ -55,11 +64,43 @@ describe("honoSlidesRouter", () => {
     expect(await response.json()).toEqual({ error: "Deck not found", slug: "draft" });
   });
 
+  it("hides draft deck assets in production", async () => {
+    const draftDeck = {
+      ...deck,
+      slug: "draft",
+      meta: { ...deck.meta, title: "Draft Deck", draft: true },
+      assets: [
+        {
+          sourcePath: "decks/draft/assets/image.png",
+          publicPath: "/slides/draft/assets/image.png",
+          type: "local",
+          contentType: "image/png",
+          body: new Uint8Array([1, 2, 3]),
+        },
+      ],
+    } satisfies CompiledDeck;
+    const app = new Hono();
+    app.route("/slides", honoSlidesRouter({ source: manifestDeckSource({ decks: [draftDeck] }), dev: false }));
+
+    const response = await app.request("/slides/draft/assets/image.png");
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: "Asset not found", slug: "draft", assetPath: "image.png" });
+  });
+
   it("shows draft decks in development mode", async () => {
     const draftDeck = {
       ...deck,
       slug: "draft",
       meta: { ...deck.meta, title: "Draft Deck", draft: true },
+      assets: [
+        {
+          sourcePath: "decks/draft/assets/image.png",
+          publicPath: "/slides/draft/assets/image.png",
+          type: "local",
+          contentType: "image/png",
+          body: new Uint8Array([1, 2, 3]),
+        },
+      ],
     } satisfies CompiledDeck;
     const app = new Hono();
     app.route(
@@ -76,6 +117,9 @@ describe("honoSlidesRouter", () => {
 
     const response = await app.request("/slides/draft");
     expect(response.status).toBe(200);
+
+    const asset = await app.request("/slides/draft/assets/image.png");
+    expect(asset.status).toBe(200);
   });
 
   it("serves local deck assets and returns 404 for missing slugs", async () => {
