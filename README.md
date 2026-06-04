@@ -19,6 +19,42 @@ npm run dev
 
 ブラウザで `http://localhost:8787` を開きます。
 
+## Hono middleware として使う
+
+`honoSlides()` を任意の Hono route に mount できます。
+
+```ts
+import { Hono } from "hono";
+import { honoSlides } from "hono-slides";
+
+const app = new Hono();
+
+app.use("/deck", honoSlides({
+  markdown: `# Hello\n\n---\n\n## Second`,
+}));
+
+export default app;
+```
+
+下流 handler で自分の API レスポンスにしたい場合は `respond: false` を使います。
+
+```ts
+app.post("/api/preview", honoSlides({ respond: false }), (c) => {
+  return c.json({
+    deck: c.var.slideDeck,
+    html: c.var.slideHtml,
+  });
+});
+```
+
+`markdown` には文字列だけでなく loader 関数も渡せます。
+
+```ts
+app.get("/decks/:id", honoSlides({
+  markdown: async (c) => await loadMarkdownFromD1(c.req.param("id")),
+}));
+```
+
 ## Cloudflare Agents の差し込み口
 
 この PoC は `agents` SDK の `SlideAssistant` Durable Object を export しています。

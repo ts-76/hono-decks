@@ -1,11 +1,10 @@
 import { Hono } from "hono";
 import { routeAgentRequest } from "agents";
 import { buildSuggestion, SlideAssistant } from "./agent";
-import { parseDeck } from "./parser";
-import { renderDeck } from "./render";
+import { honoSlides } from "./middleware";
 import type { AgentSuggestRequest, Env } from "./types";
 
-export { SlideAssistant };
+export { SlideAssistant, honoSlides };
 
 const sampleDeck = `title: Hono Slides
 layout: cover
@@ -41,11 +40,10 @@ app.use("/agents/*", async (c, next) => {
 });
 
 app.get("/", (c) => c.html(editorHtml(sampleDeck)));
+app.get("/deck", honoSlides({ markdown: sampleDeck, title: "Hono Slides" }));
 
-app.post("/api/parse", async (c) => {
-  const { markdown } = (await c.req.json()) as { markdown?: string };
-  const deck = parseDeck(markdown ?? "");
-  return c.json({ deck, html: renderDeck(deck) });
+app.post("/api/parse", honoSlides({ respond: false }), (c) => {
+  return c.json({ deck: c.var.slideDeck, html: c.var.slideHtml });
 });
 
 app.post("/api/agent/suggest", async (c) => {
