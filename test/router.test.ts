@@ -104,6 +104,36 @@ describe("honoSlidesRouter", () => {
     expect(await response.text()).toContain("# Raw Deck");
   });
 
+  it("enables development routes in auto mode when LocalDeckIO is configured", async () => {
+    const app = new Hono();
+    app.route(
+      "/decks",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: "auto",
+        localDeckIO: createMemoryDeckIO({ deck1: "# Auto Raw Deck" }),
+      }),
+    );
+
+    const response = await app.request("/decks/deck1/edit");
+
+    expect(response.status).toBe(200);
+    expect(await response.text()).toContain("# Auto Raw Deck");
+  });
+
+  it("keeps development routes disabled in auto mode without LocalDeckIO", async () => {
+    const app = new Hono();
+    app.route(
+      "/decks",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: "auto",
+      }),
+    );
+
+    expect((await app.request("/decks/deck1/edit")).status).toBe(404);
+  });
+
   it("saves raw markdown through LocalDeckIO when dev is true", async () => {
     const writes: Array<{ slug: string; markdown: string }> = [];
     const app = new Hono();
