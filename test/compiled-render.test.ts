@@ -48,6 +48,12 @@ describe("compiled deck rendering", () => {
     expect(html).toContain('data-action="next"');
     expect(html).toContain('data-action="fullscreen"');
     expect(html).toContain('data-action="presenter"');
+    expect(html).toContain('data-action="overview"');
+    expect(html).toContain('document.addEventListener("keydown"');
+    expect(html).toContain("requestFullscreen");
+    expect(html).toContain("data-presenter-mode");
+    expect(html).toContain("data-overview-mode");
+    expect(html).toContain("setInterval");
     expect(html).toContain("Unsupported component");
     expect(html).not.toContain("/edit");
   });
