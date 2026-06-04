@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
+import { createDeckAgentInstanceName, createDeckMarkdownHash, parseDeckAgentMode } from "./agent-contract";
+import type { DeckAgentChatResult, DeckAgentMode } from "./agent-contract";
 import { renderCompiledDeckPage } from "./compiled-render";
 import type { DeckSource, LocalDeckIO } from "./deck";
 import type { PreviewEvent, PreviewEventHub } from "./preview-events";
@@ -7,6 +9,9 @@ import type { PreviewEvent, PreviewEventHub } from "./preview-events";
 export interface HonoSlidesAgentChatInput {
   slug: string;
   sessionId: string;
+  agentInstanceName: string;
+  mode: DeckAgentMode;
+  baseMarkdownHash: string;
   markdown: string;
   instruction: string;
   activeSlide?: number;
@@ -17,7 +22,7 @@ export interface HonoSlidesRouterOptions {
   dev?: boolean | "auto";
   localDeckIO?: LocalDeckIO;
   previewEvents?: PreviewEventHub;
-  agentChat?(input: HonoSlidesAgentChatInput, c: Context): Promise<unknown> | unknown;
+  agentChat?(input: HonoSlidesAgentChatInput, c: Context): Promise<DeckAgentChatResult | Response> | DeckAgentChatResult | Response;
   style?: string;
 }
 
@@ -83,11 +88,16 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
         sessionId?: unknown;
         instruction?: unknown;
         activeSlide?: unknown;
+        mode?: unknown;
       };
+      const sessionId = typeof payload.sessionId === "string" && payload.sessionId ? payload.sessionId : "default";
       const result = await options.agentChat(
         {
           slug,
-          sessionId: typeof payload.sessionId === "string" && payload.sessionId ? payload.sessionId : "default",
+          sessionId,
+          agentInstanceName: createDeckAgentInstanceName({ slug, sessionId }),
+          mode: parseDeckAgentMode(payload.mode),
+          baseMarkdownHash: createDeckMarkdownHash(markdown),
           markdown,
           instruction: typeof payload.instruction === "string" ? payload.instruction : "",
           activeSlide: typeof payload.activeSlide === "number" ? payload.activeSlide : undefined,
