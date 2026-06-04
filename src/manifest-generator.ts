@@ -53,10 +53,13 @@ async function buildAssetRefs(
 ): Promise<AssetRef[]> {
   return Promise.all(
     assetPaths.map(async (sourcePath) => {
-      const publicPath = `${normalizeMountPath(input.mountPath ?? `/${input.root}`)}/${slug}/assets/${assetName(sourcePath)}`;
       return {
         sourcePath,
-        publicPath,
+        publicPath: `${normalizeMountPath(input.mountPath ?? `/${input.root}`)}/${encodeURIComponent(slug)}/assets/${assetName(
+          sourcePath,
+          input.root,
+          slug,
+        )}`,
         type: "local",
         contentType: contentTypeForPath(sourcePath),
         body: input.readBinary ? ((await input.readBinary(sourcePath)) as BodyInit) : undefined,
@@ -65,15 +68,22 @@ async function buildAssetRefs(
   );
 }
 
-function assetName(sourcePath: string): string {
-  const marker = "/assets/";
-  const index = sourcePath.indexOf(marker);
-  return index === -1 ? sourcePath.split("/").at(-1) ?? sourcePath : sourcePath.slice(index + marker.length);
+function assetName(sourcePath: string, root: string, slug: string): string {
+  const normalizedPath = normalizePath(sourcePath);
+  const prefix = `${normalizePath(root).replace(/\/$/, "")}/${slug}/assets/`;
+  const relative = normalizedPath.startsWith(prefix)
+    ? normalizedPath.slice(prefix.length)
+    : (normalizedPath.split("/").at(-1) ?? normalizedPath);
+  return relative.split("/").map(encodeURIComponent).join("/");
 }
 
 function normalizeMountPath(value: string): string {
   const withLeadingSlash = value.startsWith("/") ? value : `/${value}`;
   return withLeadingSlash.replace(/\/$/, "");
+}
+
+function normalizePath(path: string): string {
+  return path.replaceAll("\\", "/").replace(/^\.\/+/, "").replace(/\/+/g, "/");
 }
 
 function contentTypeForPath(path: string): string | undefined {

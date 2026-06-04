@@ -64,6 +64,27 @@ title: Deck Two
     });
   });
 
+  it("encodes local asset URL segments relative to the deck assets directory", async () => {
+    const files = new Map<string, string | Uint8Array>([
+      ["content/assets/decks/deck1/deck.mdx", "# Deck One"],
+      ["content/assets/decks/deck1/assets/charts/my chart#1.svg", new Uint8Array([1])],
+    ]);
+
+    const manifest = await buildDeckManifest({
+      root: "content/assets/decks",
+      paths: [...files.keys()],
+      readText: async (path) => String(files.get(path)),
+      readBinary: async (path) => files.get(path) as Uint8Array,
+      mountPath: "/slides",
+    });
+
+    expect(manifest.decks[0].assets[0]).toMatchObject({
+      sourcePath: "content/assets/decks/deck1/assets/charts/my chart#1.svg",
+      publicPath: "/slides/deck1/assets/charts/my%20chart%231.svg",
+      contentType: "image/svg+xml",
+    });
+  });
+
   it("propagates slug conflict errors from file resolution", async () => {
     await expect(
       buildDeckManifest({
