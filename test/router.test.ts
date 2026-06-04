@@ -198,6 +198,7 @@ describe("honoSlidesRouter", () => {
     expect(html).toContain('fetch(saveUrl');
     expect(html).toContain('fetch(agentUrl');
     expect(html).toContain('fetch(applyUrl');
+    expect(html).toContain("markdown.value = data.markdown");
     expect(html).toContain("/agent/chat");
     expect(html).toContain("/apply");
   });
@@ -583,7 +584,12 @@ describe("honoSlidesRouter", () => {
     });
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ ok: true, slug: "deck1", baseMarkdownHash: "mdx-b5765d09" });
+    expect(await response.json()).toEqual({
+      ok: true,
+      slug: "deck1",
+      baseMarkdownHash: "mdx-b5765d09",
+      markdown: "# Applied Deck",
+    });
     expect(writes).toEqual([{ slug: "deck1", markdown: "# Applied Deck" }]);
     expect(previewEvents.drain("deck1")).toEqual([
       { type: "deck:updated", slug: "deck1", data: { source: "apply" } },
@@ -655,6 +661,9 @@ describe("honoSlidesRouter", () => {
 
     expect(response.status).toBe(200);
     expect(writes).toEqual([{ slug: "deck1", markdown: "# Raw Deck\n\nBetter body" }]);
+    await expect(response.json()).resolves.toMatchObject({
+      markdown: "# Raw Deck\n\nBetter body",
+    });
   });
 
   it("rejects stale proposal hashes without writing", async () => {
