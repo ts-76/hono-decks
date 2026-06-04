@@ -19,6 +19,8 @@ export type {
   DeckAgentPatch,
   DeckAgentProposalValidation,
 } from "./agent-contract";
+export { applyDeckAgentProposal } from "./agent-apply";
+export type { ApplyDeckAgentProposalResult } from "./agent-apply";
 export { createDeckAgentToolProvider } from "./agent-tools";
 export type { CompiledDeckSummary, CompiledSlideSummary, CreateDeckAgentToolProviderInput } from "./agent-tools";
 export { honoSlidesRouter } from "./router";

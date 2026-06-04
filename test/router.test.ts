@@ -336,6 +336,165 @@ describe("honoSlidesRouter", () => {
     ]);
   });
 
+  it("applies a replacement proposal through LocalDeckIO when dev is true", async () => {
+    const writes: Array<{ slug: string; markdown: string }> = [];
+    const previewEvents = createPreviewEventHub();
+    const app = new Hono();
+    app.route(
+      "/decks",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: true,
+        localDeckIO: createMemoryDeckIO({ deck1: "# Raw Deck" }, writes),
+        previewEvents,
+      }),
+    );
+
+    const response = await app.request("/decks/deck1/apply", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        proposal: {
+          type: "replacement",
+          baseMarkdownHash: "mdx-b5765d09",
+          markdown: "# Applied Deck",
+        },
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true, slug: "deck1", baseMarkdownHash: "mdx-b5765d09" });
+    expect(writes).toEqual([{ slug: "deck1", markdown: "# Applied Deck" }]);
+    expect(previewEvents.drain("deck1")).toEqual([
+      { type: "deck:updated", slug: "deck1", data: { source: "apply" } },
+    ]);
+  });
+
+  it("applies a patch proposal through LocalDeckIO when dev is true", async () => {
+    const writes: Array<{ slug: string; markdown: string }> = [];
+    const app = new Hono();
+    app.route(
+      "/decks",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: true,
+        localDeckIO: createMemoryDeckIO({ deck1: "# Raw Deck\n\nBody" }, writes),
+      }),
+    );
+
+    const response = await app.request("/decks/deck1/apply", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        proposal: {
+          type: "patch",
+          baseMarkdownHash: "mdx-6e129419",
+          patches: [{ path: "decks/deck1/deck.mdx", oldText: "Body", newText: "Better body" }],
+        },
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(writes).toEqual([{ slug: "deck1", markdown: "# Raw Deck\n\nBetter body" }]);
+  });
+
+  it("rejects stale proposal hashes without writing", async () => {
+    const writes: Array<{ slug: string; markdown: string }> = [];
+    const app = new Hono();
+    app.route(
+      "/decks",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: true,
+        localDeckIO: createMemoryDeckIO({ deck1: "# Raw Deck" }, writes),
+      }),
+    );
+
+    const response = await app.request("/decks/deck1/apply", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        proposal: {
+          type: "replacement",
+          baseMarkdownHash: "mdx-stale",
+          markdown: "# Applied Deck",
+        },
+      }),
+    });
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      error: "Proposal targets mdx-stale but current deck is mdx-b5765d09.",
+    });
+    expect(writes).toEqual([]);
+  });
+
+  it("rejects ambiguous patch proposals without writing", async () => {
+    const writes: Array<{ slug: string; markdown: string }> = [];
+    const app = new Hono();
+    app.route(
+      "/decks",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: true,
+        localDeckIO: createMemoryDeckIO({ deck1: "Same\nSame" }, writes),
+      }),
+    );
+
+    const response = await app.request("/decks/deck1/apply", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        proposal: {
+          type: "patch",
+          baseMarkdownHash: "mdx-51fcc1d",
+          patches: [{ path: "decks/deck1/deck.mdx", oldText: "Same", newText: "Different" }],
+        },
+      }),
+    });
+
+    expect(response.status).toBe(422);
+    expect(writes).toEqual([]);
+  });
+
+  it("rejects patch proposals for a different source path", async () => {
+    const writes: Array<{ slug: string; markdown: string }> = [];
+    const app = new Hono();
+    app.route(
+      "/decks",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: true,
+        localDeckIO: createMemoryDeckIO({ deck1: "# Raw Deck" }, writes),
+      }),
+    );
+
+    const response = await app.request("/decks/deck1/apply", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        proposal: {
+          type: "patch",
+          baseMarkdownHash: "mdx-b5765d09",
+          patches: [{ path: "decks/other.mdx", oldText: "# Raw Deck", newText: "# Other" }],
+        },
+      }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "Patch path must match current deck source: decks/deck1/deck.mdx" });
+    expect(writes).toEqual([]);
+  });
+
+  it("does not expose apply route when dev is false", async () => {
+    const app = new Hono();
+    app.route("/decks", honoSlidesRouter({ source: manifestDeckSource({ decks: [deck] }), dev: false }));
+
+    const response = await app.request("/decks/deck1/apply", { method: "POST" });
+
+    expect(response.status).toBe(404);
+  });
+
   it("exports the production router from the public module", async () => {
     const mod = await import("../src/mod");
     expect(typeof mod.honoSlidesRouter).toBe("function");
@@ -345,6 +504,7 @@ describe("honoSlidesRouter", () => {
     expect(typeof mod.createDeckAgentInstanceName).toBe("function");
     expect(typeof mod.parseDeckAgentMode).toBe("function");
     expect(typeof mod.createDeckAgentToolProvider).toBe("function");
+    expect(typeof mod.applyDeckAgentProposal).toBe("function");
   });
 });
 
