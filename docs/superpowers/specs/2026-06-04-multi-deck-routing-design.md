@@ -234,7 +234,22 @@ Agent requests include:
 - compiled deck summary when useful
 - user instruction/message
 
-Agent suggestions do not directly save files. Saving always goes through the Hono save route and `LocalDeckIO`.
+The Agent is allowed to edit the slide deck by producing a structured proposal, patch set, or replacement draft. It does not directly persist edits. Saving always goes through the Hono save route and `LocalDeckIO`.
+
+Workers AI Code Mode can be used inside the Agent for multi-step editing workflows. Code Mode is for orchestration, not persistence. It can compose read, inspect, compile, validate, and patch-generation tools when an edit needs loops, conditionals, or multiple tool calls.
+
+Code Mode tools:
+
+- `readDeck`
+- `getCompiledDeck`
+- `compileMarkdown`
+- `inspectSlides`
+- `createPatch`
+- `validatePatch`
+
+Code Mode does not receive a direct filesystem write tool. User-approved changes are sent back to Hono as a patch set or raw MDX update, then persisted through the save route.
+
+Simple chat tasks can use normal Agent tool calling. Code Mode is reserved for deck-wide or multi-step edits, such as updating frontmatter and notes across several slides, validating the resulting compile output, or repairing asset references after inspection.
 
 ## Error Handling
 
