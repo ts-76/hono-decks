@@ -16,6 +16,10 @@ export function renderBlock(block: SlideBlock): string {
       )}</code></pre>`;
     case "blockquote":
       return `<blockquote>${inline(block.text)}</blockquote>`;
+    case "image":
+      return `<img src="${escapeHtml(block.src)}" alt="${escapeHtml(block.alt)}"${
+        block.title ? ` title="${escapeHtml(block.title)}"` : ""
+      } />`;
     case "component":
       return `<div class="mdx-component" data-component="${escapeHtml(block.name)}"><strong>&lt;${escapeHtml(
         block.name,

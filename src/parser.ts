@@ -87,6 +87,18 @@ function parseBlocks(body: string, warnings: string[], slideIndex: number): Slid
       continue;
     }
 
+    const image = /^!\[([^\]]*)\]\((\S+)(?:\s+["']([^"']+)["'])?\)\s*$/.exec(line.trim());
+    if (image) {
+      blocks.push({
+        type: "image",
+        alt: image[1],
+        src: image[2],
+        ...(image[3] ? { title: image[3] } : {}),
+      });
+      i += 1;
+      continue;
+    }
+
     const component = /^<([A-Z][A-Za-z0-9_]*)([^>]*)\/>\s*$/.exec(line.trim());
     if (component) {
       blocks.push({
@@ -125,6 +137,7 @@ function parseBlocks(body: string, warnings: string[], slideIndex: number): Slid
       i < lines.length &&
       lines[i].trim() !== "" &&
       !/^(#{1,3})\s+/.test(lines[i]) &&
+      !/^!\[[^\]]*\]\(\S+(?:\s+["'][^"']+["'])?\)\s*$/.test(lines[i].trim()) &&
       !/^```/.test(lines[i]) &&
       !/^\s*(?:[-*+] |\d+\. )/.test(lines[i]) &&
       !/^>\s?/.test(lines[i]) &&

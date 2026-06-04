@@ -57,4 +57,30 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("Unsupported component");
     expect(html).not.toContain("/edit");
   });
+
+  it("rewrites local relative asset image sources to manifest public paths", () => {
+    const html = renderCompiledDeckPage({
+      deck: {
+        ...deck,
+        slides: [
+          {
+            ...deck.slides[0],
+            html: '<img src="./assets/image.png" alt="Local" />',
+          },
+        ],
+        assets: [
+          {
+            sourcePath: "decks/deck1/assets/image.png",
+            publicPath: "/slides/deck1/assets/image.png",
+            type: "local",
+            contentType: "image/png",
+          },
+        ],
+      },
+      mountPath: "/slides",
+    });
+
+    expect(html).toContain('src="/slides/deck1/assets/image.png"');
+    expect(html).not.toContain('src="./assets/image.png"');
+  });
 });
