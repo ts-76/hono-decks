@@ -1,4 +1,5 @@
 import { Agent } from "agents";
+import { applyDeckAgentProposal } from "./agent-apply";
 import { createDeckMarkdownHash } from "./agent-contract";
 import type { DeckAgentChatResult } from "./agent-contract";
 import type { HonoSlidesAgentChatInput } from "./router";
@@ -66,7 +67,7 @@ export async function buildChatResult(
   const generateCodeModeResult = options.generateCodeModeResult ?? generateWithWorkersAICodeMode;
   try {
     const codeModeResult = await generateCodeModeResult(env, payload);
-    if (codeModeResult) return codeModeResult;
+    if (codeModeResult && isUsableCodeModeResult(codeModeResult, payload)) return codeModeResult;
   } catch {
     // Code Mode is a best-effort assistant path. Saving still happens through Hono apply/save routes.
   }
@@ -82,13 +83,22 @@ export async function buildChatResult(
       summary: instruction,
       patches: [
         {
-          path: payload.sourcePath ?? `decks/${payload.slug}.mdx`,
+          path: expectedSourcePath(payload),
           oldText: payload.markdown,
           newText: `${payload.markdown}\n\n<!-- ${instruction} -->`,
         },
       ],
     },
   };
+}
+
+function isUsableCodeModeResult(result: DeckAgentChatResult, payload: HonoSlidesAgentChatInput): boolean {
+  if (!result.proposal) return false;
+  return applyDeckAgentProposal(payload.markdown, result.proposal, { sourcePath: expectedSourcePath(payload) }).ok;
+}
+
+function expectedSourcePath(payload: Pick<HonoSlidesAgentChatInput, "slug" | "sourcePath">): string {
+  return payload.sourcePath ?? `decks/${payload.slug}.mdx`;
 }
 
 export async function buildSuggestion(env: Env, payload: AgentSuggestRequest): Promise<AgentSuggestResponse> {

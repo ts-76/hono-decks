@@ -52,7 +52,7 @@ describe("Node filesystem deck adapter", () => {
       expect(output).toContain('import type { DeckManifest } from "hono-slides";');
       expect(output).toContain("export const deckManifest =");
       expect(output).toContain('"slug": "deck1"');
-      expect(output).not.toContain("body");
+      expect(output).toContain('"body": new Uint8Array([1, 2, 3])');
     } finally {
       await rm(cwd, { recursive: true, force: true });
     }
@@ -74,7 +74,7 @@ describe("Node filesystem deck adapter", () => {
       const output = await readFile(join(cwd, "src", "generated", "hono-slides-manifest.ts"), "utf8");
       expect(output).toContain("export const deckManifest =");
       expect(output).toContain('"publicPath": "/slides/deck1/assets/my%20image%231.svg"');
-      expect(output).not.toContain("body");
+      expect(output).toContain('"body": new Uint8Array([1, 2, 3])');
     } finally {
       await rm(cwd, { recursive: true, force: true });
     }

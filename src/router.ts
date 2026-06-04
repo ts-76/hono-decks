@@ -156,7 +156,7 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
       const deck = await options.source.getCompiledDeck(c, slug);
 
       const payload = (await c.req.json()) as { proposal?: unknown };
-      const applied = applyDeckAgentProposal(markdown, payload.proposal, { sourcePath: deck?.sourcePath });
+      const applied = applyDeckAgentProposal(markdown, payload.proposal, { sourcePath: deck?.sourcePath ?? defaultSourcePath(slug) });
       if (!applied.ok) return c.json({ error: applied.error }, applied.status);
 
       await options.localDeckIO.writeMarkdown(slug, applied.markdown);
@@ -183,6 +183,10 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
 
 function isDevEnabled(options: HonoSlidesRouterOptions): boolean {
   return options.dev === true || (options.dev === "auto" && Boolean(options.localDeckIO));
+}
+
+function defaultSourcePath(slug: string): string {
+  return `decks/${slug}.mdx`;
 }
 
 function extractAssetPath(path: string, slug: string): string {

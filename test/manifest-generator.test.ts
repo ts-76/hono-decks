@@ -105,7 +105,7 @@ title: Deck Two
 });
 
 describe("emitDeckManifestModule", () => {
-  it("emits an importable TypeScript manifest module without binary bodies", async () => {
+  it("emits an importable TypeScript manifest module with local asset bytes", async () => {
     const manifest = await buildDeckManifest({
       root: "decks",
       paths: ["decks/deck1/deck.mdx", "decks/deck1/assets/image.png"],
@@ -121,7 +121,7 @@ describe("emitDeckManifestModule", () => {
     expect(source).toContain("export const manifest = deckManifest;");
     expect(source).toContain('"slug": "deck1"');
     expect(source).toContain('"publicPath": "/decks/deck1/assets/image.png"');
-    expect(source).not.toContain("body");
+    expect(source).toContain('"body": new Uint8Array([1, 2, 3])');
     expect(source).toContain("satisfies DeckManifest;");
   });
 });

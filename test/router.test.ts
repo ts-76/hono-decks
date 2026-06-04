@@ -614,6 +614,35 @@ describe("honoSlidesRouter", () => {
     expect(writes).toEqual([]);
   });
 
+  it("rejects patch proposals for another path when compiled sourcePath is unavailable", async () => {
+    const writes: Array<{ slug: string; markdown: string }> = [];
+    const app = new Hono();
+    app.route(
+      "/decks",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [] }),
+        dev: true,
+        localDeckIO: createMemoryDeckIO({ deck1: "# Raw Deck" }, writes),
+      }),
+    );
+
+    const response = await app.request("/decks/deck1/apply", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        proposal: {
+          type: "patch",
+          baseMarkdownHash: "mdx-b5765d09",
+          patches: [{ path: "decks/other.mdx", oldText: "# Raw Deck", newText: "# Other" }],
+        },
+      }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "Patch path must match current deck source: decks/deck1.mdx" });
+    expect(writes).toEqual([]);
+  });
+
   it("does not expose apply route when dev is false", async () => {
     const app = new Hono();
     app.route("/decks", honoSlidesRouter({ source: manifestDeckSource({ decks: [deck] }), dev: false }));

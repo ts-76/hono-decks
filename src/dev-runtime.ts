@@ -92,9 +92,10 @@ export function createDevDeckRuntime(input: DevDeckRuntimeInput): DevDeckRuntime
           markdown,
         } satisfies CompileDeckInput);
         if (version !== sourceChangeVersions.get(event.slug)) return;
+        const latest = decks.get(event.slug);
         decks.set(event.slug, {
           ...compiled,
-          assets: mergeCompiledAndLocalAssets(compiled.assets, current?.assets ?? []),
+          assets: mergeCompiledAndLocalAssets(compiled.assets, latest?.assets ?? current?.assets ?? []),
         });
         publishUpdate(input.previewEvents, event);
       } catch (error) {

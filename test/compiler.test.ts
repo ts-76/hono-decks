@@ -167,6 +167,60 @@ background: /public/hero.jpg
     ]);
   });
 
+  it("collects external asset references from deck frontmatter assets", async () => {
+    const deck = await compileMarkdown({
+      slug: "deck1",
+      sourcePath: "decks/deck1.mdx",
+      kind: "single-file",
+      markdown: `---
+assets: [https://cdn.example.com/front.png, r2://slides-bucket/front.webp, /public/front.svg]
+---
+
+# One`,
+    });
+
+    expect(deck.meta.assets).toEqual([
+      "https://cdn.example.com/front.png",
+      "r2://slides-bucket/front.webp",
+      "/public/front.svg",
+    ]);
+    expect(deck.assets).toEqual([
+      {
+        sourcePath: "https://cdn.example.com/front.png",
+        publicPath: "https://cdn.example.com/front.png",
+        type: "remote",
+        contentType: "image/png",
+      },
+      {
+        sourcePath: "r2://slides-bucket/front.webp",
+        publicPath: "r2://slides-bucket/front.webp",
+        type: "r2",
+        contentType: "image/webp",
+      },
+      {
+        sourcePath: "/public/front.svg",
+        publicPath: "/public/front.svg",
+        type: "public",
+        contentType: "image/svg+xml",
+      },
+    ]);
+  });
+
+  it("rejects local relative frontmatter assets in single-file decks", async () => {
+    await expect(
+      compileMarkdown({
+        slug: "deck1",
+        sourcePath: "decks/deck1.mdx",
+        kind: "single-file",
+        markdown: `---
+assets: [./image.png]
+---
+
+# One`,
+      }),
+    ).rejects.toMatchObject({ code: "single-file-local-asset" });
+  });
+
   it("preserves parser warnings on compiled decks", async () => {
     const deck = await compileMarkdown({
       slug: "deck1",

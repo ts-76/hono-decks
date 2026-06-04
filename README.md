@@ -77,6 +77,7 @@ development では raw MDX の read/write/watch だけを `LocalDeckIO` に任�
 
 ```ts
 import { Hono } from "hono";
+import { routeAgentRequest } from "agents";
 import {
   compileMarkdown,
   createCloudflareDeckAgentChat,
@@ -108,7 +109,10 @@ app.route(
     dev: true,
     localDeckIO,
     previewEvents,
-    agentChat: createCloudflareDeckAgentChat({ agentPath: "slide-assistant" }),
+    agentChat: createCloudflareDeckAgentChat({
+      agentPath: "slide-assistant",
+      routeAgentRequest,
+    }),
   }),
 );
 ```
