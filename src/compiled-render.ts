@@ -1,20 +1,21 @@
-import type { CompiledDeck, CompiledSlide } from "./deck";
+import type { AssetRef, CompiledDeck, CompiledSlide } from "./deck";
 
 export function renderCompiledDeck(deck: CompiledDeck): string {
   return `<main class="hono-slides-deck" data-deck-slug="${escapeHtml(deck.slug)}">${deck.slides
-    .map(renderCompiledSlide)
+    .map((slide) => renderCompiledSlide(slide, deck.assets))
     .join("\n")}</main>`;
 }
 
-export function renderCompiledSlide(slide: CompiledSlide): string {
+export function renderCompiledSlide(slide: CompiledSlide, assets: AssetRef[] = []): string {
   const layout = slide.meta.layout ?? "default";
   const classes = ["slide", `layout-${safeClass(layout)}`, slide.meta.className ? safeClass(slide.meta.className) : ""]
     .filter(Boolean)
     .join(" ");
   const notes = slide.notes ?? slide.meta.notes;
   const notesHtml = notes ? `<aside class="speaker-notes" hidden>${escapeHtml(notes)}</aside>` : "";
+  const html = rewriteLocalAssetUrls(slide.html, assets);
 
-  return `<section class="${classes}" data-slide-index="${slide.index}"${slide.meta.title ? ` aria-label="${escapeHtml(slide.meta.title)}"` : ""}>${slide.html}${notesHtml}</section>`;
+  return `<section class="${classes}" data-slide-index="${slide.index}"${slide.meta.title ? ` aria-label="${escapeHtml(slide.meta.title)}"` : ""}>${html}${notesHtml}</section>`;
 }
 
 export function renderCompiledDeckPage(input: { deck: CompiledDeck; mountPath: string; style?: string }): string {
@@ -140,6 +141,31 @@ function renderPresentationScript(): string {
 
 function safeClass(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9_-]+/g, "-");
+}
+
+function rewriteLocalAssetUrls(html: string, assets: AssetRef[]): string {
+  const localAssets = assets.filter((asset) => asset.type === "local");
+  if (localAssets.length === 0) return html;
+
+  return html.replace(/\b(src|href)=["']([^"']+)["']/g, (match, attr: string, value: string) => {
+    const asset = findAssetForHtmlUrl(localAssets, value);
+    return asset ? `${attr}="${escapeHtml(asset.publicPath)}"` : match;
+  });
+}
+
+function findAssetForHtmlUrl(assets: AssetRef[], value: string): AssetRef | undefined {
+  const normalized = decodeURIComponent(value).replace(/^\.?\//, "");
+  return assets.find((asset) => {
+    const assetPath = localAssetRelativePath(asset);
+    return normalized === assetPath || normalized === `assets/${assetPath}`;
+  });
+}
+
+function localAssetRelativePath(asset: AssetRef): string {
+  const marker = "/assets/";
+  const normalized = asset.sourcePath.replaceAll("\\", "/");
+  const markerIndex = normalized.indexOf(marker);
+  return markerIndex === -1 ? (normalized.split("/").at(-1) ?? normalized) : normalized.slice(markerIndex + marker.length);
 }
 
 function escapeHtml(value: string): string {

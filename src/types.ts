@@ -25,6 +25,7 @@ export type SlideBlock =
   | { type: "list"; ordered: boolean; items: string[] }
   | { type: "code"; lang?: string; code: string }
   | { type: "blockquote"; text: string }
+  | { type: "image"; alt: string; src: string; title?: string }
   | { type: "component"; name: string; props: Record<string, string | boolean>; raw: string };
 
 export interface AgentSuggestRequest {
