@@ -123,6 +123,28 @@ describe("honoSlidesRouter", () => {
     expect(asset.status).toBe(200);
   });
 
+  it("adds a development live reload script to deck pages only when dev is true", async () => {
+    const production = new Hono();
+    production.route("/decks", honoSlidesRouter({ source: manifestDeckSource({ decks: [deck] }), dev: false }));
+    const development = new Hono();
+    development.route(
+      "/decks",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: true,
+        localDeckIO: createMemoryDeckIO({ deck1: "# Raw Deck" }),
+      }),
+    );
+
+    const productionHtml = await (await production.request("/decks/deck1")).text();
+    const developmentHtml = await (await development.request("/decks/deck1")).text();
+
+    expect(productionHtml).not.toContain("new EventSource");
+    expect(developmentHtml).toContain('new EventSource("/decks/deck1/events")');
+    expect(developmentHtml).toContain('event.type === "deck:updated"');
+    expect(developmentHtml).toContain("location.reload()");
+  });
+
   it("serves local deck assets and returns 404 for missing slugs", async () => {
     const app = new Hono();
     app.route("/decks", honoSlidesRouter({ source: manifestDeckSource({ decks: [deck] }), dev: false }));

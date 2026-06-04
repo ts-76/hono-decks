@@ -129,6 +129,8 @@ app.route(
 - `POST /slides/:slug/agent/chat` は Agent への chat/proposal request
 - `POST /slides/:slug/apply` は proposal を raw MDX に適用
 
+development の閲覧ページは同じ event stream を購読し、deck update 時に full reload します。
+
 editor の Agent chat と Apply は textarea の現在値を送るため、保存前の内容にも提案を作成・適用できます。実際の永続化は `/apply` または `/save` 経由でだけ行われます。
 
 ## Cloudflare Agents

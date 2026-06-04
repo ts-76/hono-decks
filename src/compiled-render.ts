@@ -20,7 +20,12 @@ export function renderCompiledSlide(slide: CompiledSlide, assets: AssetRef[] = [
   return `<section class="${classes}" data-slide-index="${slide.index}"${slide.meta.title ? ` aria-label="${escapeHtml(slide.meta.title)}"` : ""}${transition}${style}>${html}${notesHtml}</section>`;
 }
 
-export function renderCompiledDeckPage(input: { deck: CompiledDeck; mountPath: string; style?: string }): string {
+export function renderCompiledDeckPage(input: {
+  deck: CompiledDeck;
+  mountPath: string;
+  style?: string;
+  liveReloadPath?: string;
+}): string {
   const { deck } = input;
   const warnings = deck.warnings.length
     ? `<aside class="hono-slides-warnings">${deck.warnings.map((warning) => `<p>${escapeHtml(warning.message)}</p>`).join("")}</aside>`
@@ -39,6 +44,7 @@ export function renderCompiledDeckPage(input: { deck: CompiledDeck; mountPath: s
   ${renderCompiledDeck(deck)}
   ${renderPresentationControls(deck)}
   ${renderPresentationScript()}
+  ${input.liveReloadPath ? renderLiveReloadScript(input.liveReloadPath) : ""}
 </body>
 </html>`;
 }
@@ -137,6 +143,19 @@ function renderPresentationScript(): string {
   }, 1000);
 
   show(0);
+})();
+</script>`;
+}
+
+function renderLiveReloadScript(eventsPath: string): string {
+  return `<script>
+(() => {
+  try {
+    const events = new EventSource(${JSON.stringify(eventsPath)});
+    events.addEventListener("deck:updated", (event) => {
+      if (event.type === "deck:updated") location.reload();
+    });
+  } catch {}
 })();
 </script>`;
 }
