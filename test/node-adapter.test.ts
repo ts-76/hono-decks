@@ -167,6 +167,23 @@ title: Raw Save
     }
   });
 
+  it("reads local deck assets through LocalDeckIO", async () => {
+    const cwd = await createFixture();
+    const io = createLocalDeckIO({ cwd, root: "decks" });
+
+    try {
+      expect(typeof io.readAsset).toBe("function");
+
+      const body = await io.readAsset?.("decks/deck1/assets/my image#1.svg");
+      expect(Array.from(body as Uint8Array)).toEqual([1, 2, 3]);
+      await expect(io.readAsset?.("../outside.png")).rejects.toThrow(
+        "Asset path must be a relative path inside the current working directory",
+      );
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("rejects LocalDeckIO writes for unknown slugs", async () => {
     const cwd = await createFixture();
     const io = createLocalDeckIO({ cwd, root: "decks" });

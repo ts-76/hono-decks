@@ -3,6 +3,8 @@ export type { HonoSlidesOptions } from "./middleware";
 export { parseDeck } from "./parser";
 export { renderDeck, renderSlide } from "./render";
 export { compileMarkdown } from "./compiler";
+export { createDevDeckRuntime } from "./dev-runtime";
+export type { DevDeckRuntime, DevDeckRuntimeInput } from "./dev-runtime";
 export { buildDeckManifest, emitDeckManifestModule } from "./manifest-generator";
 export type { BuildDeckManifestInput } from "./manifest-generator";
 export { createPreviewEventHub } from "./preview-events";

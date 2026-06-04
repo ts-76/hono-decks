@@ -53,6 +53,15 @@ export function createLocalDeckIO(input: CreateLocalDeckIOInput): LocalDeckIO {
       return readFile(join(input.cwd, entry.sourcePath), "utf8");
     },
 
+    async readAsset(path) {
+      const root = normalizeDeckRoot(input.root);
+      const assetPath = normalizeRelativePath(path, "Asset path");
+      if (assetPath !== root && !assetPath.startsWith(`${root}/`)) {
+        throw new Error(`Asset path is outside ${root}: ${assetPath}`);
+      }
+      return readFile(join(input.cwd, assetPath));
+    },
+
     async writeMarkdown(slug, markdown) {
       const entry = await findDeckEntry(input, slug);
       if (!entry) throw new Error(`Unknown deck slug: "${slug}"`);
