@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
-import type { CompiledDeck } from "../src/deck";
+import type { CompiledDeck, LocalDeckIO } from "../src/deck";
 import { manifestDeckSource } from "../src/manifest-source";
 import { honoSlidesRouter } from "../src/router";
 
@@ -83,6 +83,105 @@ describe("honoSlidesRouter", () => {
     expect((await app.request("/decks/deck1/edit")).status).toBe(404);
     expect((await app.request("/decks/deck1/events")).status).toBe(404);
     expect((await app.request("/decks/deck1/save", { method: "POST" })).status).toBe(404);
+    expect((await app.request("/decks/deck1/agent/chat", { method: "POST" })).status).toBe(404);
+  });
+
+  it("serves a development editor page with raw markdown when dev is true", async () => {
+    const app = new Hono();
+    app.route(
+      "/decks",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: true,
+        localDeckIO: createMemoryDeckIO({ deck1: "# Raw Deck" }),
+      }),
+    );
+
+    const response = await app.request("/decks/deck1/edit");
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/html");
+    expect(await response.text()).toContain("# Raw Deck");
+  });
+
+  it("saves raw markdown through LocalDeckIO when dev is true", async () => {
+    const writes: Array<{ slug: string; markdown: string }> = [];
+    const app = new Hono();
+    app.route(
+      "/decks",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: true,
+        localDeckIO: createMemoryDeckIO({ deck1: "# Before" }, writes),
+      }),
+    );
+
+    const response = await app.request("/decks/deck1/save", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ markdown: "# After" }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true, slug: "deck1" });
+    expect(writes).toEqual([{ slug: "deck1", markdown: "# After" }]);
+  });
+
+  it("serves a development event stream when dev is true", async () => {
+    const app = new Hono();
+    app.route(
+      "/decks",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: true,
+        localDeckIO: createMemoryDeckIO({ deck1: "# Raw Deck" }),
+      }),
+    );
+
+    const response = await app.request("/decks/deck1/events");
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/event-stream");
+    expect(await response.text()).toContain("event: ready");
+  });
+
+  it("passes deck context to the development agent chat callback", async () => {
+    const calls: unknown[] = [];
+    const app = new Hono();
+    app.route(
+      "/decks",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: true,
+        localDeckIO: createMemoryDeckIO({ deck1: "# Raw Deck" }),
+        agentChat: async (input) => {
+          calls.push(input);
+          return { source: "test", suggestion: "Tighten the title." };
+        },
+      }),
+    );
+
+    const response = await app.request("/decks/deck1/agent/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        sessionId: "session-1",
+        instruction: "Improve this",
+        activeSlide: 0,
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ source: "test", suggestion: "Tighten the title." });
+    expect(calls).toEqual([
+      {
+        slug: "deck1",
+        sessionId: "session-1",
+        markdown: "# Raw Deck",
+        instruction: "Improve this",
+        activeSlide: 0,
+      },
+    ]);
   });
 
   it("exports the production router from the public module", async () => {
@@ -92,3 +191,26 @@ describe("honoSlidesRouter", () => {
     expect(typeof mod.resolveDeckFiles).toBe("function");
   });
 });
+
+function createMemoryDeckIO(
+  markdownBySlug: Record<string, string>,
+  writes: Array<{ slug: string; markdown: string }> = [],
+): LocalDeckIO {
+  return {
+    async listFiles() {
+      return Object.keys(markdownBySlug).map((slug) => ({
+        slug,
+        sourcePath: `decks/${slug}.mdx`,
+        kind: "single-file",
+      }));
+    },
+    async readMarkdown(slug) {
+      return markdownBySlug[slug] ?? null;
+    },
+    async writeMarkdown(slug, markdown) {
+      if (!(slug in markdownBySlug)) throw new Error(`Unknown deck slug: "${slug}"`);
+      writes.push({ slug, markdown });
+      markdownBySlug[slug] = markdown;
+    },
+  };
+}
