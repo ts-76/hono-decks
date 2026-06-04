@@ -1,0 +1,20 @@
+name = "hono-slides"
+main = "src/index.ts"
+compatibility_date = "2026-06-01"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+[[durable_objects.bindings]]
+name = "SlideAssistant"
+class_name = "SlideAssistant"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["SlideAssistant"]
+
+# Optional: bind Workers AI if you want the built-in assistant fallback to call a model.
+# [ai]
+# binding = "AI"
