@@ -275,6 +275,58 @@ describe("createDevDeckRuntime", () => {
     expect(await response?.arrayBuffer()).toEqual(new Uint8Array([9]).buffer);
   });
 
+  it("merges compiled external asset references with existing local asset bodies after source changes", async () => {
+    const runtime = createDevDeckRuntime({
+      initialDecks: [
+        {
+          ...initialDeck,
+          assets: [
+            {
+              sourcePath: "decks/deck1/assets/image.png",
+              publicPath: "/decks/deck1/assets/image.png",
+              type: "local",
+              contentType: "image/png",
+              body: new Uint8Array([1, 2, 3]),
+            },
+          ],
+        },
+      ],
+      localDeckIO: createMemoryDeckIO({ deck1: "# Source Update" }),
+      compiler: {
+        async compileMarkdown(input) {
+          return {
+            ...initialDeck,
+            meta: { title: input.markdown.replace("# ", ""), meta: {} },
+            assets: [
+              {
+                sourcePath: "https://cdn.example.com/source-update.png",
+                publicPath: "https://cdn.example.com/source-update.png",
+                type: "remote",
+                contentType: "image/png",
+              },
+            ],
+          };
+        },
+      },
+    });
+
+    await runtime.handleFileChange({ type: "changed", path: "decks/deck1/deck.mdx", slug: "deck1" });
+
+    await expect(runtime.source.getCompiledDeck({} as never, "deck1")).resolves.toMatchObject({
+      assets: [
+        {
+          sourcePath: "decks/deck1/assets/image.png",
+          type: "local",
+          body: new Uint8Array([1, 2, 3]),
+        },
+        {
+          sourcePath: "https://cdn.example.com/source-update.png",
+          type: "remote",
+        },
+      ],
+    });
+  });
+
   it("publishes an error event when reading raw markdown fails", async () => {
     const previewEvents = createPreviewEventHub();
     const runtime = createDevDeckRuntime({

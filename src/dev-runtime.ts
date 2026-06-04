@@ -91,7 +91,7 @@ export function createDevDeckRuntime(input: DevDeckRuntimeInput): DevDeckRuntime
         if (version !== sourceChangeVersions.get(event.slug)) return;
         decks.set(event.slug, {
           ...compiled,
-          assets: current?.assets ?? compiled.assets,
+          assets: mergeCompiledAndLocalAssets(compiled.assets, current?.assets ?? []),
         });
         publishUpdate(input.previewEvents, event);
       } catch (error) {
@@ -149,6 +149,17 @@ async function applyAssetChange(
 
 function isDeckSourceDelete(event: DeckFileChange, deck: CompiledDeck): boolean {
   return event.type === "deleted" && event.path === deck.sourcePath;
+}
+
+function mergeCompiledAndLocalAssets(compiledAssets: AssetRef[], currentAssets: AssetRef[]): AssetRef[] {
+  const merged = new Map<string, AssetRef>();
+  for (const asset of currentAssets) {
+    if (asset.type === "local") merged.set(asset.sourcePath, asset);
+  }
+  for (const asset of compiledAssets) {
+    if (!merged.has(asset.sourcePath)) merged.set(asset.sourcePath, asset);
+  }
+  return [...merged.values()];
 }
 
 function isAssetPath(path: string): boolean {
