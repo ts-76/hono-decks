@@ -129,6 +129,8 @@ app.route(
 - `POST /slides/:slug/agent/chat` は Agent への chat/proposal request
 - `POST /slides/:slug/apply` は proposal を raw MDX に適用
 
+editor の Agent chat は textarea の現在値を送るため、保存前の内容にも提案できます。実際の永続化は `/apply` または `/save` 経由でだけ行われます。
+
 ## Cloudflare Agents
 
 `SlideAssistant` Durable Object を export しています。

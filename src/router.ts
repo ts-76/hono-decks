@@ -120,8 +120,8 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
       if (!options.localDeckIO) return c.json({ error: "Local deck IO is not configured" }, 501);
       if (!options.agentChat) return c.json({ error: "Agent chat is not configured" }, 501);
 
-      const markdown = await options.localDeckIO.readMarkdown(slug);
-      if (markdown == null) return c.json({ error: "Deck source not found", slug }, 404);
+      const savedMarkdown = await options.localDeckIO.readMarkdown(slug);
+      if (savedMarkdown == null) return c.json({ error: "Deck source not found", slug }, 404);
       const deck = await options.source.getCompiledDeck(c, slug);
 
       const payload = (await c.req.json()) as {
@@ -129,7 +129,9 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
         instruction?: unknown;
         activeSlide?: unknown;
         mode?: unknown;
+        markdown?: unknown;
       };
+      const markdown = typeof payload.markdown === "string" ? payload.markdown : savedMarkdown;
       const sessionId = typeof payload.sessionId === "string" && payload.sessionId ? payload.sessionId : "default";
       const result = await options.agentChat(
         {
@@ -377,7 +379,7 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
         const response = await fetch(agentUrl, {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ instruction: instruction.value, mode: "code" }),
+          body: JSON.stringify({ instruction: instruction.value, mode: "code", markdown: markdown.value }),
         });
         const data = await response.json();
         if (!response.ok) throw new Error(JSON.stringify(data));

@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
+import { createDeckMarkdownHash } from "../src/agent-contract";
 import type { CompiledDeck, LocalDeckIO } from "../src/deck";
 import { manifestDeckSource } from "../src/manifest-source";
 import { createPreviewEventHub } from "../src/preview-events";
@@ -197,6 +198,7 @@ describe("honoSlidesRouter", () => {
     expect(html).toContain("reloadPreview()");
     expect(html).toContain('fetch(saveUrl');
     expect(html).toContain('fetch(agentUrl');
+    expect(html).toContain('body: JSON.stringify({ instruction: instruction.value, mode: "code", markdown: markdown.value })');
     expect(html).toContain('fetch(applyUrl');
     expect(html).toContain("markdown.value = data.markdown");
     expect(html).toContain("/agent/chat");
@@ -495,6 +497,39 @@ describe("honoSlidesRouter", () => {
         activeSlide: 0,
       },
     ]);
+  });
+
+  it("passes the current editor markdown to agent chat when provided", async () => {
+    const calls: unknown[] = [];
+    const app = new Hono();
+    app.route(
+      "/decks",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: true,
+        localDeckIO: createMemoryDeckIO({ deck1: "# Saved Deck" }),
+        agentChat: async (input) => {
+          calls.push(input);
+          return { source: "test", suggestion: "Tighten the title." };
+        },
+      }),
+    );
+
+    const response = await app.request("/decks/deck1/agent/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        instruction: "Improve this",
+        markdown: "# Unsaved Deck",
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toMatchObject({
+      markdown: "# Unsaved Deck",
+      baseMarkdownHash: createDeckMarkdownHash("# Unsaved Deck"),
+    });
   });
 
   it("normalizes invalid activeSlide values before agent chat", async () => {
