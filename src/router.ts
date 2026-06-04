@@ -167,7 +167,7 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
         { type: "changed", path: deck?.sourcePath ?? defaultSourcePath(slug), slug },
         "apply",
       );
-      return c.json({ ok: true, slug, baseMarkdownHash: applied.baseMarkdownHash });
+      return c.json({ ok: true, slug, baseMarkdownHash: applied.baseMarkdownHash, markdown: applied.markdown });
     });
   }
 
@@ -402,12 +402,7 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
         });
         const data = await response.json();
         if (!response.ok) throw new Error(JSON.stringify(data));
-        if (pendingProposal.type === "replacement") markdown.value = pendingProposal.markdown;
-        if (pendingProposal.type === "patch") {
-          for (const patch of pendingProposal.patches || []) {
-            markdown.value = markdown.value.replace(patch.oldText, patch.newText);
-          }
-        }
+        if (typeof data.markdown === "string") markdown.value = data.markdown;
         agentOutput.textContent = "Applied";
         reloadPreview();
         pendingProposal = undefined;
