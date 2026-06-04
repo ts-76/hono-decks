@@ -15,6 +15,19 @@ declare module "node:fs/promises" {
   export function rm(path: string, options: { recursive: boolean; force: boolean }): Promise<void>;
 }
 
+declare module "node:fs" {
+  export interface FSWatcher {
+    close(): void;
+  }
+
+  export function existsSync(path: string): boolean;
+  export function watch(
+    path: string,
+    options: { recursive: boolean },
+    listener: (eventType: "rename" | "change", filename: string | null) => void,
+  ): FSWatcher;
+}
+
 declare module "node:path" {
   export function join(...paths: string[]): string;
   export function relative(from: string, to: string): string;
