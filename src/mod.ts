@@ -6,7 +6,7 @@ export { compileMarkdown } from "./compiler";
 export { buildDeckManifest, emitDeckManifestModule } from "./manifest-generator";
 export type { BuildDeckManifestInput } from "./manifest-generator";
 export { honoSlidesRouter } from "./router";
-export type { HonoSlidesRouterOptions } from "./router";
+export type { HonoSlidesAgentChatInput, HonoSlidesRouterOptions } from "./router";
 export { manifestDeckSource } from "./manifest-source";
 export { resolveDeckFiles } from "./file-routing";
 export type { ResolvedDeckFile } from "./file-routing";
