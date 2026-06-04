@@ -30,7 +30,7 @@ decks/
   deck2.mdx
 ```
 
-`https://...`, `r2://...`, `/public/...` のような参照は manifest の `AssetRef` として保持します。deck frontmatter の `assets: [...]` からも同じ external/public/R2 refs を収集できます。存在確認や署名 URL 化は custom `DeckSource` や配信側で扱います。
+`https://...`, `r2://...`, `/public/...` のような参照は manifest の `AssetRef` として保持します。deck frontmatter の `assets: [...]` からも同じ external/public/R2 refs を収集できます。remote/R2 の存在確認や署名 URL 化は custom `DeckSource` や配信側で扱うため、compile warning にも載せます。
 
 Directory deck の `./assets/image.png` や `assets/image.png` は、Markdown image、slide background、MDX component placeholder の asset-like props 表示で public path に rewrite されます。
 
