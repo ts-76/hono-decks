@@ -1,4 +1,7 @@
 import { Agent } from "agents";
+import { createDeckMarkdownHash } from "./agent-contract";
+import type { DeckAgentChatResult } from "./agent-contract";
+import type { HonoSlidesAgentChatInput } from "./router";
 import type { AgentSuggestRequest, AgentSuggestResponse, Env } from "./types";
 
 interface AssistantState {
@@ -21,6 +24,16 @@ export class SlideAssistant extends Agent<Env, AssistantState> {
       return Response.json(response);
     }
 
+    if (request.method === "POST" && url.pathname.endsWith("/chat")) {
+      const payload = (await request.json()) as HonoSlidesAgentChatInput;
+      const response = await buildChatResult(this.env, payload);
+      this.setState({
+        lastInstruction: payload.instruction,
+        revisionCount: (this.state?.revisionCount ?? 0) + 1,
+      });
+      return Response.json(response);
+    }
+
     return Response.json(
       {
         ok: true,
@@ -30,6 +43,30 @@ export class SlideAssistant extends Agent<Env, AssistantState> {
       { status: 200 },
     );
   }
+}
+
+export async function buildChatResult(env: Env, payload: HonoSlidesAgentChatInput): Promise<DeckAgentChatResult> {
+  const suggestion = await buildSuggestion(env, payload);
+  if (payload.mode !== "code") return suggestion;
+
+  const instruction = payload.instruction || "読みやすくする";
+  return {
+    source: suggestion.source,
+    message: "編集 proposal を作成しました。保存は Hono の apply/save route で行ってください。",
+    suggestion: suggestion.suggestion,
+    proposal: {
+      type: "patch",
+      baseMarkdownHash: payload.baseMarkdownHash || createDeckMarkdownHash(payload.markdown),
+      summary: instruction,
+      patches: [
+        {
+          path: payload.sourcePath ?? `decks/${payload.slug}.mdx`,
+          oldText: payload.markdown,
+          newText: `${payload.markdown}\n\n<!-- ${instruction} -->`,
+        },
+      ],
+    },
+  };
 }
 
 export async function buildSuggestion(env: Env, payload: AgentSuggestRequest): Promise<AgentSuggestResponse> {

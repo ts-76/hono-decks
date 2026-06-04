@@ -13,6 +13,7 @@ export interface HonoSlidesAgentChatInput {
   agentInstanceName: string;
   mode: DeckAgentMode;
   baseMarkdownHash: string;
+  sourcePath?: string;
   markdown: string;
   instruction: string;
   activeSlide?: number;
@@ -84,6 +85,7 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
 
       const markdown = await options.localDeckIO.readMarkdown(slug);
       if (markdown == null) return c.json({ error: "Deck source not found", slug }, 404);
+      const deck = await options.source.getCompiledDeck(c, slug);
 
       const payload = (await c.req.json()) as {
         sessionId?: unknown;
@@ -99,6 +101,7 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
           agentInstanceName: createDeckAgentInstanceName({ slug, sessionId }),
           mode: parseDeckAgentMode(payload.mode),
           baseMarkdownHash: createDeckMarkdownHash(markdown),
+          sourcePath: deck?.sourcePath,
           markdown,
           instruction: typeof payload.instruction === "string" ? payload.instruction : "",
           activeSlide: typeof payload.activeSlide === "number" ? payload.activeSlide : undefined,
