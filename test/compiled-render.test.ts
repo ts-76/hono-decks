@@ -98,6 +98,40 @@ describe("compiled deck rendering", () => {
     expect(html).not.toContain('src="./assets/image.png"');
   });
 
+  it("rewrites local relative asset component props in placeholder output", () => {
+    const html = renderCompiledDeckPage({
+      deck: {
+        ...deck,
+        slides: [
+          {
+            ...deck.slides[0],
+            html: '<div class="mdx-component" data-component="Hero"><strong>&lt;Hero /&gt;</strong><dl><div><dt>image</dt><dd>./assets/hero.png</dd></div></dl></div>',
+            components: [
+              {
+                id: "deck1-0-0",
+                name: "Hero",
+                props: { image: "./assets/hero.png" },
+                source: '<Hero image="./assets/hero.png" />',
+              },
+            ],
+          },
+        ],
+        assets: [
+          {
+            sourcePath: "decks/deck1/assets/hero.png",
+            publicPath: "/slides/deck1/assets/hero.png",
+            type: "local",
+            contentType: "image/png",
+          },
+        ],
+      },
+      mountPath: "/slides",
+    });
+
+    expect(html).toContain("<dd>/slides/deck1/assets/hero.png</dd>");
+    expect(html).not.toContain("<dd>./assets/hero.png</dd>");
+  });
+
   it("renders slide background frontmatter with local asset public paths", () => {
     const html = renderCompiledDeckPage({
       deck: {

@@ -5,7 +5,7 @@ Hono + Cloudflare Workers で動く、MDX-like スライドデック runtime で
 ## できること
 
 - `---` 区切りの Markdown/MDX-like をスライドへ compile
-- deck/slide frontmatter、presenter notes、MDX component placeholder を manifest として保持
+- deck/slide frontmatter、presenter notes、MDX component placeholder、asset refs を manifest として保持
 - `decks/deck1/deck.mdx` と `decks/deck1.mdx` の file-based routing
 - production では slug route で閲覧と presentation controls のみを提供
 - development では edit/save、hot reload、Agent chat、proposal apply を提供
@@ -30,7 +30,9 @@ decks/
   deck2.mdx
 ```
 
-`https://...`, `r2://...`, `/public/...` のような参照は manifest の `AssetRef` として保持します。存在確認や署名 URL 化は custom `DeckSource` や配信側で扱います。
+`https://...`, `r2://...`, `/public/...` のような参照は manifest の `AssetRef` として保持します。deck frontmatter の `assets: [...]` からも同じ external/public/R2 refs を収集できます。存在確認や署名 URL 化は custom `DeckSource` や配信側で扱います。
+
+Directory deck の `./assets/image.png` や `assets/image.png` は、Markdown image、slide background、MDX component placeholder の asset-like props 表示で public path に rewrite されます。
 
 同じ slug の `deck1.mdx` と `deck1/deck.mdx` は衝突として扱います。
 
