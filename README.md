@@ -34,7 +34,7 @@ decks/
 
 Directory deck の `./assets/image.png` や `assets/image.png` は、Markdown image、slide background、MDX component placeholder の asset-like props 表示で public path に rewrite されます。
 
-Frontmatter は scalar、inline array、複数行 list、shallow object、`|` block text を扱います。
+Frontmatter は scalar、inline array、複数行 list、shallow object、`|` block text を扱います。未知キーは `meta` に保持し、compile warning にも載せます。
 
 同じ slug の `deck1.mdx` と `deck1/deck.mdx` は衝突として扱います。
 
