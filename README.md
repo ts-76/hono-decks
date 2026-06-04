@@ -41,14 +41,14 @@ build 時に manifest を生成し、runtime では `DeckSource` から compiled
 ```ts
 import { Hono } from "hono";
 import { honoSlidesRouter, manifestDeckSource } from "hono-slides";
-import { manifest } from "./generated/deck-manifest";
+import { deckManifest } from "./generated/deck-manifest";
 
 const app = new Hono();
 
 app.route(
   "/slides",
   honoSlidesRouter({
-    source: manifestDeckSource(manifest),
+    source: manifestDeckSource(deckManifest),
     dev: false,
   }),
 );
