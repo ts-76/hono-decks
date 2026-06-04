@@ -149,10 +149,15 @@ function rewriteLocalAssetUrls(html: string, assets: AssetRef[]): string {
   const localAssets = assets.filter((asset) => asset.type === "local");
   if (localAssets.length === 0) return html;
 
-  return html.replace(/\b(src|href)=["']([^"']+)["']/g, (match, attr: string, value: string) => {
-    const asset = findAssetForHtmlUrl(localAssets, value);
-    return asset ? `${attr}="${escapeHtml(asset.publicPath)}"` : match;
-  });
+  return html
+    .replace(/\b(src|href)=["']([^"']+)["']/g, (match, attr: string, value: string) => {
+      const asset = findAssetForHtmlUrl(localAssets, value);
+      return asset ? `${attr}="${escapeHtml(asset.publicPath)}"` : match;
+    })
+    .replace(/<dd>([^<]+)<\/dd>/g, (match, value: string) => {
+      const asset = findAssetForHtmlUrl(localAssets, decodeHtml(value));
+      return asset ? `<dd>${escapeHtml(asset.publicPath)}</dd>` : match;
+    });
 }
 
 function backgroundStyle(value: string, assets: AssetRef[]): string {
@@ -187,4 +192,13 @@ function escapeHtml(value: string): string {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+function decodeHtml(value: string): string {
+  return value
+    .replaceAll("&quot;", '"')
+    .replaceAll("&#39;", "'")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&amp;", "&");
 }

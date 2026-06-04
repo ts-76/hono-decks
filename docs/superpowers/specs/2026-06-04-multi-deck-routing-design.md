@@ -118,6 +118,7 @@ The first implementation uses a hybrid compile target:
 - MDX components become typed placeholders.
 - Frontmatter becomes typed metadata plus preserved unknown metadata.
 - Assets become explicit references in the compiled contract.
+- Local asset references in rendered Markdown, slide backgrounds, and MDX component placeholder asset props are rewritten to public asset URLs at render time.
 
 This keeps runtime rendering lightweight and safe while leaving room for future real component execution or theme-driven component rendering.
 
