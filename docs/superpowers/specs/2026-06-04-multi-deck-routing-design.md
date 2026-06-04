@@ -233,7 +233,7 @@ Agent requests include:
 
 - deck slug
 - session id
-- active slide
+- active slide when it is a non-negative integer
 - current raw MDX
 - compiled deck summary when useful
 - user instruction/message

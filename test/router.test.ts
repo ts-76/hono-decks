@@ -496,6 +496,37 @@ describe("honoSlidesRouter", () => {
     ]);
   });
 
+  it("normalizes invalid activeSlide values before agent chat", async () => {
+    const calls: unknown[] = [];
+    const app = new Hono();
+    app.route(
+      "/decks",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: true,
+        localDeckIO: createMemoryDeckIO({ deck1: "# Raw Deck" }),
+        agentChat: async (input) => {
+          calls.push(input);
+          return { source: "test", suggestion: "Tighten the title." };
+        },
+      }),
+    );
+
+    for (const activeSlide of [-1, 1.5, Number.NaN]) {
+      await app.request("/decks/deck1/agent/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          instruction: "Improve this",
+          activeSlide,
+        }),
+      });
+    }
+
+    expect(calls).toHaveLength(3);
+    expect(calls.map((call) => (call as { activeSlide?: number }).activeSlide)).toEqual([undefined, undefined, undefined]);
+  });
+
   it("applies a replacement proposal through LocalDeckIO when dev is true", async () => {
     const writes: Array<{ slug: string; markdown: string }> = [];
     const previewEvents = createPreviewEventHub();
