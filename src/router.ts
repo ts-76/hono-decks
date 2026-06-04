@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
+import { applyDeckAgentProposal } from "./agent-apply";
 import { createDeckAgentInstanceName, createDeckMarkdownHash, parseDeckAgentMode } from "./agent-contract";
 import type { DeckAgentChatResult, DeckAgentMode } from "./agent-contract";
 import { renderCompiledDeckPage } from "./compiled-render";
@@ -105,6 +106,23 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
         c,
       );
       return result instanceof Response ? result : c.json(result);
+    });
+
+    router.post("/:slug/apply", async (c) => {
+      const slug = c.req.param("slug");
+      if (!options.localDeckIO) return c.json({ error: "Local deck IO is not configured" }, 501);
+
+      const markdown = await options.localDeckIO.readMarkdown(slug);
+      if (markdown == null) return c.json({ error: "Deck source not found", slug }, 404);
+      const deck = await options.source.getCompiledDeck(c, slug);
+
+      const payload = (await c.req.json()) as { proposal?: unknown };
+      const applied = applyDeckAgentProposal(markdown, payload.proposal, { sourcePath: deck?.sourcePath });
+      if (!applied.ok) return c.json({ error: applied.error }, applied.status);
+
+      await options.localDeckIO.writeMarkdown(slug, applied.markdown);
+      options.previewEvents?.publish({ type: "deck:updated", slug, data: { source: "apply" } });
+      return c.json({ ok: true, slug, baseMarkdownHash: applied.baseMarkdownHash });
     });
   }
 
