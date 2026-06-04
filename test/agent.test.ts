@@ -49,6 +49,52 @@ describe("SlideAssistant", () => {
     });
   });
 
+  it("uses a code mode generator when one is available", async () => {
+    const generateCodeModeResult = vi.fn().mockResolvedValue({
+      source: "workers-ai-codemode",
+      message: "Code Mode proposal ready.",
+      proposal: {
+        type: "patch",
+        baseMarkdownHash: "mdx-b5765d09",
+        summary: "Tighten the title",
+        patches: [
+          {
+            path: "decks/deck1/deck.mdx",
+            oldText: "# Raw Deck",
+            newText: "# Sharper Deck",
+          },
+        ],
+      },
+    });
+
+    await expect(
+      buildChatResult(testEnv(), { ...chatInput, mode: "code" }, { generateCodeModeResult }),
+    ).resolves.toMatchObject({
+      source: "workers-ai-codemode",
+      message: "Code Mode proposal ready.",
+      proposal: {
+        type: "patch",
+        baseMarkdownHash: "mdx-b5765d09",
+        summary: "Tighten the title",
+      },
+    });
+    expect(generateCodeModeResult).toHaveBeenCalledWith(testEnv(), { ...chatInput, mode: "code" });
+  });
+
+  it("falls back to the local code proposal when code mode generation fails", async () => {
+    const generateCodeModeResult = vi.fn().mockRejectedValue(new Error("model unavailable"));
+
+    await expect(
+      buildChatResult(testEnv(), { ...chatInput, mode: "code" }, { generateCodeModeResult }),
+    ).resolves.toMatchObject({
+      source: "heuristic",
+      proposal: {
+        type: "patch",
+        baseMarkdownHash: "mdx-b5765d09",
+      },
+    });
+  });
+
   it("handles POST /chat requests", async () => {
     const agent = Object.create(SlideAssistant.prototype) as SlideAssistant & {
       env: Env;
