@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
 import type { CompiledDeck, LocalDeckIO } from "../src/deck";
 import { manifestDeckSource } from "../src/manifest-source";
+import { createPreviewEventHub } from "../src/preview-events";
 import { honoSlidesRouter } from "../src/router";
 
 const deck = {
@@ -175,6 +176,123 @@ describe("honoSlidesRouter", () => {
     expect(await response.text()).toContain("event: ready");
   });
 
+  it("streams pending preview events from the Hono-owned event hub", async () => {
+    const previewEvents = createPreviewEventHub();
+    previewEvents.publish({ type: "deck:updated", slug: "deck1", data: { source: "watch" } });
+    previewEvents.publish({ type: "deck:updated", slug: "other", data: { source: "watch" } });
+    const app = new Hono();
+    app.route(
+      "/decks",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: true,
+        localDeckIO: createMemoryDeckIO({ deck1: "# Raw Deck" }),
+        previewEvents,
+      }),
+    );
+
+    const response = await app.request("/decks/deck1/events");
+    const text = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(text).toContain("event: ready");
+    expect(text).toContain("event: deck:updated");
+    expect(text).toContain('"source":"watch"');
+    expect(text).not.toContain('"slug":"other"');
+  });
+
+  it("drains only preview events for the requested slug", async () => {
+    const previewEvents = createPreviewEventHub();
+    previewEvents.publish({ type: "deck:updated", slug: "deck1", data: { source: "watch" } });
+    previewEvents.publish({ type: "deck:updated", slug: "other", data: { source: "watch" } });
+    const app = new Hono();
+    app.route(
+      "/decks",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: true,
+        localDeckIO: createMemoryDeckIO({ deck1: "# Raw Deck" }),
+        previewEvents,
+      }),
+    );
+
+    await app.request("/decks/deck1/events");
+
+    const deck1Again = await app.request("/decks/deck1/events");
+    expect(await deck1Again.text()).not.toContain("event: deck:updated");
+
+    const other = await app.request("/decks/other/events");
+    const otherText = await other.text();
+    expect(otherText).toContain("event: deck:updated");
+    expect(otherText).toContain('"slug":"other"');
+  });
+
+  it("publishes a preview update after saving raw markdown", async () => {
+    const previewEvents = createPreviewEventHub();
+    const app = new Hono();
+    app.route(
+      "/decks",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: true,
+        localDeckIO: createMemoryDeckIO({ deck1: "# Before" }),
+        previewEvents,
+      }),
+    );
+
+    const save = await app.request("/decks/deck1/save", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ markdown: "# After" }),
+    });
+    const events = await app.request("/decks/deck1/events");
+    const text = await events.text();
+
+    expect(save.status).toBe(200);
+    expect(text).toContain("event: deck:updated");
+    expect(text).toContain('"source":"save"');
+  });
+
+  it("publishes a save preview update after LocalDeckIO write completes", async () => {
+    const order: string[] = [];
+    const app = new Hono();
+    app.route(
+      "/decks",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: true,
+        localDeckIO: {
+          async listFiles() {
+            return [{ slug: "deck1", sourcePath: "decks/deck1/deck.mdx", kind: "directory" }];
+          },
+          async readMarkdown() {
+            return "# Before";
+          },
+          async writeMarkdown() {
+            order.push("write");
+          },
+        },
+        previewEvents: {
+          publish() {
+            order.push("publish");
+          },
+          drain() {
+            return [];
+          },
+        },
+      }),
+    );
+
+    const response = await app.request("/decks/deck1/save", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ markdown: "# After" }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(order).toEqual(["write", "publish"]);
+  });
+
   it("passes deck context to the development agent chat callback", async () => {
     const calls: unknown[] = [];
     const app = new Hono();
@@ -218,6 +336,7 @@ describe("honoSlidesRouter", () => {
     const mod = await import("../src/mod");
     expect(typeof mod.honoSlidesRouter).toBe("function");
     expect(typeof mod.manifestDeckSource).toBe("function");
+    expect(typeof mod.createPreviewEventHub).toBe("function");
     expect(typeof mod.resolveDeckFiles).toBe("function");
   });
 });

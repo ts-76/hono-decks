@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { Context } from "hono";
 import { renderCompiledDeckPage } from "./compiled-render";
 import type { DeckSource, LocalDeckIO } from "./deck";
+import type { PreviewEvent, PreviewEventHub } from "./preview-events";
 
 export interface HonoSlidesAgentChatInput {
   slug: string;
@@ -15,6 +16,7 @@ export interface HonoSlidesRouterOptions {
   source: DeckSource;
   dev?: boolean | "auto";
   localDeckIO?: LocalDeckIO;
+  previewEvents?: PreviewEventHub;
   agentChat?(input: HonoSlidesAgentChatInput, c: Context): Promise<unknown> | unknown;
   style?: string;
 }
@@ -51,12 +53,17 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
       if (typeof payload.markdown !== "string") return c.json({ error: "markdown must be a string" }, 400);
 
       await options.localDeckIO.writeMarkdown(slug, payload.markdown);
+      options.previewEvents?.publish({ type: "deck:updated", slug, data: { source: "save" } });
       return c.json({ ok: true, slug });
     });
 
     router.get("/:slug/events", (c) => {
       const slug = c.req.param("slug");
-      return new Response(`event: ready\ndata: ${JSON.stringify({ slug })}\n\n`, {
+      const events: PreviewEvent[] = [
+        { type: "ready", slug },
+        ...(options.previewEvents?.drain(slug) ?? []),
+      ];
+      return new Response(events.map(formatServerSentEvent).join(""), {
         headers: {
           "content-type": "text/event-stream; charset=utf-8",
           "cache-control": "no-cache",
@@ -120,6 +127,10 @@ function extractAssetPath(path: string, slug: string): string {
 
 function stripPathSuffix(path: string, suffix: string): string {
   return path.endsWith(suffix) ? path.slice(0, -suffix.length) : path;
+}
+
+function formatServerSentEvent(event: PreviewEvent): string {
+  return `event: ${event.type}\ndata: ${JSON.stringify({ slug: event.slug, ...(event.data !== undefined ? { data: event.data } : {}) })}\n\n`;
 }
 
 function renderDeckIndex(decks: Awaited<ReturnType<DeckSource["listDecks"]>>, mountPath: string): string {
