@@ -5,10 +5,15 @@
   "type": "module",
   "exports": {
     ".": "./src/mod.ts",
+    "./cli": "./src/cli.ts",
     "./node": "./src/node.ts",
     "./worker": "./src/index.ts"
   },
+  "bin": {
+    "hono-slides": "./bin/hono-slides.mjs"
+  },
   "files": [
+    "bin",
     "src",
     "public",
     "README.md"
@@ -16,6 +21,7 @@
   "scripts": {
     "dev": "wrangler dev --local",
     "deploy": "wrangler deploy",
+    "slides:compile": "tsx src/cli.ts compile",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.worker.json",
     "test": "vitest run",
     "check": "npm run typecheck && npm run test"
@@ -31,6 +37,8 @@
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.16.12",
     "@cloudflare/workers-types": "^4.20260601.0",
+    "@types/node": "^25.9.2",
+    "tsx": "^4.22.4",
     "typescript": "^5.9.3",
     "vitest": "^4.0.14",
     "wrangler": "^4.50.0"
