@@ -203,14 +203,34 @@ notes: Keep this hidden in normal viewing.
 - `code`
 ```
 
+## CLI: manifest compile
+
+packaging/export 用には、local deck files から manifest module を生成できます。
+
+```bash
+npm run slides:compile -- --root decks --out src/generated/hono-slides-manifest.ts --mount /slides
+```
+
+同じ処理は package bin としても公開しています。
+
+```bash
+hono-slides compile --root decks --out src/generated/hono-slides-manifest.ts --mount /slides
+```
+
+- `--root` は deck root directory（例: `decks`）
+- `--out` は生成する TypeScript manifest module
+- `--mount` は local asset の public URL prefix
+
+生成された manifest は `manifestDeckSource()` や `honoSlidesRouter()` の custom source に接続できます。
+
 ## 対応残件
 
-現時点の実装は multi-deck routing、compiled manifest、dev editor、hot reload、Cloudflare Agent proposal の土台までを対象にしています。次に残している主な対応は次の通りです。
+現時点の実装は multi-deck routing、compiled manifest、dev editor、hot reload、Cloudflare Agent proposal の土台、packaging/export 向け manifest compile CLI までを対象にしています。次に残している主な対応は次の通りです。
 
 - `route` frontmatter はまだ canonical slug には使いません。将来入れる場合も file-based slug の alias として扱い、衝突検出を追加します。
 - MDX component は実行せず placeholder と warning として扱います。実 component 実行や theme-driven renderer は今後の拡張です。
 - remote/R2 asset は `AssetRef` と warning までを生成します。存在確認、署名 URL 化、R2 bucket 連携は custom `DeckSource` や配信側で実装します。
-- production sample は閲覧 route のみです。local file-based dev sample、R2/custom source sample、packaging/export 向け CLI は今後追加します。
+- production sample は閲覧 route のみです。local file-based dev sample、R2/custom source sample は今後追加します。
 - PDF export、remote control、share/QR、presenter view の別 route 化は初期実装の範囲外です。
 
 ## Sample 起動確認
