@@ -1,9 +1,14 @@
 import { existsSync, watch } from "node:fs";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
+import { Hono } from "hono";
 import type { DeckFileChange, DeckFileEntry, DeckManifest, LocalDeckIO } from "./deck";
+import { compileMarkdown } from "./compiler";
+import { createDevDeckRuntime } from "./dev-runtime";
 import { resolveDeckFiles } from "./file-routing";
 import { buildDeckManifest, emitDeckManifestModule } from "./manifest-generator";
+import { createPreviewEventHub } from "./preview-events";
+import { honoSlidesRouter } from "./router";
 
 export interface BuildDeckManifestFromFileSystemInput {
   cwd: string;
@@ -29,6 +34,46 @@ export interface CreateLocalDeckIOInput {
     options: { recursive: boolean },
     listener: (eventType: "rename" | "change", filename: string | null) => void,
   ): { close(): void };
+}
+
+export interface CreateLocalDevSlidesAppInput extends BuildDeckManifestFromFileSystemInput {
+  mountPath?: string;
+}
+
+export interface LocalDevSlidesApp {
+  app: Hono;
+  localDeckIO: LocalDeckIO;
+  stop(): void;
+}
+
+export async function createLocalDevSlidesApp(input: CreateLocalDevSlidesAppInput): Promise<LocalDevSlidesApp> {
+  const mountPath = normalizeMountPath(input.mountPath ?? "/slides");
+  const localDeckIO = createLocalDeckIO({ cwd: input.cwd, root: input.root });
+  const previewEvents = createPreviewEventHub();
+  const initial = await buildDeckManifestFromFileSystem({ cwd: input.cwd, root: input.root, mountPath });
+  const runtime = createDevDeckRuntime({
+    initialDecks: initial.decks,
+    localDeckIO,
+    previewEvents,
+    compiler: { compileMarkdown },
+    mountPath,
+  });
+  const stop = runtime.start();
+  const app = new Hono();
+
+  app.get("/", (c) => c.redirect(mountPath));
+  app.route(
+    mountPath,
+    honoSlidesRouter({
+      source: runtime.source,
+      dev: true,
+      localDeckIO,
+      previewEvents,
+      onFileChange: runtime.handleFileChange,
+    }),
+  );
+
+  return { app, localDeckIO, stop };
 }
 
 export async function compileDecks(input: CompileDecksInput): Promise<DeckManifest> {
@@ -159,6 +204,11 @@ async function listFiles(cwd: string, dir: string): Promise<string[]> {
 function dirname(path: string): string {
   const normalized = normalizePath(path);
   return normalized.includes("/") ? normalized.slice(0, normalized.lastIndexOf("/")) : ".";
+}
+
+function normalizeMountPath(value: string): string {
+  const withLeadingSlash = value.startsWith("/") ? value : `/${value}`;
+  return withLeadingSlash.replace(/\/$/, "");
 }
 
 function normalizePath(path: string): string {

@@ -75,6 +75,24 @@ await compileDecks({
 });
 ```
 
+local file-based dev sample として、Node 側で `LocalDeckIO` / dev runtime / Hono router をまとめて配線する helper もあります。
+
+```ts
+import { serve } from "@hono/node-server";
+import { createLocalDevSlidesApp } from "hono-slides/node";
+
+const { app, stop } = await createLocalDevSlidesApp({
+  cwd: process.cwd(),
+  root: "decks",
+  mountPath: "/slides",
+});
+
+serve({ fetch: app.fetch, port: 3000 });
+process.once("SIGINT", () => stop());
+```
+
+この helper は `/slides` に dev router を mount し、`/slides/:slug/edit`、`/slides/:slug/save`、`/slides/:slug/events` を local files に接続します。production build では manifest compile + `manifestDeckSource()` を使う想定です。
+
 ## Development Router
 
 development では raw MDX の read/write/watch だけを `LocalDeckIO` に任せ、compile、preview event、HMR surface は Hono 側で扱います。
@@ -230,7 +248,7 @@ hono-slides compile --root decks --out src/generated/hono-slides-manifest.ts --m
 - `route` frontmatter はまだ canonical slug には使いません。将来入れる場合も file-based slug の alias として扱い、衝突検出を追加します。
 - MDX component は実行せず placeholder と warning として扱います。実 component 実行や theme-driven renderer は今後の拡張です。
 - remote/R2 asset は `AssetRef` と warning までを生成します。存在確認、署名 URL 化、R2 bucket 連携は custom `DeckSource` や配信側で実装します。
-- production sample は閲覧 route のみです。local file-based dev sample、R2/custom source sample は今後追加します。
+- production sample は閲覧 route のみです。R2/custom source sample は今後追加します。local file-based dev は `createLocalDevSlidesApp()` helper で最小 sample として扱えます。
 - PDF export、remote control、share/QR、presenter view の別 route 化は初期実装の範囲外です。
 
 ## Sample 起動確認
