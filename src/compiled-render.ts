@@ -1,9 +1,9 @@
 import type { AssetRef, CompiledDeck, CompiledSlide } from "./deck";
 
 export function renderCompiledDeck(deck: CompiledDeck): string {
-  return `<main class="hono-slides-deck" data-deck-slug="${escapeHtml(deck.slug)}">${deck.slides
+  return `<div class="hono-slides-stage" data-hono-slides-stage><main class="hono-slides-deck" data-deck-slug="${escapeHtml(deck.slug)}">${deck.slides
     .map((slide) => renderCompiledSlide(slide, deck.assets))
-    .join("\n")}</main>`;
+    .join("\n")}</main></div>`;
 }
 
 export function renderCompiledSlide(slide: CompiledSlide, assets: AssetRef[] = []): string {
@@ -63,9 +63,10 @@ function renderPresentationControls(deck: CompiledDeck): string {
 
 function basePresentationStyle(): string {
   return `
-:root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0b1020;color:#eef2ff}
-body{margin:0}
-.hono-slides-deck{display:grid;gap:1rem;padding:1rem}
+:root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0b1020;color:#eef2ff;--hono-slides-width:1920px;--hono-slides-height:1080px}
+html,body{margin:0;width:var(--hono-slides-width);height:var(--hono-slides-height);overflow:hidden}
+.hono-slides-stage{width:var(--hono-slides-width);height:var(--hono-slides-height);overflow:hidden;background:#0b1020;position:relative}
+.hono-slides-deck{display:grid;gap:1rem;padding:1rem;width:100%;height:100%;box-sizing:border-box}
 .slide{aspect-ratio:16/9;border:1px solid rgba(255,255,255,.13);border-radius:24px;padding:clamp(1.2rem,3vw,3rem);background:linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.035));overflow:hidden}
 .slide.layout-cover,.slide.layout-statement{display:flex;flex-direction:column;justify-content:center}
 body:not([data-overview-mode]) .slide[hidden]{display:none}
@@ -86,12 +87,17 @@ function renderPresentationScript(): string {
   const startedAt = Date.now();
   let index = 0;
 
+  function publishState() {
+    window.parent.postMessage({ type: "hono-slides:state", index, slideCount: slides.length }, "*");
+  }
+
   function show(nextIndex) {
     index = Math.max(0, Math.min(slides.length - 1, nextIndex));
     if (!document.body.hasAttribute("data-overview-mode")) {
       slides.forEach((slide, slideIndex) => { slide.hidden = slideIndex !== index; });
     }
     if (position) position.textContent = String(index + 1) + " / " + String(slides.length);
+    publishState();
   }
 
   function toggleOverview() {
@@ -132,6 +138,16 @@ function renderPresentationScript(): string {
     if (event.key === "f") void toggleFullscreen();
     if (event.key === "p") togglePresenter();
     if (event.key === "o") toggleOverview();
+  });
+
+  window.addEventListener("message", (event) => {
+    const message = event.data;
+    if (!message || message.type !== "hono-slides:command") return;
+    if (message.action === "previous") show(index - 1);
+    if (message.action === "next") show(index + 1);
+    if (message.action === "fullscreen") void toggleFullscreen();
+    if (message.action === "presenter") togglePresenter();
+    if (message.action === "overview") toggleOverview();
   });
 
   setInterval(() => {

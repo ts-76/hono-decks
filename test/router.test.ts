@@ -25,7 +25,7 @@ const deck = {
 } satisfies CompiledDeck;
 
 describe("honoSlidesRouter", () => {
-  it("serves an index and a compiled deck under the mount path", async () => {
+  it("serves an index and an iframe viewer wrapper under the mount path", async () => {
     const app = new Hono();
     app.route("/slides", honoSlidesRouter({ source: manifestDeckSource({ decks: [deck] }), dev: false }));
 
@@ -36,7 +36,34 @@ describe("honoSlidesRouter", () => {
     const response = await app.request("/slides/deck1");
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/html");
-    expect(await response.text()).toContain("<h1>Intro</h1>");
+    const html = await response.text();
+    expect(html).toContain('data-hono-slides-viewer');
+    expect(html).toContain('src="/slides/deck1/presentation"');
+    expect(html).toContain('width="1920"');
+    expect(html).toContain('height="1080"');
+    expect(html).toContain("Math.min");
+    expect(html).toContain('data-action="previous"');
+    expect(html).toContain('data-action="next"');
+    expect(html).toContain('type: "hono-slides:command"');
+    expect(html).toContain("contentWindow?.postMessage");
+    expect(html).not.toContain("<h1>Intro</h1>");
+  });
+
+  it("serves the compiled deck on a fixed 1920x1080 presentation route", async () => {
+    const app = new Hono();
+    app.route("/slides", honoSlidesRouter({ source: manifestDeckSource({ decks: [deck] }), dev: false }));
+
+    const response = await app.request("/slides/deck1/presentation");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/html");
+    const html = await response.text();
+    expect(html).toContain("<h1>Intro</h1>");
+    expect(html).toContain("--hono-slides-width:1920px");
+    expect(html).toContain("--hono-slides-height:1080px");
+    expect(html).toContain(".hono-slides-stage{width:var(--hono-slides-width);height:var(--hono-slides-height)");
+    expect(html).toContain('window.addEventListener("message"');
+    expect(html).toContain('message.type !== "hono-slides:command"');
+    expect(html).toContain('window.parent.postMessage({ type: "hono-slides:state"');
   });
 
   it("hides draft decks from production index and direct viewing routes", async () => {
@@ -63,6 +90,10 @@ describe("honoSlidesRouter", () => {
     const response = await app.request("/slides/draft");
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({ error: "Deck not found", slug: "draft" });
+
+    const presentation = await app.request("/slides/draft/presentation");
+    expect(presentation.status).toBe(404);
+    expect(await presentation.json()).toEqual({ error: "Deck not found", slug: "draft" });
   });
 
   it("hides draft deck assets in production", async () => {
@@ -119,6 +150,10 @@ describe("honoSlidesRouter", () => {
     const response = await app.request("/slides/draft");
     expect(response.status).toBe(200);
 
+    const presentation = await app.request("/slides/draft/presentation");
+    expect(presentation.status).toBe(200);
+    expect(await presentation.text()).toContain("Draft Deck");
+
     const asset = await app.request("/slides/draft/assets/image.png");
     expect(asset.status).toBe(200);
   });
@@ -136,10 +171,13 @@ describe("honoSlidesRouter", () => {
       }),
     );
 
-    const productionHtml = await (await production.request("/decks/deck1")).text();
-    const developmentHtml = await (await development.request("/decks/deck1")).text();
+    const productionHtml = await (await production.request("/decks/deck1/presentation")).text();
+    const developmentWrapperHtml = await (await development.request("/decks/deck1")).text();
+    const developmentHtml = await (await development.request("/decks/deck1/presentation")).text();
 
     expect(productionHtml).not.toContain("new EventSource");
+    expect(developmentWrapperHtml).not.toContain("new EventSource");
+    expect(developmentWrapperHtml).toContain('src="/decks/deck1/presentation"');
     expect(developmentHtml).toContain('new EventSource("/decks/deck1/events")');
     expect(developmentHtml).toContain('event.type === "deck:updated"');
     expect(developmentHtml).toContain("location.reload()");
