@@ -24,7 +24,11 @@ describe("local file-based dev sample app", () => {
         expect(view.status).toBe(200);
         const viewHtml = await view.text();
         expect(viewHtml).toContain("Local Deck");
-        expect(viewHtml).toContain("/slides/local/events");
+        expect(viewHtml).toContain("/slides/local/presentation");
+
+        const presentation = await app.request("/slides/local/presentation");
+        expect(presentation.status).toBe(200);
+        expect(await presentation.text()).toContain("/slides/local/events");
 
         const edit = await app.request("/slides/local/edit");
         expect(edit.status).toBe(200);
