@@ -86,6 +86,7 @@ describe("Node filesystem deck adapter", () => {
     expect(typeof mod.compileDecks).toBe("function");
     expect(typeof mod.createLocalDeckIO).toBe("function");
     expect(typeof mod.buildDeckManifestFromFileSystem).toBe("function");
+    expect(typeof mod.createLocalDevSlidesApp).toBe("function");
     expect(typeof mod.writeDeckManifestModule).toBe("function");
   });
 
