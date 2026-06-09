@@ -3,6 +3,7 @@ export interface Env {
   SlideAssistant: DurableObjectNamespace;
   LOADER: WorkerLoader;
   AI?: Ai;
+  HONO_SLIDES_USE_WORKERS_AI?: string;
 }
 
 export interface SlideDeck {
@@ -32,6 +33,8 @@ export interface AgentSuggestRequest {
   markdown: string;
   instruction: string;
   activeSlide?: number;
+  slideCount?: number;
+  useWorkersAI?: boolean;
   slug?: string;
   sessionId?: string;
   mode?: "chat" | "code";

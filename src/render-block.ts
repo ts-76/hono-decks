@@ -21,10 +21,32 @@ export function renderBlock(block: SlideBlock): string {
         block.title ? ` title="${escapeHtml(block.title)}"` : ""
       } />`;
     case "component":
+      if (block.name === "Hero") return renderHero(block.props);
       return `<div class="mdx-component" data-component="${escapeHtml(block.name)}"><strong>&lt;${escapeHtml(
         block.name,
       )} /&gt;</strong>${renderProps(block.props)}</div>`;
   }
+}
+
+function renderHero(props: Record<string, string | boolean>): string {
+  const title = stringProp(props, "title");
+  const subtitle = stringProp(props, "subtitle") ?? stringProp(props, "description");
+  const eyebrow = stringProp(props, "eyebrow");
+  const image = stringProp(props, "image") ?? stringProp(props, "src");
+  const alt = stringProp(props, "alt") ?? title ?? "Hero image";
+  const featured = props.featured === true ? " is-featured" : "";
+  const hasImage = image ? " has-image" : "";
+
+  return `<section class="mdx-hero${featured}${hasImage}" data-component="Hero">${
+    image ? `<img class="mdx-hero-image" src="${escapeHtml(image)}" alt="${escapeHtml(alt)}" />` : ""
+  }<div class="mdx-hero-copy">${eyebrow ? `<p class="mdx-hero-eyebrow">${inline(eyebrow)}</p>` : ""}${
+    title ? `<h1>${inline(title)}</h1>` : ""
+  }${subtitle ? `<p class="mdx-hero-subtitle">${inline(subtitle)}</p>` : ""}</div></section>`;
+}
+
+function stringProp(props: Record<string, string | boolean>, key: string): string | undefined {
+  const value = props[key];
+  return typeof value === "string" && value.trim() ? value : undefined;
 }
 
 function renderProps(props: Record<string, string | boolean>): string {

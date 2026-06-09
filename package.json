@@ -19,16 +19,17 @@
     "README.md"
   ],
   "scripts": {
-    "dev": "wrangler dev --local",
+    "dev": "wrangler dev --var HONO_SLIDES_USE_WORKERS_AI:true",
     "deploy": "wrangler deploy",
     "slides:compile": "tsx src/cli.ts compile",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.worker.json",
     "test": "vitest run",
-    "check": "npm run typecheck && npm run test"
+    "check": "bun run typecheck && bun run test"
   },
   "dependencies": {
+    "@cloudflare/ai-chat": "^0.8.4",
     "@cloudflare/codemode": "^0.3.8",
-    "agents": "^0.14.1",
+    "agents": "^0.15.0",
     "ai": "^6.0.196",
     "hono": "^4.10.7",
     "workers-ai-provider": "^3.1.14",

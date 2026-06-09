@@ -84,12 +84,17 @@ function addComponentPlaceholderWarnings(
   slideIndex: number,
 ): void {
   for (const component of components) {
+    if (isBuiltInComponent(component.name)) continue;
     warnings.push({
       code: "unsupported-mdx-component",
       message: `MDX component "${component.name}" is rendered as a placeholder.`,
       slideIndex,
     });
   }
+}
+
+function isBuiltInComponent(name: string): boolean {
+  return name === "Hero";
 }
 
 function addExternalAssetWarnings(warnings: CompiledDeck["warnings"], assets: AssetRef[]): void {

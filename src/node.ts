@@ -38,6 +38,7 @@ export interface CreateLocalDeckIOInput {
 
 export interface CreateLocalDevSlidesAppInput extends BuildDeckManifestFromFileSystemInput {
   mountPath?: string;
+  watchFileSystem?: CreateLocalDeckIOInput["watchFileSystem"];
 }
 
 export interface LocalDevSlidesApp {
@@ -48,7 +49,7 @@ export interface LocalDevSlidesApp {
 
 export async function createLocalDevSlidesApp(input: CreateLocalDevSlidesAppInput): Promise<LocalDevSlidesApp> {
   const mountPath = normalizeMountPath(input.mountPath ?? "/slides");
-  const localDeckIO = createLocalDeckIO({ cwd: input.cwd, root: input.root });
+  const localDeckIO = createLocalDeckIO({ cwd: input.cwd, root: input.root, watchFileSystem: input.watchFileSystem });
   const previewEvents = createPreviewEventHub();
   const initial = await buildDeckManifestFromFileSystem({ cwd: input.cwd, root: input.root, mountPath });
   const runtime = createDevDeckRuntime({
