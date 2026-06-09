@@ -13,6 +13,7 @@ describe("local file-based dev sample app", () => {
         cwd,
         root: "decks",
         mountPath: "/slides",
+        watchFileSystem: () => ({ close() {} }),
       });
 
       try {

@@ -1,9 +1,9 @@
 import type { AssetRef, CompiledDeck, CompiledSlide } from "./deck";
 
 export function renderCompiledDeck(deck: CompiledDeck): string {
-  return `<div class="hono-slides-stage" data-hono-slides-stage><main class="hono-slides-deck" data-deck-slug="${escapeHtml(deck.slug)}">${deck.slides
+  return `<main class="hono-slides-stage hono-slides-deck" data-hono-slides-stage data-deck-slug="${escapeHtml(deck.slug)}">${deck.slides
     .map((slide) => renderCompiledSlide(slide, deck.assets))
-    .join("\n")}</main></div>`;
+    .join("\n")}</main>`;
 }
 
 export function renderCompiledSlide(slide: CompiledSlide, assets: AssetRef[] = []): string {
@@ -42,23 +42,10 @@ export function renderCompiledDeckPage(input: {
 <body>
   ${warnings}
   ${renderCompiledDeck(deck)}
-  ${renderPresentationControls(deck)}
   ${renderPresentationScript()}
   ${input.liveReloadPath ? renderLiveReloadScript(input.liveReloadPath) : ""}
 </body>
 </html>`;
-}
-
-function renderPresentationControls(deck: CompiledDeck): string {
-  return `<nav class="hono-slides-controls" data-hono-slides-controls aria-label="Presentation controls">
-    <button type="button" data-action="previous" aria-label="Previous slide">Prev</button>
-    <span data-slide-position>1 / ${deck.slides.length}</span>
-    <button type="button" data-action="next" aria-label="Next slide">Next</button>
-    <button type="button" data-action="fullscreen" aria-label="Fullscreen">Full</button>
-    <button type="button" data-action="presenter" aria-label="Presenter mode">Presenter</button>
-    <button type="button" data-action="overview" aria-label="Overview">Overview</button>
-    <span data-timer>00:00</span>
-  </nav>`;
 }
 
 function basePresentationStyle(): string {
@@ -69,12 +56,17 @@ html,body{margin:0;width:var(--hono-slides-width);height:var(--hono-slides-heigh
 .hono-slides-deck{display:grid;gap:1rem;padding:1rem;width:100%;height:100%;box-sizing:border-box}
 .slide{aspect-ratio:16/9;border:1px solid rgba(255,255,255,.13);border-radius:24px;padding:clamp(1.2rem,3vw,3rem);background:linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.035));overflow:hidden}
 .slide.layout-cover,.slide.layout-statement{display:flex;flex-direction:column;justify-content:center}
+.mdx-hero{height:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,42%);gap:clamp(1rem,3vw,3rem);align-items:center}
+.mdx-hero:not(.has-image){grid-template-columns:1fr}
+.mdx-hero-copy{min-width:0}
+.mdx-hero-eyebrow{margin:0 0 .75rem;color:#8bd3ff;text-transform:uppercase;font-size:.85rem;letter-spacing:0}
+.mdx-hero h1{margin:0;font-size:clamp(2.2rem,5vw,5rem);line-height:1.02}
+.mdx-hero-subtitle{margin:1rem 0 0;font-size:clamp(1rem,1.8vw,1.5rem);line-height:1.45;color:#cbd5e1}
+.mdx-hero-image{width:100%;height:auto;max-height:70vh;object-fit:contain;border-radius:8px}
 body:not([data-overview-mode]) .slide[hidden]{display:none}
 body[data-overview-mode] .hono-slides-deck{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
 body[data-overview-mode] .slide{cursor:pointer}
 body[data-presenter-mode] .speaker-notes{display:block;margin-top:1rem;padding:.75rem;border-radius:8px;background:rgba(255,255,255,.08)}
-.hono-slides-controls{position:sticky;bottom:0;display:flex;gap:.5rem;align-items:center;padding:.75rem;background:rgba(11,16,32,.92);backdrop-filter:blur(12px)}
-.hono-slides-controls button{border:1px solid rgba(255,255,255,.2);border-radius:8px;background:rgba(255,255,255,.08);color:inherit;padding:.45rem .7rem}
 .hono-slides-warnings{margin:1rem;padding:.75rem;border-radius:14px;background:rgba(255,193,7,.12);color:#ffe59b}`;
 }
 
@@ -82,13 +74,10 @@ function renderPresentationScript(): string {
   return `<script>
 (() => {
   const slides = Array.from(document.querySelectorAll(".slide"));
-  const position = document.querySelector("[data-slide-position]");
-  const timer = document.querySelector("[data-timer]");
-  const startedAt = Date.now();
   let index = 0;
 
   function publishState() {
-    window.parent.postMessage({ type: "hono-slides:state", index, slideCount: slides.length }, "*");
+    if (window.parent !== window) window.parent.postMessage({ type: "hono-slides:state", index, slideCount: slides.length }, "*");
   }
 
   function show(nextIndex) {
@@ -96,7 +85,6 @@ function renderPresentationScript(): string {
     if (!document.body.hasAttribute("data-overview-mode")) {
       slides.forEach((slide, slideIndex) => { slide.hidden = slideIndex !== index; });
     }
-    if (position) position.textContent = String(index + 1) + " / " + String(slides.length);
     publishState();
   }
 
@@ -119,11 +107,6 @@ function renderPresentationScript(): string {
     await document.documentElement.requestFullscreen?.();
   }
 
-  document.querySelector("[data-action='previous']")?.addEventListener("click", () => show(index - 1));
-  document.querySelector("[data-action='next']")?.addEventListener("click", () => show(index + 1));
-  document.querySelector("[data-action='fullscreen']")?.addEventListener("click", () => { void toggleFullscreen(); });
-  document.querySelector("[data-action='presenter']")?.addEventListener("click", togglePresenter);
-  document.querySelector("[data-action='overview']")?.addEventListener("click", toggleOverview);
   slides.forEach((slide, slideIndex) => {
     slide.addEventListener("click", () => {
       if (!document.body.hasAttribute("data-overview-mode")) return;
@@ -150,14 +133,6 @@ function renderPresentationScript(): string {
     if (message.action === "overview") toggleOverview();
   });
 
-  setInterval(() => {
-    if (!timer) return;
-    const elapsed = Math.floor((Date.now() - startedAt) / 1000);
-    const minutes = String(Math.floor(elapsed / 60)).padStart(2, "0");
-    const seconds = String(elapsed % 60).padStart(2, "0");
-    timer.textContent = minutes + ":" + seconds;
-  }, 1000);
-
   show(0);
 })();
 </script>`;
@@ -167,10 +142,21 @@ function renderLiveReloadScript(eventsPath: string): string {
   return `<script>
 (() => {
   try {
-    const events = new EventSource(${JSON.stringify(eventsPath)});
-    events.addEventListener("deck:updated", (event) => {
-      if (event.type === "deck:updated") location.reload();
-    });
+    const eventsUrl = ${JSON.stringify(`${eventsPath}?once=1`)};
+    function parseEvents(text) {
+      return text.split("\\n\\n").map((chunk) => {
+        const eventLine = chunk.split("\\n").find((line) => line.startsWith("event: "));
+        return { type: eventLine ? eventLine.slice(7) : "" };
+      });
+    }
+    async function poll() {
+      const response = await fetch(eventsUrl, { cache: "no-store" });
+      if (!response.ok) return;
+      const events = parseEvents(await response.text());
+      if (events.some((event) => event.type === "deck:updated")) location.reload();
+    }
+    void poll();
+    setInterval(() => { void poll(); }, 1000);
   } catch {}
 })();
 </script>`;

@@ -1,5 +1,4 @@
 import { Hono } from "hono";
-import { streamSSE } from "hono/streaming";
 import type { Context } from "hono";
 import { applyDeckAgentProposal } from "./agent-apply";
 import { createDeckAgentInstanceName, createDeckMarkdownHash, parseDeckAgentMode } from "./agent-contract";
@@ -18,6 +17,8 @@ export interface HonoSlidesAgentChatInput {
   markdown: string;
   instruction: string;
   activeSlide?: number;
+  slideCount?: number;
+  useWorkersAI?: boolean;
 }
 
 export interface HonoSlidesRouterOptions {
@@ -72,34 +73,7 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
 
     router.get("/:slug/events", (c) => {
       const slug = c.req.param("slug");
-      if (c.req.query("once") === "1" || !options.previewEvents?.subscribe) {
-        return oneShotEventResponse(slug, options.previewEvents);
-      }
-
-      return streamSSE(c, async (stream) => {
-        let unsubscribe = () => {};
-        const aborted = new Promise<void>((resolve) => {
-          stream.onAbort(() => {
-            resolve();
-          });
-        });
-        unsubscribe = options.previewEvents!.subscribe!(slug, (event) => {
-          void stream.writeSSE(toServerSentMessage(event)).catch(() => {
-            unsubscribe();
-            stream.abort();
-          });
-        });
-
-        try {
-          await stream.writeSSE(toServerSentMessage({ type: "ready", slug }));
-          for (const event of options.previewEvents?.drain(slug) ?? []) {
-            await stream.writeSSE(toServerSentMessage(event));
-          }
-          await aborted;
-        } finally {
-          unsubscribe();
-        }
-      });
+      return oneShotEventResponse(slug, options.previewEvents);
     });
 
     function oneShotEventResponse(slug: string, previewEvents: PreviewEventHub | undefined): Response {
@@ -130,6 +104,7 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
         activeSlide?: unknown;
         mode?: unknown;
         markdown?: unknown;
+        useWorkersAI?: unknown;
       };
       const markdown = typeof payload.markdown === "string" ? payload.markdown : savedMarkdown;
       const sessionId = typeof payload.sessionId === "string" && payload.sessionId ? payload.sessionId : "default";
@@ -144,6 +119,8 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
           markdown,
           instruction: typeof payload.instruction === "string" ? payload.instruction : "",
           activeSlide: parseActiveSlide(payload.activeSlide, deck?.slides.length),
+          slideCount: deck?.slides.length,
+          useWorkersAI: typeof payload.useWorkersAI === "boolean" ? payload.useWorkersAI : undefined,
         },
         c,
       );
@@ -194,7 +171,14 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
     const deck = await options.source.getCompiledDeck(c, slug);
     if (!deck || (!isDevEnabled(options) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
     const mountPath = stripPathSuffix(c.req.path, `/${slug}`);
-    return c.html(renderDeckViewerPage({ slug, title: deck.meta.title ?? slug, mountPath }));
+    return c.html(
+      renderDeckViewerPage({
+        slug,
+        title: deck.meta.title ?? slug,
+        mountPath,
+        chatEnabled: isDevEnabled(options) && Boolean(options.localDeckIO && options.agentChat),
+      }),
+    );
   });
 
   return router;
@@ -425,20 +409,45 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
       }
     });
 
-    try {
-      const events = new EventSource(eventsUrl);
-      events.addEventListener("deck:updated", (event) => { eventOutput.textContent = event.data; reloadPreview(); });
-      events.addEventListener("deck:error", (event) => { eventOutput.textContent = event.data; });
-    } catch {
-      eventOutput.textContent = "";
+    function parsePreviewEvents(text) {
+      return text.split("\\n\\n").map((chunk) => {
+        const lines = chunk.split("\\n");
+        const eventLine = lines.find((line) => line.startsWith("event: "));
+        const dataLine = lines.find((line) => line.startsWith("data: "));
+        return {
+          type: eventLine ? eventLine.slice(7) : "",
+          data: dataLine ? dataLine.slice(6) : "",
+        };
+      }).filter((event) => event.type);
     }
+
+    async function pollEvents() {
+      try {
+        const response = await fetch(eventsUrl + "?once=1", { cache: "no-store" });
+        if (!response.ok) return;
+        for (const event of parsePreviewEvents(await response.text())) {
+          if (event.type === "deck:updated") {
+            eventOutput.textContent = event.data;
+            reloadPreview();
+          }
+          if (event.type === "deck:error") eventOutput.textContent = event.data;
+        }
+      } catch {
+        eventOutput.textContent = "";
+      }
+    }
+
+    void pollEvents();
+    setInterval(() => { void pollEvents(); }, 1000);
   </script>
 </body>
 </html>`;
 }
 
-function renderDeckViewerPage(input: { slug: string; title: string; mountPath: string }): string {
+function renderDeckViewerPage(input: { slug: string; title: string; mountPath: string; chatEnabled?: boolean }): string {
   const presentationUrl = `${input.mountPath}/${encodeURIComponent(input.slug)}/presentation`;
+  const agentUrl = `${input.mountPath}/${encodeURIComponent(input.slug)}/agent/chat`;
+  const applyUrl = `${input.mountPath}/${encodeURIComponent(input.slug)}/apply`;
   return `<!doctype html>
 <html lang="ja">
 <head>
@@ -448,39 +457,65 @@ function renderDeckViewerPage(input: { slug: string; title: string; mountPath: s
   <style>
     :root { color-scheme: dark; background: #050816; color: #eef2ff; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
     body { margin: 0; min-height: 100vh; overflow: hidden; }
-    [data-hono-slides-viewer] { min-height: 100vh; display: grid; place-items: center; background: radial-gradient(circle at top, #1e2b5c, #050816 62%); }
+    [data-hono-slides-viewer] { min-height: 100vh; display: grid; place-items: center; gap: 16px; padding: 16px; box-sizing: border-box; background: radial-gradient(circle at top, #1e2b5c, #050816 62%); }
+    [data-hono-slides-viewer][data-chat-enabled="true"] { grid-template-columns: minmax(0, 1fr) minmax(320px, 380px); align-items: stretch; place-items: center stretch; }
+    .hono-slides-viewer-stage { display: grid; place-items: center; min-width: 0; min-height: 0; }
     .hono-slides-viewport { width: min(100vw, calc(100vh * 16 / 9)); height: min(100vh, calc(100vw * 9 / 16)); position: relative; overflow: hidden; }
     .hono-slides-frame-stage { width: 1920px; height: 1080px; transform-origin: top left; }
     iframe { width: 1920px; height: 1080px; border: 0; display: block; background: #0b1020; }
     .hono-slides-viewer-controls { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); display: flex; gap: 8px; align-items: center; padding: 8px 10px; border-radius: 999px; background: rgba(5, 8, 22, .72); backdrop-filter: blur(12px); }
-    .hono-slides-viewer-controls button { border: 1px solid rgba(255,255,255,.22); border-radius: 999px; background: rgba(255,255,255,.1); color: inherit; padding: 8px 12px; cursor: pointer; }
+    .hono-slides-viewer-controls button, .hono-slides-viewer-controls a { border: 1px solid rgba(255,255,255,.22); border-radius: 999px; background: rgba(255,255,255,.1); color: inherit; padding: 8px 12px; cursor: pointer; font: inherit; text-decoration: none; }
+    [data-hono-slides-chat] { height: calc(100vh - 32px); min-height: 0; display: grid; grid-template-rows: 1fr auto; gap: 12px; padding: 12px; box-sizing: border-box; border-left: 1px solid rgba(255,255,255,.13); background: rgba(5,8,22,.58); backdrop-filter: blur(12px); }
+    [data-chat-log] { min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 10px; }
+    .hono-slides-chat-message { padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,.09); line-height: 1.45; white-space: pre-wrap; }
+    .hono-slides-chat-message[data-role="user"] { background: rgba(139,211,255,.16); }
+    [data-chat-approval] { display: none; gap: 8px; padding: 10px; border: 1px solid rgba(255,255,255,.16); border-radius: 8px; background: rgba(255,255,255,.07); }
+    [data-chat-approval][data-visible="true"] { display: grid; }
+    [data-chat-approval-diff] { max-height: 180px; overflow: auto; margin: 0; padding: 8px; border-radius: 6px; background: rgba(0,0,0,.28); white-space: pre-wrap; font-size: 12px; }
+    [data-chat-approval-actions] { display: flex; gap: 8px; }
+    [data-chat-form] { display: grid; gap: 8px; }
+    [data-chat-input] { min-height: 88px; resize: vertical; border: 1px solid rgba(255,255,255,.22); border-radius: 8px; padding: 10px; background: rgba(255,255,255,.08); color: inherit; font: inherit; }
+    [data-chat-submit], [data-chat-apply], [data-chat-dismiss] { border: 1px solid rgba(255,255,255,.22); border-radius: 8px; background: #eef2ff; color: #101528; padding: 9px 12px; cursor: pointer; font: inherit; }
+    [data-chat-dismiss] { background: rgba(255,255,255,.08); color: inherit; }
+    @media (max-width: 900px) { [data-hono-slides-viewer][data-chat-enabled="true"] { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) 280px; } [data-hono-slides-chat] { width: 100%; height: 280px; border-left: 0; border-top: 1px solid rgba(255,255,255,.13); } }
   </style>
 </head>
 <body>
-  <main data-hono-slides-viewer data-deck-slug="${escapeHtml(input.slug)}">
-    <div class="hono-slides-viewport" data-viewer-viewport>
-      <div class="hono-slides-frame-stage" data-viewer-stage>
-        <iframe title="${escapeHtml(input.title)} presentation" src="${escapeHtml(presentationUrl)}" width="1920" height="1080" allowfullscreen></iframe>
+  <main data-hono-slides-viewer data-deck-slug="${escapeHtml(input.slug)}"${
+    input.chatEnabled ? ' data-chat-enabled="true"' : ""
+  }>
+    <div class="hono-slides-viewer-stage">
+      <div class="hono-slides-viewport" data-viewer-viewport>
+        <div class="hono-slides-frame-stage" data-viewer-stage>
+          <iframe title="${escapeHtml(input.title)} presentation" src="${escapeHtml(presentationUrl)}" width="1920" height="1080"></iframe>
+        </div>
       </div>
+      <nav class="hono-slides-viewer-controls" aria-label="Viewer controls">
+        <button type="button" data-action="previous">Prev</button>
+        <span data-slide-position>1 / ?</span>
+        <button type="button" data-action="next">Next</button>
+        <button type="button" data-action="fullscreen">Full</button>
+        <a data-action="presentation" href="${escapeHtml(presentationUrl)}">Presentation</a>
+      </nav>
     </div>
-    <nav class="hono-slides-viewer-controls" aria-label="Viewer controls">
-      <button type="button" data-action="previous">Prev</button>
-      <span data-slide-position>1 / ?</span>
-      <button type="button" data-action="next">Next</button>
-      <button type="button" data-action="fullscreen">Full</button>
-    </nav>
+    ${input.chatEnabled ? renderDeckViewerChatPanel() : ""}
   </main>
   <script>
 (() => {
+  const root = document.querySelector("[data-hono-slides-viewer]");
   const viewport = document.querySelector("[data-viewer-viewport]");
   const stage = document.querySelector("[data-viewer-stage]");
   const iframe = document.querySelector("iframe");
   const position = document.querySelector("[data-slide-position]");
   const DESIGN_WIDTH = 1920;
   const DESIGN_HEIGHT = 1080;
+  let activeSlideIndex = 0;
   function resize() {
     if (!viewport || !stage) return;
-    const scale = Math.min(window.innerWidth / DESIGN_WIDTH, window.innerHeight / DESIGN_HEIGHT);
+    const bounds = viewport.parentElement?.getBoundingClientRect();
+    const availableWidth = bounds?.width || window.innerWidth;
+    const availableHeight = bounds?.height || window.innerHeight;
+    const scale = Math.min(availableWidth / DESIGN_WIDTH, availableHeight / DESIGN_HEIGHT);
     stage.style.transform = "scale(" + scale + ")";
     viewport.style.width = String(DESIGN_WIDTH * scale) + "px";
     viewport.style.height = String(DESIGN_HEIGHT * scale) + "px";
@@ -490,26 +525,215 @@ function renderDeckViewerPage(input: { slug: string; title: string; mountPath: s
     iframe?.contentWindow?.postMessage({ type: "hono-slides:command", action }, "*");
   }
 
+  async function toggleViewerFullscreen() {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen?.();
+      return;
+    }
+    await root?.requestFullscreen?.();
+  }
+
   document.querySelector("[data-action='previous']")?.addEventListener("click", () => sendCommand("previous"));
   document.querySelector("[data-action='next']")?.addEventListener("click", () => sendCommand("next"));
-  document.querySelector("[data-action='fullscreen']")?.addEventListener("click", () => sendCommand("fullscreen"));
+  document.querySelector("[data-action='fullscreen']")?.addEventListener("click", () => { void toggleViewerFullscreen(); });
   window.addEventListener("message", (event) => {
     const message = event.data;
     if (!message || message.type !== "hono-slides:state") return;
+    activeSlideIndex = message.index;
     if (position) position.textContent = String(message.index + 1) + " / " + String(message.slideCount);
   });
   document.addEventListener("keydown", (event) => {
     if (event.key === "ArrowRight" || event.key === " ") sendCommand("next");
     if (event.key === "ArrowLeft") sendCommand("previous");
-    if (event.key === "f") sendCommand("fullscreen");
+    if (event.key === "f") void toggleViewerFullscreen();
   });
 
   window.addEventListener("resize", resize);
   resize();
+${input.chatEnabled ? renderDeckViewerChatScript(agentUrl, applyUrl) : ""}
 })();
   </script>
 </body>
 </html>`;
+}
+
+function renderDeckViewerChatPanel(): string {
+  return `<aside data-hono-slides-chat aria-label="Agent chat">
+      <div data-chat-log aria-live="polite"></div>
+      <div data-chat-approval aria-live="polite">
+        <div data-chat-approval-text>編集案があります。適用しますか？</div>
+        <pre data-chat-approval-diff></pre>
+        <div data-chat-approval-actions>
+          <button data-chat-apply type="button">Apply</button>
+          <button data-chat-dismiss type="button">Dismiss</button>
+        </div>
+      </div>
+      <form data-chat-form>
+        <textarea data-chat-input name="instruction"></textarea>
+        <button data-chat-submit type="submit">Send</button>
+      </form>
+    </aside>`;
+}
+
+function renderDeckViewerChatScript(agentUrl: string, applyUrl: string): string {
+  return `
+  const chatForm = document.querySelector("[data-chat-form]");
+  const chatInput = document.querySelector("[data-chat-input]");
+  const chatLog = document.querySelector("[data-chat-log]");
+  const chatSubmit = document.querySelector("[data-chat-submit]");
+  const chatApproval = document.querySelector("[data-chat-approval]");
+  const chatApprovalText = document.querySelector("[data-chat-approval-text]");
+  const chatApprovalDiff = document.querySelector("[data-chat-approval-diff]");
+  const chatApply = document.querySelector("[data-chat-apply]");
+  const chatDismiss = document.querySelector("[data-chat-dismiss]");
+  const agentUrl = ${JSON.stringify(agentUrl)};
+  const applyUrl = ${JSON.stringify(applyUrl)};
+  const sessionKey = "hono-slides-chat-session:" + root?.dataset.deckSlug;
+  const sessionId = window.sessionStorage?.getItem(sessionKey) || crypto.randomUUID?.() || String(Date.now());
+  window.sessionStorage?.setItem(sessionKey, sessionId);
+  const historyKey = "hono-slides-chat-history:" + root?.dataset.deckSlug + ":" + sessionId;
+  const proposalKey = "hono-slides-chat-proposal:" + root?.dataset.deckSlug + ":" + sessionId;
+  let pendingChatProposal;
+  let chatMessages = [];
+
+  function appendChatMessage(role, text, options = {}) {
+    if (!chatLog) return;
+    const message = document.createElement("div");
+    message.className = "hono-slides-chat-message";
+    message.dataset.role = role;
+    message.textContent = text;
+    chatLog.append(message);
+    chatLog.scrollTop = chatLog.scrollHeight;
+    if (options.persist === false) return;
+    chatMessages.push({ role, text });
+    persistChatState();
+  }
+
+  function persistChatState() {
+    try {
+      window.sessionStorage?.setItem(historyKey, JSON.stringify(chatMessages.slice(-80)));
+      if (pendingChatProposal) window.sessionStorage?.setItem(proposalKey, JSON.stringify(pendingChatProposal));
+      else window.sessionStorage?.removeItem(proposalKey);
+    } catch {}
+  }
+
+  function restoreChatState() {
+    try {
+      const restoredMessages = JSON.parse(window.sessionStorage?.getItem(historyKey) || "[]");
+      if (Array.isArray(restoredMessages)) {
+        chatMessages = restoredMessages.filter((message) => message && typeof message.role === "string" && typeof message.text === "string").slice(-80);
+        for (const message of chatMessages) appendChatMessage(message.role, message.text, { persist: false });
+      }
+      const restoredProposal = JSON.parse(window.sessionStorage?.getItem(proposalKey) || "null");
+      if (restoredProposal && typeof restoredProposal === "object") {
+        pendingChatProposal = restoredProposal;
+        showProposalApproval(restoredProposal.summary);
+      }
+    } catch {
+      chatMessages = [];
+      pendingChatProposal = undefined;
+    }
+  }
+
+  function isEditInstruction(value) {
+    return /(編集|変更|修正|直して|変えて|書き換え|更新|タイトル|見出し|edit|change|rewrite|update|fix)/i.test(value);
+  }
+
+  function getChatMode(value) {
+    return isEditInstruction(value) ? "code" : "chat";
+  }
+
+  function reloadDeckFrame() {
+    if (!iframe) return;
+    const source = iframe.getAttribute("src") || "";
+    iframe.setAttribute("src", source.replace(/[?&]t=\\d+$/, "") + (source.includes("?") ? "&" : "?") + "t=" + String(Date.now()));
+  }
+
+  function showProposalApproval(summary) {
+    if (chatApprovalText) chatApprovalText.textContent = summary || "編集案があります。適用しますか？";
+    if (chatApprovalDiff) chatApprovalDiff.textContent = summarizeProposalDiff(pendingChatProposal);
+    chatApproval?.setAttribute("data-visible", "true");
+    persistChatState();
+  }
+
+  function hideProposalApproval() {
+    chatApproval?.removeAttribute("data-visible");
+    if (chatApprovalDiff) chatApprovalDiff.textContent = "";
+    persistChatState();
+  }
+
+  function summarizeProposalDiff(proposal) {
+    if (!proposal || proposal.type !== "patch" || !Array.isArray(proposal.patches)) return "";
+    return proposal.patches.map((patch, index) => {
+      return [
+        "Patch " + String(index + 1) + ": " + (patch.path || ""),
+        "- " + String(patch.oldText || ""),
+        "+ " + String(patch.newText || ""),
+      ].join("\\n");
+    }).join("\\n\\n");
+  }
+
+  chatForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const instruction = chatInput?.value?.trim();
+    if (!instruction) return;
+    appendChatMessage("user", instruction);
+    chatInput.value = "";
+    if (chatSubmit) chatSubmit.disabled = true;
+    try {
+      const response = await fetch(agentUrl, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ sessionId, instruction, mode: getChatMode(instruction), activeSlide: activeSlideIndex }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || JSON.stringify(data));
+      if (data.proposal) {
+        pendingChatProposal = data.proposal;
+        showProposalApproval(data.proposal.summary);
+        appendChatMessage("assistant", "編集案を作成しました。適用する場合は Apply を押してください。");
+      } else {
+        appendChatMessage("assistant", data.suggestion || data.message || JSON.stringify(data, null, 2));
+      }
+    } catch (error) {
+      appendChatMessage("assistant", error instanceof Error ? error.message : String(error));
+    } finally {
+      if (chatSubmit) chatSubmit.disabled = false;
+      chatInput?.focus();
+    }
+  });
+
+  chatApply?.addEventListener("click", async () => {
+    if (!pendingChatProposal) return;
+    chatApply.disabled = true;
+    chatDismiss.disabled = true;
+    try {
+      const applyResponse = await fetch(applyUrl, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ proposal: pendingChatProposal }),
+      });
+      const applyData = await applyResponse.json();
+      if (!applyResponse.ok) throw new Error(applyData.error || JSON.stringify(applyData));
+      pendingChatProposal = undefined;
+      hideProposalApproval();
+      reloadDeckFrame();
+      appendChatMessage("assistant", "編集を適用しました。");
+    } catch (error) {
+      appendChatMessage("assistant", error instanceof Error ? error.message : String(error));
+    } finally {
+      chatApply.disabled = false;
+      chatDismiss.disabled = false;
+    }
+  });
+
+  chatDismiss?.addEventListener("click", () => {
+    pendingChatProposal = undefined;
+    hideProposalApproval();
+    appendChatMessage("assistant", "編集案を破棄しました。");
+  });
+
+  restoreChatState();`;
 }
 
 function escapeHtml(value: string): string {

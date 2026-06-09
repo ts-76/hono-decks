@@ -71,6 +71,82 @@ describe("createCloudflareDeckAgentChat", () => {
     ).resolves.toEqual({ source: "heuristic", suggestion: "Fallback" });
   });
 
+  it("preserves Workers AI intent for localhost Agent requests", async () => {
+    let routedBody: unknown;
+    const agentChat = createCloudflareDeckAgentChat({
+      agentPath: "slide-assistant",
+      routeAgentRequest: async (request) => {
+        routedBody = await request.json();
+        return Response.json({ source: "agent", suggestion: "Fallback" });
+      },
+    });
+
+    await agentChat(
+      {
+        slug: "deck1",
+        sessionId: "default",
+        agentInstanceName: "deck-5-deck1-session-7-default",
+        mode: "chat",
+        baseMarkdownHash: "mdx-b5765d09",
+        markdown: "# Raw Deck",
+        instruction: "",
+        useWorkersAI: true,
+      },
+      { req: { url: "http://localhost:8787/decks/deck1/agent/chat" }, env: {} } as never,
+    );
+
+    expect(routedBody).toMatchObject({ useWorkersAI: true });
+  });
+
+  it("falls back when the Agent route throws", async () => {
+    const agentChat = createCloudflareDeckAgentChat({
+      agentPath: "slide-assistant",
+      routeAgentRequest: async () => {
+        throw new Error("Binding AI needs to be run remotely");
+      },
+      fallback: async () => ({ source: "heuristic", suggestion: "Fallback" }),
+    });
+
+    await expect(
+      agentChat(
+        {
+          slug: "deck1",
+          sessionId: "default",
+          agentInstanceName: "deck-5-deck1-session-7-default",
+          mode: "chat",
+          baseMarkdownHash: "mdx-b5765d09",
+          markdown: "# Raw Deck",
+          instruction: "",
+        },
+        { req: { url: "https://slides.example.test/decks/deck1/agent/chat" }, env: {} } as never,
+      ),
+    ).resolves.toEqual({ source: "heuristic", suggestion: "Fallback" });
+  });
+
+  it("falls back when the Agent route does not respond", async () => {
+    const agentChat = createCloudflareDeckAgentChat({
+      agentPath: "slide-assistant",
+      routeTimeoutMs: 1,
+      routeAgentRequest: async () => new Promise<Response | null>(() => undefined),
+      fallback: async () => ({ source: "heuristic", suggestion: "Fallback" }),
+    });
+
+    await expect(
+      agentChat(
+        {
+          slug: "deck1",
+          sessionId: "default",
+          agentInstanceName: "deck-5-deck1-session-7-default",
+          mode: "chat",
+          baseMarkdownHash: "mdx-b5765d09",
+          markdown: "# Raw Deck",
+          instruction: "",
+        },
+        { req: { url: "https://slides.example.test/decks/deck1/agent/chat" }, env: {} } as never,
+      ),
+    ).resolves.toEqual({ source: "heuristic", suggestion: "Fallback" });
+  });
+
   it("passes through non-ok Agent responses without converting them to chat results", async () => {
     const agentChat = createCloudflareDeckAgentChat({
       agentPath: "slide-assistant",

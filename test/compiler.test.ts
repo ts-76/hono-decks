@@ -58,6 +58,9 @@ customSlideKey: kept
     });
     expect(deck.slides).toHaveLength(2);
     expect(deck.slides[0].html).toContain("<h1>Cover</h1>");
+    expect(deck.slides[0].html).toContain('class="mdx-hero');
+    expect(deck.slides[0].html).toContain("<h1>Hello</h1>");
+    expect(deck.slides[0].html).not.toContain("mdx-component");
     expect(deck.slides[0].components).toEqual([
       {
         id: "deck1-0-0",
@@ -88,6 +91,10 @@ customSlideKey: kept
           message: 'Unknown slide frontmatter key "customSlideKey" is preserved in meta.',
           slideIndex: 1,
         },
+      ]),
+    );
+    expect(deck.warnings).not.toEqual(
+      expect.arrayContaining([
         {
           code: "unsupported-mdx-component",
           message: 'MDX component "Hero" is rendered as a placeholder.',

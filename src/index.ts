@@ -1,10 +1,12 @@
 import { Hono } from "hono";
 import { routeAgentRequest } from "agents";
-import { SlideAssistant } from "./agent";
+import { buildChatResult, SlideAssistant } from "./agent";
+import { createCloudflareDeckAgentChat } from "./cloudflare-agent-chat";
 import { compileMarkdown } from "./compiler";
 import { honoSlides } from "./middleware";
 import { honoSlidesRouter } from "./router";
-import type { DeckSource } from "./deck";
+import { createPreviewEventHub } from "./preview-events";
+import type { DeckSource, LocalDeckIO } from "./deck";
 import type { Env } from "./types";
 
 export { SlideAssistant, honoSlides, honoSlidesRouter };
@@ -44,7 +46,15 @@ layout: statement
 > 自分の AI binding / MCP / tools を Agent に接続する`;
 
 const app = new Hono<{ Bindings: Env }>();
+const previewEvents = createPreviewEventHub();
+let sampleDeckMarkdown = sampleDeck;
 const sampleDeckSource = createSampleDeckSource();
+const sampleLocalDeckIO = createSampleLocalDeckIO();
+const sampleAgentChat = createCloudflareDeckAgentChat({
+  agentPath: "slide-assistant",
+  routeAgentRequest,
+  fallback: (input, c) => buildChatResult(c.env ?? ({} as Env), input),
+});
 
 app.use("/agents/*", async (c, next) => {
   const response = await routeAgentRequest(c.req.raw, c.env);
@@ -53,7 +63,26 @@ app.use("/agents/*", async (c, next) => {
 });
 
 app.get("/", (c) => c.redirect("/decks"));
-app.route("/decks", honoSlidesRouter({ source: sampleDeckSource, dev: false }));
+app.route(
+  "/decks",
+  honoSlidesRouter({
+    source: sampleDeckSource,
+    dev: true,
+    localDeckIO: sampleLocalDeckIO,
+    previewEvents,
+    onFileChange(event) {
+      previewEvents.publish({ type: "deck:updated", slug: event.slug ?? "", data: { source: "sample", path: event.path } });
+    },
+    agentChat: (input, c) =>
+      sampleAgentChat(
+        {
+          ...input,
+          useWorkersAI: isWorkersAIEnabled(c.env),
+        },
+        c,
+      ),
+  }),
+);
 
 app.notFound((c) => c.json({ error: "Not found" }, 404));
 
@@ -62,17 +91,51 @@ export default app;
 function createSampleDeckSource(): DeckSource {
   return {
     async listDecks() {
-      return [{ slug: "sample", title: "Hono Slides", sourcePath: "decks/sample.mdx" }];
+      const deck = await compileSampleDeck();
+      return [
+        {
+          slug: deck.slug,
+          title: deck.meta.title,
+          description: deck.meta.description,
+          draft: deck.meta.draft,
+          sourcePath: deck.sourcePath,
+        },
+      ];
     },
 
     async getCompiledDeck(_c, slug) {
       if (slug !== "sample") return null;
-      return compileMarkdown({
-        slug,
-        markdown: sampleDeck,
-        sourcePath: "decks/sample.mdx",
-        kind: "single-file",
-      });
+      return compileSampleDeck();
     },
   };
+}
+
+function createSampleLocalDeckIO(): LocalDeckIO {
+  return {
+    async listFiles() {
+      return [{ slug: "sample", sourcePath: "decks/sample.mdx", kind: "single-file" }];
+    },
+
+    async readMarkdown(slug) {
+      return slug === "sample" ? sampleDeckMarkdown : null;
+    },
+
+    async writeMarkdown(slug, markdown) {
+      if (slug !== "sample") throw new Error(`Unknown sample deck slug: "${slug}"`);
+      sampleDeckMarkdown = markdown;
+    },
+  };
+}
+
+function compileSampleDeck() {
+  return compileMarkdown({
+    slug: "sample",
+    markdown: sampleDeckMarkdown,
+    sourcePath: "decks/sample.mdx",
+    kind: "single-file",
+  });
+}
+
+function isWorkersAIEnabled(env: Env | undefined): boolean {
+  return env?.HONO_SLIDES_USE_WORKERS_AI !== "false";
 }

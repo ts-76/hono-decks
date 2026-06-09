@@ -1,13 +1,17 @@
-import { Agent } from "agents";
+import { AIChatAgent } from "@cloudflare/ai-chat";
 import { applyDeckAgentProposal } from "./agent-apply";
 import { createDeckMarkdownHash } from "./agent-contract";
 import type { DeckAgentChatResult } from "./agent-contract";
 import type { HonoSlidesAgentChatInput } from "./router";
 import type { AgentSuggestRequest, AgentSuggestResponse, Env } from "./types";
+import { convertToModelMessages, stepCountIs, streamText, tool } from "ai";
+import type { StreamTextOnFinishCallback, ToolSet, UIMessage } from "ai";
 import type { WorkersAI } from "workers-ai-provider";
+import { z } from "zod";
 
 export interface BuildChatResultOptions {
   generateCodeModeResult?: CodeModeResultGenerator;
+  codeModeTimeoutMs?: number;
 }
 
 export type CodeModeResultGenerator = (
@@ -20,8 +24,37 @@ interface AssistantState {
   revisionCount: number;
 }
 
-export class SlideAssistant extends Agent<Env, AssistantState> {
+export class SlideAssistant extends AIChatAgent<Env, AssistantState> {
   initialState = { revisionCount: 0 } satisfies AssistantState;
+  maxPersistedMessages = 100;
+  messageConcurrency = "latest" as const;
+
+  async onChatMessage(
+    onFinish: StreamTextOnFinishCallback<ToolSet>,
+    options?: { abortSignal?: AbortSignal; body?: Record<string, unknown> },
+  ): Promise<Response | undefined> {
+    const payload = createChatPayloadFromMessages(this.messages, options?.body);
+    const workersai = await createWorkersAIModel(this.env);
+    if (!workersai) {
+      const suggestion = await buildSuggestion(this.env, payload);
+      return new Response(suggestion.suggestion, {
+        headers: { "content-type": "text/plain; charset=utf-8" },
+      });
+    }
+
+    const tools = createChatAgentTools(payload);
+    const result = streamText({
+      model: workersai("@cf/meta/llama-3.1-8b-instruct"),
+      system: createChatAgentSystemPrompt(payload),
+      messages: await convertToModelMessages(this.messages),
+      tools,
+      stopWhen: stepCountIs(5),
+      abortSignal: options?.abortSignal,
+      onFinish: onFinish as unknown as StreamTextOnFinishCallback<typeof tools>,
+    });
+
+    return result.toUIMessageStreamResponse();
+  }
 
   async onRequest(request: Request): Promise<Response> {
     const url = new URL(request.url);
@@ -56,6 +89,80 @@ export class SlideAssistant extends Agent<Env, AssistantState> {
   }
 }
 
+function createChatPayloadFromMessages(
+  messages: UIMessage[],
+  body: Record<string, unknown> | undefined,
+): HonoSlidesAgentChatInput {
+  const latestUserText = [...messages]
+    .reverse()
+    .find((message) => message.role === "user")
+    ?.parts.map((part) => ("text" in part && typeof part.text === "string" ? part.text : ""))
+    .join("")
+    .trim();
+
+  const markdown = readString(body, "markdown") ?? "";
+  const slug = readString(body, "slug") ?? "deck";
+  const sessionId = readString(body, "sessionId") ?? "default";
+  return {
+    slug,
+    sessionId,
+    agentInstanceName: readString(body, "agentInstanceName") ?? `deck-${slug}-session-${sessionId}`,
+    mode: readString(body, "mode") === "code" ? "code" : "chat",
+    markdown,
+    instruction: latestUserText || readString(body, "instruction") || "",
+    baseMarkdownHash: readString(body, "baseMarkdownHash") ?? createDeckMarkdownHash(markdown),
+    sourcePath: readString(body, "sourcePath"),
+    activeSlide: readNumber(body, "activeSlide"),
+    slideCount: readNumber(body, "slideCount"),
+    useWorkersAI: readBoolean(body, "useWorkersAI"),
+  };
+}
+
+function createChatAgentSystemPrompt(payload: HonoSlidesAgentChatInput): string {
+  return [
+    "あなたは Hono Slides のチャットエージェントです。日本語で短く、具体的に返してください。",
+    "通常の相談には会話として返してください。編集が必要な場合は、本文を直接保存せず、必ず requestEditProposalApproval tool で proposal を提示してください。",
+    "proposal は現在の raw MDX に存在する exact oldText を使い、対象 path と baseMarkdownHash を保ってください。",
+    "永続化はブラウザの承認後に Hono /apply route が行います。Agent は保存しません。",
+    `slug: ${payload.slug}`,
+    `sourcePath: ${payload.sourcePath ?? `decks/${payload.slug}.mdx`}`,
+    `baseMarkdownHash: ${payload.baseMarkdownHash ?? createDeckMarkdownHash(payload.markdown)}`,
+    `activeSlide: ${payload.activeSlide ?? "unknown"}`,
+    `slideCount: ${payload.slideCount ?? "unknown"}`,
+    "",
+    "Current raw MDX:",
+    payload.markdown.slice(0, 8000),
+  ].join("\n");
+}
+
+function createChatAgentTools(payload: HonoSlidesAgentChatInput) {
+  const sourcePath = payload.sourcePath ?? `decks/${payload.slug}.mdx`;
+  const baseMarkdownHash = payload.baseMarkdownHash ?? createDeckMarkdownHash(payload.markdown);
+  return {
+    requestEditProposalApproval: tool({
+      description:
+        "Ask the browser to show a human approval UI for a non-persistent MDX edit proposal. The browser may call Hono /apply only after the user approves.",
+      inputSchema: z.object({
+        summary: z.string().describe("Short Japanese summary shown to the user."),
+        oldText: z.string().describe("Exact current MDX text to replace."),
+        newText: z.string().describe("Replacement MDX text."),
+      }),
+    }),
+    readCurrentDeck: tool({
+      description: "Read the current raw MDX deck context. This tool never writes files.",
+      inputSchema: z.object({}),
+      execute: async () => ({
+        slug: payload.slug,
+        sourcePath,
+        baseMarkdownHash,
+        markdown: payload.markdown,
+        activeSlide: payload.activeSlide,
+        slideCount: payload.slideCount,
+      }),
+    }),
+  };
+}
+
 export async function buildChatResult(
   env: Env,
   payload: HonoSlidesAgentChatInput,
@@ -66,29 +173,52 @@ export async function buildChatResult(
 
   const generateCodeModeResult = options.generateCodeModeResult ?? generateWithWorkersAICodeMode;
   try {
-    const codeModeResult = await generateCodeModeResult(env, payload);
+    const codeModeResult = await resolveWithin(generateCodeModeResult(env, payload), options.codeModeTimeoutMs ?? 8_000);
     if (codeModeResult && isUsableCodeModeResult(codeModeResult, payload)) return codeModeResult;
   } catch {
     // Code Mode is a best-effort assistant path. Saving still happens through Hono apply/save routes.
   }
 
   const instruction = payload.instruction || "読みやすくする";
+  const proposal = createHeuristicEditProposal(payload, instruction);
   return {
     source: suggestion.source,
-    message: "編集 proposal を作成しました。保存は Hono の apply/save route で行ってください。",
+    message: proposal
+      ? "編集 proposal を作成しました。保存は Hono の apply/save route で行ってください。"
+      : "具体的な編集 proposal は作成できませんでした。変更したい箇所や文言をもう少し具体的に指定してください。",
     suggestion: suggestion.suggestion,
-    proposal: {
+    ...(proposal ? { proposal } : {}),
+  };
+}
+
+function createHeuristicEditProposal(
+  payload: HonoSlidesAgentChatInput,
+  instruction: string,
+): DeckAgentChatResult["proposal"] | undefined {
+  const baseMarkdownHash = payload.baseMarkdownHash || createDeckMarkdownHash(payload.markdown);
+  const titlePatch = createTitlePatch(payload, instruction);
+  if (titlePatch) {
+    return {
       type: "patch",
-      baseMarkdownHash: payload.baseMarkdownHash || createDeckMarkdownHash(payload.markdown),
+      baseMarkdownHash,
       summary: instruction,
-      patches: [
-        {
-          path: expectedSourcePath(payload),
-          oldText: payload.markdown,
-          newText: `${payload.markdown}\n\n<!-- ${instruction} -->`,
-        },
-      ],
-    },
+      patches: [titlePatch],
+    };
+  }
+  return undefined;
+}
+
+function createTitlePatch(payload: HonoSlidesAgentChatInput, instruction: string) {
+  if (!/(タイトル|見出し|title|heading)/i.test(instruction)) return undefined;
+  const match = /^#\s+(.+)$/m.exec(payload.markdown);
+  if (!match) return undefined;
+  const oldText = match[0];
+  const currentTitle = match[1].trim();
+  const nextTitle = /概要$/.test(currentTitle) ? `${currentTitle} 改訂版` : `${currentTitle} の概要`;
+  return {
+    path: expectedSourcePath(payload),
+    oldText,
+    newText: `# ${nextTitle}`,
   };
 }
 
@@ -105,7 +235,14 @@ export async function buildSuggestion(env: Env, payload: AgentSuggestRequest): P
   const aiSuggestion = await suggestWithWorkersAI(env, payload);
   if (aiSuggestion) return aiSuggestion;
 
-  const slideCount = payload.markdown.split(/^---\s*$/m).filter((part) => part.trim()).length;
+  const slideCount = payload.slideCount ?? payload.markdown.split(/^---\s*$/m).filter((part) => part.trim()).length;
+  if (payload.mode === "chat" && isGreeting(payload.instruction)) {
+    return {
+      source: "heuristic",
+      suggestion: `こんにちは。現在 ${slideCount} 枚のスライドがあります。構成、文章、見出し、話す順番などを一緒に見直せます。`,
+    };
+  }
+
   const focus = payload.activeSlide != null ? `現在のスライド ${payload.activeSlide + 1}` : "デック全体";
   return {
     source: "heuristic",
@@ -114,29 +251,94 @@ export async function buildSuggestion(env: Env, payload: AgentSuggestRequest): P
 }
 
 async function suggestWithWorkersAI(env: Env, payload: AgentSuggestRequest): Promise<AgentSuggestResponse | undefined> {
+  if (payload.useWorkersAI === false) return undefined;
   if (!env.AI) return undefined;
 
-  const result = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
-    messages: [
-      {
-        role: "system",
-        content:
-          "You are a concise Japanese slide editor. Return one practical suggestion for improving a Markdown/MDX slide deck.",
-      },
-      {
-        role: "user",
-        content: JSON.stringify({
-          instruction: payload.instruction,
-          activeSlide: payload.activeSlide,
-          markdown: payload.markdown.slice(0, 6000),
-        }),
-      },
-    ],
-  });
+  let result: Awaited<ReturnType<NonNullable<Env["AI"]>["run"]>> | undefined;
+  try {
+    result = await resolveWithin(
+      env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+        messages: [
+          {
+            role: "system",
+            content: createWorkersAISystemPrompt(payload),
+          },
+          {
+            role: "user",
+            content: createWorkersAIUserPrompt(payload),
+          },
+        ],
+      }),
+      8_000,
+    );
+  } catch {
+    return undefined;
+  }
 
   const response = typeof result === "object" && result !== null && "response" in result ? String(result.response) : undefined;
   if (!response) return undefined;
-  return { source: "workers-ai", suggestion: response };
+  const suggestion = normalizeAISuggestion(response);
+  if (!isUsableAISuggestion(suggestion)) return undefined;
+  return { source: "workers-ai", suggestion };
+}
+
+function createWorkersAISystemPrompt(payload: AgentSuggestRequest): string {
+  if (payload.mode === "chat") {
+    return [
+      "あなたは日本語だけで答えるスライド制作の相談相手です。",
+      "通常の会話や挨拶には、自然に短く返してください。",
+      "ユーザーがスライド改善を求めた場合だけ、現在のデック文脈を使って3文以内で具体的に助言してください。",
+      "Markdown全体を書き換えないでください。コードブロック、frontmatter、完全なスライド案、MDXタグは出力しないでください。",
+      "既存のMDXタグやcomponent名を変更しないでください。",
+    ].join("");
+  }
+
+  return [
+    "あなたは日本語だけで答えるスライド編集アドバイザーです。",
+    "3文以内で、具体的な改善助言だけを返してください。",
+    "Markdown全体を書き換えないでください。コードブロック、frontmatter、見出し付きの完全なスライド案、MDXタグは出力しないでください。",
+    "既存のMDXタグやcomponent名を変更しないでください。",
+  ].join("");
+}
+
+function createWorkersAIUserPrompt(payload: AgentSuggestRequest): string {
+  const task =
+    payload.mode === "chat"
+      ? "通常の会話なら自然に返す。スライド相談なら短い日本語の助言だけを返す。Markdown全体を書き換えない。MDXタグは変更しない。"
+      : "Markdown全体を書き換えない。現在のデックまたは指定スライドに対する短い日本語の助言だけを返す。MDXタグは変更しない。";
+  return [
+    task,
+    "",
+    `ユーザー入力: ${payload.instruction || "読みやすくする"}`,
+    `現在のスライド: ${payload.activeSlide != null ? payload.activeSlide + 1 : "未指定"}`,
+    `スライド枚数: ${payload.slideCount ?? "不明"}`,
+    "",
+    "デック抜粋:",
+    payload.markdown.slice(0, 6000),
+  ].join("\n");
+}
+
+function normalizeAISuggestion(response: string): string {
+  return response
+    .replace(/^#+\s*practical suggestion:?\s*/i, "")
+    .replace(/^\*\*practical suggestion:\*\*\s*/i, "")
+    .trim();
+}
+
+function isUsableAISuggestion(suggestion: string): boolean {
+  const lower = suggestion.toLowerCase();
+  if (suggestion.length > 700) return false;
+  if (lower.includes("```")) return false;
+  if (/^---\s*$/m.test(suggestion)) return false;
+  if (/^#{1,3}\s+/m.test(suggestion)) return false;
+  if (/<[A-Za-z][^>]*\/?>/.test(suggestion)) return false;
+  if (lower.includes("<ero")) return false;
+  return true;
+}
+
+function isGreeting(value: string): boolean {
+  const normalized = value.trim().toLowerCase();
+  return /^(こんにちは|こんにちわ|こんばんは|おはよう|hello|hi|hey)[\s!！。,.、]*$/.test(normalized);
 }
 
 async function generateWithWorkersAICodeMode(
@@ -188,6 +390,7 @@ async function generateWithWorkersAICodeMode(
 }
 
 async function createWorkersAIModel(env: Env): Promise<WorkersAI | undefined> {
+  if (!env.AI) return undefined;
   const provider = await import("workers-ai-provider");
   return provider.createWorkersAI?.({ binding: env.AI as NonNullable<Env["AI"]> });
 }
@@ -221,4 +424,35 @@ function extractJsonObject(text: string): string | undefined {
   const start = trimmed.indexOf("{");
   const end = trimmed.lastIndexOf("}");
   return start >= 0 && end > start ? trimmed.slice(start, end + 1) : undefined;
+}
+
+function resolveWithin<T>(promise: Promise<T>, timeoutMs: number): Promise<T | undefined> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => resolve(undefined), timeoutMs);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
+function readString(body: Record<string, unknown> | undefined, key: string): string | undefined {
+  const value = body?.[key];
+  return typeof value === "string" ? value : undefined;
+}
+
+function readNumber(body: Record<string, unknown> | undefined, key: string): number | undefined {
+  const value = body?.[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function readBoolean(body: Record<string, unknown> | undefined, key: string): boolean | undefined {
+  const value = body?.[key];
+  return typeof value === "boolean" ? value : undefined;
 }

@@ -53,21 +53,19 @@ describe("compiled deck rendering", () => {
     expect(html).toContain('data-transition="fade-fast"');
   });
 
-  it("renders a full page with presentation controls and warnings", () => {
+  it("renders a full page as a clean presentation surface with warnings", () => {
     const html = renderCompiledDeckPage({ deck, mountPath: "/decks" });
 
     expect(html).toContain("<!doctype html>");
     expect(html).toContain("<title>Deck One</title>");
-    expect(html).toContain('data-hono-slides-controls');
-    expect(html).toContain('data-action="next"');
-    expect(html).toContain('data-action="fullscreen"');
-    expect(html).toContain('data-action="presenter"');
-    expect(html).toContain('data-action="overview"');
+    expect(html).not.toContain('data-hono-slides-controls');
+    expect(html).not.toContain('data-action="next"');
+    expect(html).not.toContain('data-action="fullscreen"');
+    expect(html).not.toContain('data-timer');
     expect(html).toContain('document.addEventListener("keydown"');
     expect(html).toContain("requestFullscreen");
     expect(html).toContain("data-presenter-mode");
     expect(html).toContain("data-overview-mode");
-    expect(html).toContain("setInterval");
     expect(html).toContain("Unsupported component");
     expect(html).not.toContain("/edit");
   });
@@ -98,14 +96,14 @@ describe("compiled deck rendering", () => {
     expect(html).not.toContain('src="./assets/image.png"');
   });
 
-  it("rewrites local relative asset component props in placeholder output", () => {
+  it("rewrites local relative Hero image sources to manifest public paths", () => {
     const html = renderCompiledDeckPage({
       deck: {
         ...deck,
         slides: [
           {
             ...deck.slides[0],
-            html: '<div class="mdx-component" data-component="Hero"><strong>&lt;Hero /&gt;</strong><dl><div><dt>image</dt><dd>./assets/hero.png</dd></div></dl></div>',
+            html: '<section class="mdx-hero"><img src="./assets/hero.png" alt="Hero" /></section>',
             components: [
               {
                 id: "deck1-0-0",
@@ -128,8 +126,8 @@ describe("compiled deck rendering", () => {
       mountPath: "/slides",
     });
 
-    expect(html).toContain("<dd>/slides/deck1/assets/hero.png</dd>");
-    expect(html).not.toContain("<dd>./assets/hero.png</dd>");
+    expect(html).toContain('src="/slides/deck1/assets/hero.png"');
+    expect(html).not.toContain('src="./assets/hero.png"');
   });
 
   it("renders slide background frontmatter with local asset public paths", () => {

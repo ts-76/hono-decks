@@ -44,9 +44,78 @@ describe("honoSlidesRouter", () => {
     expect(html).toContain("Math.min");
     expect(html).toContain('data-action="previous"');
     expect(html).toContain('data-action="next"');
+    expect(html).toContain('data-action="presentation"');
+    expect(html).toContain('href="/slides/deck1/presentation"');
     expect(html).toContain('type: "hono-slides:command"');
     expect(html).toContain("contentWindow?.postMessage");
+    expect(html).toContain("requestFullscreen");
+    expect(html).not.toContain('<aside data-hono-slides-chat');
+    expect(html).not.toContain("/agent/chat");
+    expect(html).not.toContain('allowfullscreen');
+    expect(html).not.toContain('sendCommand("fullscreen")');
     expect(html).not.toContain("<h1>Intro</h1>");
+  });
+
+  it("adds a development Agent chat panel to the deck viewer when chat is configured", async () => {
+    const app = new Hono();
+    app.route(
+      "/slides",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: true,
+        localDeckIO: createMemoryDeckIO({ deck1: "# Raw Deck" }),
+        agentChat: async () => ({ source: "test", suggestion: "Tighten the title." }),
+      }),
+    );
+
+    const response = await app.request("/slides/deck1");
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain('data-hono-slides-chat');
+    expect(html).toContain('data-chat-log');
+    expect(html).toContain('data-chat-input');
+    expect(html).toContain('data-chat-submit');
+    expect(html).toContain('data-chat-approval');
+    expect(html).toContain('data-chat-approval-diff');
+    expect(html).toContain('data-chat-apply');
+    expect(html).toContain('data-chat-dismiss');
+    expect(html).toContain('fetch(agentUrl');
+    expect(html).toContain('fetch(applyUrl');
+    expect(html).toContain('"/slides/deck1/agent/chat"');
+    expect(html).toContain('"/slides/deck1/apply"');
+    expect(html).toContain('mode: getChatMode(instruction)');
+    expect(html).toContain("function isEditInstruction");
+    expect(html).toContain("data.proposal");
+    expect(html).toContain("pendingChatProposal = data.proposal");
+    expect(html).toContain("showProposalApproval");
+    expect(html).toContain("persistChatState");
+    expect(html).toContain("restoreChatState");
+    expect(html).toContain("summarizeProposalDiff");
+    expect(html).toContain("hono-slides-chat-history:");
+    expect(html).toContain("hono-slides-chat-proposal:");
+    expect(html).toContain('appendChatMessage("assistant", "編集案を作成しました。適用する場合は Apply を押してください。")');
+    expect(html).toContain("chatApply?.addEventListener");
+    expect(html).toContain("activeSlide: activeSlideIndex");
+  });
+
+  it("does not add a development Agent chat panel when chat is not configured", async () => {
+    const app = new Hono();
+    app.route(
+      "/slides",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: true,
+        localDeckIO: createMemoryDeckIO({ deck1: "# Raw Deck" }),
+      }),
+    );
+
+    const response = await app.request("/slides/deck1");
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).not.toContain('<aside data-hono-slides-chat');
+    expect(html).not.toContain("/agent/chat");
   });
 
   it("serves the compiled deck on a fixed 1920x1080 presentation route", async () => {
@@ -64,6 +133,8 @@ describe("honoSlidesRouter", () => {
     expect(html).toContain('window.addEventListener("message"');
     expect(html).toContain('message.type !== "hono-slides:command"');
     expect(html).toContain('window.parent.postMessage({ type: "hono-slides:state"');
+    expect(html).not.toContain('data-hono-slides-controls');
+    expect(html).not.toContain('data-timer');
   });
 
   it("hides draft decks from production index and direct viewing routes", async () => {
@@ -178,7 +249,9 @@ describe("honoSlidesRouter", () => {
     expect(productionHtml).not.toContain("new EventSource");
     expect(developmentWrapperHtml).not.toContain("new EventSource");
     expect(developmentWrapperHtml).toContain('src="/decks/deck1/presentation"');
-    expect(developmentHtml).toContain('new EventSource("/decks/deck1/events")');
+    expect(developmentHtml).not.toContain("new EventSource");
+    expect(developmentHtml).toContain('const eventsUrl = "/decks/deck1/events?once=1"');
+    expect(developmentHtml).toContain("fetch(eventsUrl");
     expect(developmentHtml).toContain('event.type === "deck:updated"');
     expect(developmentHtml).toContain("location.reload()");
   });
@@ -414,7 +487,7 @@ describe("honoSlidesRouter", () => {
     expect(text).toContain('"source":"save"');
   });
 
-  it("keeps the development event stream open for future preview events", async () => {
+  it("serves development events as finite polling responses", async () => {
     const previewEvents = createPreviewEventHub();
     const app = new Hono();
     app.route(
@@ -428,20 +501,15 @@ describe("honoSlidesRouter", () => {
     );
 
     const response = await app.request("/decks/deck1/events");
-    const reader = response.body?.getReader();
-    expect(reader).toBeTruthy();
-
-    const decoder = new TextDecoder();
-    const first = await reader!.read();
-    expect(decoder.decode(first.value)).toContain("event: ready");
+    expect(await response.text()).toContain("event: ready");
 
     previewEvents.publish({ type: "deck:updated", slug: "deck1", data: { source: "watch" } });
-    const second = await reader!.read();
-    expect(decoder.decode(second.value)).toContain("event: deck:updated");
 
-    await reader!.cancel();
     const replay = await app.request("/decks/deck1/events?once=1");
-    expect(await replay.text()).not.toContain("event: deck:updated");
+    expect(await replay.text()).toContain("event: deck:updated");
+
+    const drained = await app.request("/decks/deck1/events");
+    expect(await drained.text()).not.toContain("event: deck:updated");
   });
 
   it("publishes a save preview update after LocalDeckIO write completes", async () => {
@@ -540,6 +608,7 @@ describe("honoSlidesRouter", () => {
         instruction: "Improve this",
         activeSlide: 0,
         mode: "code",
+        useWorkersAI: true,
       }),
     });
 
@@ -556,6 +625,8 @@ describe("honoSlidesRouter", () => {
         markdown: "# Raw Deck",
         instruction: "Improve this",
         activeSlide: 0,
+        slideCount: 1,
+        useWorkersAI: true,
       },
     ]);
   });

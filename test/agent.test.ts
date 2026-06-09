@@ -3,6 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("agents", () => ({
   Agent: class {},
 }));
+vi.mock("@cloudflare/ai-chat", () => ({
+  AIChatAgent: class {},
+}));
 
 import { buildChatResult, buildSuggestion } from "../src/agent";
 import { SlideAssistant } from "../src/agent";
@@ -29,20 +32,33 @@ describe("SlideAssistant", () => {
     });
   });
 
-  it("builds a patch proposal for code mode without saving", async () => {
+  it("does not invent a local patch when code mode lacks a concrete edit target", async () => {
     await expect(buildChatResult(testEnv(), { ...chatInput, mode: "code" })).resolves.toMatchObject({
       source: "heuristic",
-      message: "編集 proposal を作成しました。保存は Hono の apply/save route で行ってください。",
+      message: "具体的な編集 proposal は作成できませんでした。変更したい箇所や文言をもう少し具体的に指定してください。",
       suggestion: expect.stringContaining("Improve this"),
+    });
+    await expect(buildChatResult(testEnv(), { ...chatInput, mode: "code" })).resolves.not.toHaveProperty("proposal");
+  });
+
+  it("builds a visible title patch for title edit requests when code mode falls back locally", async () => {
+    await expect(
+      buildChatResult(testEnv(), {
+        ...chatInput,
+        mode: "code",
+        markdown: "# Hono Slides\n\nCloudflare Workers で動く Slidev-like deck",
+        instruction: "タイトルを変更してみて",
+        baseMarkdownHash: createDeckMarkdownHashForTest("# Hono Slides\n\nCloudflare Workers で動く Slidev-like deck"),
+      }),
+    ).resolves.toMatchObject({
+      source: "heuristic",
+      message: "編集 proposal を作成しました。保存は Hono の apply/save route で行ってください。",
       proposal: {
         type: "patch",
-        baseMarkdownHash: "mdx-b5765d09",
-        summary: "Improve this",
         patches: [
           {
-            path: "decks/deck1/deck.mdx",
-            oldText: "# Raw Deck",
-            newText: "# Raw Deck\n\n<!-- Improve this -->",
+            oldText: "# Hono Slides",
+            newText: "# Hono Slides の概要",
           },
         ],
       },
@@ -103,11 +119,7 @@ describe("SlideAssistant", () => {
       buildChatResult(testEnv(), { ...chatInput, mode: "code" }, { generateCodeModeResult }),
     ).resolves.toMatchObject({
       source: "heuristic",
-      message: "編集 proposal を作成しました。保存は Hono の apply/save route で行ってください。",
-      proposal: {
-        type: "patch",
-        baseMarkdownHash: "mdx-b5765d09",
-      },
+      message: "具体的な編集 proposal は作成できませんでした。変更したい箇所や文言をもう少し具体的に指定してください。",
     });
   });
 
@@ -121,10 +133,7 @@ describe("SlideAssistant", () => {
       buildChatResult(testEnv(), { ...chatInput, mode: "code" }, { generateCodeModeResult }),
     ).resolves.toMatchObject({
       source: "heuristic",
-      proposal: {
-        type: "patch",
-        baseMarkdownHash: "mdx-b5765d09",
-      },
+      message: "具体的な編集 proposal は作成できませんでした。変更したい箇所や文言をもう少し具体的に指定してください。",
     });
   });
 
@@ -150,11 +159,7 @@ describe("SlideAssistant", () => {
       buildChatResult(testEnv(), { ...chatInput, sourcePath: undefined, mode: "code" }, { generateCodeModeResult }),
     ).resolves.toMatchObject({
       source: "heuristic",
-      proposal: {
-        type: "patch",
-        baseMarkdownHash: "mdx-b5765d09",
-        patches: [{ path: "decks/deck1.mdx" }],
-      },
+      message: "具体的な編集 proposal は作成できませんでした。変更したい箇所や文言をもう少し具体的に指定してください。",
     });
   });
 
@@ -165,10 +170,7 @@ describe("SlideAssistant", () => {
       buildChatResult(testEnv(), { ...chatInput, mode: "code" }, { generateCodeModeResult }),
     ).resolves.toMatchObject({
       source: "heuristic",
-      proposal: {
-        type: "patch",
-        baseMarkdownHash: "mdx-b5765d09",
-      },
+      message: "具体的な編集 proposal は作成できませんでした。変更したい箇所や文言をもう少し具体的に指定してください。",
     });
   });
 
@@ -194,9 +196,31 @@ describe("SlideAssistant", () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({
       source: "heuristic",
-      proposal: { type: "patch", baseMarkdownHash: "mdx-b5765d09" },
+      message: "具体的な編集 proposal は作成できませんでした。変更したい箇所や文言をもう少し具体的に指定してください。",
     });
     expect(agent.state.revisionCount).toBe(1);
+  });
+
+  it("handles AIChatAgent chat turns without Workers AI", async () => {
+    const agent = Object.create(SlideAssistant.prototype) as SlideAssistant & {
+      env: Env;
+      messages: Array<{ id: string; role: "user"; parts: Array<{ type: "text"; text: string }> }>;
+    };
+    agent.env = testEnv();
+    agent.messages = [{ id: "user-1", role: "user", parts: [{ type: "text", text: "こんにちは" }] }];
+
+    const response = await agent.onChatMessage(vi.fn() as never, {
+      body: {
+        slug: "deck1",
+        sessionId: "session-1",
+        markdown: "# Raw Deck",
+        mode: "chat",
+        slideCount: 1,
+      },
+    });
+
+    expect(response?.status).toBe(200);
+    await expect(response?.text()).resolves.toContain("こんにちは");
   });
 
   it("keeps the legacy suggestion helper working", async () => {
@@ -207,8 +231,168 @@ describe("SlideAssistant", () => {
       suggestion: expect.stringContaining("Improve this"),
     });
   });
+
+  it("answers greetings conversationally in chat mode without Workers AI", async () => {
+    await expect(
+      buildSuggestion(testEnv(), {
+        markdown: "# Raw Deck",
+        instruction: "こんにちは",
+        activeSlide: 0,
+        slideCount: 1,
+        mode: "chat",
+      }),
+    ).resolves.toMatchObject({
+      source: "heuristic",
+      suggestion: expect.stringContaining("こんにちは"),
+    });
+  });
+
+  it("falls back when Workers AI requires remote execution", async () => {
+    await expect(
+      buildSuggestion(
+        {
+          AI: {
+            run: async () => {
+              throw new Error("Binding AI needs to be run remotely");
+            },
+          },
+        } as unknown as Env,
+        { markdown: "# Raw Deck", instruction: "Improve this", activeSlide: 0, slideCount: 1 },
+      ),
+    ).resolves.toMatchObject({
+      source: "heuristic",
+      suggestion: expect.stringContaining("現在 1 枚"),
+    });
+  });
+
+  it("does not start Workers AI when the request disables it", async () => {
+    const run = vi.fn();
+
+    await expect(
+      buildSuggestion(
+        {
+          AI: { run },
+        } as unknown as Env,
+        { markdown: "# Raw Deck", instruction: "Improve this", activeSlide: 0, slideCount: 1, useWorkersAI: false },
+      ),
+    ).resolves.toMatchObject({
+      source: "heuristic",
+      suggestion: expect.stringContaining("現在 1 枚"),
+    });
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it("asks Workers AI for short Japanese advice without rewriting the deck", async () => {
+    const run = vi.fn().mockResolvedValue({ response: "見出しを短くし、各スライドの主張を1つに絞ると読みやすくなります。" });
+
+    await expect(
+      buildSuggestion(
+        {
+          AI: { run },
+        } as unknown as Env,
+        { markdown: "# Raw Deck\n\n<Hero title=\"MDX-like components\" />", instruction: "Improve this", activeSlide: 0, slideCount: 1 },
+      ),
+    ).resolves.toMatchObject({
+      source: "workers-ai",
+      suggestion: "見出しを短くし、各スライドの主張を1つに絞ると読みやすくなります。",
+    });
+
+    expect(run).toHaveBeenCalledWith(
+      "@cf/meta/llama-3.1-8b-instruct",
+      expect.objectContaining({
+        messages: [
+          expect.objectContaining({
+            role: "system",
+            content: expect.stringContaining("日本語だけ"),
+          }),
+          expect.objectContaining({
+            role: "user",
+            content: expect.stringContaining("Markdown全体を書き換えない"),
+          }),
+        ],
+      }),
+    );
+    expect(run.mock.calls[0][1].messages[0].content).toContain("MDXタグ");
+    expect(run.mock.calls[0][1].messages[0].content).toContain("3文以内");
+  });
+
+  it("asks Workers AI to handle normal chat messages as conversation", async () => {
+    const run = vi.fn().mockResolvedValue({ response: "こんにちは。スライドの構成や文章の見直しを手伝えます。" });
+
+    await expect(
+      buildSuggestion(
+        {
+          AI: { run },
+        } as unknown as Env,
+        { markdown: "# Raw Deck", instruction: "こんにちは", activeSlide: 0, slideCount: 1, mode: "chat" },
+      ),
+    ).resolves.toMatchObject({
+      source: "workers-ai",
+      suggestion: "こんにちは。スライドの構成や文章の見直しを手伝えます。",
+    });
+
+    expect(run.mock.calls[0][1].messages[0].content).toContain("挨拶");
+    expect(run.mock.calls[0][1].messages[0].content).toContain("通常の会話");
+    expect(run.mock.calls[0][1].messages[1].content).toContain("ユーザー入力: こんにちは");
+  });
+
+  it("falls back when Workers AI returns a deck rewrite instead of advice", async () => {
+    await expect(
+      buildSuggestion(
+        {
+          AI: {
+            run: async () => ({
+              response:
+                "```markdown\n---\ntitle: Table of Contents\n---\n\n# Hono Slides\n\n<ero title=\"MDX-like components\" />\n```",
+            }),
+          },
+        } as unknown as Env,
+        {
+          markdown: '# Hono Slides\n\n<Hero title="MDX-like components" />',
+          instruction: "Improve this",
+          activeSlide: 0,
+          slideCount: 1,
+        },
+      ),
+    ).resolves.toMatchObject({
+      source: "heuristic",
+      suggestion: expect.stringContaining("現在 1 枚"),
+    });
+  });
+
+  it("falls back when Workers AI does not respond", async () => {
+    vi.useFakeTimers();
+    try {
+      const result = buildSuggestion(
+        {
+          AI: {
+            run: async () => new Promise(() => undefined),
+          },
+        } as unknown as Env,
+        { markdown: "# Raw Deck", instruction: "Improve this", activeSlide: 0, slideCount: 1 },
+      );
+
+      await vi.advanceTimersByTimeAsync(8_000);
+
+      await expect(result).resolves.toMatchObject({
+        source: "heuristic",
+        suggestion: expect.stringContaining("現在 1 枚"),
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 function testEnv(): Env {
   return {} as Env;
+}
+
+function createDeckMarkdownHashForTest(markdown: string): string {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < markdown.length; index += 1) {
+    hash ^= markdown.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return `mdx-${(hash >>> 0).toString(16)}`;
 }
