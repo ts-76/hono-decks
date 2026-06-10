@@ -47,7 +47,6 @@ describe("SlideAssistant", () => {
     await expect(buildChatResult(testEnv(), { ...chatInput, mode: "code" })).resolves.toMatchObject({
       source: "heuristic",
       message: "具体的な編集 proposal は作成できませんでした。変更したい箇所や文言をもう少し具体的に指定してください。",
-      suggestion: expect.stringContaining("Improve this"),
     });
     await expect(buildChatResult(testEnv(), { ...chatInput, mode: "code" })).resolves.not.toHaveProperty("proposal");
   });
@@ -63,9 +62,10 @@ describe("SlideAssistant", () => {
       }),
     ).resolves.toMatchObject({
       source: "heuristic",
-      message: "編集 proposal を作成しました。保存は Hono の apply/save route で行ってください。",
+      message: "タイトルを「Hono Slides の概要」に変更します。 保存は Hono の apply/save route で行ってください。",
       proposal: {
         type: "patch",
+        summary: "タイトルを「Hono Slides の概要」に変更します。",
         patches: [
           {
             oldText: "# Hono Slides",
@@ -89,9 +89,10 @@ describe("SlideAssistant", () => {
       }),
     ).resolves.toMatchObject({
       source: "heuristic",
-      message: "編集 proposal を作成しました。保存は Hono の apply/save route で行ってください。",
+      message: "編集案を提示してください 保存は Hono の apply/save route で行ってください。",
       proposal: {
         type: "patch",
+        summary: "編集案を提示してください",
         patches: [
           {
             oldText: "# Hono Slides",
@@ -125,9 +126,10 @@ describe("SlideAssistant", () => {
       }),
     ).resolves.toMatchObject({
       source: "heuristic",
-      message: "編集 proposal を作成しました。保存は Hono の apply/save route で行ってください。",
+      message: expect.stringContaining("HonoでSlidevライク"),
       proposal: {
         type: "patch",
+        summary: expect.stringContaining("HonoでSlidevライク"),
         patches: [
           {
             oldText: "# Hono Slides",
@@ -160,7 +162,7 @@ describe("SlideAssistant", () => {
       buildChatResult(testEnv(), { ...chatInput, mode: "code" }, { generateCodeModeResult }),
     ).resolves.toMatchObject({
       source: "workers-ai-codemode",
-      message: "Code Mode proposal ready.",
+      message: "Tighten the title",
       proposal: {
         type: "patch",
         baseMarkdownHash: "mdx-b5765d09",
@@ -168,6 +170,39 @@ describe("SlideAssistant", () => {
       },
     });
     expect(generateCodeModeResult).toHaveBeenCalledWith(testEnv(), { ...chatInput, mode: "code" });
+  });
+
+  it("normalizes Code Mode proposal responses so chat text follows the proposal summary", async () => {
+    const generateCodeModeResult = vi.fn().mockResolvedValue({
+      source: "workers-ai-codemode",
+      suggestion: "スライドの主張を1つにし、箇条書きは3点以内にまとめましょう。",
+      proposal: {
+        type: "patch",
+        baseMarkdownHash: "mdx-b5765d09",
+        summary: "HonoでSlidevライクなスライド制作の背景を加筆します。",
+        patches: [
+          {
+            path: "decks/deck1/deck.mdx",
+            oldText: "# Raw Deck",
+            newText: "# Raw Deck\n\nHonoでSlidevライクなスライド制作の背景を加筆します。",
+          },
+        ],
+      },
+    });
+
+    await expect(
+      buildChatResult(testEnv(), { ...chatInput, mode: "code" }, { generateCodeModeResult }),
+    ).resolves.toMatchObject({
+      source: "workers-ai-codemode",
+      message: "HonoでSlidevライクなスライド制作の背景を加筆します。",
+      proposal: {
+        type: "patch",
+        summary: "HonoでSlidevライクなスライド制作の背景を加筆します。",
+      },
+    });
+    await expect(
+      buildChatResult(testEnv(), { ...chatInput, mode: "code" }, { generateCodeModeResult }),
+    ).resolves.not.toHaveProperty("suggestion");
   });
 
   it("falls back when code mode returns an invalid edit proposal", async () => {
@@ -208,6 +243,44 @@ describe("SlideAssistant", () => {
       source: "heuristic",
       message: "具体的な編集 proposal は作成できませんでした。変更したい箇所や文言をもう少し具体的に指定してください。",
     });
+  });
+
+  it("does not mix generic advice into local edit fallback proposals", async () => {
+    const run = vi.fn().mockResolvedValue({
+      response: "スライドの内容を充実させるために、各スライドの主張を1つにし、箇条書きは3点以内にまとめましょう。",
+    });
+    const markdown = "# Hono Slides\n\nCloudflare Workers で動く Slidev-like deck";
+    const generateCodeModeResult = vi.fn().mockResolvedValue(undefined);
+
+    const result = await buildChatResult(
+      {
+        AI: { run },
+      } as unknown as Env,
+      {
+        ...chatInput,
+        mode: "code",
+        markdown,
+        instruction: "HonoでSlidevライクなスライドを作ったことをテーマに加筆してください",
+        baseMarkdownHash: createDeckMarkdownHashForTest(markdown),
+      },
+      { generateCodeModeResult },
+    );
+
+    expect(run).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      source: "heuristic",
+      message: expect.stringContaining("HonoでSlidevライク"),
+      proposal: {
+        type: "patch",
+        summary: expect.stringContaining("HonoでSlidevライク"),
+        patches: [
+          {
+            newText: expect.stringContaining("HonoでSlidevライク"),
+          },
+        ],
+      },
+    });
+    expect(result.suggestion).toBeUndefined();
   });
 
   it("falls back when code mode returns a patch for another path without sourcePath input", async () => {
