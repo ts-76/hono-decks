@@ -63,7 +63,12 @@ describe("sample Worker app", () => {
     expect(html).toContain('id="agentPanel"');
     expect(html).toContain('id="mdxPanel"');
     expect(html).toContain('src="/editor-tabs.js"');
+    expect(html).toContain('id="agentChatForm"');
+    expect(html).toContain('id="agentMessages"');
+    expect(html).toContain('id="chatModeButton"');
+    expect(html).toContain('id="editModeButton"');
     expect(html).toContain('id="agentButton"');
+    expect(html).toContain('id="proposalCard"');
     expect(html).toContain('id="applyProposalButton"');
     expect(html).toContain('id="previewFrame"');
     expect(html).toContain('src="/decks/sample/render?live=0"');

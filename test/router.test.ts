@@ -323,7 +323,13 @@ describe("honoSlidesRouter", () => {
     expect(html).toContain('id="mdxPanel"');
     expect(html).toContain('src="/editor-tabs.js"');
     expect(html).toContain('id="instruction"');
+    expect(html).toContain('id="agentChatForm"');
+    expect(html).toContain('id="agentMessages"');
+    expect(html).toContain('id="chatModeButton"');
+    expect(html).toContain('id="editModeButton"');
     expect(html).toContain('id="agentButton"');
+    expect(html).toContain('id="proposalCard"');
+    expect(html).toContain('id="proposalSummary"');
     expect(html).toContain('id="applyProposalButton"');
     expect(html).toContain('id="previewFrame"');
     expect(html).toContain('id="previewViewport"');
@@ -337,7 +343,12 @@ describe("honoSlidesRouter", () => {
     expect(html).toContain("previewFrameUrl");
     expect(html).toContain('fetch(saveUrl');
     expect(html).toContain('fetch(agentUrl');
-    expect(html).toContain('body: JSON.stringify({ instruction: instruction.value, mode: "code", markdown: markdown.value })');
+    expect(html).toContain("getOrCreateAgentSessionId()");
+    expect(html).toContain("appendChatMessage");
+    expect(html).toContain("renderProposalCard");
+    expect(html).toContain("sessionId");
+    expect(html).toContain("mode: agentMode");
+    expect(html).toContain("markdown: markdown.value");
     expect(html).toContain('fetch(applyUrl');
     expect(html).toContain("markdown.value = data.markdown");
     expect(html).toContain("proposal: pendingProposal, markdown: markdown.value");

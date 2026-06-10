@@ -355,9 +355,23 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
     button.primary { border-color: #315fce; background: #315fce; color: #fff; }
     button:disabled { opacity: .55; cursor: wait; }
     .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 10px 0 0; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
     .panel { border: 1px solid #d9e0ec; border-radius: 8px; background: #fff; padding: 12px; }
     .panel + .panel { margin-top: 12px; }
     .panel-fill { min-height: 0; height: 100%; }
+    .chat-panel { display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; gap: 10px; }
+    .agent-mode { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .mode-button[aria-pressed="true"] { border-color: #315fce; background: #e8efff; color: #173f9f; font-weight: 650; }
+    .chat-log { min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 8px; padding: 8px; border: 1px solid #d9e0ec; border-radius: 8px; background: #f7f9fd; }
+    .chat-message { max-width: 92%; border-radius: 8px; padding: 9px 10px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.5; }
+    .chat-message.user { align-self: flex-end; background: #dce8ff; color: #102a67; }
+    .chat-message.assistant { align-self: flex-start; background: #fff; border: 1px solid #d9e0ec; }
+    .chat-message.error { align-self: flex-start; background: #fff1f1; border: 1px solid #ffc9c9; color: #8a1f1f; }
+    .chat-composer { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; }
+    .chat-composer textarea { min-height: 56px; height: 72px; resize: vertical; }
+    .proposal-card { border: 1px solid #b9c4d8; border-radius: 8px; background: #fbfcff; padding: 10px; }
+    .proposal-card[hidden] { display: none; }
+    .proposal-summary { margin: 0 0 10px; font-size: 13px; line-height: 1.5; color: #2b3954; white-space: pre-wrap; overflow-wrap: anywhere; }
     .preview-viewport { width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border: 1px solid #d9e0ec; border-radius: 8px; background: #0b1020; }
     .preview-stage { width: 1920px; height: 1080px; transform-origin: top left; }
     iframe { width: 1920px; height: 1080px; border: 0; display: block; background: #0b1020; }
@@ -368,6 +382,7 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
       .author-pane { overflow: visible; }
       .tab-panel { overflow: visible; }
       textarea { min-height: 320px; height: 44vh; resize: vertical; }
+      .chat-composer textarea { min-height: 56px; height: 72px; }
       .preview-pane { overflow: visible; }
     }
   </style>
@@ -376,14 +391,23 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
   <main data-hono-slides-editor data-deck-slug="${escapeHtml(input.slug)}" data-mount-path="${escapeHtml(input.mountPath)}">
     <section class="author-pane" aria-label="Editor workspace">
       <div id="editorTabsMount" data-hono-jsx-dom-tabs></div>
-      <section class="panel panel-fill tab-panel" id="agentPanel" data-agent-chat role="tabpanel" aria-labelledby="chatTab">
-        <label for="instruction">Agent instruction</label>
-        <input id="instruction" value="このデックを読みやすくして" />
-        <div class="toolbar">
-          <button id="agentButton" type="button">Ask Agent</button>
-          <button id="applyProposalButton" type="button" disabled>Apply</button>
+      <section class="panel panel-fill tab-panel chat-panel" id="agentPanel" data-agent-chat role="tabpanel" aria-labelledby="chatTab">
+        <div class="agent-mode" aria-label="Agent mode">
+          <button class="mode-button" id="chatModeButton" type="button" data-agent-mode="chat" aria-pressed="true">相談</button>
+          <button class="mode-button" id="editModeButton" type="button" data-agent-mode="code" aria-pressed="false">編集案</button>
         </div>
-        <pre id="agentOutput" aria-live="polite"></pre>
+        <div class="chat-log" id="agentMessages" role="log" aria-live="polite" aria-label="Agent chat messages">
+          <div class="chat-message assistant">スライドの相談や、承認してから反映する編集案を作成できます。</div>
+        </div>
+        <form class="chat-composer" id="agentChatForm">
+          <label class="sr-only" for="instruction">Agent message</label>
+          <textarea id="instruction" name="instruction" rows="3" placeholder="スライドについて相談する"></textarea>
+          <button class="primary" id="agentButton" type="submit">Send</button>
+        </form>
+        <section class="proposal-card" id="proposalCard" hidden aria-live="polite">
+          <p class="proposal-summary" id="proposalSummary"></p>
+          <button id="applyProposalButton" type="button" disabled>Apply</button>
+        </section>
       </section>
       <form class="panel panel-fill tab-panel" id="mdxPanel" method="post" action="${escapeHtml(saveUrl)}" role="tabpanel" aria-labelledby="mdxTab" hidden>
         <label for="markdown">MDX</label>
@@ -413,12 +437,17 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
     const root = document.querySelector("[data-hono-slides-editor]");
     const markdown = document.querySelector("#markdown");
     const instruction = document.querySelector("#instruction");
+    const agentChatForm = document.querySelector("#agentChatForm");
+    const agentMessages = document.querySelector("#agentMessages");
+    const chatModeButton = document.querySelector("#chatModeButton");
+    const editModeButton = document.querySelector("#editModeButton");
     const form = document.querySelector("#mdxPanel");
     const saveButton = document.querySelector("#saveButton");
     const saveStatus = document.querySelector("#saveStatus");
     const agentButton = document.querySelector("#agentButton");
     const applyProposalButton = document.querySelector("#applyProposalButton");
-    const agentOutput = document.querySelector("#agentOutput");
+    const proposalCard = document.querySelector("#proposalCard");
+    const proposalSummary = document.querySelector("#proposalSummary");
     const eventOutput = document.querySelector("#eventOutput");
     const previewViewport = document.querySelector("#previewViewport");
     const previewStage = document.querySelector("#previewStage");
@@ -432,6 +461,7 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
     const previewFrameUrl = ${JSON.stringify(previewFrameUrl)};
     const eventsUrl = ${JSON.stringify(eventsUrl)};
     let pendingProposal;
+    let agentMode = "chat";
 
     function resizePreview() {
       if (!previewViewport || !previewStage) return;
@@ -446,6 +476,67 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
       next.searchParams.set("t", String(Date.now()));
       previewFrame.src = next.pathname + next.search;
     }
+
+    function getOrCreateAgentSessionId() {
+      const storageKey = "hono-slides:agent-session:" + slug;
+      try {
+        const existing = localStorage.getItem(storageKey);
+        if (existing) return existing;
+        const next = typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : String(Date.now()) + "-" + Math.random().toString(16).slice(2);
+        localStorage.setItem(storageKey, next);
+        return next;
+      } catch {
+        return "session-" + String(Date.now());
+      }
+    }
+
+    function setAgentMode(nextMode) {
+      agentMode = nextMode === "code" ? "code" : "chat";
+      chatModeButton.setAttribute("aria-pressed", agentMode === "chat" ? "true" : "false");
+      editModeButton.setAttribute("aria-pressed", agentMode === "code" ? "true" : "false");
+      instruction.placeholder = agentMode === "code" ? "どのように編集したいですか" : "スライドについて相談する";
+    }
+
+    function appendChatMessage(role, text) {
+      const message = document.createElement("div");
+      message.className = "chat-message " + role;
+      message.textContent = text || "";
+      agentMessages.append(message);
+      agentMessages.scrollTop = agentMessages.scrollHeight;
+      return message;
+    }
+
+    function proposalDescription(proposal) {
+      if (!proposal || typeof proposal !== "object") return "";
+      if (typeof proposal.summary === "string") return proposal.summary;
+      if (Array.isArray(proposal.patches) && proposal.patches[0]?.oldText) {
+        return "次の編集案があります: " + String(proposal.patches[0].oldText).slice(0, 120);
+      }
+      return "編集 proposal を確認してから適用できます。";
+    }
+
+    function renderProposalCard(proposal) {
+      pendingProposal = proposal;
+      const hasProposal = !!proposal;
+      proposalCard.hidden = !hasProposal;
+      proposalSummary.textContent = hasProposal ? proposalDescription(proposal) : "";
+      applyProposalButton.disabled = !hasProposal;
+    }
+
+    function assistantText(data) {
+      return data.suggestion || data.message || JSON.stringify(data, null, 2);
+    }
+
+    chatModeButton.addEventListener("click", () => setAgentMode("chat"));
+    editModeButton.addEventListener("click", () => setAgentMode("code"));
+    instruction.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+        event.preventDefault();
+        agentChatForm.requestSubmit();
+      }
+    });
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -467,24 +558,33 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
       }
     });
 
-    agentButton.addEventListener("click", async () => {
+    agentChatForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const userMessage = instruction.value.trim();
+      if (!userMessage) return;
       agentButton.disabled = true;
-      applyProposalButton.disabled = true;
-      pendingProposal = undefined;
-      agentOutput.textContent = "Thinking...";
+      renderProposalCard(undefined);
+      appendChatMessage("user", userMessage);
+      instruction.value = "";
+      const assistantMessage = appendChatMessage("assistant", "Thinking...");
       try {
         const response = await fetch(agentUrl, {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ instruction: instruction.value, mode: "code", markdown: markdown.value }),
+          body: JSON.stringify({
+            sessionId: getOrCreateAgentSessionId(),
+            instruction: userMessage,
+            mode: agentMode,
+            markdown: markdown.value,
+          }),
         });
         const data = await response.json();
         if (!response.ok) throw new Error(JSON.stringify(data));
-        pendingProposal = data.proposal;
-        agentOutput.textContent = data.suggestion || data.message || JSON.stringify(data, null, 2);
-        applyProposalButton.disabled = !pendingProposal;
+        assistantMessage.textContent = assistantText(data);
+        renderProposalCard(data.proposal);
       } catch (error) {
-        agentOutput.textContent = error instanceof Error ? error.message : String(error);
+        assistantMessage.className = "chat-message error";
+        assistantMessage.textContent = error instanceof Error ? error.message : String(error);
       } finally {
         agentButton.disabled = false;
       }
@@ -502,11 +602,11 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
         const data = await response.json();
         if (!response.ok) throw new Error(JSON.stringify(data));
         if (typeof data.markdown === "string") markdown.value = data.markdown;
-        agentOutput.textContent = "Applied";
+        appendChatMessage("assistant", "編集案を適用しました。preview を更新しました。");
         reloadPreview();
-        pendingProposal = undefined;
+        renderProposalCard(undefined);
       } catch (error) {
-        agentOutput.textContent = error instanceof Error ? error.message : String(error);
+        appendChatMessage("error", error instanceof Error ? error.message : String(error));
         applyProposalButton.disabled = false;
       }
     });
