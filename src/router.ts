@@ -361,9 +361,7 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
     .panel { border: 1px solid #d9e0ec; border-radius: 8px; background: #fff; padding: 12px; }
     .panel + .panel { margin-top: 12px; }
     .panel-fill { min-height: 0; height: 100%; }
-    .chat-panel { display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; gap: 10px; }
-    .agent-mode { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-    .mode-button[aria-pressed="true"] { border-color: #315fce; background: #e8efff; color: #173f9f; font-weight: 650; }
+    .chat-panel { display: grid; grid-template-rows: minmax(0, 1fr) auto auto; gap: 10px; }
     .chat-log { min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 8px; padding: 8px; border: 1px solid #d9e0ec; border-radius: 8px; background: #f7f9fd; }
     .chat-message { max-width: 92%; border-radius: 8px; padding: 9px 10px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.5; }
     .chat-message.user { align-self: flex-end; background: #dce8ff; color: #102a67; }
@@ -394,10 +392,6 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
     <section class="author-pane" aria-label="Editor workspace">
       <div id="editorTabsMount" data-hono-jsx-dom-tabs></div>
       <section class="panel panel-fill tab-panel chat-panel" id="agentPanel" data-agent-chat role="tabpanel" aria-labelledby="chatTab">
-        <div class="agent-mode" aria-label="Agent mode">
-          <button class="mode-button" id="chatModeButton" type="button" data-agent-mode="chat" aria-pressed="true">相談</button>
-          <button class="mode-button" id="editModeButton" type="button" data-agent-mode="code" aria-pressed="false">編集案</button>
-        </div>
         <div class="chat-log" id="agentMessages" role="log" aria-live="polite" aria-label="Agent chat messages">
           <div class="chat-message assistant">スライドの相談や、承認してから反映する編集案を作成できます。</div>
         </div>
@@ -441,8 +435,6 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
     const instruction = document.querySelector("#instruction");
     const agentChatForm = document.querySelector("#agentChatForm");
     const agentMessages = document.querySelector("#agentMessages");
-    const chatModeButton = document.querySelector("#chatModeButton");
-    const editModeButton = document.querySelector("#editModeButton");
     const form = document.querySelector("#mdxPanel");
     const saveButton = document.querySelector("#saveButton");
     const saveStatus = document.querySelector("#saveStatus");
@@ -463,7 +455,6 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
     const previewFrameUrl = ${JSON.stringify(previewFrameUrl)};
     const eventsUrl = ${JSON.stringify(eventsUrl)};
     let pendingProposal;
-    let agentMode = "chat";
 
     function resizePreview() {
       if (!previewViewport || !previewStage) return;
@@ -492,22 +483,6 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
       } catch {
         return "session-" + String(Date.now());
       }
-    }
-
-    function setAgentMode(nextMode) {
-      agentMode = nextMode === "code" ? "code" : "chat";
-      chatModeButton.setAttribute("aria-pressed", agentMode === "chat" ? "true" : "false");
-      editModeButton.setAttribute("aria-pressed", agentMode === "code" ? "true" : "false");
-      instruction.placeholder = agentMode === "code" ? "どのように編集したいですか" : "スライドについて相談する";
-    }
-
-    function shouldRequestEditProposal(message) {
-      return /(編集案|修正案|変更案|改善案|編集して|修正して|変更して|直して|書き換|書き直|反映|適用|充実させ|ブラッシュアップ|タイトル.*変|見出し.*変)/i.test(message);
-    }
-
-    function inferAgentMode(message) {
-      if (agentMode === "code") return "code";
-      return shouldRequestEditProposal(message) ? "code" : "chat";
     }
 
     function appendChatMessage(role, text) {
@@ -540,8 +515,6 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
       return data.suggestion || data.message || JSON.stringify(data, null, 2);
     }
 
-    chatModeButton.addEventListener("click", () => setAgentMode("chat"));
-    editModeButton.addEventListener("click", () => setAgentMode("code"));
     instruction.addEventListener("keydown", (event) => {
       if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
         event.preventDefault();
@@ -573,8 +546,6 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
       event.preventDefault();
       const userMessage = instruction.value.trim();
       if (!userMessage) return;
-      const requestMode = inferAgentMode(userMessage);
-      if (requestMode !== agentMode) setAgentMode(requestMode);
       agentButton.disabled = true;
       renderProposalCard(undefined);
       appendChatMessage("user", userMessage);
@@ -587,7 +558,6 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
           body: JSON.stringify({
             sessionId: getOrCreateAgentSessionId(),
             instruction: userMessage,
-            mode: requestMode,
             markdown: markdown.value,
           }),
         });
