@@ -142,21 +142,9 @@ function renderLiveReloadScript(eventsPath: string): string {
   return `<script>
 (() => {
   try {
-    const eventsUrl = ${JSON.stringify(`${eventsPath}?once=1`)};
-    function parseEvents(text) {
-      return text.split("\\n\\n").map((chunk) => {
-        const eventLine = chunk.split("\\n").find((line) => line.startsWith("event: "));
-        return { type: eventLine ? eventLine.slice(7) : "" };
-      });
-    }
-    async function poll() {
-      const response = await fetch(eventsUrl, { cache: "no-store" });
-      if (!response.ok) return;
-      const events = parseEvents(await response.text());
-      if (events.some((event) => event.type === "deck:updated")) location.reload();
-    }
-    void poll();
-    setInterval(() => { void poll(); }, 1000);
+    const eventsUrl = ${JSON.stringify(eventsPath)};
+    const events = new EventSource(eventsUrl);
+    events.addEventListener("deck:updated", () => location.reload());
   } catch {}
 })();
 </script>`;
