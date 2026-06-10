@@ -372,6 +372,13 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
     .proposal-card { border: 1px solid #b9c4d8; border-radius: 8px; background: #fbfcff; padding: 10px; }
     .proposal-card[hidden] { display: none; }
     .proposal-summary { margin: 0 0 10px; font-size: 13px; line-height: 1.5; color: #2b3954; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .proposal-changes { display: grid; gap: 8px; margin: 0 0 10px; }
+    .proposal-change { border: 1px solid #d9e0ec; border-radius: 8px; overflow: hidden; background: #fff; }
+    .proposal-change-title { margin: 0; padding: 7px 9px; font-size: 12px; font-weight: 650; background: #eef3fb; color: #2b3954; }
+    .proposal-change-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: #d9e0ec; }
+    .proposal-change-block { min-width: 0; background: #fff; padding: 8px; }
+    .proposal-change-label { display: block; margin: 0 0 5px; font-size: 11px; color: #61708b; font-weight: 650; }
+    .proposal-change pre { max-height: 170px; overflow: auto; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11px; line-height: 1.45; }
     .preview-viewport { width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border: 1px solid #d9e0ec; border-radius: 8px; background: #0b1020; }
     .preview-stage { width: 1920px; height: 1080px; transform-origin: top left; }
     iframe { width: 1920px; height: 1080px; border: 0; display: block; background: #0b1020; }
@@ -383,6 +390,7 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
       .tab-panel { overflow: visible; }
       textarea { min-height: 320px; height: 44vh; resize: vertical; }
       .chat-composer textarea { min-height: 56px; height: 72px; }
+      .proposal-change-grid { grid-template-columns: minmax(0, 1fr); }
       .preview-pane { overflow: visible; }
     }
   </style>
@@ -402,6 +410,7 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
         </form>
         <section class="proposal-card" id="proposalCard" hidden aria-live="polite">
           <p class="proposal-summary" id="proposalSummary"></p>
+          <div class="proposal-changes" id="proposalChanges"></div>
           <button id="applyProposalButton" type="button" disabled>Apply</button>
         </section>
       </section>
@@ -442,6 +451,7 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
     const applyProposalButton = document.querySelector("#applyProposalButton");
     const proposalCard = document.querySelector("#proposalCard");
     const proposalSummary = document.querySelector("#proposalSummary");
+    const proposalChanges = document.querySelector("#proposalChanges");
     const eventOutput = document.querySelector("#eventOutput");
     const previewViewport = document.querySelector("#previewViewport");
     const previewStage = document.querySelector("#previewStage");
@@ -503,11 +513,57 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
       return "編集 proposal を確認してから適用できます。";
     }
 
+    function appendTextBlock(parent, label, text) {
+      const block = document.createElement("div");
+      block.className = "proposal-change-block";
+      const labelNode = document.createElement("span");
+      labelNode.className = "proposal-change-label";
+      labelNode.textContent = label;
+      const pre = document.createElement("pre");
+      pre.textContent = text || "(empty)";
+      block.append(labelNode, pre);
+      parent.append(block);
+    }
+
+    function appendProposalChange(title, beforeText, afterText) {
+      const item = document.createElement("section");
+      item.className = "proposal-change";
+      const heading = document.createElement("p");
+      heading.className = "proposal-change-title";
+      heading.textContent = title;
+      const grid = document.createElement("div");
+      grid.className = "proposal-change-grid";
+      appendTextBlock(grid, "変更前", beforeText);
+      appendTextBlock(grid, "変更後", afterText);
+      item.append(heading, grid);
+      proposalChanges.append(item);
+    }
+
+    function renderProposalChanges(proposal) {
+      proposalChanges.replaceChildren();
+      if (!proposal || typeof proposal !== "object") return;
+      if (Array.isArray(proposal.patches)) {
+        proposal.patches.forEach((patch, index) => {
+          if (!patch || typeof patch !== "object") return;
+          appendProposalChange(
+            "Patch " + String(index + 1),
+            typeof patch.oldText === "string" ? patch.oldText : "",
+            typeof patch.newText === "string" ? patch.newText : "",
+          );
+        });
+        return;
+      }
+      if (proposal.type === "replacement" && typeof proposal.markdown === "string") {
+        appendProposalChange("Full deck replacement", markdown.value.slice(0, 4000), proposal.markdown.slice(0, 4000));
+      }
+    }
+
     function renderProposalCard(proposal) {
       pendingProposal = proposal;
       const hasProposal = !!proposal;
       proposalCard.hidden = !hasProposal;
       proposalSummary.textContent = hasProposal ? proposalDescription(proposal) : "";
+      renderProposalChanges(proposal);
       applyProposalButton.disabled = !hasProposal;
     }
 
