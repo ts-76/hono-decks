@@ -321,9 +321,15 @@ describe("honoSlidesRouter", () => {
     expect(html).toContain('id="agentButton"');
     expect(html).toContain('id="applyProposalButton"');
     expect(html).toContain('id="previewFrame"');
+    expect(html).toContain('id="previewViewport"');
+    expect(html).toContain('id="previewStage"');
     expect(html).toContain('src="/decks/deck1/render?live=0"');
+    expect(html).toContain('width="1920"');
+    expect(html).toContain('height="1080"');
     expect(html).toContain('href="/decks/deck1/render"');
     expect(html).toContain("reloadPreview()");
+    expect(html).toContain("function resizePreview()");
+    expect(html).toContain("previewFrameUrl");
     expect(html).toContain('fetch(saveUrl');
     expect(html).toContain('fetch(agentUrl');
     expect(html).toContain('body: JSON.stringify({ instruction: instruction.value, mode: "code", markdown: markdown.value })');

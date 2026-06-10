@@ -333,21 +333,32 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
   <title>${escapeHtml(input.slug)} editor</title>
   <style>
     :root { color-scheme: light; font-family: ui-sans-serif, system-ui, sans-serif; color: #172033; background: #f7f8fb; }
-    body { margin: 0; }
-    main { display: grid; grid-template-columns: minmax(320px, 1fr) minmax(360px, 1fr); gap: 16px; min-height: 100vh; padding: 16px; }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; overflow-x: hidden; }
+    main { width: 100%; height: 100vh; display: grid; grid-template-columns: minmax(360px, 1.08fr) minmax(380px, .92fr); gap: 16px; padding: 16px; overflow: hidden; }
     form, aside, iframe { min-width: 0; }
+    form { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0; }
+    aside { min-height: 0; overflow: auto; }
     label { display: block; margin: 0 0 6px; font-size: 13px; color: #4f5f79; }
     textarea, input { width: 100%; border: 1px solid #cfd7e6; border-radius: 8px; padding: 10px; background: #fff; color: inherit; }
-    textarea { min-height: calc(100vh - 108px); resize: vertical; font: 14px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    textarea { min-height: 0; resize: none; font: 14px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; }
     button { border: 1px solid #b9c4d8; border-radius: 8px; padding: 8px 12px; background: #fff; color: #172033; cursor: pointer; }
     a.button { border: 1px solid #b9c4d8; border-radius: 8px; padding: 8px 12px; background: #fff; color: #172033; text-decoration: none; }
     button.primary { border-color: #315fce; background: #315fce; color: #fff; }
     button:disabled { opacity: .55; cursor: wait; }
-    .toolbar { display: flex; gap: 8px; align-items: center; margin: 10px 0 0; }
+    .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 10px 0 0; }
     .panel { border: 1px solid #d9e0ec; border-radius: 8px; background: #fff; padding: 12px; }
     .panel + .panel { margin-top: 12px; }
-    iframe { width: 100%; aspect-ratio: 16 / 9; border: 1px solid #d9e0ec; border-radius: 8px; background: #0b1020; }
+    .preview-viewport { width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border: 1px solid #d9e0ec; border-radius: 8px; background: #0b1020; }
+    .preview-stage { width: 1920px; height: 1080px; transform-origin: top left; }
+    iframe { width: 1920px; height: 1080px; border: 0; display: block; background: #0b1020; }
     pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 8px 0 0; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    @media (max-width: 900px) {
+      html, body { overflow-x: hidden; }
+      main { height: auto; min-height: 100vh; grid-template-columns: minmax(0, 1fr); overflow: visible; padding: 12px; }
+      textarea { min-height: 320px; height: 44vh; resize: vertical; }
+      aside { overflow: visible; }
+    }
   </style>
 </head>
 <body>
@@ -374,7 +385,11 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
         <div class="toolbar">
           <a class="button" href="${escapeHtml(previewUrl)}" target="_blank" rel="noreferrer">Presentation</a>
         </div>
-        <iframe id="previewFrame" title="Deck preview" src="${escapeHtml(previewFrameUrl)}"></iframe>
+        <div class="preview-viewport" id="previewViewport">
+          <div class="preview-stage" id="previewStage">
+            <iframe id="previewFrame" title="Deck preview" src="${escapeHtml(previewFrameUrl)}" width="1920" height="1080"></iframe>
+          </div>
+        </div>
         <pre id="eventOutput" aria-live="polite"></pre>
       </section>
     </aside>
@@ -390,6 +405,8 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
     const applyProposalButton = document.querySelector("#applyProposalButton");
     const agentOutput = document.querySelector("#agentOutput");
     const eventOutput = document.querySelector("#eventOutput");
+    const previewViewport = document.querySelector("#previewViewport");
+    const previewStage = document.querySelector("#previewStage");
     const previewFrame = document.querySelector("#previewFrame");
     const slug = root.dataset.deckSlug;
     const mountPath = root.dataset.mountPath;
@@ -397,12 +414,22 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
     const agentUrl = ${JSON.stringify(agentUrl)};
     const applyUrl = ${JSON.stringify(applyUrl)};
     const previewUrl = ${JSON.stringify(previewUrl)};
+    const previewFrameUrl = ${JSON.stringify(previewFrameUrl)};
     const eventsUrl = ${JSON.stringify(eventsUrl)};
     let pendingProposal;
 
+    function resizePreview() {
+      if (!previewViewport || !previewStage) return;
+      const bounds = previewViewport.getBoundingClientRect();
+      const scale = bounds.width / 1920;
+      previewStage.style.transform = "scale(" + scale + ")";
+    }
+
     function reloadPreview() {
       if (!previewFrame) return;
-      previewFrame.src = previewUrl + "?t=" + String(Date.now());
+      const next = new URL(previewFrameUrl, window.location.href);
+      next.searchParams.set("t", String(Date.now()));
+      previewFrame.src = next.pathname + next.search;
     }
 
     form.addEventListener("submit", async (event) => {
@@ -487,6 +514,8 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
     } catch {
       eventOutput.textContent = "";
     }
+    window.addEventListener("resize", resizePreview);
+    resizePreview();
   </script>
 </body>
 </html>`;
