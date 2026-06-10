@@ -102,6 +102,42 @@ describe("SlideAssistant", () => {
     });
   });
 
+  it("uses recent conversation context for vague follow-up edit requests", async () => {
+    const markdown = "# Hono Slides\n\nCloudflare Workers で動く Slidev-like deck";
+
+    await expect(
+      buildChatResult(testEnv(), {
+        ...chatInput,
+        mode: "chat",
+        markdown,
+        instruction: "加筆してください",
+        conversation: [
+          {
+            role: "user",
+            content: "HonoでSlidevライクなスライドを作ったことをテーマにスライドに加筆してください。",
+          },
+          {
+            role: "assistant",
+            content: "加筆する編集案を作れます。",
+          },
+        ],
+        baseMarkdownHash: createDeckMarkdownHashForTest(markdown),
+      }),
+    ).resolves.toMatchObject({
+      source: "heuristic",
+      message: "編集 proposal を作成しました。保存は Hono の apply/save route で行ってください。",
+      proposal: {
+        type: "patch",
+        patches: [
+          {
+            oldText: "# Hono Slides",
+            newText: expect.stringContaining("HonoでSlidevライク"),
+          },
+        ],
+      },
+    });
+  });
+
   it("uses a code mode generator when one is available", async () => {
     const generateCodeModeResult = vi.fn().mockResolvedValue({
       source: "workers-ai-codemode",
@@ -236,6 +272,52 @@ describe("SlideAssistant", () => {
       message: "具体的な編集 proposal は作成できませんでした。変更したい箇所や文言をもう少し具体的に指定してください。",
     });
     expect(agent.state.revisionCount).toBe(1);
+  });
+
+  it("persists recent JSON chat turns in Durable Object state for follow-up edits", async () => {
+    const agent = Object.create(SlideAssistant.prototype) as SlideAssistantInstance & {
+      env: Env;
+      state: { revisionCount: number; recentTurns?: Array<{ role: "user" | "assistant"; content: string }> };
+      setState(state: { revisionCount: number; recentTurns?: Array<{ role: "user" | "assistant"; content: string }> }): void;
+    };
+    const markdown = "# Hono Slides\n\nCloudflare Workers で動く Slidev-like deck";
+    agent.env = testEnv();
+    agent.state = { revisionCount: 0 };
+    agent.setState = (state) => {
+      agent.state = state;
+    };
+
+    await agent.onRequest(
+      new Request("https://example.test/agents/slide-assistant/deck1/chat", {
+        method: "POST",
+        body: JSON.stringify({
+          ...chatInput,
+          markdown,
+          instruction: "HonoでSlidevライクなスライドを作ったことをテーマにスライドに加筆してください。",
+          mode: "chat",
+          baseMarkdownHash: createDeckMarkdownHashForTest(markdown),
+        }),
+      }),
+    );
+    const response = await agent.onRequest(
+      new Request("https://example.test/agents/slide-assistant/deck1/chat", {
+        method: "POST",
+        body: JSON.stringify({
+          ...chatInput,
+          markdown,
+          instruction: "加筆してください",
+          mode: "chat",
+          baseMarkdownHash: createDeckMarkdownHashForTest(markdown),
+        }),
+      }),
+    );
+    const json = (await response.json()) as {
+      proposal?: { patches?: Array<{ newText: string }> };
+    };
+
+    expect(agent.state.revisionCount).toBe(2);
+    expect(agent.state.recentTurns?.map((turn) => turn.role)).toEqual(["user", "assistant", "user", "assistant"]);
+    expect(json.proposal?.patches?.[0]?.newText).toContain("HonoでSlidevライク");
   });
 
   it("handles AIChatAgent chat turns without Workers AI", async () => {

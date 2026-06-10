@@ -41,6 +41,11 @@ export interface DeckAgentChatResult {
   proposal?: DeckAgentEditProposal;
 }
 
+export interface DeckAgentChatTurn {
+  role: "user" | "assistant";
+  content: string;
+}
+
 export function createDeckAgentInstanceName(input: DeckAgentInstanceNameInput): string {
   const slug = encodeNamePart(input.slug, "Agent deck slug");
   const sessionId = encodeNamePart(input.sessionId, "Agent session id");

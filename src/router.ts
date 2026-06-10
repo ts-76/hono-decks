@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import type { Context } from "hono";
 import { applyDeckAgentProposal } from "./agent-apply";
 import { createDeckAgentInstanceName, createDeckMarkdownHash } from "./agent-contract";
-import type { DeckAgentChatResult, DeckAgentMode } from "./agent-contract";
+import type { DeckAgentChatResult, DeckAgentChatTurn, DeckAgentMode } from "./agent-contract";
 import { resolveDeckAgentMode } from "./agent-intent";
 import { renderCompiledDeckPage } from "./compiled-render";
 import type { DeckFileChange, DeckSource, LocalDeckIO } from "./deck";
@@ -20,6 +20,7 @@ export interface HonoSlidesAgentChatInput {
   activeSlide?: number;
   slideCount?: number;
   useWorkersAI?: boolean;
+  conversation?: DeckAgentChatTurn[];
 }
 
 export interface HonoSlidesRouterOptions {

@@ -1,7 +1,7 @@
 import { AIChatAgent } from "@cloudflare/ai-chat";
 import { applyDeckAgentProposal } from "./agent-apply";
 import { createDeckMarkdownHash } from "./agent-contract";
-import type { DeckAgentChatResult } from "./agent-contract";
+import type { DeckAgentChatResult, DeckAgentChatTurn } from "./agent-contract";
 import { resolveDeckAgentMode, shouldRequestEditProposal } from "./agent-intent";
 import type { HonoSlidesAgentChatInput } from "./router";
 import type { AgentSuggestRequest, AgentSuggestResponse, Env } from "./types";
@@ -22,8 +22,11 @@ export type CodeModeResultGenerator = (
 
 interface AssistantState {
   lastInstruction?: string;
+  recentTurns?: DeckAgentChatTurn[];
   revisionCount: number;
 }
+
+const maxRecentTurns = 12;
 
 export class SlideAssistant extends AIChatAgent<Env, AssistantState> {
   initialState = { revisionCount: 0 } satisfies AssistantState;
@@ -71,9 +74,11 @@ export class SlideAssistant extends AIChatAgent<Env, AssistantState> {
 
     if (request.method === "POST" && url.pathname.endsWith("/chat")) {
       const payload = (await request.json()) as HonoSlidesAgentChatInput;
-      const response = await buildChatResult(this.env, payload);
+      const contextualPayload = withStateConversation(payload, this.state);
+      const response = await buildChatResult(this.env, contextualPayload);
       this.setState({
         lastInstruction: payload.instruction,
+        recentTurns: appendRecentTurns(this.state?.recentTurns, payload.instruction, response),
         revisionCount: (this.state?.revisionCount ?? 0) + 1,
       });
       return Response.json(response);
@@ -169,9 +174,12 @@ export async function buildChatResult(
   payload: HonoSlidesAgentChatInput,
   options: BuildChatResultOptions = {},
 ): Promise<DeckAgentChatResult> {
-  const effectivePayload = { ...payload, mode: resolveDeckAgentMode(payload.mode, payload.instruction) };
-  const suggestion = await buildSuggestion(env, effectivePayload);
-  if (effectivePayload.mode !== "code") return suggestion;
+  const contextualInstruction = createContextualInstruction(payload);
+  const effectivePayload = {
+    ...payload,
+    mode: resolveDeckAgentMode(payload.mode, contextualInstruction),
+  };
+  if (effectivePayload.mode !== "code") return buildSuggestion(env, effectivePayload);
 
   const generateCodeModeResult = options.generateCodeModeResult ?? generateWithWorkersAICodeMode;
   try {
@@ -181,6 +189,7 @@ export async function buildChatResult(
     // Code Mode is a best-effort assistant path. Saving still happens through Hono apply/save routes.
   }
 
+  const suggestion = await buildSuggestion(env, effectivePayload);
   const instruction = effectivePayload.instruction || "読みやすくする";
   const proposal = createHeuristicEditProposal(effectivePayload, instruction);
   return {
@@ -219,6 +228,66 @@ function createHeuristicEditProposal(
   return undefined;
 }
 
+function withStateConversation(payload: HonoSlidesAgentChatInput, state: AssistantState | undefined): HonoSlidesAgentChatInput {
+  const recentTurns = sanitizeRecentTurns(state?.recentTurns);
+  if (recentTurns.length === 0) return payload;
+  const contextualInstruction = createContextualInstruction({ ...payload, conversation: recentTurns });
+  return {
+    ...payload,
+    conversation: recentTurns,
+    mode: resolveDeckAgentMode(payload.mode, contextualInstruction),
+  };
+}
+
+function appendRecentTurns(
+  currentTurns: DeckAgentChatTurn[] | undefined,
+  instruction: string,
+  response: DeckAgentChatResult,
+): DeckAgentChatTurn[] {
+  const nextTurns = sanitizeRecentTurns(currentTurns);
+  const userContent = normalizeTurnContent(instruction);
+  if (userContent) nextTurns.push({ role: "user", content: userContent });
+  const assistantContent = normalizeTurnContent(response.message ?? response.suggestion ?? "");
+  if (assistantContent) nextTurns.push({ role: "assistant", content: assistantContent });
+  return nextTurns.slice(-maxRecentTurns);
+}
+
+function sanitizeRecentTurns(turns: DeckAgentChatTurn[] | undefined): DeckAgentChatTurn[] {
+  if (!Array.isArray(turns)) return [];
+  return turns
+    .map((turn): DeckAgentChatTurn => ({
+      role: turn.role === "assistant" ? "assistant" : "user",
+      content: normalizeTurnContent(turn.content),
+    }))
+    .filter((turn) => turn.content)
+    .slice(-maxRecentTurns);
+}
+
+function normalizeTurnContent(value: string | undefined): string {
+  return typeof value === "string" ? value.trim().replace(/\s+/g, " ").slice(0, 500) : "";
+}
+
+function createContextualInstruction(payload: Pick<HonoSlidesAgentChatInput, "instruction" | "conversation">): string {
+  const current = normalizeTurnContent(payload.instruction);
+  const previousUser = latestPreviousUserContent(payload.conversation);
+  return previousUser ? `${previousUser}\n${current}`.trim() : current;
+}
+
+function latestPreviousUserContent(turns: DeckAgentChatTurn[] | undefined): string | undefined {
+  return sanitizeRecentTurns(turns)
+    .filter((turn) => turn.role === "user")
+    .map((turn) => turn.content)
+    .at(-1);
+}
+
+function createContextualExpansionLine(payload: HonoSlidesAgentChatInput): string | undefined {
+  const context = latestPreviousUserContent(payload.conversation);
+  if (!context) return undefined;
+  const topic = context.replace(/^(この|その|それ|スライド|内容)[^\s、。]*[、。]?\s*/g, "").slice(0, 120);
+  if (!topic) return undefined;
+  return `${topic} という文脈を加え、なぜこのデックを作ったのかと読者が得られる価値を具体化します。`;
+}
+
 function createTitlePatch(payload: HonoSlidesAgentChatInput, instruction: string) {
   if (!/(タイトル|見出し|title|heading)/i.test(instruction)) return undefined;
   const match = /^#\s+(.+)$/m.exec(payload.markdown);
@@ -238,13 +307,14 @@ function createContentExpansionPatch(payload: HonoSlidesAgentChatInput, instruct
   const match = /^#{1,3}\s+.+$/m.exec(payload.markdown);
   if (!match) return undefined;
   const oldText = match[0];
+  const contextLine = createContextualExpansionLine(payload);
   return {
     path: expectedSourcePath(payload),
     oldText,
     newText: [
       oldText,
       "",
-      "このスライドで伝えたいことを一文で明確にし、聞き手が次に取る行動までつながる内容にします。",
+      contextLine ?? "このスライドで伝えたいことを一文で明確にし、聞き手が次に取る行動までつながる内容にします。",
     ].join("\n"),
   };
 }
@@ -336,6 +406,8 @@ function createWorkersAIUserPrompt(payload: AgentSuggestRequest): string {
   return [
     task,
     "",
+    ...formatConversationContext(payload),
+    "",
     `ユーザー入力: ${payload.instruction || "読みやすくする"}`,
     `現在のスライド: ${payload.activeSlide != null ? payload.activeSlide + 1 : "未指定"}`,
     `スライド枚数: ${payload.slideCount ?? "不明"}`,
@@ -343,6 +415,15 @@ function createWorkersAIUserPrompt(payload: AgentSuggestRequest): string {
     "デック抜粋:",
     payload.markdown.slice(0, 6000),
   ].join("\n");
+}
+
+function formatConversationContext(payload: Pick<AgentSuggestRequest, "conversation">): string[] {
+  const turns = sanitizeRecentTurns(payload.conversation as DeckAgentChatTurn[] | undefined);
+  if (turns.length === 0) return [];
+  return [
+    "直近の会話:",
+    ...turns.map((turn) => `${turn.role === "user" ? "ユーザー" : "アシスタント"}: ${turn.content}`),
+  ];
 }
 
 function normalizeAISuggestion(response: string): string {
@@ -399,6 +480,8 @@ async function generateWithWorkersAICodeMode(
     prompt: JSON.stringify({
       task: "Create a non-persistent edit proposal for this deck. Do not save files.",
       instruction: payload.instruction,
+      recentConversation: payload.conversation ?? [],
+      contextualInstruction: createContextualInstruction(payload),
       slug: payload.slug,
       sourcePath: payload.sourcePath,
       activeSlide: payload.activeSlide,

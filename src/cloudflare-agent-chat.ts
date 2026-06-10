@@ -16,7 +16,7 @@ export interface CreateCloudflareDeckAgentChatInput {
 
 export function createCloudflareDeckAgentChat(input: CreateCloudflareDeckAgentChatInput) {
   const agentPath = normalizeAgentPath(input.agentPath ?? "slide-assistant");
-  const routeTimeoutMs = input.routeTimeoutMs ?? 8_000;
+  const routeTimeoutMs = input.routeTimeoutMs ?? 20_000;
 
   return async (chatInput: HonoSlidesAgentChatInput, c: Context): Promise<DeckAgentChatResult | Response> => {
     const agentUrl = new URL(
