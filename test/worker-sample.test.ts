@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { routeAgentRequest } from "agents";
 
 vi.mock("agents", () => ({
   Agent: class {},
@@ -13,6 +14,10 @@ async function sampleApp() {
 }
 
 describe("sample Worker app", () => {
+  beforeEach(() => {
+    vi.mocked(routeAgentRequest).mockResolvedValue(null);
+  });
+
   it("routes the deployed root to the compiled deck index instead of the legacy editor", async () => {
     const app = await sampleApp();
     const response = await app.request("/");
@@ -101,6 +106,44 @@ describe("sample Worker app", () => {
 
     expect(chat.status).toBe(501);
     await expect(chat.json()).resolves.toEqual({ error: "Agent route was not handled" });
+  });
+
+  it("can receive a usable sample edit proposal from the Agent route", async () => {
+    vi.mocked(routeAgentRequest).mockImplementationOnce(async (request) => {
+      const body = (await request.json()) as {
+        baseMarkdownHash: string;
+        sourcePath?: string;
+      };
+      return Response.json({
+        source: "agent",
+        message: "タイトルを変更します。",
+        proposal: {
+          type: "patch",
+          baseMarkdownHash: body.baseMarkdownHash,
+          summary: "タイトルを変更します。",
+          patches: [
+            {
+              path: body.sourcePath ?? "decks/sample.mdx",
+              oldText: "# Hono Slides",
+              newText: "# Hono Slides の概要",
+            },
+          ],
+        },
+      });
+    });
+    const app = await sampleApp();
+    const chat = await app.request("/decks/sample/edit/agent/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ instruction: "タイトルを変更してみて", mode: "code", activeSlide: 0 }),
+    });
+    const chatJson = (await chat.json()) as { proposal?: unknown };
+
+    expect(chat.status).toBe(200);
+    expect(chatJson.proposal).toMatchObject({
+      type: "patch",
+      summary: "タイトルを変更します。",
+    });
   });
 
   it("does not expose legacy editing APIs from the sample Worker", async () => {
