@@ -44,5 +44,5 @@ export interface AgentSuggestRequest {
 export interface AgentSuggestResponse {
   suggestion: string;
   replacement?: string;
-  source: "workers-ai" | "heuristic";
+  source: "workers-ai";
 }

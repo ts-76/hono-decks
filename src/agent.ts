@@ -2,7 +2,7 @@ import { AIChatAgent } from "@cloudflare/ai-chat";
 import { applyDeckAgentProposal } from "./agent-apply";
 import { createDeckMarkdownHash } from "./agent-contract";
 import type { DeckAgentChatResult, DeckAgentChatTurn } from "./agent-contract";
-import { resolveDeckAgentMode, shouldRequestEditProposal } from "./agent-intent";
+import { resolveDeckAgentMode } from "./agent-intent";
 import type { HonoSlidesAgentChatInput } from "./router";
 import type { AgentSuggestRequest, AgentSuggestResponse, Env } from "./types";
 import { convertToModelMessages, stepCountIs, streamText, tool } from "ai";
@@ -19,6 +19,16 @@ export type CodeModeResultGenerator = (
   env: Env,
   payload: HonoSlidesAgentChatInput,
 ) => Promise<DeckAgentChatResult | undefined>;
+
+export class AgentResponseError extends Error {
+  constructor(
+    message: string,
+    readonly status = 503,
+  ) {
+    super(message);
+    this.name = "AgentResponseError";
+  }
+}
 
 interface AssistantState {
   lastInstruction?: string;
@@ -40,10 +50,7 @@ export class SlideAssistant extends AIChatAgent<Env, AssistantState> {
     const payload = createChatPayloadFromMessages(this.messages, options?.body);
     const workersai = await createWorkersAIModel(this.env);
     if (!workersai) {
-      const suggestion = await buildSuggestion(this.env, payload);
-      return new Response(suggestion.suggestion, {
-        headers: { "content-type": "text/plain; charset=utf-8" },
-      });
+      return createAgentErrorResponse(new AgentResponseError("Workers AI binding is required for chat responses."));
     }
 
     const tools = createChatAgentTools(payload);
@@ -64,24 +71,32 @@ export class SlideAssistant extends AIChatAgent<Env, AssistantState> {
     const url = new URL(request.url);
     if (request.method === "POST" && url.pathname.endsWith("/suggest")) {
       const payload = (await request.json()) as AgentSuggestRequest;
-      const response = await buildSuggestion(this.env, payload);
-      this.setState({
-        lastInstruction: payload.instruction,
-        revisionCount: (this.state?.revisionCount ?? 0) + 1,
-      });
-      return Response.json(response);
+      try {
+        const response = await buildSuggestion(this.env, payload);
+        this.setState({
+          lastInstruction: payload.instruction,
+          revisionCount: (this.state?.revisionCount ?? 0) + 1,
+        });
+        return Response.json(response);
+      } catch (error) {
+        return createAgentErrorResponse(error);
+      }
     }
 
     if (request.method === "POST" && url.pathname.endsWith("/chat")) {
       const payload = (await request.json()) as HonoSlidesAgentChatInput;
       const contextualPayload = withStateConversation(payload, this.state);
-      const response = await buildChatResult(this.env, contextualPayload);
-      this.setState({
-        lastInstruction: payload.instruction,
-        recentTurns: appendRecentTurns(this.state?.recentTurns, payload.instruction, response),
-        revisionCount: (this.state?.revisionCount ?? 0) + 1,
-      });
-      return Response.json(response);
+      try {
+        const response = await buildChatResult(this.env, contextualPayload);
+        this.setState({
+          lastInstruction: payload.instruction,
+          recentTurns: appendRecentTurns(this.state?.recentTurns, payload.instruction, response),
+          revisionCount: (this.state?.revisionCount ?? 0) + 1,
+        });
+        return Response.json(response);
+      } catch (error) {
+        return createAgentErrorResponse(error);
+      }
     }
 
     return Response.json(
@@ -190,28 +205,7 @@ export async function buildChatResult(
     // Code Mode is a best-effort assistant path. Saving still happens through Hono apply/save routes.
   }
 
-  const instruction = effectivePayload.instruction || "読みやすくする";
-  const editPlan = createHeuristicEditPlan(effectivePayload, instruction);
-  if (editPlan) return editPlan;
-
-  return {
-    source: "heuristic",
-    message: "具体的な編集 proposal は作成できませんでした。変更したい箇所や文言をもう少し具体的に指定してください。",
-  };
-}
-
-function createHeuristicEditPlan(payload: HonoSlidesAgentChatInput, instruction: string): DeckAgentChatResult | undefined {
-  const proposal = createHeuristicEditProposal(payload, instruction);
-  if (!proposal) return undefined;
-  const summary = createEditPlanSummary(payload, instruction, proposal);
-  return {
-    source: "heuristic",
-    message: `${summary} 保存は Hono の apply/save route で行ってください。`,
-    proposal: {
-      ...proposal,
-      summary,
-    },
-  };
+  throw new AgentResponseError("Code Mode did not produce a usable edit proposal.");
 }
 
 function normalizeEditProposalResult(result: DeckAgentChatResult): DeckAgentChatResult {
@@ -225,47 +219,6 @@ function normalizeEditProposalResult(result: DeckAgentChatResult): DeckAgentChat
       summary,
     },
   };
-}
-
-function createHeuristicEditProposal(
-  payload: HonoSlidesAgentChatInput,
-  instruction: string,
-): DeckAgentChatResult["proposal"] | undefined {
-  const baseMarkdownHash = payload.baseMarkdownHash || createDeckMarkdownHash(payload.markdown);
-  const summary = createEditPlanSummary(payload, instruction);
-  const titlePatch = createTitlePatch(payload, instruction);
-  if (titlePatch) {
-    return {
-      type: "patch",
-      baseMarkdownHash,
-      summary,
-      patches: [titlePatch],
-    };
-  }
-  const contentPatch = createContentExpansionPatch(payload, instruction);
-  if (contentPatch) {
-    return {
-      type: "patch",
-      baseMarkdownHash,
-      summary,
-      patches: [contentPatch],
-    };
-  }
-  return undefined;
-}
-
-function createEditPlanSummary(
-  payload: HonoSlidesAgentChatInput,
-  instruction: string,
-  proposal?: DeckAgentChatResult["proposal"],
-): string {
-  if (proposal?.type === "patch" && /(タイトル|見出し|title|heading)/i.test(instruction)) {
-    const title = /^#\s+(.+)$/m.exec(proposal.patches[0]?.newText ?? "")?.[1]?.trim();
-    return title ? `タイトルを「${title}」に変更します。` : "タイトルを変更します。";
-  }
-  const topic = extractEditTopic(latestPreviousUserContent(payload.conversation) ?? instruction);
-  if (topic) return `「${topic}」という文脈をスライドに加筆します。`;
-  return instruction || "編集 proposal を作成しました。";
 }
 
 function withStateConversation(payload: HonoSlidesAgentChatInput, state: AssistantState | undefined): HonoSlidesAgentChatInput {
@@ -319,55 +272,6 @@ function latestPreviousUserContent(turns: DeckAgentChatTurn[] | undefined): stri
     .at(-1);
 }
 
-function createContextualExpansionLine(payload: HonoSlidesAgentChatInput): string | undefined {
-  const topic = extractEditTopic(latestPreviousUserContent(payload.conversation) ?? payload.instruction);
-  if (!topic) return undefined;
-  return `${topic} という文脈を加え、なぜこのデックを作ったのかと読者が得られる価値を具体化します。`;
-}
-
-function extractEditTopic(value: string | undefined): string | undefined {
-  if (!value) return undefined;
-  const topic = value
-    .replace(/^(この|その|それ|スライド|内容)[^\s、。]*[、。]?\s*/g, "")
-    .replace(/してください[。.!！]*$/g, "")
-    .replace(/(スライドに)?(加筆|追記|反映|充実させ|増やし|増やす|編集|修正)(して)?/g, "")
-    .trim()
-    .slice(0, 120);
-  if (/^(案を?提示|案を?作成|proposal|プロポーザル)$/i.test(topic)) return undefined;
-  return topic || undefined;
-}
-
-function createTitlePatch(payload: HonoSlidesAgentChatInput, instruction: string) {
-  if (!/(タイトル|見出し|title|heading)/i.test(instruction)) return undefined;
-  const match = /^#\s+(.+)$/m.exec(payload.markdown);
-  if (!match) return undefined;
-  const oldText = match[0];
-  const currentTitle = match[1].trim();
-  const nextTitle = /概要$/.test(currentTitle) ? `${currentTitle} 改訂版` : `${currentTitle} の概要`;
-  return {
-    path: expectedSourcePath(payload),
-    oldText,
-    newText: `# ${nextTitle}`,
-  };
-}
-
-function createContentExpansionPatch(payload: HonoSlidesAgentChatInput, instruction: string) {
-  if (!shouldRequestEditProposal(instruction)) return undefined;
-  const match = /^#{1,3}\s+.+$/m.exec(payload.markdown);
-  if (!match) return undefined;
-  const oldText = match[0];
-  const contextLine = createContextualExpansionLine(payload);
-  return {
-    path: expectedSourcePath(payload),
-    oldText,
-    newText: [
-      oldText,
-      "",
-      contextLine ?? "このスライドで伝えたいことを一文で明確にし、聞き手が次に取る行動までつながる内容にします。",
-    ].join("\n"),
-  };
-}
-
 function isUsableCodeModeResult(result: DeckAgentChatResult, payload: HonoSlidesAgentChatInput): boolean {
   if (!result.proposal) return false;
   return applyDeckAgentProposal(payload.markdown, result.proposal, { sourcePath: expectedSourcePath(payload) }).ok;
@@ -378,22 +282,10 @@ function expectedSourcePath(payload: Pick<HonoSlidesAgentChatInput, "slug" | "so
 }
 
 export async function buildSuggestion(env: Env, payload: AgentSuggestRequest): Promise<AgentSuggestResponse> {
-  const slideCount = payload.slideCount ?? payload.markdown.split(/^---\s*$/m).filter((part) => part.trim()).length;
-  if (payload.mode === "chat" && isGreeting(payload.instruction)) {
-    return {
-      source: "heuristic",
-      suggestion: `こんにちは。現在 ${slideCount} 枚のスライドがあります。構成、文章、見出し、話す順番などを一緒に見直せます。`,
-    };
-  }
-
   const aiSuggestion = await suggestWithWorkersAI(env, payload);
   if (aiSuggestion) return aiSuggestion;
 
-  const focus = payload.activeSlide != null ? `現在のスライド ${payload.activeSlide + 1}` : "デック全体";
-  return {
-    source: "heuristic",
-    suggestion: `${focus}を対象に「${payload.instruction || "読みやすくする"}」方針で見直せます。まず見出しを1行に絞り、箇条書きは3点以内、各スライドの主張を1つにすると Slidev 風に扱いやすいです。現在 ${slideCount} 枚のスライドがあります。`,
-  };
+  throw new AgentResponseError("Workers AI did not produce a usable chat response.");
 }
 
 async function suggestWithWorkersAI(env: Env, payload: AgentSuggestRequest): Promise<AgentSuggestResponse | undefined> {
@@ -494,11 +386,6 @@ function isUsableAISuggestion(suggestion: string, payload: AgentSuggestRequest):
     return false;
   }
   return true;
-}
-
-function isGreeting(value: string): boolean {
-  const normalized = value.trim().toLowerCase();
-  return /^(こんにちは|こんにちわ|こんばんは|おはよう|hello|hi|hey)[\s!！。,.、]*$/.test(normalized);
 }
 
 async function generateWithWorkersAICodeMode(
@@ -617,4 +504,12 @@ function readNumber(body: Record<string, unknown> | undefined, key: string): num
 function readBoolean(body: Record<string, unknown> | undefined, key: string): boolean | undefined {
   const value = body?.[key];
   return typeof value === "boolean" ? value : undefined;
+}
+
+function createAgentErrorResponse(error: unknown): Response {
+  const agentError =
+    error instanceof AgentResponseError
+      ? error
+      : new AgentResponseError(error instanceof Error ? error.message : "Agent chat failed.");
+  return Response.json({ error: agentError.message }, { status: agentError.status });
 }
