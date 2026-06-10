@@ -2,6 +2,7 @@ import { AIChatAgent } from "@cloudflare/ai-chat";
 import { applyDeckAgentProposal } from "./agent-apply";
 import { createDeckMarkdownHash } from "./agent-contract";
 import type { DeckAgentChatResult } from "./agent-contract";
+import { resolveDeckAgentMode, shouldRequestEditProposal } from "./agent-intent";
 import type { HonoSlidesAgentChatInput } from "./router";
 import type { AgentSuggestRequest, AgentSuggestResponse, Env } from "./types";
 import { convertToModelMessages, stepCountIs, streamText, tool } from "ai";
@@ -107,7 +108,7 @@ function createChatPayloadFromMessages(
     slug,
     sessionId,
     agentInstanceName: readString(body, "agentInstanceName") ?? `deck-${slug}-session-${sessionId}`,
-    mode: readString(body, "mode") === "code" ? "code" : "chat",
+    mode: resolveDeckAgentMode(readString(body, "mode"), latestUserText || readString(body, "instruction") || ""),
     markdown,
     instruction: latestUserText || readString(body, "instruction") || "",
     baseMarkdownHash: readString(body, "baseMarkdownHash") ?? createDeckMarkdownHash(markdown),
@@ -168,19 +169,20 @@ export async function buildChatResult(
   payload: HonoSlidesAgentChatInput,
   options: BuildChatResultOptions = {},
 ): Promise<DeckAgentChatResult> {
-  const suggestion = await buildSuggestion(env, payload);
-  if (payload.mode !== "code") return suggestion;
+  const effectivePayload = { ...payload, mode: resolveDeckAgentMode(payload.mode, payload.instruction) };
+  const suggestion = await buildSuggestion(env, effectivePayload);
+  if (effectivePayload.mode !== "code") return suggestion;
 
   const generateCodeModeResult = options.generateCodeModeResult ?? generateWithWorkersAICodeMode;
   try {
-    const codeModeResult = await resolveWithin(generateCodeModeResult(env, payload), options.codeModeTimeoutMs ?? 8_000);
-    if (codeModeResult && isUsableCodeModeResult(codeModeResult, payload)) return codeModeResult;
+    const codeModeResult = await resolveWithin(generateCodeModeResult(env, effectivePayload), options.codeModeTimeoutMs ?? 8_000);
+    if (codeModeResult && isUsableCodeModeResult(codeModeResult, effectivePayload)) return codeModeResult;
   } catch {
     // Code Mode is a best-effort assistant path. Saving still happens through Hono apply/save routes.
   }
 
-  const instruction = payload.instruction || "読みやすくする";
-  const proposal = createHeuristicEditProposal(payload, instruction);
+  const instruction = effectivePayload.instruction || "読みやすくする";
+  const proposal = createHeuristicEditProposal(effectivePayload, instruction);
   return {
     source: suggestion.source,
     message: proposal
@@ -205,6 +207,15 @@ function createHeuristicEditProposal(
       patches: [titlePatch],
     };
   }
+  const contentPatch = createContentExpansionPatch(payload, instruction);
+  if (contentPatch) {
+    return {
+      type: "patch",
+      baseMarkdownHash,
+      summary: instruction,
+      patches: [contentPatch],
+    };
+  }
   return undefined;
 }
 
@@ -219,6 +230,22 @@ function createTitlePatch(payload: HonoSlidesAgentChatInput, instruction: string
     path: expectedSourcePath(payload),
     oldText,
     newText: `# ${nextTitle}`,
+  };
+}
+
+function createContentExpansionPatch(payload: HonoSlidesAgentChatInput, instruction: string) {
+  if (!shouldRequestEditProposal(instruction)) return undefined;
+  const match = /^#{1,3}\s+.+$/m.exec(payload.markdown);
+  if (!match) return undefined;
+  const oldText = match[0];
+  return {
+    path: expectedSourcePath(payload),
+    oldText,
+    newText: [
+      oldText,
+      "",
+      "このスライドで伝えたいことを一文で明確にし、聞き手が次に取る行動までつながる内容にします。",
+    ].join("\n"),
   };
 }
 
@@ -278,7 +305,7 @@ async function suggestWithWorkersAI(env: Env, payload: AgentSuggestRequest): Pro
   const response = typeof result === "object" && result !== null && "response" in result ? String(result.response) : undefined;
   if (!response) return undefined;
   const suggestion = normalizeAISuggestion(response);
-  if (!isUsableAISuggestion(suggestion)) return undefined;
+  if (!isUsableAISuggestion(suggestion, payload)) return undefined;
   return { source: "workers-ai", suggestion };
 }
 
@@ -325,7 +352,7 @@ function normalizeAISuggestion(response: string): string {
     .trim();
 }
 
-function isUsableAISuggestion(suggestion: string): boolean {
+function isUsableAISuggestion(suggestion: string, payload: AgentSuggestRequest): boolean {
   const lower = suggestion.toLowerCase();
   if (suggestion.length > 700) return false;
   if (lower.includes("```")) return false;
@@ -333,6 +360,9 @@ function isUsableAISuggestion(suggestion: string): boolean {
   if (/^#{1,3}\s+/m.test(suggestion)) return false;
   if (/<[A-Za-z][^>]*\/?>/.test(suggestion)) return false;
   if (lower.includes("<ero")) return false;
+  if (payload.markdown.trim() && /(未指定|指定されていない|提供されていない|内容を教えて|内容が(?:不明|わかりません)|情報が不足|提示することはできません)/.test(suggestion)) {
+    return false;
+  }
   return true;
 }
 

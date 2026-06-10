@@ -346,8 +346,9 @@ describe("honoSlidesRouter", () => {
     expect(html).toContain("getOrCreateAgentSessionId()");
     expect(html).toContain("appendChatMessage");
     expect(html).toContain("renderProposalCard");
+    expect(html).toContain("inferAgentMode");
     expect(html).toContain("sessionId");
-    expect(html).toContain("mode: agentMode");
+    expect(html).toContain("mode: requestMode");
     expect(html).toContain("markdown: markdown.value");
     expect(html).toContain('fetch(applyUrl');
     expect(html).toContain("markdown.value = data.markdown");
@@ -714,6 +715,39 @@ describe("honoSlidesRouter", () => {
     expect(calls[0]).toMatchObject({
       markdown: "# Unsaved Deck",
       baseMarkdownHash: createDeckMarkdownHash("# Unsaved Deck"),
+    });
+  });
+
+  it("routes edit-intent chat messages as code mode even when the client is still in chat mode", async () => {
+    const calls: unknown[] = [];
+    const app = new Hono();
+    app.route(
+      "/decks",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: true,
+        localDeckIO: createMemoryDeckIO({ deck1: "# Raw Deck" }),
+        agentChat: async (input) => {
+          calls.push(input);
+          return { source: "test", suggestion: "Tighten the title." };
+        },
+      }),
+    );
+
+    const response = await app.request("/decks/deck1/edit/agent/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        instruction: "編集案を提示してください",
+        mode: "chat",
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toMatchObject({
+      mode: "code",
+      instruction: "編集案を提示してください",
     });
   });
 

@@ -1,8 +1,9 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { applyDeckAgentProposal } from "./agent-apply";
-import { createDeckAgentInstanceName, createDeckMarkdownHash, parseDeckAgentMode } from "./agent-contract";
+import { createDeckAgentInstanceName, createDeckMarkdownHash } from "./agent-contract";
 import type { DeckAgentChatResult, DeckAgentMode } from "./agent-contract";
+import { resolveDeckAgentMode } from "./agent-intent";
 import { renderCompiledDeckPage } from "./compiled-render";
 import type { DeckFileChange, DeckSource, LocalDeckIO } from "./deck";
 import type { PreviewEvent, PreviewEventHub } from "./preview-events";
@@ -154,16 +155,17 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
       };
       const markdown = typeof payload.markdown === "string" ? payload.markdown : savedMarkdown;
       const sessionId = typeof payload.sessionId === "string" && payload.sessionId ? payload.sessionId : "default";
+      const instruction = typeof payload.instruction === "string" ? payload.instruction : "";
       const result = await options.agentChat(
         {
           slug,
           sessionId,
           agentInstanceName: createDeckAgentInstanceName({ slug, sessionId }),
-          mode: parseDeckAgentMode(payload.mode),
+          mode: resolveDeckAgentMode(payload.mode, instruction),
           baseMarkdownHash: createDeckMarkdownHash(markdown),
           sourcePath: deck?.sourcePath,
           markdown,
-          instruction: typeof payload.instruction === "string" ? payload.instruction : "",
+          instruction,
           activeSlide: parseActiveSlide(payload.activeSlide, deck?.slides.length),
           slideCount: deck?.slides.length,
           useWorkersAI: typeof payload.useWorkersAI === "boolean" ? payload.useWorkersAI : undefined,
@@ -499,6 +501,15 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
       instruction.placeholder = agentMode === "code" ? "どのように編集したいですか" : "スライドについて相談する";
     }
 
+    function shouldRequestEditProposal(message) {
+      return /(編集案|修正案|変更案|改善案|編集して|修正して|変更して|直して|書き換|書き直|反映|適用|充実させ|ブラッシュアップ|タイトル.*変|見出し.*変)/i.test(message);
+    }
+
+    function inferAgentMode(message) {
+      if (agentMode === "code") return "code";
+      return shouldRequestEditProposal(message) ? "code" : "chat";
+    }
+
     function appendChatMessage(role, text) {
       const message = document.createElement("div");
       message.className = "chat-message " + role;
@@ -562,6 +573,8 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
       event.preventDefault();
       const userMessage = instruction.value.trim();
       if (!userMessage) return;
+      const requestMode = inferAgentMode(userMessage);
+      if (requestMode !== agentMode) setAgentMode(requestMode);
       agentButton.disabled = true;
       renderProposalCard(undefined);
       appendChatMessage("user", userMessage);
@@ -574,7 +587,7 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
           body: JSON.stringify({
             sessionId: getOrCreateAgentSessionId(),
             instruction: userMessage,
-            mode: agentMode,
+            mode: requestMode,
             markdown: markdown.value,
           }),
         });

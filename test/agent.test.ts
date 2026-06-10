@@ -76,6 +76,32 @@ describe("SlideAssistant", () => {
     });
   });
 
+  it("builds a visible content patch for generic edit proposal requests", async () => {
+    const markdown = "# Hono Slides\n\nCloudflare Workers で動く Slidev-like deck";
+
+    await expect(
+      buildChatResult(testEnv(), {
+        ...chatInput,
+        mode: "chat",
+        markdown,
+        instruction: "編集案を提示してください",
+        baseMarkdownHash: createDeckMarkdownHashForTest(markdown),
+      }),
+    ).resolves.toMatchObject({
+      source: "heuristic",
+      message: "編集 proposal を作成しました。保存は Hono の apply/save route で行ってください。",
+      proposal: {
+        type: "patch",
+        patches: [
+          {
+            oldText: "# Hono Slides",
+            newText: expect.stringContaining("このスライドで伝えたいこと"),
+          },
+        ],
+      },
+    });
+  });
+
   it("uses a code mode generator when one is available", async () => {
     const generateCodeModeResult = vi.fn().mockResolvedValue({
       source: "workers-ai-codemode",
@@ -363,6 +389,30 @@ describe("SlideAssistant", () => {
           instruction: "Improve this",
           activeSlide: 0,
           slideCount: 1,
+        },
+      ),
+    ).resolves.toMatchObject({
+      source: "heuristic",
+      suggestion: expect.stringContaining("現在 1 枚"),
+    });
+  });
+
+  it("falls back when Workers AI ignores provided markdown and says the content is unspecified", async () => {
+    await expect(
+      buildSuggestion(
+        {
+          AI: {
+            run: async () => ({
+              response: "スライドの内容は未指定なので、編集案を提示することはできません。スライドの内容を教えてください。",
+            }),
+          },
+        } as unknown as Env,
+        {
+          markdown: "# Hono Slides\n\nCloudflare Workers で動く Slidev-like deck",
+          instruction: "編集案を提示してください",
+          activeSlide: 0,
+          slideCount: 1,
+          mode: "chat",
         },
       ),
     ).resolves.toMatchObject({
