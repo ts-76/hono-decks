@@ -4,6 +4,28 @@ export function parseCodeModeGenerationResult(result: unknown): DeckAgentChatRes
   return extractDeckAgentChatResult(result, 0);
 }
 
+export function extractCodeModeToolInputs(result: unknown): Array<{ code: string }> {
+  const inputs: Array<{ code: string }> = [];
+  collectCodeModeToolInputs(result, inputs, 0);
+  return inputs;
+}
+
+function collectCodeModeToolInputs(value: unknown, inputs: Array<{ code: string }>, depth: number): void {
+  if (depth > 5 || !isRecord(value)) return;
+
+  const toolCalls = Array.isArray(value.toolCalls) ? value.toolCalls : [];
+  for (const toolCall of toolCalls) {
+    if (!isRecord(toolCall) || toolCall.toolName !== "codemode") continue;
+    const input = toolCall.input;
+    if (isRecord(input) && typeof input.code === "string" && input.code.trim()) {
+      inputs.push({ code: input.code });
+    }
+  }
+
+  const steps = Array.isArray(value.steps) ? value.steps : [];
+  for (const step of steps) collectCodeModeToolInputs(step, inputs, depth + 1);
+}
+
 function extractDeckAgentChatResult(value: unknown, depth: number): DeckAgentChatResult | undefined {
   if (depth > 5) return undefined;
 

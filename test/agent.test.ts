@@ -58,6 +58,33 @@ describe("SlideAssistant", () => {
     ).rejects.toThrow("Code Mode did not produce a usable edit proposal.");
   });
 
+  it("creates an explicit title patch when the user provides the exact new title", async () => {
+    const markdown = "# Hono Slides\n\nCloudflare Workers で動く Slidev-like deck";
+
+    await expect(
+      buildChatResult(testEnv(), {
+        ...chatInput,
+        mode: "code",
+        markdown,
+        instruction: "タイトルを「Hono Slides 実践ガイド」に変更する編集案を作成してください",
+        baseMarkdownHash: createDeckMarkdownHashForTest(markdown),
+      }),
+    ).resolves.toMatchObject({
+      source: "agent-command",
+      message: "タイトルを「Hono Slides 実践ガイド」に変更します。",
+      proposal: {
+        type: "patch",
+        summary: "タイトルを「Hono Slides 実践ガイド」に変更します。",
+        patches: [
+          {
+            oldText: "# Hono Slides",
+            newText: "# Hono Slides 実践ガイド",
+          },
+        ],
+      },
+    });
+  });
+
   it("does not build a local content patch for generic edit proposal requests", async () => {
     const markdown = "# Hono Slides\n\nCloudflare Workers で動く Slidev-like deck";
 
