@@ -335,10 +335,18 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
     :root { color-scheme: light; font-family: ui-sans-serif, system-ui, sans-serif; color: #172033; background: #f7f8fb; }
     *, *::before, *::after { box-sizing: border-box; }
     html, body { margin: 0; min-height: 100%; overflow-x: hidden; }
-    main { width: 100%; height: 100vh; display: grid; grid-template-columns: minmax(360px, 1.08fr) minmax(380px, .92fr); gap: 16px; padding: 16px; overflow: hidden; }
+    main { width: 100%; height: 100vh; display: grid; grid-template-columns: minmax(360px, 0.96fr) minmax(460px, 1.04fr); gap: 16px; padding: 16px; overflow: hidden; }
     form, aside, iframe { min-width: 0; }
-    form { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0; }
-    aside { min-height: 0; overflow: auto; }
+    .author-pane, .preview-pane { min-height: 0; min-width: 0; }
+    .author-pane { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 10px; overflow: hidden; }
+    .preview-pane { overflow: auto; }
+    .tab-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 4px; border: 1px solid #d9e0ec; border-radius: 8px; background: #eef3fb; }
+    .tab-button { min-height: 38px; border-color: transparent; background: transparent; font-weight: 650; }
+    .tab-button[aria-selected="true"] { border-color: #b9c4d8; background: #fff; box-shadow: 0 1px 2px rgba(23, 32, 51, .08); }
+    .tab-panel { min-height: 0; overflow: hidden; }
+    .tab-panel[hidden] { display: none; }
+    form.tab-panel { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+    section.tab-panel { overflow: auto; }
     label { display: block; margin: 0 0 6px; font-size: 13px; color: #4f5f79; }
     textarea, input { width: 100%; border: 1px solid #cfd7e6; border-radius: 8px; padding: 10px; background: #fff; color: inherit; }
     textarea { min-height: 0; resize: none; font: 14px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; }
@@ -349,6 +357,7 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
     .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 10px 0 0; }
     .panel { border: 1px solid #d9e0ec; border-radius: 8px; background: #fff; padding: 12px; }
     .panel + .panel { margin-top: 12px; }
+    .panel-fill { min-height: 0; height: 100%; }
     .preview-viewport { width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border: 1px solid #d9e0ec; border-radius: 8px; background: #0b1020; }
     .preview-stage { width: 1920px; height: 1080px; transform-origin: top left; }
     iframe { width: 1920px; height: 1080px; border: 0; display: block; background: #0b1020; }
@@ -356,23 +365,18 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
     @media (max-width: 900px) {
       html, body { overflow-x: hidden; }
       main { height: auto; min-height: 100vh; grid-template-columns: minmax(0, 1fr); overflow: visible; padding: 12px; }
+      .author-pane { overflow: visible; }
+      .tab-panel { overflow: visible; }
       textarea { min-height: 320px; height: 44vh; resize: vertical; }
-      aside { overflow: visible; }
+      .preview-pane { overflow: visible; }
     }
   </style>
 </head>
 <body>
   <main data-hono-slides-editor data-deck-slug="${escapeHtml(input.slug)}" data-mount-path="${escapeHtml(input.mountPath)}">
-    <form id="editorForm" method="post" action="${escapeHtml(saveUrl)}">
-      <label for="markdown">MDX</label>
-      <textarea id="markdown" name="markdown" spellcheck="false">${escapeHtml(input.markdown)}</textarea>
-      <div class="toolbar">
-        <button class="primary" id="saveButton" type="submit">Save</button>
-        <span id="saveStatus" role="status"></span>
-      </div>
-    </form>
-    <aside>
-      <section class="panel" data-agent-chat>
+    <section class="author-pane" aria-label="Editor workspace">
+      <div id="editorTabsMount" data-hono-jsx-dom-tabs></div>
+      <section class="panel panel-fill tab-panel" id="agentPanel" data-agent-chat role="tabpanel" aria-labelledby="chatTab">
         <label for="instruction">Agent instruction</label>
         <input id="instruction" value="このデックを読みやすくして" />
         <div class="toolbar">
@@ -381,6 +385,16 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
         </div>
         <pre id="agentOutput" aria-live="polite"></pre>
       </section>
+      <form class="panel panel-fill tab-panel" id="mdxPanel" method="post" action="${escapeHtml(saveUrl)}" role="tabpanel" aria-labelledby="mdxTab" hidden>
+        <label for="markdown">MDX</label>
+        <textarea id="markdown" name="markdown" spellcheck="false">${escapeHtml(input.markdown)}</textarea>
+        <div class="toolbar">
+          <button class="primary" id="saveButton" type="submit">Save</button>
+          <span id="saveStatus" role="status"></span>
+        </div>
+      </form>
+    </section>
+    <aside class="preview-pane" aria-label="Deck preview">
       <section class="panel">
         <div class="toolbar">
           <a class="button" href="${escapeHtml(previewUrl)}" target="_blank" rel="noreferrer">Presentation</a>
@@ -394,11 +408,12 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
       </section>
     </aside>
   </main>
+  <script type="module" src="/editor-tabs.js"></script>
   <script>
     const root = document.querySelector("[data-hono-slides-editor]");
     const markdown = document.querySelector("#markdown");
     const instruction = document.querySelector("#instruction");
-    const form = document.querySelector("#editorForm");
+    const form = document.querySelector("#mdxPanel");
     const saveButton = document.querySelector("#saveButton");
     const saveStatus = document.querySelector("#saveStatus");
     const agentButton = document.querySelector("#agentButton");

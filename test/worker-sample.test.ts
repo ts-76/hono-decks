@@ -58,6 +58,11 @@ describe("sample Worker app", () => {
     expect(response.status).toBe(200);
     const html = await response.text();
     expect(html).toContain('id="markdown"');
+    expect(html).toContain('id="editorTabsMount"');
+    expect(html).toContain("data-hono-jsx-dom-tabs");
+    expect(html).toContain('id="agentPanel"');
+    expect(html).toContain('id="mdxPanel"');
+    expect(html).toContain('src="/editor-tabs.js"');
     expect(html).toContain('id="agentButton"');
     expect(html).toContain('id="applyProposalButton"');
     expect(html).toContain('id="previewFrame"');
