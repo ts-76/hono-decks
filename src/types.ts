@@ -38,6 +38,7 @@ export interface AgentSuggestRequest {
   slug?: string;
   sessionId?: string;
   mode?: "chat" | "code";
+  conversation?: Array<{ role: "user" | "assistant"; content: string }>;
 }
 
 export interface AgentSuggestResponse {
