@@ -25,18 +25,18 @@ describe("local file-based dev sample app", () => {
         expect(view.status).toBe(200);
         const viewHtml = await view.text();
         expect(viewHtml).toContain("Local Deck");
-        expect(viewHtml).toContain("/slides/local/presentation");
+        expect(viewHtml).toContain("/slides/local/render");
 
-        const presentation = await app.request("/slides/local/presentation");
+        const presentation = await app.request("/slides/local/render");
         expect(presentation.status).toBe(200);
-        expect(await presentation.text()).toContain("/slides/local/events");
+        expect(await presentation.text()).toContain("/slides/local/edit/events");
 
         const edit = await app.request("/slides/local/edit");
         expect(edit.status).toBe(200);
         expect(await edit.text()).toContain("# Local Deck");
 
         const savedMarkdown = `---\ntitle: Saved Deck\n---\n\n# Saved Deck`;
-        const save = await app.request("/slides/local/save", {
+        const save = await app.request("/slides/local/edit/save", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ markdown: savedMarkdown }),
@@ -44,7 +44,7 @@ describe("local file-based dev sample app", () => {
         expect(save.status).toBe(200);
         await expect(readFile(join(cwd, "decks", "local", "deck.mdx"), "utf8")).resolves.toBe(savedMarkdown);
 
-        const events = await app.request("/slides/local/events?once=1");
+        const events = await app.request("/slides/local/edit/events?once=1");
         expect(events.status).toBe(200);
         expect(await events.text()).toContain("event: deck:updated");
       } finally {

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.mock("agents", () => ({
   Agent: class {},
@@ -7,10 +7,21 @@ vi.mock("@cloudflare/ai-chat", () => ({
   AIChatAgent: class {},
 }));
 
-import { buildChatResult, buildSuggestion } from "../src/agent";
-import { SlideAssistant } from "../src/agent";
 import type { HonoSlidesAgentChatInput } from "../src/router";
 import type { Env } from "../src/types";
+
+type SlideAssistantInstance = InstanceType<typeof import("../src/agent").SlideAssistant>;
+
+let buildChatResult: typeof import("../src/agent").buildChatResult;
+let buildSuggestion: typeof import("../src/agent").buildSuggestion;
+let SlideAssistant: typeof import("../src/agent").SlideAssistant;
+
+beforeAll(async () => {
+  const agent = await import("../src/agent");
+  buildChatResult = agent.buildChatResult;
+  buildSuggestion = agent.buildSuggestion;
+  SlideAssistant = agent.SlideAssistant;
+});
 
 const chatInput = {
   slug: "deck1",
@@ -175,14 +186,14 @@ describe("SlideAssistant", () => {
   });
 
   it("handles POST /chat requests", async () => {
-    const agent = Object.create(SlideAssistant.prototype) as SlideAssistant & {
+    const agent = Object.create(SlideAssistant.prototype) as SlideAssistantInstance & {
       env: Env;
       state: { revisionCount: number };
       setState(state: { lastInstruction?: string; revisionCount: number }): void;
     };
     agent.env = testEnv();
     agent.state = { revisionCount: 0 };
-    agent.setState = (state) => {
+    agent.setState = (state: { lastInstruction?: string; revisionCount: number }) => {
       agent.state = { revisionCount: state.revisionCount };
     };
 
@@ -202,7 +213,7 @@ describe("SlideAssistant", () => {
   });
 
   it("handles AIChatAgent chat turns without Workers AI", async () => {
-    const agent = Object.create(SlideAssistant.prototype) as SlideAssistant & {
+    const agent = Object.create(SlideAssistant.prototype) as SlideAssistantInstance & {
       env: Env;
       messages: Array<{ id: string; role: "user"; parts: Array<{ type: "text"; text: string }> }>;
     };
@@ -372,7 +383,13 @@ describe("SlideAssistant", () => {
         { markdown: "# Raw Deck", instruction: "Improve this", activeSlide: 0, slideCount: 1 },
       );
 
-      await vi.advanceTimersByTimeAsync(8_000);
+      const timers = vi as typeof vi & { advanceTimersByTimeAsync?: (milliseconds: number) => Promise<void> };
+      if (timers.advanceTimersByTimeAsync) {
+        await timers.advanceTimersByTimeAsync(8_000);
+      } else {
+        vi.advanceTimersByTime(8_000);
+        await Promise.resolve();
+      }
 
       await expect(result).resolves.toMatchObject({
         source: "heuristic",
