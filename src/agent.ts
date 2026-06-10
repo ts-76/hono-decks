@@ -183,21 +183,47 @@ export async function buildChatResult(
   const generateCodeModeResult = options.generateCodeModeResult ?? generateWithWorkersAICodeMode;
   try {
     const codeModeResult = await resolveWithin(generateCodeModeResult(env, effectivePayload), options.codeModeTimeoutMs ?? 8_000);
-    if (codeModeResult && isUsableCodeModeResult(codeModeResult, effectivePayload)) return codeModeResult;
+    if (codeModeResult && isUsableCodeModeResult(codeModeResult, effectivePayload)) {
+      return normalizeEditProposalResult(codeModeResult);
+    }
   } catch {
     // Code Mode is a best-effort assistant path. Saving still happens through Hono apply/save routes.
   }
 
-  const suggestion = await buildSuggestion(env, effectivePayload);
   const instruction = effectivePayload.instruction || "読みやすくする";
-  const proposal = createHeuristicEditProposal(effectivePayload, instruction);
+  const editPlan = createHeuristicEditPlan(effectivePayload, instruction);
+  if (editPlan) return editPlan;
+
   return {
-    source: suggestion.source,
-    message: proposal
-      ? "編集 proposal を作成しました。保存は Hono の apply/save route で行ってください。"
-      : "具体的な編集 proposal は作成できませんでした。変更したい箇所や文言をもう少し具体的に指定してください。",
-    suggestion: suggestion.suggestion,
-    ...(proposal ? { proposal } : {}),
+    source: "heuristic",
+    message: "具体的な編集 proposal は作成できませんでした。変更したい箇所や文言をもう少し具体的に指定してください。",
+  };
+}
+
+function createHeuristicEditPlan(payload: HonoSlidesAgentChatInput, instruction: string): DeckAgentChatResult | undefined {
+  const proposal = createHeuristicEditProposal(payload, instruction);
+  if (!proposal) return undefined;
+  const summary = createEditPlanSummary(payload, instruction, proposal);
+  return {
+    source: "heuristic",
+    message: `${summary} 保存は Hono の apply/save route で行ってください。`,
+    proposal: {
+      ...proposal,
+      summary,
+    },
+  };
+}
+
+function normalizeEditProposalResult(result: DeckAgentChatResult): DeckAgentChatResult {
+  if (!result.proposal) return result;
+  const summary = result.proposal.summary || result.message || "編集 proposal を作成しました。";
+  return {
+    source: result.source,
+    message: summary,
+    proposal: {
+      ...result.proposal,
+      summary,
+    },
   };
 }
 
@@ -206,12 +232,13 @@ function createHeuristicEditProposal(
   instruction: string,
 ): DeckAgentChatResult["proposal"] | undefined {
   const baseMarkdownHash = payload.baseMarkdownHash || createDeckMarkdownHash(payload.markdown);
+  const summary = createEditPlanSummary(payload, instruction);
   const titlePatch = createTitlePatch(payload, instruction);
   if (titlePatch) {
     return {
       type: "patch",
       baseMarkdownHash,
-      summary: instruction,
+      summary,
       patches: [titlePatch],
     };
   }
@@ -220,11 +247,25 @@ function createHeuristicEditProposal(
     return {
       type: "patch",
       baseMarkdownHash,
-      summary: instruction,
+      summary,
       patches: [contentPatch],
     };
   }
   return undefined;
+}
+
+function createEditPlanSummary(
+  payload: HonoSlidesAgentChatInput,
+  instruction: string,
+  proposal?: DeckAgentChatResult["proposal"],
+): string {
+  if (proposal?.type === "patch" && /(タイトル|見出し|title|heading)/i.test(instruction)) {
+    const title = /^#\s+(.+)$/m.exec(proposal.patches[0]?.newText ?? "")?.[1]?.trim();
+    return title ? `タイトルを「${title}」に変更します。` : "タイトルを変更します。";
+  }
+  const topic = extractEditTopic(latestPreviousUserContent(payload.conversation) ?? instruction);
+  if (topic) return `「${topic}」という文脈をスライドに加筆します。`;
+  return instruction || "編集 proposal を作成しました。";
 }
 
 function withStateConversation(payload: HonoSlidesAgentChatInput, state: AssistantState | undefined): HonoSlidesAgentChatInput {
@@ -279,11 +320,21 @@ function latestPreviousUserContent(turns: DeckAgentChatTurn[] | undefined): stri
 }
 
 function createContextualExpansionLine(payload: HonoSlidesAgentChatInput): string | undefined {
-  const context = latestPreviousUserContent(payload.conversation);
-  if (!context) return undefined;
-  const topic = context.replace(/^(この|その|それ|スライド|内容)[^\s、。]*[、。]?\s*/g, "").slice(0, 120);
+  const topic = extractEditTopic(latestPreviousUserContent(payload.conversation) ?? payload.instruction);
   if (!topic) return undefined;
   return `${topic} という文脈を加え、なぜこのデックを作ったのかと読者が得られる価値を具体化します。`;
+}
+
+function extractEditTopic(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const topic = value
+    .replace(/^(この|その|それ|スライド|内容)[^\s、。]*[、。]?\s*/g, "")
+    .replace(/してください[。.!！]*$/g, "")
+    .replace(/(スライドに)?(加筆|追記|反映|充実させ|増やし|増やす|編集|修正)(して)?/g, "")
+    .trim()
+    .slice(0, 120);
+  if (/^(案を?提示|案を?作成|proposal|プロポーザル)$/i.test(topic)) return undefined;
+  return topic || undefined;
 }
 
 function createTitlePatch(payload: HonoSlidesAgentChatInput, instruction: string) {
