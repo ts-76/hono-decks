@@ -65,9 +65,9 @@ describe("createDeckCodeModeTool", () => {
       "compileMarkdown",
       "inspectSlides",
       "createPatch",
-      "createTitlePatch",
       "validatePatch",
     ]);
+    expect(providerTools).not.toContain("createTitlePatch");
     expect(providerTools).not.toContain("writeDeck");
     expect(providerTools).not.toContain("saveDeck");
   });

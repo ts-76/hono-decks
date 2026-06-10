@@ -2,7 +2,7 @@ import { AIChatAgent } from "@cloudflare/ai-chat";
 import { applyDeckAgentProposal } from "./agent-apply";
 import { extractCodeModeToolInputs, parseCodeModeGenerationResult } from "./agent-codemode-result";
 import { createDeckMarkdownHash } from "./agent-contract";
-import type { DeckAgentChatResult, DeckAgentChatTurn } from "./agent-contract";
+import type { DeckAgentChatResult, DeckAgentChatTurn, DeckAgentEditProposal } from "./agent-contract";
 import { resolveDeckAgentMode } from "./agent-intent";
 import type { HonoSlidesAgentChatInput } from "./router";
 import type { AgentSuggestRequest, AgentSuggestResponse, Env } from "./types";
@@ -213,7 +213,7 @@ export async function buildChatResult(
 }
 
 function createExplicitTitleChangeResult(payload: HonoSlidesAgentChatInput): DeckAgentChatResult | undefined {
-  if (!/(タイトル|見出し|title|heading)/i.test(payload.instruction)) return undefined;
+  if (!isTitleEditInstruction(payload.instruction)) return undefined;
   const title = extractQuotedTitle(payload.instruction);
   if (!title) return undefined;
   const oldText = /^#\s+.+$/m.exec(payload.markdown)?.[0];
@@ -309,7 +309,28 @@ function latestPreviousUserContent(turns: DeckAgentChatTurn[] | undefined): stri
 
 function isUsableCodeModeResult(result: DeckAgentChatResult, payload: HonoSlidesAgentChatInput): boolean {
   if (!result.proposal) return false;
+  if (!isTitleEditInstruction(payload.instruction) && isTitleOnlyProposal(result.proposal, payload.markdown)) {
+    return false;
+  }
   return applyDeckAgentProposal(payload.markdown, result.proposal, { sourcePath: expectedSourcePath(payload) }).ok;
+}
+
+function isTitleEditInstruction(instruction: string): boolean {
+  return /(タイトル|表題|見出し|title|heading)/i.test(instruction);
+}
+
+function isTitleOnlyProposal(proposal: DeckAgentEditProposal, markdown: string): boolean {
+  const currentTitle = /^#\s+.+$/m.exec(markdown)?.[0];
+  if (!currentTitle) return false;
+  if (proposal.type === "patch") {
+    return (
+      proposal.patches.length === 1 &&
+      proposal.patches[0]?.oldText === currentTitle &&
+      /^#\s+\S[^\r\n]*$/.test(proposal.patches[0]?.newText ?? "")
+    );
+  }
+  const nextTitle = /^#\s+.+$/m.exec(proposal.markdown)?.[0];
+  return Boolean(nextTitle && nextTitle !== currentTitle && markdown.replace(currentTitle, nextTitle) === proposal.markdown);
 }
 
 function expectedSourcePath(payload: Pick<HonoSlidesAgentChatInput, "slug" | "sourcePath">): string {
@@ -452,7 +473,8 @@ async function generateWithWorkersAICodeMode(
     prompt: JSON.stringify({
       task: [
         "Create a non-persistent edit proposal for this deck.",
-        "Inside Code Mode, use deck.createTitlePatch for title changes. For other concrete edits, read the current deck if needed, call deck.createPatch or build a replacement proposal, validate it, and return the proposal object.",
+        "Inside Code Mode, read the current deck if needed, call deck.createPatch or build a replacement proposal, validate it, and return the proposal object.",
+        "Do not change the first H1/title unless the user explicitly asks for a title or heading change.",
         "Do not save files. Do not answer with generic advice. Do not return only natural language.",
       ].join(" "),
       instruction: payload.instruction,
@@ -462,8 +484,6 @@ async function generateWithWorkersAICodeMode(
       sourcePath: payload.sourcePath,
       activeSlide: payload.activeSlide,
       baseMarkdownHash: payload.baseMarkdownHash || createDeckMarkdownHash(payload.markdown),
-      exampleCode:
-        "async () => { const proposal = await deck.createTitlePatch({ title: 'ユーザーが指定した新しいタイトル', summary: 'タイトルを変更します。' }); const validation = await deck.validatePatch(proposal); if (!validation.ok) throw new Error(validation.errors.join('\\n')); return proposal; }",
       expectedJsonShape: {
         source: "workers-ai-codemode",
         message: "short Japanese message",
