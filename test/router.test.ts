@@ -331,6 +331,7 @@ describe("honoSlidesRouter", () => {
     expect(html).toContain('id="agentButton"');
     expect(html).toContain('id="proposalCard"');
     expect(html).toContain('id="proposalSummary"');
+    expect(html).toContain('id="proposalChanges"');
     expect(html).toContain('id="applyProposalButton"');
     expect(html).toContain('id="previewFrame"');
     expect(html).toContain('id="previewViewport"');
@@ -346,6 +347,9 @@ describe("honoSlidesRouter", () => {
     expect(html).toContain('fetch(agentUrl');
     expect(html).toContain("getOrCreateAgentSessionId()");
     expect(html).toContain("appendChatMessage");
+    expect(html).toContain("renderProposalChanges");
+    expect(html).toContain("変更前");
+    expect(html).toContain("変更後");
     expect(html).toContain("renderProposalCard");
     expect(html).toContain("sessionId");
     expect(html).toContain("markdown: markdown.value");

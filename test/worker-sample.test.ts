@@ -70,6 +70,7 @@ describe("sample Worker app", () => {
     expect(html).not.toContain("data-agent-mode");
     expect(html).toContain('id="agentButton"');
     expect(html).toContain('id="proposalCard"');
+    expect(html).toContain('id="proposalChanges"');
     expect(html).toContain('id="applyProposalButton"');
     expect(html).toContain('id="previewFrame"');
     expect(html).toContain('src="/decks/sample/render?live=0"');
