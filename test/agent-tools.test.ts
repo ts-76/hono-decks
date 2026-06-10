@@ -33,6 +33,7 @@ describe("createDeckAgentToolProvider", () => {
     expect(Object.keys(provider.tools).sort()).toEqual([
       "compileMarkdown",
       "createPatch",
+      "createTitlePatch",
       "getCompiledDeck",
       "inspectSlides",
       "readDeck",
@@ -126,6 +127,31 @@ describe("createDeckAgentToolProvider", () => {
     ).resolves.toMatchObject({
       ok: false,
       errors: ["Patch targets mdx-stale but current deck is mdx-d2750450."],
+    });
+  });
+
+  it("creates title patch proposals from the current markdown heading", async () => {
+    const provider = createDeckAgentToolProvider({
+      slug: "deck1",
+      markdown: "# Intro\n\nBody",
+      compiledDeck,
+    });
+
+    const proposal = (await provider.tools.createTitlePatch.execute({
+      title: "Better Intro",
+      summary: "タイトルを変更します。",
+    })) as DeckAgentEditProposal;
+
+    expect(proposal).toEqual({
+      type: "patch",
+      baseMarkdownHash: "mdx-ffec388",
+      summary: "タイトルを変更します。",
+      patches: [{ path: "decks/deck1.mdx", oldText: "# Intro", newText: "# Better Intro" }],
+    });
+    await expect(provider.tools.validatePatch.execute(proposal)).resolves.toEqual({
+      ok: true,
+      errors: [],
+      warnings: [],
     });
   });
 

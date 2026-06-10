@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseCodeModeGenerationResult } from "../src/agent-codemode-result";
+import { extractCodeModeToolInputs, parseCodeModeGenerationResult } from "../src/agent-codemode-result";
 
 const proposal = {
   type: "patch",
@@ -86,5 +86,21 @@ describe("parseCodeModeGenerationResult", () => {
 
   it("ignores plain advice without a proposal", () => {
     expect(parseCodeModeGenerationResult({ text: "箇条書きを短くしましょう。", toolResults: [], steps: [] })).toBeUndefined();
+  });
+
+  it("extracts generated Code Mode tool inputs for manual execution", () => {
+    expect(
+      extractCodeModeToolInputs({
+        toolCalls: [{ toolName: "codemode", input: { code: "async () => 1" } }],
+        steps: [
+          {
+            toolCalls: [{ toolName: "other", input: { code: "ignored" } }],
+          },
+          {
+            toolCalls: [{ toolName: "codemode", input: { code: "async () => 2" } }],
+          },
+        ],
+      }),
+    ).toEqual([{ code: "async () => 1" }, { code: "async () => 2" }]);
   });
 });

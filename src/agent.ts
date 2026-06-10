@@ -1,13 +1,13 @@
 import { AIChatAgent } from "@cloudflare/ai-chat";
 import { applyDeckAgentProposal } from "./agent-apply";
-import { parseCodeModeGenerationResult } from "./agent-codemode-result";
+import { extractCodeModeToolInputs, parseCodeModeGenerationResult } from "./agent-codemode-result";
 import { createDeckMarkdownHash } from "./agent-contract";
 import type { DeckAgentChatResult, DeckAgentChatTurn } from "./agent-contract";
 import { resolveDeckAgentMode } from "./agent-intent";
 import type { HonoSlidesAgentChatInput } from "./router";
 import type { AgentSuggestRequest, AgentSuggestResponse, Env } from "./types";
 import { convertToModelMessages, stepCountIs, streamText, tool } from "ai";
-import type { StreamTextOnFinishCallback, ToolSet, UIMessage } from "ai";
+import type { StreamTextOnFinishCallback, Tool as AiTool, ToolSet, UIMessage } from "ai";
 import type { WorkersAI } from "workers-ai-provider";
 import { z } from "zod";
 
@@ -196,6 +196,9 @@ export async function buildChatResult(
   };
   if (effectivePayload.mode !== "code") return buildSuggestion(env, effectivePayload);
 
+  const explicitTitleProposal = createExplicitTitleChangeResult(effectivePayload);
+  if (explicitTitleProposal) return explicitTitleProposal;
+
   const generateCodeModeResult = options.generateCodeModeResult ?? generateWithWorkersAICodeMode;
   try {
     const codeModeResult = await resolveWithin(generateCodeModeResult(env, effectivePayload), options.codeModeTimeoutMs ?? 8_000);
@@ -207,6 +210,37 @@ export async function buildChatResult(
   }
 
   throw new AgentResponseError("Code Mode did not produce a usable edit proposal.");
+}
+
+function createExplicitTitleChangeResult(payload: HonoSlidesAgentChatInput): DeckAgentChatResult | undefined {
+  if (!/(タイトル|見出し|title|heading)/i.test(payload.instruction)) return undefined;
+  const title = extractQuotedTitle(payload.instruction);
+  if (!title) return undefined;
+  const oldText = /^#\s+.+$/m.exec(payload.markdown)?.[0];
+  if (!oldText) return undefined;
+  const proposal = {
+    type: "patch" as const,
+    baseMarkdownHash: payload.baseMarkdownHash || createDeckMarkdownHash(payload.markdown),
+    summary: `タイトルを「${title}」に変更します。`,
+    patches: [
+      {
+        path: expectedSourcePath(payload),
+        oldText,
+        newText: `# ${title}`,
+      },
+    ],
+  };
+  if (!applyDeckAgentProposal(payload.markdown, proposal, { sourcePath: expectedSourcePath(payload) }).ok) return undefined;
+  return {
+    source: "agent-command",
+    message: proposal.summary,
+    proposal,
+  };
+}
+
+function extractQuotedTitle(instruction: string): string | undefined {
+  const match = /[「『"']([^」』"']{1,120})[」』"']/.exec(instruction);
+  return match?.[1]?.trim() || undefined;
 }
 
 function normalizeEditProposalResult(result: DeckAgentChatResult): DeckAgentChatResult {
@@ -411,13 +445,14 @@ async function generateWithWorkersAICodeMode(
   const result = await generateText({
     model: workersai("@cf/meta/llama-3.1-8b-instruct"),
     tools: { codemode },
+    toolChoice: { type: "tool", toolName: "codemode" },
     stopWhen: stepCountIs(2),
     system:
       "You edit MDX slide decks. Use the codemode tool for concrete edits. The code must return a deck edit proposal object, not save files or only describe changes.",
     prompt: JSON.stringify({
       task: [
         "Create a non-persistent edit proposal for this deck.",
-        "Inside Code Mode, read the current deck if needed, call deck.createPatch or build a replacement proposal, validate it, and return the proposal object.",
+        "Inside Code Mode, use deck.createTitlePatch for title changes. For other concrete edits, read the current deck if needed, call deck.createPatch or build a replacement proposal, validate it, and return the proposal object.",
         "Do not save files. Do not answer with generic advice. Do not return only natural language.",
       ].join(" "),
       instruction: payload.instruction,
@@ -427,6 +462,8 @@ async function generateWithWorkersAICodeMode(
       sourcePath: payload.sourcePath,
       activeSlide: payload.activeSlide,
       baseMarkdownHash: payload.baseMarkdownHash || createDeckMarkdownHash(payload.markdown),
+      exampleCode:
+        "async () => { const proposal = await deck.createTitlePatch({ title: 'ユーザーが指定した新しいタイトル', summary: 'タイトルを変更します。' }); const validation = await deck.validatePatch(proposal); if (!validation.ok) throw new Error(validation.errors.join('\\n')); return proposal; }",
       expectedJsonShape: {
         source: "workers-ai-codemode",
         message: "short Japanese message",
@@ -440,7 +477,32 @@ async function generateWithWorkersAICodeMode(
     }),
   });
 
-  return parseCodeModeGenerationResult(result);
+  const parsed = parseCodeModeGenerationResult(result);
+  if (parsed) return parsed;
+
+  const executedToolResult = await executeGeneratedCodeModeToolCalls(codemode, result);
+  if (executedToolResult) return executedToolResult;
+
+  return undefined;
+}
+
+async function executeGeneratedCodeModeToolCalls(codemode: AiTool, result: unknown): Promise<DeckAgentChatResult | undefined> {
+  if (typeof codemode.execute !== "function") return undefined;
+  for (const input of extractCodeModeToolInputs(result)) {
+    try {
+      const output = await codemode.execute(input, {
+        toolCallId: "manual-codemode-replay",
+        messages: [],
+        abortSignal: undefined,
+        experimental_context: undefined,
+      });
+      const parsed = parseCodeModeGenerationResult({ output });
+      if (parsed) return parsed;
+    } catch {
+      // The model-generated Code Mode program can fail validation; try the next generated call if present.
+    }
+  }
+  return undefined;
 }
 
 async function createWorkersAIModel(env: Env): Promise<WorkersAI | undefined> {

@@ -66,6 +66,11 @@ export function createDeckAgentToolProvider(input: CreateDeckAgentToolProviderIn
         description: "Create a patch proposal for the current deck. This tool does not save the patch.",
         execute: async (args: unknown) => createPatchProposal(sourcePath, baseMarkdownHash, args),
       },
+      createTitlePatch: {
+        description:
+          "Create a title patch proposal from the first markdown H1 in the current deck. This tool does not save the patch.",
+        execute: async (args: unknown) => createTitlePatchProposal(input.markdown, sourcePath, baseMarkdownHash, args),
+      },
       validatePatch: {
         description: "Validate that a patch proposal targets the current deck revision and text.",
         execute: async (args: unknown) => validatePatchProposal(input.markdown, baseMarkdownHash, sourcePath, args),
@@ -128,6 +133,30 @@ function createPatchProposal(
   };
 }
 
+function createTitlePatchProposal(
+  markdown: string,
+  path: string,
+  baseMarkdownHash: string,
+  args: unknown,
+): DeckAgentEditProposal {
+  const title = readRequiredStringProperty(args, "title").trim();
+  if (!title) throw new Error("title must be a non-empty string");
+  const oldText = /^#\s+.+$/m.exec(markdown)?.[0];
+  if (!oldText) throw new Error("current deck does not contain a first-level markdown heading");
+  return {
+    type: "patch",
+    baseMarkdownHash,
+    summary: readStringProperty(args, "summary") ?? `タイトルを「${title}」に変更します。`,
+    patches: [
+      {
+        path,
+        oldText,
+        newText: `# ${title}`,
+      },
+    ],
+  };
+}
+
 function validatePatchProposal(
   markdown: string,
   currentHash: string,
@@ -178,6 +207,7 @@ function deckAgentToolTypes(): string {
   function compileMarkdown(input: { markdown: string }): Promise<{ ok: true; deck: CompiledDeckSummary } | { ok: false; error: { message: string; code?: string } }>;
   function inspectSlides(): Promise<CompiledSlideSummary[]>;
   function createPatch(input: { oldText: string; newText: string; summary?: string }): Promise<DeckAgentEditProposal>;
+  function createTitlePatch(input: { title: string; summary?: string }): Promise<DeckAgentEditProposal>;
   function validatePatch(input: DeckAgentEditProposal): Promise<DeckAgentProposalValidation>;
 }`;
 }
