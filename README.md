@@ -150,7 +150,7 @@ app.route(
 
 `/slides/:slug/presentation` は互換性のため `/slides/:slug/render` へ redirect します。新しい UI、docs、sample は `/slides/:slug/render` を使います。
 
-development の render page は edit event stream を購読し、deck update 時に full reload します。
+development の render page は `EventSource` で edit event stream を購読し、deck update 時に full reload します。`/edit` の preview iframe は `?live=0` で render page 側の購読を止め、editor 本体だけが event stream を購読して preview を reload します。
 
 editor の Agent chat と Apply は textarea の現在値を送るため、保存前の内容にも提案を作成・適用できます。実際の永続化は `/edit/apply` または `/edit/save` 経由でだけ行われます。
 

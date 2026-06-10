@@ -73,7 +73,8 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
 
     router.get("/:slug/edit/events", (c) => {
       const slug = c.req.param("slug");
-      return oneShotEventResponse(slug, options.previewEvents);
+      if (c.req.query("once") === "1") return oneShotEventResponse(slug, options.previewEvents);
+      return streamEventResponse(slug, options.previewEvents, c.req.raw.signal);
     });
 
     function oneShotEventResponse(slug: string, previewEvents: PreviewEventHub | undefined): Response {
@@ -85,6 +86,51 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
         headers: {
           "content-type": "text/event-stream; charset=utf-8",
           "cache-control": "no-cache",
+        },
+      });
+    }
+
+    function streamEventResponse(
+      slug: string,
+      previewEvents: PreviewEventHub | undefined,
+      signal: AbortSignal,
+    ): Response {
+      const encoder = new TextEncoder();
+      let heartbeat: ReturnType<typeof setInterval> | undefined;
+      let unsubscribe: (() => void) | undefined;
+
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          const send = (chunk: string) => {
+            try {
+              controller.enqueue(encoder.encode(chunk));
+            } catch {}
+          };
+          const cleanup = () => {
+            if (heartbeat) clearInterval(heartbeat);
+            unsubscribe?.();
+            try {
+              controller.close();
+            } catch {}
+          };
+
+          send(formatServerSentEvent({ type: "ready", slug }));
+          for (const event of previewEvents?.drain(slug) ?? []) send(formatServerSentEvent(event));
+          unsubscribe = previewEvents?.subscribe?.(slug, (event) => send(formatServerSentEvent(event)));
+          heartbeat = setInterval(() => send(": ping\n\n"), 15000);
+          signal.addEventListener("abort", cleanup, { once: true });
+        },
+        cancel() {
+          if (heartbeat) clearInterval(heartbeat);
+          unsubscribe?.();
+        },
+      });
+
+      return new Response(stream, {
+        headers: {
+          "content-type": "text/event-stream; charset=utf-8",
+          "cache-control": "no-cache",
+          connection: "keep-alive",
         },
       });
     }
@@ -161,7 +207,10 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
         deck,
         mountPath,
         style: options.style,
-        liveReloadPath: isDevEnabled(options) ? `${mountPath}/${encodeURIComponent(slug)}/edit/events` : undefined,
+        liveReloadPath:
+          isDevEnabled(options) && c.req.query("live") !== "0"
+            ? `${mountPath}/${encodeURIComponent(slug)}/edit/events`
+            : undefined,
       }),
     );
   });
@@ -275,6 +324,7 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
   const applyUrl = `${editBaseUrl}/apply`;
   const eventsUrl = `${editBaseUrl}/events`;
   const previewUrl = `${input.mountPath}/${encodeURIComponent(input.slug)}/render`;
+  const previewFrameUrl = `${previewUrl}?live=0`;
   return `<!doctype html>
 <html lang="ja">
 <head>
@@ -324,7 +374,7 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
         <div class="toolbar">
           <a class="button" href="${escapeHtml(previewUrl)}" target="_blank" rel="noreferrer">Presentation</a>
         </div>
-        <iframe id="previewFrame" title="Deck preview" src="${escapeHtml(previewUrl)}"></iframe>
+        <iframe id="previewFrame" title="Deck preview" src="${escapeHtml(previewFrameUrl)}"></iframe>
         <pre id="eventOutput" aria-live="polite"></pre>
       </section>
     </aside>
@@ -419,36 +469,24 @@ function renderEditorPage(input: { slug: string; markdown: string; mountPath: st
       }
     });
 
-    function parsePreviewEvents(text) {
-      return text.split("\\n\\n").map((chunk) => {
-        const lines = chunk.split("\\n");
-        const eventLine = lines.find((line) => line.startsWith("event: "));
-        const dataLine = lines.find((line) => line.startsWith("data: "));
-        return {
-          type: eventLine ? eventLine.slice(7) : "",
-          data: dataLine ? dataLine.slice(6) : "",
-        };
-      }).filter((event) => event.type);
-    }
-
-    async function pollEvents() {
-      try {
-        const response = await fetch(eventsUrl + "?once=1", { cache: "no-store" });
-        if (!response.ok) return;
-        for (const event of parsePreviewEvents(await response.text())) {
-          if (event.type === "deck:updated") {
-            eventOutput.textContent = event.data;
-            reloadPreview();
-          }
-          if (event.type === "deck:error") eventOutput.textContent = event.data;
-        }
-      } catch {
-        eventOutput.textContent = "";
+    function handlePreviewEvent(event) {
+      if (event.type === "deck:updated") {
+        eventOutput.textContent = event.data;
+        reloadPreview();
       }
+      if (event.type === "deck:error") eventOutput.textContent = event.data;
     }
 
-    void pollEvents();
-    setInterval(() => { void pollEvents(); }, 1000);
+    try {
+      const events = new EventSource(eventsUrl);
+      events.addEventListener("deck:updated", handlePreviewEvent);
+      events.addEventListener("deck:error", handlePreviewEvent);
+      events.onerror = () => {
+        eventOutput.textContent = "";
+      };
+    } catch {
+      eventOutput.textContent = "";
+    }
   </script>
 </body>
 </html>`;

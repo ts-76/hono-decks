@@ -241,11 +241,12 @@ describe("honoSlidesRouter", () => {
     expect(productionHtml).not.toContain("new EventSource");
     expect(developmentWrapperHtml).not.toContain("new EventSource");
     expect(developmentWrapperHtml).toContain('src="/decks/deck1/render"');
-    expect(developmentHtml).not.toContain("new EventSource");
-    expect(developmentHtml).toContain('const eventsUrl = "/decks/deck1/edit/events?once=1"');
-    expect(developmentHtml).toContain("fetch(eventsUrl");
-    expect(developmentHtml).toContain('event.type === "deck:updated"');
+    expect(developmentHtml).toContain("new EventSource");
+    expect(developmentHtml).toContain('const eventsUrl = "/decks/deck1/edit/events"');
+    expect(developmentHtml).toContain('events.addEventListener("deck:updated"');
     expect(developmentHtml).toContain("location.reload()");
+    expect(developmentHtml).not.toContain("setInterval");
+    expect(developmentHtml).not.toContain("fetch(eventsUrl");
   });
 
   it("serves local deck assets and returns 404 for missing slugs", async () => {
@@ -320,7 +321,7 @@ describe("honoSlidesRouter", () => {
     expect(html).toContain('id="agentButton"');
     expect(html).toContain('id="applyProposalButton"');
     expect(html).toContain('id="previewFrame"');
-    expect(html).toContain('src="/decks/deck1/render"');
+    expect(html).toContain('src="/decks/deck1/render?live=0"');
     expect(html).toContain('href="/decks/deck1/render"');
     expect(html).toContain("reloadPreview()");
     expect(html).toContain('fetch(saveUrl');
@@ -332,6 +333,10 @@ describe("honoSlidesRouter", () => {
     expect(html).toContain("/edit/agent/chat");
     expect(html).toContain("/edit/apply");
     expect(html).toContain("/edit/events");
+    expect(html).toContain("new EventSource");
+    expect(html).toContain('events.addEventListener("deck:updated"');
+    expect(html).not.toContain("setInterval");
+    expect(html).not.toContain("fetch(eventsUrl");
   });
 
   it("enables development routes in auto mode when LocalDeckIO is configured", async () => {
@@ -403,6 +408,37 @@ describe("honoSlidesRouter", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/event-stream");
     expect(await response.text()).toContain("event: ready");
+  });
+
+  it("streams live preview events without client polling", async () => {
+    const previewEvents = createPreviewEventHub();
+    const app = new Hono();
+    app.route(
+      "/decks",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: true,
+        localDeckIO: createMemoryDeckIO({ deck1: "# Raw Deck" }),
+        previewEvents,
+      }),
+    );
+
+    const controller = new AbortController();
+    const response = await app.request("/decks/deck1/edit/events", { signal: controller.signal });
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error("Expected SSE response body");
+    const decoder = new TextDecoder();
+
+    const ready = await reader.read();
+    expect(decoder.decode(ready.value)).toContain("event: ready");
+
+    previewEvents.publish({ type: "deck:updated", slug: "deck1", data: { source: "watch" } });
+    const update = await reader.read();
+    expect(decoder.decode(update.value)).toContain("event: deck:updated");
+    expect(decoder.decode(update.value)).toContain('"source":"watch"');
+
+    await reader.cancel();
+    controller.abort();
   });
 
   it("streams pending preview events from the Hono-owned event hub", async () => {
@@ -482,7 +518,7 @@ describe("honoSlidesRouter", () => {
     expect(text).toContain('"source":"save"');
   });
 
-  it("serves development events as finite polling responses", async () => {
+  it("keeps one-shot development events for queued event drains", async () => {
     const previewEvents = createPreviewEventHub();
     const app = new Hono();
     app.route(
@@ -495,7 +531,7 @@ describe("honoSlidesRouter", () => {
       }),
     );
 
-    const response = await app.request("/decks/deck1/edit/events");
+    const response = await app.request("/decks/deck1/edit/events?once=1");
     expect(await response.text()).toContain("event: ready");
 
     previewEvents.publish({ type: "deck:updated", slug: "deck1", data: { source: "watch" } });
@@ -503,7 +539,7 @@ describe("honoSlidesRouter", () => {
     const replay = await app.request("/decks/deck1/edit/events?once=1");
     expect(await replay.text()).toContain("event: deck:updated");
 
-    const drained = await app.request("/decks/deck1/edit/events");
+    const drained = await app.request("/decks/deck1/edit/events?once=1");
     expect(await drained.text()).not.toContain("event: deck:updated");
   });
 
