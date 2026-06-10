@@ -174,10 +174,9 @@ export async function buildChatResult(
   payload: HonoSlidesAgentChatInput,
   options: BuildChatResultOptions = {},
 ): Promise<DeckAgentChatResult> {
-  const contextualInstruction = createContextualInstruction(payload);
   const effectivePayload = {
     ...payload,
-    mode: resolveDeckAgentMode(payload.mode, contextualInstruction),
+    mode: resolveDeckAgentMode(payload.mode, payload.instruction),
   };
   if (effectivePayload.mode !== "code") return buildSuggestion(env, effectivePayload);
 
@@ -231,11 +230,10 @@ function createHeuristicEditProposal(
 function withStateConversation(payload: HonoSlidesAgentChatInput, state: AssistantState | undefined): HonoSlidesAgentChatInput {
   const recentTurns = sanitizeRecentTurns(state?.recentTurns);
   if (recentTurns.length === 0) return payload;
-  const contextualInstruction = createContextualInstruction({ ...payload, conversation: recentTurns });
   return {
     ...payload,
     conversation: recentTurns,
-    mode: resolveDeckAgentMode(payload.mode, contextualInstruction),
+    mode: resolveDeckAgentMode(payload.mode, payload.instruction),
   };
 }
 
@@ -329,9 +327,6 @@ function expectedSourcePath(payload: Pick<HonoSlidesAgentChatInput, "slug" | "so
 }
 
 export async function buildSuggestion(env: Env, payload: AgentSuggestRequest): Promise<AgentSuggestResponse> {
-  const aiSuggestion = await suggestWithWorkersAI(env, payload);
-  if (aiSuggestion) return aiSuggestion;
-
   const slideCount = payload.slideCount ?? payload.markdown.split(/^---\s*$/m).filter((part) => part.trim()).length;
   if (payload.mode === "chat" && isGreeting(payload.instruction)) {
     return {
@@ -339,6 +334,9 @@ export async function buildSuggestion(env: Env, payload: AgentSuggestRequest): P
       suggestion: `こんにちは。現在 ${slideCount} 枚のスライドがあります。構成、文章、見出し、話す順番などを一緒に見直せます。`,
     };
   }
+
+  const aiSuggestion = await suggestWithWorkersAI(env, payload);
+  if (aiSuggestion) return aiSuggestion;
 
   const focus = payload.activeSlide != null ? `現在のスライド ${payload.activeSlide + 1}` : "デック全体";
   return {
