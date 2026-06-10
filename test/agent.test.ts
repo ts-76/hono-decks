@@ -320,6 +320,47 @@ describe("SlideAssistant", () => {
     expect(json.proposal?.patches?.[0]?.newText).toContain("HonoでSlidevライク");
   });
 
+  it("keeps a greeting as normal chat even after recent edit context", async () => {
+    const agent = Object.create(SlideAssistant.prototype) as SlideAssistantInstance & {
+      env: Env;
+      state: { revisionCount: number; recentTurns?: Array<{ role: "user" | "assistant"; content: string }> };
+      setState(state: { revisionCount: number; recentTurns?: Array<{ role: "user" | "assistant"; content: string }> }): void;
+    };
+    agent.env = testEnv();
+    agent.state = {
+      revisionCount: 1,
+      recentTurns: [
+        {
+          role: "user",
+          content: "全ページを確認してスライドの内容を充実させてください",
+        },
+        {
+          role: "assistant",
+          content: "編集 proposal を作成できます。",
+        },
+      ],
+    };
+    agent.setState = (state) => {
+      agent.state = state;
+    };
+
+    const response = await agent.onRequest(
+      new Request("https://example.test/agents/slide-assistant/deck1/chat", {
+        method: "POST",
+        body: JSON.stringify({
+          ...chatInput,
+          instruction: "hello",
+          mode: "chat",
+        }),
+      }),
+    );
+    const json = (await response.json()) as { proposal?: unknown; suggestion?: string };
+
+    expect(json.proposal).toBeUndefined();
+    expect(json.suggestion).toContain("こんにちは");
+    expect(agent.state.recentTurns?.map((turn) => turn.role)).toEqual(["user", "assistant", "user", "assistant"]);
+  });
+
   it("handles AIChatAgent chat turns without Workers AI", async () => {
     const agent = Object.create(SlideAssistant.prototype) as SlideAssistantInstance & {
       env: Env;
@@ -435,24 +476,53 @@ describe("SlideAssistant", () => {
     expect(run.mock.calls[0][1].messages[0].content).toContain("3文以内");
   });
 
-  it("asks Workers AI to handle normal chat messages as conversation", async () => {
-    const run = vi.fn().mockResolvedValue({ response: "こんにちは。スライドの構成や文章の見直しを手伝えます。" });
+  it("asks Workers AI to handle non-greeting chat messages as conversation", async () => {
+    const run = vi.fn().mockResolvedValue({ response: "構成は、導入、編集体験、次のアクションの順にすると伝わりやすくなります。" });
 
     await expect(
       buildSuggestion(
         {
           AI: { run },
         } as unknown as Env,
-        { markdown: "# Raw Deck", instruction: "こんにちは", activeSlide: 0, slideCount: 1, mode: "chat" },
+        { markdown: "# Raw Deck", instruction: "構成を相談したい", activeSlide: 0, slideCount: 1, mode: "chat" },
       ),
     ).resolves.toMatchObject({
       source: "workers-ai",
-      suggestion: "こんにちは。スライドの構成や文章の見直しを手伝えます。",
+      suggestion: "構成は、導入、編集体験、次のアクションの順にすると伝わりやすくなります。",
     });
 
     expect(run.mock.calls[0][1].messages[0].content).toContain("挨拶");
     expect(run.mock.calls[0][1].messages[0].content).toContain("通常の会話");
-    expect(run.mock.calls[0][1].messages[1].content).toContain("ユーザー入力: こんにちは");
+    expect(run.mock.calls[0][1].messages[1].content).toContain("ユーザー入力: 構成を相談したい");
+  });
+
+  it("answers greetings locally before sending recent edit context to Workers AI", async () => {
+    const run = vi.fn();
+
+    await expect(
+      buildSuggestion(
+        {
+          AI: { run },
+        } as unknown as Env,
+        {
+          markdown: "# Raw Deck",
+          instruction: "hello",
+          activeSlide: 0,
+          slideCount: 1,
+          mode: "chat",
+          conversation: [
+            {
+              role: "user",
+              content: "全ページを確認してスライドの内容を充実させてください",
+            },
+          ],
+        },
+      ),
+    ).resolves.toMatchObject({
+      source: "heuristic",
+      suggestion: expect.stringContaining("こんにちは"),
+    });
+    expect(run).not.toHaveBeenCalled();
   });
 
   it("falls back when Workers AI returns a deck rewrite instead of advice", async () => {
