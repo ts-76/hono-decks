@@ -1,5 +1,6 @@
 import { AIChatAgent } from "@cloudflare/ai-chat";
 import { applyDeckAgentProposal } from "./agent-apply";
+import { parseCodeModeGenerationResult } from "./agent-codemode-result";
 import { createDeckMarkdownHash } from "./agent-contract";
 import type { DeckAgentChatResult, DeckAgentChatTurn } from "./agent-contract";
 import { resolveDeckAgentMode } from "./agent-intent";
@@ -412,9 +413,13 @@ async function generateWithWorkersAICodeMode(
     tools: { codemode },
     stopWhen: stepCountIs(2),
     system:
-      "You edit MDX slide decks. Use Code Mode when a concrete edit is useful. Return only a JSON DeckAgentChatResult.",
+      "You edit MDX slide decks. Use the codemode tool for concrete edits. The code must return a deck edit proposal object, not save files or only describe changes.",
     prompt: JSON.stringify({
-      task: "Create a non-persistent edit proposal for this deck. Do not save files.",
+      task: [
+        "Create a non-persistent edit proposal for this deck.",
+        "Inside Code Mode, read the current deck if needed, call deck.createPatch or build a replacement proposal, validate it, and return the proposal object.",
+        "Do not save files. Do not answer with generic advice. Do not return only natural language.",
+      ].join(" "),
       instruction: payload.instruction,
       recentConversation: payload.conversation ?? [],
       contextualInstruction: createContextualInstruction(payload),
@@ -435,44 +440,13 @@ async function generateWithWorkersAICodeMode(
     }),
   });
 
-  return parseDeckAgentChatResult(result.text);
+  return parseCodeModeGenerationResult(result);
 }
 
 async function createWorkersAIModel(env: Env): Promise<WorkersAI | undefined> {
   if (!env.AI) return undefined;
   const provider = await import("workers-ai-provider");
   return provider.createWorkersAI?.({ binding: env.AI as NonNullable<Env["AI"]> });
-}
-
-function parseDeckAgentChatResult(text: string): DeckAgentChatResult | undefined {
-  const json = extractJsonObject(text);
-  if (!json) return undefined;
-
-  try {
-    const value = JSON.parse(json) as Partial<DeckAgentChatResult>;
-    if (typeof value !== "object" || value === null) return undefined;
-    if (typeof value.source !== "string") return undefined;
-    return {
-      source: value.source,
-      ...(typeof value.message === "string" ? { message: value.message } : {}),
-      ...(typeof value.suggestion === "string" ? { suggestion: value.suggestion } : {}),
-      ...(value.proposal ? { proposal: value.proposal } : {}),
-    };
-  } catch {
-    return undefined;
-  }
-}
-
-function extractJsonObject(text: string): string | undefined {
-  const trimmed = text.trim();
-  if (trimmed.startsWith("{") && trimmed.endsWith("}")) return trimmed;
-
-  const fenced = /```(?:json)?\s*(\{[\s\S]*?\})\s*```/.exec(trimmed);
-  if (fenced) return fenced[1];
-
-  const start = trimmed.indexOf("{");
-  const end = trimmed.lastIndexOf("}");
-  return start >= 0 && end > start ? trimmed.slice(start, end + 1) : undefined;
 }
 
 function resolveWithin<T>(promise: Promise<T>, timeoutMs: number): Promise<T | undefined> {
