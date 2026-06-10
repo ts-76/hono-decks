@@ -36,22 +36,17 @@ const chatInput = {
 } satisfies HonoSlidesAgentChatInput;
 
 describe("SlideAssistant", () => {
-  it("builds a chat result for normal chat mode", async () => {
-    await expect(buildChatResult(testEnv(), chatInput)).resolves.toMatchObject({
-      source: "heuristic",
-      suggestion: expect.stringContaining("Improve this"),
-    });
+  it("returns an error when normal chat has no usable model response", async () => {
+    await expect(buildChatResult(testEnv(), chatInput)).rejects.toThrow("Workers AI did not produce a usable chat response.");
   });
 
-  it("does not invent a local patch when code mode lacks a concrete edit target", async () => {
-    await expect(buildChatResult(testEnv(), { ...chatInput, mode: "code" })).resolves.toMatchObject({
-      source: "heuristic",
-      message: "具体的な編集 proposal は作成できませんでした。変更したい箇所や文言をもう少し具体的に指定してください。",
-    });
-    await expect(buildChatResult(testEnv(), { ...chatInput, mode: "code" })).resolves.not.toHaveProperty("proposal");
+  it("returns an error when code mode lacks a usable proposal", async () => {
+    await expect(buildChatResult(testEnv(), { ...chatInput, mode: "code" })).rejects.toThrow(
+      "Code Mode did not produce a usable edit proposal.",
+    );
   });
 
-  it("builds a visible title patch for title edit requests when code mode falls back locally", async () => {
+  it("does not build a local title patch when code mode is unavailable", async () => {
     await expect(
       buildChatResult(testEnv(), {
         ...chatInput,
@@ -60,23 +55,10 @@ describe("SlideAssistant", () => {
         instruction: "タイトルを変更してみて",
         baseMarkdownHash: createDeckMarkdownHashForTest("# Hono Slides\n\nCloudflare Workers で動く Slidev-like deck"),
       }),
-    ).resolves.toMatchObject({
-      source: "heuristic",
-      message: "タイトルを「Hono Slides の概要」に変更します。 保存は Hono の apply/save route で行ってください。",
-      proposal: {
-        type: "patch",
-        summary: "タイトルを「Hono Slides の概要」に変更します。",
-        patches: [
-          {
-            oldText: "# Hono Slides",
-            newText: "# Hono Slides の概要",
-          },
-        ],
-      },
-    });
+    ).rejects.toThrow("Code Mode did not produce a usable edit proposal.");
   });
 
-  it("builds a visible content patch for generic edit proposal requests", async () => {
+  it("does not build a local content patch for generic edit proposal requests", async () => {
     const markdown = "# Hono Slides\n\nCloudflare Workers で動く Slidev-like deck";
 
     await expect(
@@ -87,23 +69,10 @@ describe("SlideAssistant", () => {
         instruction: "編集案を提示してください",
         baseMarkdownHash: createDeckMarkdownHashForTest(markdown),
       }),
-    ).resolves.toMatchObject({
-      source: "heuristic",
-      message: "編集案を提示してください 保存は Hono の apply/save route で行ってください。",
-      proposal: {
-        type: "patch",
-        summary: "編集案を提示してください",
-        patches: [
-          {
-            oldText: "# Hono Slides",
-            newText: expect.stringContaining("このスライドで伝えたいこと"),
-          },
-        ],
-      },
-    });
+    ).rejects.toThrow("Code Mode did not produce a usable edit proposal.");
   });
 
-  it("uses recent conversation context for vague follow-up edit requests", async () => {
+  it("does not build a local follow-up proposal from recent context", async () => {
     const markdown = "# Hono Slides\n\nCloudflare Workers で動く Slidev-like deck";
 
     await expect(
@@ -124,20 +93,7 @@ describe("SlideAssistant", () => {
         ],
         baseMarkdownHash: createDeckMarkdownHashForTest(markdown),
       }),
-    ).resolves.toMatchObject({
-      source: "heuristic",
-      message: expect.stringContaining("HonoでSlidevライク"),
-      proposal: {
-        type: "patch",
-        summary: expect.stringContaining("HonoでSlidevライク"),
-        patches: [
-          {
-            oldText: "# Hono Slides",
-            newText: expect.stringContaining("HonoでSlidevライク"),
-          },
-        ],
-      },
-    });
+    ).rejects.toThrow("Code Mode did not produce a usable edit proposal.");
   });
 
   it("uses a code mode generator when one is available", async () => {
@@ -225,10 +181,7 @@ describe("SlideAssistant", () => {
 
     await expect(
       buildChatResult(testEnv(), { ...chatInput, mode: "code" }, { generateCodeModeResult }),
-    ).resolves.toMatchObject({
-      source: "heuristic",
-      message: "具体的な編集 proposal は作成できませんでした。変更したい箇所や文言をもう少し具体的に指定してください。",
-    });
+    ).rejects.toThrow("Code Mode did not produce a usable edit proposal.");
   });
 
   it("falls back when code mode returns no edit proposal", async () => {
@@ -239,48 +192,33 @@ describe("SlideAssistant", () => {
 
     await expect(
       buildChatResult(testEnv(), { ...chatInput, mode: "code" }, { generateCodeModeResult }),
-    ).resolves.toMatchObject({
-      source: "heuristic",
-      message: "具体的な編集 proposal は作成できませんでした。変更したい箇所や文言をもう少し具体的に指定してください。",
-    });
+    ).rejects.toThrow("Code Mode did not produce a usable edit proposal.");
   });
 
-  it("does not mix generic advice into local edit fallback proposals", async () => {
+  it("does not mix generic advice into edit errors", async () => {
     const run = vi.fn().mockResolvedValue({
       response: "スライドの内容を充実させるために、各スライドの主張を1つにし、箇条書きは3点以内にまとめましょう。",
     });
     const markdown = "# Hono Slides\n\nCloudflare Workers で動く Slidev-like deck";
     const generateCodeModeResult = vi.fn().mockResolvedValue(undefined);
 
-    const result = await buildChatResult(
-      {
-        AI: { run },
-      } as unknown as Env,
-      {
-        ...chatInput,
-        mode: "code",
-        markdown,
-        instruction: "HonoでSlidevライクなスライドを作ったことをテーマに加筆してください",
-        baseMarkdownHash: createDeckMarkdownHashForTest(markdown),
-      },
-      { generateCodeModeResult },
-    );
+    await expect(
+      buildChatResult(
+        {
+          AI: { run },
+        } as unknown as Env,
+        {
+          ...chatInput,
+          mode: "code",
+          markdown,
+          instruction: "HonoでSlidevライクなスライドを作ったことをテーマに加筆してください",
+          baseMarkdownHash: createDeckMarkdownHashForTest(markdown),
+        },
+        { generateCodeModeResult },
+      ),
+    ).rejects.toThrow("Code Mode did not produce a usable edit proposal.");
 
     expect(run).not.toHaveBeenCalled();
-    expect(result).toMatchObject({
-      source: "heuristic",
-      message: expect.stringContaining("HonoでSlidevライク"),
-      proposal: {
-        type: "patch",
-        summary: expect.stringContaining("HonoでSlidevライク"),
-        patches: [
-          {
-            newText: expect.stringContaining("HonoでSlidevライク"),
-          },
-        ],
-      },
-    });
-    expect(result.suggestion).toBeUndefined();
   });
 
   it("falls back when code mode returns a patch for another path without sourcePath input", async () => {
@@ -303,10 +241,7 @@ describe("SlideAssistant", () => {
 
     await expect(
       buildChatResult(testEnv(), { ...chatInput, sourcePath: undefined, mode: "code" }, { generateCodeModeResult }),
-    ).resolves.toMatchObject({
-      source: "heuristic",
-      message: "具体的な編集 proposal は作成できませんでした。変更したい箇所や文言をもう少し具体的に指定してください。",
-    });
+    ).rejects.toThrow("Code Mode did not produce a usable edit proposal.");
   });
 
   it("falls back to the local code proposal when code mode generation fails", async () => {
@@ -314,13 +249,10 @@ describe("SlideAssistant", () => {
 
     await expect(
       buildChatResult(testEnv(), { ...chatInput, mode: "code" }, { generateCodeModeResult }),
-    ).resolves.toMatchObject({
-      source: "heuristic",
-      message: "具体的な編集 proposal は作成できませんでした。変更したい箇所や文言をもう少し具体的に指定してください。",
-    });
+    ).rejects.toThrow("Code Mode did not produce a usable edit proposal.");
   });
 
-  it("handles POST /chat requests", async () => {
+  it("returns JSON errors for POST /chat when no proposal can be generated", async () => {
     const agent = Object.create(SlideAssistant.prototype) as SlideAssistantInstance & {
       env: Env;
       state: { revisionCount: number };
@@ -339,15 +271,14 @@ describe("SlideAssistant", () => {
       }),
     );
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(503);
     await expect(response.json()).resolves.toMatchObject({
-      source: "heuristic",
-      message: "具体的な編集 proposal は作成できませんでした。変更したい箇所や文言をもう少し具体的に指定してください。",
+      error: "Code Mode did not produce a usable edit proposal.",
     });
-    expect(agent.state.revisionCount).toBe(1);
+    expect(agent.state.revisionCount).toBe(0);
   });
 
-  it("persists recent JSON chat turns in Durable Object state for follow-up edits", async () => {
+  it("does not persist fake assistant turns when JSON chat returns an error", async () => {
     const agent = Object.create(SlideAssistant.prototype) as SlideAssistantInstance & {
       env: Env;
       state: { revisionCount: number; recentTurns?: Array<{ role: "user" | "assistant"; content: string }> };
@@ -360,18 +291,6 @@ describe("SlideAssistant", () => {
       agent.state = state;
     };
 
-    await agent.onRequest(
-      new Request("https://example.test/agents/slide-assistant/deck1/chat", {
-        method: "POST",
-        body: JSON.stringify({
-          ...chatInput,
-          markdown,
-          instruction: "HonoでSlidevライクなスライドを作ったことをテーマにスライドに加筆してください。",
-          mode: "chat",
-          baseMarkdownHash: createDeckMarkdownHashForTest(markdown),
-        }),
-      }),
-    );
     const response = await agent.onRequest(
       new Request("https://example.test/agents/slide-assistant/deck1/chat", {
         method: "POST",
@@ -384,16 +303,15 @@ describe("SlideAssistant", () => {
         }),
       }),
     );
-    const json = (await response.json()) as {
-      proposal?: { patches?: Array<{ newText: string }> };
-    };
+    const json = (await response.json()) as { error?: string };
 
-    expect(agent.state.revisionCount).toBe(2);
-    expect(agent.state.recentTurns?.map((turn) => turn.role)).toEqual(["user", "assistant", "user", "assistant"]);
-    expect(json.proposal?.patches?.[0]?.newText).toContain("HonoでSlidevライク");
+    expect(response.status).toBe(503);
+    expect(json.error).toBe("Code Mode did not produce a usable edit proposal.");
+    expect(agent.state.revisionCount).toBe(0);
+    expect(agent.state.recentTurns).toBeUndefined();
   });
 
-  it("keeps a greeting as normal chat even after recent edit context", async () => {
+  it("returns an error for greetings when Workers AI is unavailable", async () => {
     const agent = Object.create(SlideAssistant.prototype) as SlideAssistantInstance & {
       env: Env;
       state: { revisionCount: number; recentTurns?: Array<{ role: "user" | "assistant"; content: string }> };
@@ -427,14 +345,77 @@ describe("SlideAssistant", () => {
         }),
       }),
     );
-    const json = (await response.json()) as { proposal?: unknown; suggestion?: string };
+    const json = (await response.json()) as { error?: string };
 
-    expect(json.proposal).toBeUndefined();
-    expect(json.suggestion).toContain("こんにちは");
-    expect(agent.state.recentTurns?.map((turn) => turn.role)).toEqual(["user", "assistant", "user", "assistant"]);
+    expect(response.status).toBe(503);
+    expect(json.error).toBe("Workers AI did not produce a usable chat response.");
+    expect(agent.state.recentTurns?.map((turn) => turn.role)).toEqual(["user", "assistant"]);
   });
 
-  it("handles AIChatAgent chat turns without Workers AI", async () => {
+  it("returns an error for conversational repair turns when Workers AI is unavailable", async () => {
+    const agent = Object.create(SlideAssistant.prototype) as SlideAssistantInstance & {
+      env: Env;
+      state: { revisionCount: number; recentTurns?: Array<{ role: "user" | "assistant"; content: string }> };
+      setState(state: { revisionCount: number; recentTurns?: Array<{ role: "user" | "assistant"; content: string }> }): void;
+    };
+    agent.env = testEnv();
+    agent.state = {
+      revisionCount: 2,
+      recentTurns: [
+        { role: "user", content: "Deck全体を再構成できますか？" },
+        {
+          role: "assistant",
+          content: "デック全体を対象に、構成案を一緒に見直せます。",
+        },
+        { role: "user", content: "話聞いてる？" },
+        { role: "assistant", content: "聞いています。" },
+      ],
+    };
+    agent.setState = (state) => {
+      agent.state = state;
+    };
+
+    const response = await agent.onRequest(
+      new Request("https://example.test/agents/slide-assistant/deck1/chat", {
+        method: "POST",
+        body: JSON.stringify({
+          ...chatInput,
+          instruction: "そういうことじゃないです。",
+          mode: "chat",
+          useWorkersAI: false,
+        }),
+      }),
+    );
+    const json = (await response.json()) as { error?: string };
+
+    expect(response.status).toBe(503);
+    expect(json.error).toBe("Workers AI did not produce a usable chat response.");
+  });
+
+  it("returns an error for attention checks when Workers AI is unavailable", async () => {
+    await expect(
+      buildChatResult(testEnv(), {
+        ...chatInput,
+        instruction: "おーい",
+        mode: "chat",
+        useWorkersAI: false,
+      }),
+    ).rejects.toThrow("Workers AI did not produce a usable chat response.");
+  });
+
+  it("returns an error for deck consultation when Workers AI is unavailable", async () => {
+    await expect(
+      buildChatResult(testEnv(), {
+        ...chatInput,
+        instruction: "Deck全体を再構成できますか？",
+        mode: "chat",
+        slideCount: 3,
+        useWorkersAI: false,
+      }),
+    ).rejects.toThrow("Workers AI did not produce a usable chat response.");
+  });
+
+  it("returns an AIChatAgent error response without Workers AI", async () => {
     const agent = Object.create(SlideAssistant.prototype) as SlideAssistantInstance & {
       env: Env;
       messages: Array<{ id: string; role: "user"; parts: Array<{ type: "text"; text: string }> }>;
@@ -452,20 +433,17 @@ describe("SlideAssistant", () => {
       },
     });
 
-    expect(response?.status).toBe(200);
-    await expect(response?.text()).resolves.toContain("こんにちは");
+    expect(response?.status).toBe(503);
+    await expect(response?.json()).resolves.toEqual({ error: "Workers AI binding is required for chat responses." });
   });
 
-  it("keeps the legacy suggestion helper working", async () => {
+  it("returns an error from suggestion helper without Workers AI", async () => {
     await expect(
       buildSuggestion(testEnv(), { markdown: "# Raw Deck", instruction: "Improve this", activeSlide: 0 }),
-    ).resolves.toMatchObject({
-      source: "heuristic",
-      suggestion: expect.stringContaining("Improve this"),
-    });
+    ).rejects.toThrow("Workers AI did not produce a usable chat response.");
   });
 
-  it("answers greetings conversationally in chat mode without Workers AI", async () => {
+  it("returns an error for greetings without Workers AI", async () => {
     await expect(
       buildSuggestion(testEnv(), {
         markdown: "# Raw Deck",
@@ -474,13 +452,10 @@ describe("SlideAssistant", () => {
         slideCount: 1,
         mode: "chat",
       }),
-    ).resolves.toMatchObject({
-      source: "heuristic",
-      suggestion: expect.stringContaining("こんにちは"),
-    });
+    ).rejects.toThrow("Workers AI did not produce a usable chat response.");
   });
 
-  it("falls back when Workers AI requires remote execution", async () => {
+  it("returns an error when Workers AI requires remote execution", async () => {
     await expect(
       buildSuggestion(
         {
@@ -492,13 +467,10 @@ describe("SlideAssistant", () => {
         } as unknown as Env,
         { markdown: "# Raw Deck", instruction: "Improve this", activeSlide: 0, slideCount: 1 },
       ),
-    ).resolves.toMatchObject({
-      source: "heuristic",
-      suggestion: expect.stringContaining("現在 1 枚"),
-    });
+    ).rejects.toThrow("Workers AI did not produce a usable chat response.");
   });
 
-  it("does not start Workers AI when the request disables it", async () => {
+  it("returns an error when the request disables Workers AI", async () => {
     const run = vi.fn();
 
     await expect(
@@ -508,10 +480,7 @@ describe("SlideAssistant", () => {
         } as unknown as Env,
         { markdown: "# Raw Deck", instruction: "Improve this", activeSlide: 0, slideCount: 1, useWorkersAI: false },
       ),
-    ).resolves.toMatchObject({
-      source: "heuristic",
-      suggestion: expect.stringContaining("現在 1 枚"),
-    });
+    ).rejects.toThrow("Workers AI did not produce a usable chat response.");
     expect(run).not.toHaveBeenCalled();
   });
 
@@ -569,7 +538,7 @@ describe("SlideAssistant", () => {
     expect(run.mock.calls[0][1].messages[1].content).toContain("ユーザー入力: 構成を相談したい");
   });
 
-  it("answers greetings locally before sending recent edit context to Workers AI", async () => {
+  it("does not answer greetings locally before Workers AI", async () => {
     const run = vi.fn();
 
     await expect(
@@ -591,14 +560,11 @@ describe("SlideAssistant", () => {
           ],
         },
       ),
-    ).resolves.toMatchObject({
-      source: "heuristic",
-      suggestion: expect.stringContaining("こんにちは"),
-    });
-    expect(run).not.toHaveBeenCalled();
+    ).rejects.toThrow("Workers AI did not produce a usable chat response.");
+    expect(run).toHaveBeenCalled();
   });
 
-  it("falls back when Workers AI returns a deck rewrite instead of advice", async () => {
+  it("returns an error when Workers AI returns a deck rewrite instead of advice", async () => {
     await expect(
       buildSuggestion(
         {
@@ -616,13 +582,10 @@ describe("SlideAssistant", () => {
           slideCount: 1,
         },
       ),
-    ).resolves.toMatchObject({
-      source: "heuristic",
-      suggestion: expect.stringContaining("現在 1 枚"),
-    });
+    ).rejects.toThrow("Workers AI did not produce a usable chat response.");
   });
 
-  it("falls back when Workers AI ignores provided markdown and says the content is unspecified", async () => {
+  it("returns an error when Workers AI ignores provided markdown and says the content is unspecified", async () => {
     await expect(
       buildSuggestion(
         {
@@ -640,13 +603,10 @@ describe("SlideAssistant", () => {
           mode: "chat",
         },
       ),
-    ).resolves.toMatchObject({
-      source: "heuristic",
-      suggestion: expect.stringContaining("現在 1 枚"),
-    });
+    ).rejects.toThrow("Workers AI did not produce a usable chat response.");
   });
 
-  it("falls back when Workers AI does not respond", async () => {
+  it("returns an error when Workers AI does not respond", async () => {
     vi.useFakeTimers();
     try {
       const result = buildSuggestion(
@@ -657,6 +617,7 @@ describe("SlideAssistant", () => {
         } as unknown as Env,
         { markdown: "# Raw Deck", instruction: "Improve this", activeSlide: 0, slideCount: 1 },
       );
+      const assertion = expect(result).rejects.toThrow("Workers AI did not produce a usable chat response.");
 
       const timers = vi as typeof vi & { advanceTimersByTimeAsync?: (milliseconds: number) => Promise<void> };
       if (timers.advanceTimersByTimeAsync) {
@@ -666,10 +627,7 @@ describe("SlideAssistant", () => {
         await Promise.resolve();
       }
 
-      await expect(result).resolves.toMatchObject({
-        source: "heuristic",
-        suggestion: expect.stringContaining("現在 1 枚"),
-      });
+      await assertion;
     } finally {
       vi.useRealTimers();
     }

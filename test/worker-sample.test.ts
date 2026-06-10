@@ -79,7 +79,7 @@ describe("sample Worker app", () => {
     expect(html).toContain("/decks/sample/edit/events");
   });
 
-  it("routes the sample deck chat through the Agent chat adapter", async () => {
+  it("returns a JSON error when the sample Agent route is not handled", async () => {
     const app = await sampleApp();
     const response = await app.request("/decks/sample/edit/agent/chat", {
       method: "POST",
@@ -87,33 +87,20 @@ describe("sample Worker app", () => {
       body: JSON.stringify({ instruction: "要点を教えて", mode: "chat", activeSlide: 0 }),
     });
 
-    expect(response.status).toBe(200);
-    const json = (await response.json()) as { source: string; suggestion: string };
-    expect(json).toMatchObject({ source: "heuristic" });
-    expect(json.suggestion).toContain("現在 3 枚");
+    expect(response.status).toBe(501);
+    await expect(response.json()).resolves.toEqual({ error: "Agent route was not handled" });
   });
 
-  it("can apply a sample chat edit proposal to the in-memory deck", async () => {
+  it("returns a JSON error instead of a local sample edit proposal when the Agent route is not handled", async () => {
     const app = await sampleApp();
     const chat = await app.request("/decks/sample/edit/agent/chat", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ instruction: "タイトルを変更してみて", mode: "code", activeSlide: 0 }),
     });
-    const chatJson = (await chat.json()) as { proposal?: unknown };
 
-    expect(chat.status).toBe(200);
-    expect(chatJson.proposal).toBeTruthy();
-
-    const apply = await app.request("/decks/sample/edit/apply", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ proposal: chatJson.proposal }),
-    });
-    const applyJson = (await apply.json()) as { markdown?: string };
-
-    expect(apply.status).toBe(200);
-    expect(applyJson.markdown).toContain("# Hono Slides の概要");
+    expect(chat.status).toBe(501);
+    await expect(chat.json()).resolves.toEqual({ error: "Agent route was not handled" });
   });
 
   it("does not expose legacy editing APIs from the sample Worker", async () => {

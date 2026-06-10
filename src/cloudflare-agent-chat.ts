@@ -8,10 +8,6 @@ export interface CreateCloudflareDeckAgentChatInput {
   agentPath?: string;
   routeTimeoutMs?: number;
   routeAgentRequest: RouteAgentRequest;
-  fallback?(
-    input: HonoSlidesAgentChatInput,
-    c: Context,
-  ): Promise<DeckAgentChatResult | Response> | DeckAgentChatResult | Response;
 }
 
 export function createCloudflareDeckAgentChat(input: CreateCloudflareDeckAgentChatInput) {
@@ -37,12 +33,10 @@ export function createCloudflareDeckAgentChat(input: CreateCloudflareDeckAgentCh
         routeTimeoutMs,
       );
     } catch {
-      if (input.fallback) return input.fallback(chatInput, c);
       return Response.json({ error: "Agent route failed" }, { status: 502 });
     }
 
     if (response === undefined) {
-      if (input.fallback) return input.fallback(chatInput, c);
       return Response.json({ error: "Agent route timed out" }, { status: 504 });
     }
 
@@ -50,7 +44,6 @@ export function createCloudflareDeckAgentChat(input: CreateCloudflareDeckAgentCh
       if (!response.ok) return response;
       return response.json() as Promise<DeckAgentChatResult>;
     }
-    if (input.fallback) return input.fallback(chatInput, c);
 
     return Response.json({ error: "Agent route was not handled" }, { status: 501 });
   };

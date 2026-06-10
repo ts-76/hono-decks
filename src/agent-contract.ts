@@ -35,7 +35,7 @@ export interface DeckAgentProposalValidation {
 }
 
 export interface DeckAgentChatResult {
-  source: "agent" | "workers-ai" | "heuristic" | string;
+  source: string;
   message?: string;
   suggestion?: string;
   proposal?: DeckAgentEditProposal;

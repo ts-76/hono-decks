@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { routeAgentRequest } from "agents";
-import { buildChatResult, SlideAssistant } from "./agent";
+import { SlideAssistant } from "./agent";
 import { createCloudflareDeckAgentChat } from "./cloudflare-agent-chat";
 import { compileMarkdown } from "./compiler";
 import { honoSlides } from "./middleware";
@@ -53,7 +53,6 @@ const sampleLocalDeckIO = createSampleLocalDeckIO();
 const sampleAgentChat = createCloudflareDeckAgentChat({
   agentPath: "slide-assistant",
   routeAgentRequest,
-  fallback: (input, c) => buildChatResult(c.env ?? ({} as Env), input),
 });
 
 app.use("/agents/*", async (c, next) => {

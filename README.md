@@ -165,7 +165,7 @@ development router の `agentChat` callback には `slug`, `sessionId`, `agentIn
 
 `SlideAssistant` は `@cloudflare/ai-chat` の `AIChatAgent` として実装しています。WebSocket chat client からは `/agents/slide-assistant/{deck-session}` に接続し、`useAgentChat` の request body に `slug`, `sessionId`, `markdown`, `sourcePath`, `baseMarkdownHash`, `activeSlide`, `slideCount` を渡せます。Hono router の JSON chat endpoint は development-only の `/slides/:slug/edit/agent/chat` です。
 
-`mode: "code"` では Workers AI + Code Mode tool を試し、編集 proposal を返します。Agent chat は proposal を作るだけで保存は行いません。edit page でユーザーが `Apply` を選んだときだけ Hono の `/edit/apply` route が raw MDX に反映します。`AI` または `LOADER` binding がない場合、または model/tool 実行に失敗した場合は heuristic proposal に fallback します。WebSocket chat では `requestEditProposalApproval` client-side tool により、ブラウザ側で proposal approval UI を出す構成にできます。
+`mode: "code"` では Workers AI + Code Mode tool を試し、編集 proposal を返します。Agent chat は proposal を作るだけで保存は行いません。edit page でユーザーが `Apply` を選んだときだけ Hono の `/edit/apply` route が raw MDX に反映します。`AI` または `LOADER` binding がない場合、または model/tool 実行に失敗した場合は固定の代替 proposal を返さず、JSON error を返します。WebSocket chat では `requestEditProposalApproval` client-side tool により、ブラウザ側で proposal approval UI を出す構成にできます。
 
 `wrangler.toml` では Code Mode の worker loader を有効化しています。Workers AI を使う場合は `AI` binding を有効化してください。
 
