@@ -38,25 +38,28 @@ describe("honoSlidesRouter", () => {
     expect(response.headers.get("content-type")).toContain("text/html");
     const html = await response.text();
     expect(html).toContain('data-hono-slides-viewer');
-    expect(html).toContain('src="/slides/deck1/presentation"');
+    expect(html).toContain('src="/slides/deck1/render"');
     expect(html).toContain('width="1920"');
     expect(html).toContain('height="1080"');
     expect(html).toContain("Math.min");
     expect(html).toContain('data-action="previous"');
     expect(html).toContain('data-action="next"');
-    expect(html).toContain('data-action="presentation"');
-    expect(html).toContain('href="/slides/deck1/presentation"');
+    expect(html).toContain('data-action="fullscreen"');
     expect(html).toContain('type: "hono-slides:command"');
     expect(html).toContain("contentWindow?.postMessage");
     expect(html).toContain("requestFullscreen");
+    expect(html).toContain("function viewerClick");
+    expect(html).not.toContain('data-action="presentation"');
+    expect(html).not.toContain("/presentation");
     expect(html).not.toContain('<aside data-hono-slides-chat');
     expect(html).not.toContain("/agent/chat");
+    expect(html).not.toContain("/apply");
     expect(html).not.toContain('allowfullscreen');
     expect(html).not.toContain('sendCommand("fullscreen")');
     expect(html).not.toContain("<h1>Intro</h1>");
   });
 
-  it("adds a development Agent chat panel to the deck viewer when chat is configured", async () => {
+  it("does not add a development Agent chat panel to the public deck viewer when chat is configured", async () => {
     const app = new Hono();
     app.route(
       "/slides",
@@ -72,31 +75,10 @@ describe("honoSlidesRouter", () => {
     const html = await response.text();
 
     expect(response.status).toBe(200);
-    expect(html).toContain('data-hono-slides-chat');
-    expect(html).toContain('data-chat-log');
-    expect(html).toContain('data-chat-input');
-    expect(html).toContain('data-chat-submit');
-    expect(html).toContain('data-chat-approval');
-    expect(html).toContain('data-chat-approval-diff');
-    expect(html).toContain('data-chat-apply');
-    expect(html).toContain('data-chat-dismiss');
-    expect(html).toContain('fetch(agentUrl');
-    expect(html).toContain('fetch(applyUrl');
-    expect(html).toContain('"/slides/deck1/agent/chat"');
-    expect(html).toContain('"/slides/deck1/apply"');
-    expect(html).toContain('mode: getChatMode(instruction)');
-    expect(html).toContain("function isEditInstruction");
-    expect(html).toContain("data.proposal");
-    expect(html).toContain("pendingChatProposal = data.proposal");
-    expect(html).toContain("showProposalApproval");
-    expect(html).toContain("persistChatState");
-    expect(html).toContain("restoreChatState");
-    expect(html).toContain("summarizeProposalDiff");
-    expect(html).toContain("hono-slides-chat-history:");
-    expect(html).toContain("hono-slides-chat-proposal:");
-    expect(html).toContain('appendChatMessage("assistant", "編集案を作成しました。適用する場合は Apply を押してください。")');
-    expect(html).toContain("chatApply?.addEventListener");
-    expect(html).toContain("activeSlide: activeSlideIndex");
+    expect(html).toContain('src="/slides/deck1/render"');
+    expect(html).not.toContain('data-hono-slides-chat');
+    expect(html).not.toContain("/agent/chat");
+    expect(html).not.toContain("/apply");
   });
 
   it("does not add a development Agent chat panel when chat is not configured", async () => {
@@ -118,11 +100,11 @@ describe("honoSlidesRouter", () => {
     expect(html).not.toContain("/agent/chat");
   });
 
-  it("serves the compiled deck on a fixed 1920x1080 presentation route", async () => {
+  it("serves the compiled deck on a fixed 1920x1080 render route", async () => {
     const app = new Hono();
     app.route("/slides", honoSlidesRouter({ source: manifestDeckSource({ decks: [deck] }), dev: false }));
 
-    const response = await app.request("/slides/deck1/presentation");
+    const response = await app.request("/slides/deck1/render");
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/html");
     const html = await response.text();
@@ -135,6 +117,16 @@ describe("honoSlidesRouter", () => {
     expect(html).toContain('window.parent.postMessage({ type: "hono-slides:state"');
     expect(html).not.toContain('data-hono-slides-controls');
     expect(html).not.toContain('data-timer');
+  });
+
+  it("redirects the deprecated presentation route to the render route", async () => {
+    const app = new Hono();
+    app.route("/slides", honoSlidesRouter({ source: manifestDeckSource({ decks: [deck] }), dev: false }));
+
+    const response = await app.request("/slides/deck1/presentation");
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location")).toBe("/slides/deck1/render");
   });
 
   it("hides draft decks from production index and direct viewing routes", async () => {
@@ -162,7 +154,7 @@ describe("honoSlidesRouter", () => {
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({ error: "Deck not found", slug: "draft" });
 
-    const presentation = await app.request("/slides/draft/presentation");
+    const presentation = await app.request("/slides/draft/render");
     expect(presentation.status).toBe(404);
     expect(await presentation.json()).toEqual({ error: "Deck not found", slug: "draft" });
   });
@@ -221,7 +213,7 @@ describe("honoSlidesRouter", () => {
     const response = await app.request("/slides/draft");
     expect(response.status).toBe(200);
 
-    const presentation = await app.request("/slides/draft/presentation");
+    const presentation = await app.request("/slides/draft/render");
     expect(presentation.status).toBe(200);
     expect(await presentation.text()).toContain("Draft Deck");
 
@@ -242,15 +234,15 @@ describe("honoSlidesRouter", () => {
       }),
     );
 
-    const productionHtml = await (await production.request("/decks/deck1/presentation")).text();
+    const productionHtml = await (await production.request("/decks/deck1/render")).text();
     const developmentWrapperHtml = await (await development.request("/decks/deck1")).text();
-    const developmentHtml = await (await development.request("/decks/deck1/presentation")).text();
+    const developmentHtml = await (await development.request("/decks/deck1/render")).text();
 
     expect(productionHtml).not.toContain("new EventSource");
     expect(developmentWrapperHtml).not.toContain("new EventSource");
-    expect(developmentWrapperHtml).toContain('src="/decks/deck1/presentation"');
+    expect(developmentWrapperHtml).toContain('src="/decks/deck1/render"');
     expect(developmentHtml).not.toContain("new EventSource");
-    expect(developmentHtml).toContain('const eventsUrl = "/decks/deck1/events?once=1"');
+    expect(developmentHtml).toContain('const eventsUrl = "/decks/deck1/edit/events?once=1"');
     expect(developmentHtml).toContain("fetch(eventsUrl");
     expect(developmentHtml).toContain('event.type === "deck:updated"');
     expect(developmentHtml).toContain("location.reload()");
@@ -300,9 +292,10 @@ describe("honoSlidesRouter", () => {
     app.route("/decks", honoSlidesRouter({ source: manifestDeckSource({ decks: [deck] }), dev: false }));
 
     expect((await app.request("/decks/deck1/edit")).status).toBe(404);
-    expect((await app.request("/decks/deck1/events")).status).toBe(404);
-    expect((await app.request("/decks/deck1/save", { method: "POST" })).status).toBe(404);
-    expect((await app.request("/decks/deck1/agent/chat", { method: "POST" })).status).toBe(404);
+    expect((await app.request("/decks/deck1/edit/events")).status).toBe(404);
+    expect((await app.request("/decks/deck1/edit/save", { method: "POST" })).status).toBe(404);
+    expect((await app.request("/decks/deck1/edit/agent/chat", { method: "POST" })).status).toBe(404);
+    expect((await app.request("/decks/deck1/edit/apply", { method: "POST" })).status).toBe(404);
   });
 
   it("serves a development editor page with raw markdown when dev is true", async () => {
@@ -327,7 +320,8 @@ describe("honoSlidesRouter", () => {
     expect(html).toContain('id="agentButton"');
     expect(html).toContain('id="applyProposalButton"');
     expect(html).toContain('id="previewFrame"');
-    expect(html).toContain('src="/decks/deck1"');
+    expect(html).toContain('src="/decks/deck1/render"');
+    expect(html).toContain('href="/decks/deck1/render"');
     expect(html).toContain("reloadPreview()");
     expect(html).toContain('fetch(saveUrl');
     expect(html).toContain('fetch(agentUrl');
@@ -335,8 +329,9 @@ describe("honoSlidesRouter", () => {
     expect(html).toContain('fetch(applyUrl');
     expect(html).toContain("markdown.value = data.markdown");
     expect(html).toContain("proposal: pendingProposal, markdown: markdown.value");
-    expect(html).toContain("/agent/chat");
-    expect(html).toContain("/apply");
+    expect(html).toContain("/edit/agent/chat");
+    expect(html).toContain("/edit/apply");
+    expect(html).toContain("/edit/events");
   });
 
   it("enables development routes in auto mode when LocalDeckIO is configured", async () => {
@@ -381,7 +376,7 @@ describe("honoSlidesRouter", () => {
       }),
     );
 
-    const response = await app.request("/decks/deck1/save", {
+    const response = await app.request("/decks/deck1/edit/save", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ markdown: "# After" }),
@@ -403,7 +398,7 @@ describe("honoSlidesRouter", () => {
       }),
     );
 
-    const response = await app.request("/decks/deck1/events?once=1");
+    const response = await app.request("/decks/deck1/edit/events?once=1");
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/event-stream");
@@ -425,7 +420,7 @@ describe("honoSlidesRouter", () => {
       }),
     );
 
-    const response = await app.request("/decks/deck1/events?once=1");
+    const response = await app.request("/decks/deck1/edit/events?once=1");
     const text = await response.text();
 
     expect(response.status).toBe(200);
@@ -450,12 +445,12 @@ describe("honoSlidesRouter", () => {
       }),
     );
 
-    await app.request("/decks/deck1/events?once=1");
+    await app.request("/decks/deck1/edit/events?once=1");
 
-    const deck1Again = await app.request("/decks/deck1/events?once=1");
+    const deck1Again = await app.request("/decks/deck1/edit/events?once=1");
     expect(await deck1Again.text()).not.toContain("event: deck:updated");
 
-    const other = await app.request("/decks/other/events?once=1");
+    const other = await app.request("/decks/other/edit/events?once=1");
     const otherText = await other.text();
     expect(otherText).toContain("event: deck:updated");
     expect(otherText).toContain('"slug":"other"');
@@ -474,12 +469,12 @@ describe("honoSlidesRouter", () => {
       }),
     );
 
-    const save = await app.request("/decks/deck1/save", {
+    const save = await app.request("/decks/deck1/edit/save", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ markdown: "# After" }),
     });
-    const events = await app.request("/decks/deck1/events?once=1");
+    const events = await app.request("/decks/deck1/edit/events?once=1");
     const text = await events.text();
 
     expect(save.status).toBe(200);
@@ -500,15 +495,15 @@ describe("honoSlidesRouter", () => {
       }),
     );
 
-    const response = await app.request("/decks/deck1/events");
+    const response = await app.request("/decks/deck1/edit/events");
     expect(await response.text()).toContain("event: ready");
 
     previewEvents.publish({ type: "deck:updated", slug: "deck1", data: { source: "watch" } });
 
-    const replay = await app.request("/decks/deck1/events?once=1");
+    const replay = await app.request("/decks/deck1/edit/events?once=1");
     expect(await replay.text()).toContain("event: deck:updated");
 
-    const drained = await app.request("/decks/deck1/events");
+    const drained = await app.request("/decks/deck1/edit/events");
     expect(await drained.text()).not.toContain("event: deck:updated");
   });
 
@@ -542,7 +537,7 @@ describe("honoSlidesRouter", () => {
       }),
     );
 
-    const response = await app.request("/decks/deck1/save", {
+    const response = await app.request("/decks/deck1/edit/save", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ markdown: "# After" }),
@@ -570,12 +565,12 @@ describe("honoSlidesRouter", () => {
       }),
     );
 
-    const response = await app.request("/decks/deck1/save", {
+    const response = await app.request("/decks/deck1/edit/save", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ markdown: "# After" }),
     });
-    const events = await app.request("/decks/deck1/events?once=1");
+    const events = await app.request("/decks/deck1/edit/events?once=1");
     const text = await events.text();
 
     expect(response.status).toBe(200);
@@ -600,7 +595,7 @@ describe("honoSlidesRouter", () => {
       }),
     );
 
-    const response = await app.request("/decks/deck1/agent/chat", {
+    const response = await app.request("/decks/deck1/edit/agent/chat", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -647,7 +642,7 @@ describe("honoSlidesRouter", () => {
       }),
     );
 
-    const response = await app.request("/decks/deck1/agent/chat", {
+    const response = await app.request("/decks/deck1/edit/agent/chat", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -681,7 +676,7 @@ describe("honoSlidesRouter", () => {
     );
 
     for (const activeSlide of [-1, 1.5, Number.NaN]) {
-      await app.request("/decks/deck1/agent/chat", {
+      await app.request("/decks/deck1/edit/agent/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -711,7 +706,7 @@ describe("honoSlidesRouter", () => {
       }),
     );
 
-    await app.request("/decks/deck1/agent/chat", {
+    await app.request("/decks/deck1/edit/agent/chat", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -738,7 +733,7 @@ describe("honoSlidesRouter", () => {
       }),
     );
 
-    const response = await app.request("/decks/deck1/apply", {
+    const response = await app.request("/decks/deck1/edit/apply", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -782,7 +777,7 @@ describe("honoSlidesRouter", () => {
       }),
     );
 
-    const response = await app.request("/decks/deck1/apply", {
+    const response = await app.request("/decks/deck1/edit/apply", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -814,7 +809,7 @@ describe("honoSlidesRouter", () => {
       }),
     );
 
-    const response = await app.request("/decks/deck1/apply", {
+    const response = await app.request("/decks/deck1/edit/apply", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -846,7 +841,7 @@ describe("honoSlidesRouter", () => {
       }),
     );
 
-    const response = await app.request("/decks/deck1/apply", {
+    const response = await app.request("/decks/deck1/edit/apply", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -878,7 +873,7 @@ describe("honoSlidesRouter", () => {
       }),
     );
 
-    const response = await app.request("/decks/deck1/apply", {
+    const response = await app.request("/decks/deck1/edit/apply", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -909,7 +904,7 @@ describe("honoSlidesRouter", () => {
       }),
     );
 
-    const response = await app.request("/decks/deck1/apply", {
+    const response = await app.request("/decks/deck1/edit/apply", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -937,7 +932,7 @@ describe("honoSlidesRouter", () => {
       }),
     );
 
-    const response = await app.request("/decks/deck1/apply", {
+    const response = await app.request("/decks/deck1/edit/apply", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -966,7 +961,7 @@ describe("honoSlidesRouter", () => {
       }),
     );
 
-    const response = await app.request("/decks/deck1/apply", {
+    const response = await app.request("/decks/deck1/edit/apply", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -987,7 +982,7 @@ describe("honoSlidesRouter", () => {
     const app = new Hono();
     app.route("/decks", honoSlidesRouter({ source: manifestDeckSource({ decks: [deck] }), dev: false }));
 
-    const response = await app.request("/decks/deck1/apply", { method: "POST" });
+    const response = await app.request("/decks/deck1/edit/apply", { method: "POST" });
 
     expect(response.status).toBe(404);
   });
