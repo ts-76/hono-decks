@@ -130,12 +130,12 @@ describe("SlideAssistant", () => {
       proposal: {
         type: "patch",
         baseMarkdownHash: "mdx-b5765d09",
-        summary: "Tighten the title",
+        summary: "Add deck context",
         patches: [
           {
             path: "decks/deck1/deck.mdx",
             oldText: "# Raw Deck",
-            newText: "# Sharper Deck",
+            newText: "# Raw Deck\n\nAdd concrete deck context.",
           },
         ],
       },
@@ -145,11 +145,11 @@ describe("SlideAssistant", () => {
       buildChatResult(testEnv(), { ...chatInput, mode: "code" }, { generateCodeModeResult }),
     ).resolves.toMatchObject({
       source: "workers-ai-codemode",
-      message: "Tighten the title",
+      message: "Add deck context",
       proposal: {
         type: "patch",
         baseMarkdownHash: "mdx-b5765d09",
-        summary: "Tighten the title",
+        summary: "Add deck context",
       },
     });
     expect(generateCodeModeResult).toHaveBeenCalledWith(testEnv(), { ...chatInput, mode: "code" });
@@ -208,6 +208,40 @@ describe("SlideAssistant", () => {
 
     await expect(
       buildChatResult(testEnv(), { ...chatInput, mode: "code" }, { generateCodeModeResult }),
+    ).rejects.toThrow("Code Mode did not produce a usable edit proposal.");
+  });
+
+  it("rejects title-only Code Mode proposals for non-title edit instructions", async () => {
+    const markdown = "# Hono Slides\n\nCloudflare Workers で動く Slidev-like deck";
+    const generateCodeModeResult = vi.fn().mockResolvedValue({
+      source: "workers-ai-codemode",
+      message: "タイトルを変更します。",
+      proposal: {
+        type: "patch",
+        baseMarkdownHash: createDeckMarkdownHashForTest(markdown),
+        summary: "タイトルを変更します。",
+        patches: [
+          {
+            path: "decks/deck1/deck.mdx",
+            oldText: "# Hono Slides",
+            newText: "# Hono Slides 実践ガイド",
+          },
+        ],
+      },
+    });
+
+    await expect(
+      buildChatResult(
+        testEnv(),
+        {
+          ...chatInput,
+          mode: "code",
+          markdown,
+          instruction: "本文にHonoとWorkers AIの具体的な説明を加筆してください",
+          baseMarkdownHash: createDeckMarkdownHashForTest(markdown),
+        },
+        { generateCodeModeResult },
+      ),
     ).rejects.toThrow("Code Mode did not produce a usable edit proposal.");
   });
 
