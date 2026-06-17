@@ -3,10 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
+    "slides:compile": "bun ../../packages/hono-slides/src/cli.ts compile --root decks --out src/generated/deck-manifest.ts --mount /decks",
+    "dev": "bun run slides:compile && wrangler dev",
     "deploy": "wrangler deploy",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "typecheck": "bun run slides:compile && tsc --noEmit",
+    "test": "bun run slides:compile && vitest run",
     "check": "bun run typecheck && bun run test"
   },
   "dependencies": {

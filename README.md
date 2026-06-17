@@ -53,7 +53,19 @@ bun run slides:compile -- --root decks --out src/generated/hono-slides-manifest.
 
 ## Basic Example
 
-`examples/basic` は in-memory deck を Cloudflare Workers 上で表示する最小サンプルです。
+`examples/basic` は directory deck を package CLI で manifest 化し、Cloudflare Workers 上で表示する最小サンプルです。
+
+```txt
+examples/basic/
+  decks/
+    sample/
+      deck.mdx
+  src/
+    generated/
+      deck-manifest.ts
+```
+
+`dev`、`typecheck`、`test` は事前に `bun run slides:compile` を実行し、`decks/sample/deck.mdx` から `src/generated/deck-manifest.ts` を更新します。
 
 ```bash
 bun run --cwd examples/basic dev
