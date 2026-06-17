@@ -48,7 +48,7 @@ export default app;
 local deck files から manifest module を生成する CLI も package 側にあります。
 
 ```bash
-bun run slides:compile -- --root decks --out src/generated/hono-slides-manifest.ts --mount /slides
+hono-slides compile --root decks --out src/generated/hono-slides-manifest.ts --mount /slides
 ```
 
 ## Basic Example
@@ -65,7 +65,7 @@ examples/basic/
       deck-manifest.ts
 ```
 
-`dev`、`typecheck`、`test` は事前に `bun run slides:compile` を実行し、`decks/sample/deck.mdx` から `src/generated/deck-manifest.ts` を更新します。
+`dev`、`typecheck`、`test`、`deploy` は事前に `bun run slides:compile` を実行し、`decks/sample/deck.mdx` から `src/generated/deck-manifest.ts` を更新します。Worker runtime は生成済み manifest を import するだけで、file system の読み取りは build-time CLI に閉じています。
 
 ```bash
 bun run --cwd examples/basic dev

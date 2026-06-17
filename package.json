@@ -7,6 +7,7 @@
     "examples/*"
   ],
   "scripts": {
+    "build": "bun run --cwd packages/hono-slides build",
     "dev": "bun run --cwd examples/basic dev",
     "deploy:basic": "bun run --cwd examples/basic deploy",
     "slides:compile": "bun run --cwd packages/hono-slides slides:compile",
@@ -18,7 +19,7 @@
     "@cloudflare/vitest-pool-workers": "^0.16.12",
     "@cloudflare/workers-types": "^4.20260601.0",
     "@types/node": "^25.9.2",
-    "tsx": "^4.22.4",
+    "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "vitest": "^4.0.14",
     "wrangler": "^4.50.0"
