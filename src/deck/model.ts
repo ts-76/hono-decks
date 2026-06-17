@@ -88,7 +88,6 @@ export interface LocalDeckIO {
   listFiles(): Promise<DeckFileEntry[]>;
   readMarkdown(slug: string): Promise<string | null>;
   readAsset?(path: string): Promise<BodyInit | Uint8Array | null>;
-  writeMarkdown(slug: string, markdown: string): Promise<void>;
   watch?(onFileChange: (event: DeckFileChange) => void): () => void;
 }
 

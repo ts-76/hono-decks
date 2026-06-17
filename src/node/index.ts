@@ -7,7 +7,6 @@ import { compileMarkdown } from "../deck/compiler";
 import { createDevDeckRuntime } from "../runtime/dev-runtime";
 import { resolveDeckFiles } from "../deck/file-routing";
 import { buildDeckManifest, emitDeckManifestModule } from "../deck/manifest-generator";
-import { createPreviewEventHub } from "../runtime/preview-events";
 import { honoSlidesRouter } from "../server/router";
 
 export interface BuildDeckManifestFromFileSystemInput {
@@ -50,12 +49,10 @@ export interface LocalDevSlidesApp {
 export async function createLocalDevSlidesApp(input: CreateLocalDevSlidesAppInput): Promise<LocalDevSlidesApp> {
   const mountPath = normalizeMountPath(input.mountPath ?? "/slides");
   const localDeckIO = createLocalDeckIO({ cwd: input.cwd, root: input.root, watchFileSystem: input.watchFileSystem });
-  const previewEvents = createPreviewEventHub();
   const initial = await buildDeckManifestFromFileSystem({ cwd: input.cwd, root: input.root, mountPath });
   const runtime = createDevDeckRuntime({
     initialDecks: initial.decks,
     localDeckIO,
-    previewEvents,
     compiler: { compileMarkdown },
     mountPath,
   });
@@ -68,9 +65,6 @@ export async function createLocalDevSlidesApp(input: CreateLocalDevSlidesAppInpu
     honoSlidesRouter({
       source: runtime.source,
       dev: true,
-      localDeckIO,
-      previewEvents,
-      onFileChange: runtime.handleFileChange,
     }),
   );
 
@@ -106,12 +100,6 @@ export function createLocalDeckIO(input: CreateLocalDeckIOInput): LocalDeckIO {
         throw new Error(`Asset path is outside ${root}: ${assetPath}`);
       }
       return readFile(join(input.cwd, assetPath));
-    },
-
-    async writeMarkdown(slug, markdown) {
-      const entry = await findDeckEntry(input, slug);
-      if (!entry) throw new Error(`Unknown deck slug: "${slug}"`);
-      await writeFile(join(input.cwd, entry.sourcePath), markdown, "utf8");
     },
 
     watch(onFileChange) {
