@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "slides:compile": "bun ../../packages/hono-slides/src/cli.ts compile --root decks --out src/generated/deck-manifest.ts --mount /decks",
+    "slides:compile": "bun run --cwd ../../packages/hono-slides build && node ../../packages/hono-slides/dist/bin.js compile --root decks --out src/generated/deck-manifest.ts --mount /decks",
     "dev": "bun run slides:compile && wrangler dev",
-    "deploy": "wrangler deploy",
+    "deploy": "bun run slides:compile && wrangler deploy",
     "typecheck": "bun run slides:compile && tsc --noEmit",
     "test": "bun run slides:compile && vitest run",
     "check": "bun run typecheck && bun run test"

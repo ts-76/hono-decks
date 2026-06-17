@@ -1,26 +1,38 @@
 {
   "name": "hono-slides",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/mod.ts",
-    "./cli": "./src/cli.ts",
-    "./node": "./src/node.ts",
-    "./worker": "./src/index.ts"
+    ".": {
+      "types": "./dist/mod.d.ts",
+      "import": "./dist/mod.js"
+    },
+    "./cli": {
+      "types": "./dist/cli.d.ts",
+      "import": "./dist/cli.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "import": "./dist/node.js"
+    },
+    "./worker": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
   },
   "bin": {
-    "hono-slides": "./bin/hono-slides.mjs"
+    "hono-slides": "./dist/bin.js"
   },
   "files": [
-    "bin",
-    "src",
+    "dist",
     "README.md"
   ],
   "scripts": {
-    "slides:compile": "tsx src/cli.ts compile",
+    "build": "tsup",
+    "prepack": "bun run build",
+    "slides:compile": "bun run build && node dist/bin.js compile",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.worker.json",
-    "test": "vitest run",
+    "test": "bun run build && vitest run",
     "check": "bun run typecheck && bun run test"
   },
   "dependencies": {
