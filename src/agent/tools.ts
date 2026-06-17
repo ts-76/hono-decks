@@ -1,8 +1,8 @@
 import type { ToolProvider } from "@cloudflare/codemode";
-import { createDeckMarkdownHash } from "./agent-contract";
-import { compileMarkdown } from "./compiler";
-import type { CompiledDeck, CompileDeckInput, DeckCompiler, DeckKind } from "./deck";
-import type { DeckAgentEditProposal, DeckAgentPatch, DeckAgentProposalValidation } from "./agent-contract";
+import { createDeckMarkdownHash } from "./contract";
+import { compileMarkdown } from "../deck/compiler";
+import type { CompiledDeck, CompileDeckInput, DeckCompiler, DeckKind } from "../deck/model";
+import type { DeckAgentEditProposal, DeckAgentPatch, DeckAgentProposalValidation } from "./contract";
 
 export interface CreateDeckAgentToolProviderInput {
   slug: string;

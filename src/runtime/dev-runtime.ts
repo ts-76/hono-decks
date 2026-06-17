@@ -8,7 +8,7 @@ import type {
   DeckFileEntry,
   DeckSource,
   LocalDeckIO,
-} from "./deck";
+} from "../deck/model";
 import type { PreviewEventHub } from "./preview-events";
 
 export interface DevDeckRuntimeInput {

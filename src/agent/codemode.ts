@@ -1,9 +1,9 @@
 import { createCodeTool } from "@cloudflare/codemode/ai";
-import { createDeckAgentToolProvider } from "./agent-tools";
+import { createDeckAgentToolProvider } from "./tools";
 import type { Tool } from "ai";
 import type { CreateCodeToolOptions } from "@cloudflare/codemode/ai";
 import type { DynamicWorkerExecutorOptions, Executor } from "@cloudflare/codemode";
-import type { CreateDeckAgentToolProviderInput } from "./agent-tools";
+import type { CreateDeckAgentToolProviderInput } from "./tools";
 
 export interface CreateDeckCodeModeToolInput extends CreateDeckAgentToolProviderInput {
   loader?: WorkerLoader;

@@ -1,12 +1,12 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { applyDeckAgentProposal } from "./agent-apply";
-import { createDeckAgentInstanceName, createDeckMarkdownHash } from "./agent-contract";
-import type { DeckAgentChatResult, DeckAgentChatTurn, DeckAgentMode } from "./agent-contract";
-import { resolveDeckAgentMode } from "./agent-intent";
-import { renderCompiledDeckPage } from "./compiled-render";
-import type { DeckFileChange, DeckSource, LocalDeckIO } from "./deck";
-import type { PreviewEvent, PreviewEventHub } from "./preview-events";
+import { applyDeckAgentProposal } from "../agent/apply";
+import { createDeckAgentInstanceName, createDeckMarkdownHash } from "../agent/contract";
+import type { DeckAgentChatResult, DeckAgentChatTurn, DeckAgentMode } from "../agent/contract";
+import { resolveDeckAgentMode } from "../agent/intent";
+import { renderCompiledDeckPage } from "../deck/compiled-render";
+import type { DeckFileChange, DeckSource, LocalDeckIO } from "../deck/model";
+import type { PreviewEvent, PreviewEventHub } from "../runtime/preview-events";
 
 export interface HonoSlidesAgentChatInput {
   slug: string;

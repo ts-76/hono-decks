@@ -1,6 +1,6 @@
 import type { Context } from "hono";
-import type { DeckAgentChatResult } from "./agent-contract";
-import type { HonoSlidesAgentChatInput } from "./router";
+import type { DeckAgentChatResult } from "./contract";
+import type { HonoSlidesAgentChatInput } from "../server/router";
 
 export type RouteAgentRequest = (request: Request, env: unknown) => Promise<Response | null>;
 

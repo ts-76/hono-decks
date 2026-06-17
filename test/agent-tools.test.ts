@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { createDeckAgentToolProvider } from "../src/agent-tools";
-import type { DeckAgentEditProposal } from "../src/agent-contract";
-import type { CompiledDeck } from "../src/deck";
+import { createDeckAgentToolProvider } from "../src/agent/tools";
+import type { DeckAgentEditProposal } from "../src/agent/contract";
+import type { CompiledDeck } from "../src/deck/model";
 
 const compiledDeck = {
   slug: "deck1",

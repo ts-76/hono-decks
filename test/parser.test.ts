@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parseDeck } from "../src/parser";
-import { renderDeck } from "../src/render";
+import { parseDeck } from "../src/deck/parser";
+import { renderDeck } from "../src/deck/render";
 
 describe("parseDeck", () => {
   it("parses slide attributes, markdown blocks, and MDX-like components", () => {

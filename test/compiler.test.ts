@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compileMarkdown } from "../src/compiler";
+import { compileMarkdown } from "../src/deck/compiler";
 
 describe("compileMarkdown", () => {
   it("compiles deck and slide frontmatter into a CompiledDeck", async () => {

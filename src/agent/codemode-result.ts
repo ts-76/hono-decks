@@ -1,4 +1,4 @@
-import type { DeckAgentChatResult, DeckAgentEditProposal } from "./agent-contract";
+import type { DeckAgentChatResult, DeckAgentEditProposal } from "./contract";
 
 export function parseCodeModeGenerationResult(result: unknown): DeckAgentChatResult | undefined {
   return extractDeckAgentChatResult(result, 0);

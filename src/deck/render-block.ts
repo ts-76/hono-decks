@@ -1,4 +1,4 @@
-import type { SlideBlock } from "./types";
+import type { SlideBlock } from "../shared/types";
 
 export function renderBlock(block: SlideBlock): string {
   switch (block.type) {

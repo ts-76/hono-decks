@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { createLocalDevSlidesApp } from "../src/node";
+import { createLocalDevSlidesApp } from "../src/node/index";
 
 describe("local file-based dev sample app", () => {
   it("wires filesystem decks into dev router view/edit/save/event routes", async () => {

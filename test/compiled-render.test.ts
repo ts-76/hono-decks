@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { renderCompiledDeck, renderCompiledDeckPage } from "../src/compiled-render";
-import type { CompiledDeck } from "../src/deck";
+import { renderCompiledDeck, renderCompiledDeckPage } from "../src/deck/compiled-render";
+import type { CompiledDeck } from "../src/deck/model";
 
 const deck = {
   slug: "deck1",

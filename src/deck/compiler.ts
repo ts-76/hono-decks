@@ -1,4 +1,4 @@
-import { CompileError } from "./deck";
+import { CompileError } from "./model";
 import { parseDeck } from "./parser";
 import { renderBlock } from "./render-block";
 import type {
@@ -9,8 +9,8 @@ import type {
   DeckFrontmatter,
   SlideFrontmatter,
   AssetRef,
-} from "./deck";
-import type { SlideBlock } from "./types";
+} from "./model";
+import type { SlideBlock } from "../shared/types";
 
 export async function compileMarkdown(input: CompileDeckInput): Promise<CompiledDeck> {
   const { attrs: deckAttrs, body } = readFrontmatter(input.markdown);

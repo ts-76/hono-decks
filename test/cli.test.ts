@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { runHonoSlidesCli } from "../src/cli";
+import { runHonoSlidesCli } from "../src/node/cli";
 
 describe("hono-slides CLI", () => {
   it("compiles local decks into a manifest module", async () => {

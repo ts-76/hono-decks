@@ -1,5 +1,5 @@
 import { compileMarkdown } from "./compiler";
-import type { AssetRef, DeckManifest } from "./deck";
+import type { AssetRef, DeckManifest } from "./model";
 import { resolveDeckFiles } from "./file-routing";
 
 export interface BuildDeckManifestInput {

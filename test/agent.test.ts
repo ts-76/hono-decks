@@ -7,17 +7,17 @@ vi.mock("@cloudflare/ai-chat", () => ({
   AIChatAgent: class {},
 }));
 
-import type { HonoSlidesAgentChatInput } from "../src/router";
-import type { Env } from "../src/types";
+import type { HonoSlidesAgentChatInput } from "../src/server/router";
+import type { Env } from "../src/shared/types";
 
-type SlideAssistantInstance = InstanceType<typeof import("../src/agent").SlideAssistant>;
+type SlideAssistantInstance = InstanceType<typeof import("../src/agent/index").SlideAssistant>;
 
-let buildChatResult: typeof import("../src/agent").buildChatResult;
-let buildSuggestion: typeof import("../src/agent").buildSuggestion;
-let SlideAssistant: typeof import("../src/agent").SlideAssistant;
+let buildChatResult: typeof import("../src/agent/index").buildChatResult;
+let buildSuggestion: typeof import("../src/agent/index").buildSuggestion;
+let SlideAssistant: typeof import("../src/agent/index").SlideAssistant;
 
 beforeAll(async () => {
-  const agent = await import("../src/agent");
+  const agent = await import("../src/agent/index");
   buildChatResult = agent.buildChatResult;
   buildSuggestion = agent.buildSuggestion;
   SlideAssistant = agent.SlideAssistant;
