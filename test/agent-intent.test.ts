@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveDeckAgentMode, shouldRequestEditProposal } from "../src/agent-intent";
+import { resolveDeckAgentMode, shouldRequestEditProposal } from "../src/agent/intent";
 
 describe("agent edit intent", () => {
   it("treats add requests as edit proposal requests", () => {

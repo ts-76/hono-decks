@@ -1,10 +1,10 @@
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
-import { createDeckMarkdownHash } from "../src/agent-contract";
-import type { CompiledDeck, LocalDeckIO } from "../src/deck";
-import { manifestDeckSource } from "../src/manifest-source";
-import { createPreviewEventHub } from "../src/preview-events";
-import { honoSlidesRouter } from "../src/router";
+import { createDeckMarkdownHash } from "../src/agent/contract";
+import type { CompiledDeck, LocalDeckIO } from "../src/deck/model";
+import { manifestDeckSource } from "../src/deck/manifest-source";
+import { createPreviewEventHub } from "../src/runtime/preview-events";
+import { honoSlidesRouter } from "../src/server/router";
 
 const deck = {
   slug: "deck1",

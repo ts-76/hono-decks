@@ -1,4 +1,4 @@
-import type { Slide, SlideBlock, SlideDeck } from "./types";
+import type { Slide, SlideBlock, SlideDeck } from "../shared/types";
 
 const slideSeparator = /^---\s*$/m;
 

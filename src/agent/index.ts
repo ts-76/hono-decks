@@ -1,11 +1,11 @@
 import { AIChatAgent } from "@cloudflare/ai-chat";
-import { applyDeckAgentProposal } from "./agent-apply";
-import { extractCodeModeToolInputs, parseCodeModeGenerationResult } from "./agent-codemode-result";
-import { createDeckMarkdownHash } from "./agent-contract";
-import type { DeckAgentChatResult, DeckAgentChatTurn, DeckAgentEditProposal } from "./agent-contract";
-import { resolveDeckAgentMode } from "./agent-intent";
-import type { HonoSlidesAgentChatInput } from "./router";
-import type { AgentSuggestRequest, AgentSuggestResponse, Env } from "./types";
+import { applyDeckAgentProposal } from "./apply";
+import { extractCodeModeToolInputs, parseCodeModeGenerationResult } from "./codemode-result";
+import { createDeckMarkdownHash } from "./contract";
+import type { DeckAgentChatResult, DeckAgentChatTurn, DeckAgentEditProposal } from "./contract";
+import { resolveDeckAgentMode } from "./intent";
+import type { HonoSlidesAgentChatInput } from "../server/router";
+import type { AgentSuggestRequest, AgentSuggestResponse, Env } from "../shared/types";
 import { convertToModelMessages, stepCountIs, streamText, tool } from "ai";
 import type { StreamTextOnFinishCallback, Tool as AiTool, ToolSet, UIMessage } from "ai";
 import type { WorkersAI } from "workers-ai-provider";
@@ -452,7 +452,7 @@ async function generateWithWorkersAICodeMode(
 
   const [{ generateText, stepCountIs }, { createDeckCodeModeTool }] = await Promise.all([
     import("ai"),
-    import("./agent-codemode"),
+    import("./codemode"),
   ]);
   const workersai = await createWorkersAIModel(env);
   if (!workersai) return undefined;

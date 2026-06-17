@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createDeckAgentInstanceName, createDeckMarkdownHash, parseDeckAgentMode } from "../src/agent-contract";
+import { createDeckAgentInstanceName, createDeckMarkdownHash, parseDeckAgentMode } from "../src/agent/contract";
 
 describe("agent contract helpers", () => {
   it("derives a deterministic per-deck per-session Agent instance name", () => {

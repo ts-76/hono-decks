@@ -2,8 +2,8 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import type { DeckFileChange } from "../src/deck";
-import { buildDeckManifestFromFileSystem, compileDecks, createLocalDeckIO, writeDeckManifestModule } from "../src/node";
+import type { DeckFileChange } from "../src/deck/model";
+import { buildDeckManifestFromFileSystem, compileDecks, createLocalDeckIO, writeDeckManifestModule } from "../src/node/index";
 
 describe("Node filesystem deck adapter", () => {
   it("discovers deck files, compiles decks, and maps local assets", async () => {

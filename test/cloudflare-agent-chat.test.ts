@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createCloudflareDeckAgentChat } from "../src/cloudflare-agent-chat";
+import { createCloudflareDeckAgentChat } from "../src/agent/cloudflare-chat";
 
 describe("createCloudflareDeckAgentChat", () => {
   it("routes deck chat input to the per-deck session Agent instance", async () => {

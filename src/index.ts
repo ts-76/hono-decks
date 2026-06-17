@@ -1,13 +1,13 @@
 import { Hono } from "hono";
 import { routeAgentRequest } from "agents";
-import { SlideAssistant } from "./agent";
-import { createCloudflareDeckAgentChat } from "./cloudflare-agent-chat";
-import { compileMarkdown } from "./compiler";
-import { honoSlides } from "./middleware";
-import { honoSlidesRouter } from "./router";
-import { createPreviewEventHub } from "./preview-events";
-import type { DeckSource, LocalDeckIO } from "./deck";
-import type { Env } from "./types";
+import { SlideAssistant } from "./agent/index";
+import { createCloudflareDeckAgentChat } from "./agent/cloudflare-chat";
+import { compileMarkdown } from "./deck/compiler";
+import { honoSlides } from "./server/middleware";
+import { honoSlidesRouter } from "./server/router";
+import { createPreviewEventHub } from "./runtime/preview-events";
+import type { DeckSource, LocalDeckIO } from "./deck/model";
+import type { Env } from "./shared/types";
 
 export { SlideAssistant, honoSlides, honoSlidesRouter };
 

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { createDeckCodeModeTool } from "../src/agent-codemode";
+import { createDeckCodeModeTool } from "../src/agent/codemode";
 import type { Executor } from "@cloudflare/codemode";
 import type { ToolProvider } from "@cloudflare/codemode";
-import type { CompiledDeck } from "../src/deck";
+import type { CompiledDeck } from "../src/deck/model";
 
 const compiledDeck = {
   slug: "deck1",

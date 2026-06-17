@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { CompiledDeck, DeckFileChange, LocalDeckIO } from "../src/deck";
-import { createDevDeckRuntime } from "../src/dev-runtime";
-import { createPreviewEventHub } from "../src/preview-events";
+import type { CompiledDeck, DeckFileChange, LocalDeckIO } from "../src/deck/model";
+import { createDevDeckRuntime } from "../src/runtime/dev-runtime";
+import { createPreviewEventHub } from "../src/runtime/preview-events";
 
 const initialDeck = {
   slug: "deck1",

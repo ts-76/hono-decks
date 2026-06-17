@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { manifestDeckSource } from "../src/manifest-source";
-import type { CompiledDeck } from "../src/deck";
+import { manifestDeckSource } from "../src/deck/manifest-source";
+import type { CompiledDeck } from "../src/deck/model";
 
 const deck = {
   slug: "deck1",

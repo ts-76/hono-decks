@@ -1,5 +1,5 @@
 import { renderBlock } from "./render-block";
-import type { Slide, SlideDeck } from "./types";
+import type { Slide, SlideDeck } from "../shared/types";
 
 export function renderDeck(deck: SlideDeck): string {
   return deck.slides.map(renderSlide).join("\n");

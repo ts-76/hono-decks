@@ -1,7 +1,7 @@
 import type { Context, MiddlewareHandler } from "hono";
-import { parseDeck } from "./parser";
-import { renderDeck } from "./render";
-import type { SlideDeck } from "./types";
+import { parseDeck } from "../deck/parser";
+import { renderDeck } from "../deck/render";
+import type { SlideDeck } from "../shared/types";
 
 declare module "hono" {
   interface ContextVariableMap {

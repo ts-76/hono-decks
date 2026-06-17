@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildDeckManifest, emitDeckManifestModule } from "../src/manifest-generator";
+import { buildDeckManifest, emitDeckManifestModule } from "../src/deck/manifest-generator";
 
 describe("buildDeckManifest", () => {
   it("builds a compiled manifest from directory and single-file deck entries", async () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractCodeModeToolInputs, parseCodeModeGenerationResult } from "../src/agent-codemode-result";
+import { extractCodeModeToolInputs, parseCodeModeGenerationResult } from "../src/agent/codemode-result";
 
 const proposal = {
   type: "patch",

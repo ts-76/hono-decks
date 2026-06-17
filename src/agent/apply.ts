@@ -1,5 +1,5 @@
-import { createDeckMarkdownHash } from "./agent-contract";
-import type { DeckAgentEditProposal, DeckAgentPatch } from "./agent-contract";
+import { createDeckMarkdownHash } from "./contract";
+import type { DeckAgentEditProposal, DeckAgentPatch } from "./contract";
 
 export type ApplyDeckAgentProposalResult =
   | { ok: true; markdown: string; baseMarkdownHash: string }

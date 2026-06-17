@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyDeckAgentProposal } from "../src/agent-apply";
+import { applyDeckAgentProposal } from "../src/agent/apply";
 
 describe("applyDeckAgentProposal", () => {
   it("applies all patches in memory and returns the next markdown once", () => {
