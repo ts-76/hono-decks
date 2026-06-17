@@ -1,0 +1,29 @@
+{
+  "name": "hono-slides",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/mod.ts",
+    "./cli": "./src/cli.ts",
+    "./node": "./src/node.ts",
+    "./worker": "./src/index.ts"
+  },
+  "bin": {
+    "hono-slides": "./bin/hono-slides.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "slides:compile": "tsx src/cli.ts compile",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.worker.json",
+    "test": "vitest run",
+    "check": "bun run typecheck && bun run test"
+  },
+  "dependencies": {
+    "hono": "^4.10.7"
+  }
+}

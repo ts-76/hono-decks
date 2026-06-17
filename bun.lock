@@ -4,9 +4,6 @@
   "workspaces": {
     "": {
       "name": "hono-slides",
-      "dependencies": {
-        "hono": "^4.10.7",
-      },
       "devDependencies": {
         "@cloudflare/vitest-pool-workers": "^0.16.12",
         "@cloudflare/workers-types": "^4.20260601.0",
@@ -15,6 +12,22 @@
         "typescript": "^5.9.3",
         "vitest": "^4.0.14",
         "wrangler": "^4.50.0",
+      },
+    },
+    "examples/basic": {
+      "name": "@hono-slides/example-basic",
+      "dependencies": {
+        "hono-slides": "workspace:*",
+      },
+    },
+    "packages/hono-slides": {
+      "name": "hono-slides",
+      "version": "0.1.0",
+      "bin": {
+        "hono-slides": "./bin/hono-slides.mjs",
+      },
+      "dependencies": {
+        "hono": "^4.10.7",
       },
     },
   },
@@ -96,6 +109,8 @@
     "@esbuild/win32-ia32": ["@esbuild/win32-ia32@0.27.3", "", { "os": "win32", "cpu": "ia32" }, "sha512-QLKSFeXNS8+tHW7tZpMtjlNb7HKau0QDpwm49u0vUp9y1WOF+PEzkU84y9GqYaAVW8aH8f3GcBck26jh54cX4Q=="],
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.27.3", "", { "os": "win32", "cpu": "x64" }, "sha512-4uJGhsxuptu3OcpVAzli+/gWusVGwZZHTlS63hh++ehExkVT8SgiEf7/uC/PclrPPkLhZqGgCTjd0VWLo6xMqA=="],
+
+    "@hono-slides/example-basic": ["@hono-slides/example-basic@workspace:examples/basic"],
 
     "@img/colour": ["@img/colour@1.1.0", "", {}, "sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ=="],
 
@@ -256,6 +271,8 @@
     "fsevents": ["fsevents@2.3.3", "", { "os": "darwin" }, "sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw=="],
 
     "hono": ["hono@4.12.23", "", {}, "sha512-eIaZ9qDgu7XV0pxOCrg7/WhnQ6Ivm22UcxhXx/A3dcbqbbYgBEkc6e/J/s7j2tS96zoB0S9VBdLwQNCWwUo4LA=="],
+
+    "hono-slides": ["hono-slides@workspace:packages/hono-slides"],
 
     "kleur": ["kleur@4.1.5", "", {}, "sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ=="],
 

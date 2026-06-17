@@ -1,33 +1,18 @@
 {
-  "name": "hono-slides",
-  "version": "0.1.0",
+  "name": "hono-slides-monorepo",
   "private": true,
   "type": "module",
-  "exports": {
-    ".": "./src/mod.ts",
-    "./cli": "./src/cli.ts",
-    "./node": "./src/node.ts",
-    "./worker": "./src/index.ts"
-  },
-  "bin": {
-    "hono-slides": "./bin/hono-slides.mjs"
-  },
-  "files": [
-    "bin",
-    "src",
-    "public",
-    "README.md"
+  "workspaces": [
+    "packages/*",
+    "examples/*"
   ],
   "scripts": {
-    "dev": "wrangler dev --var HONO_SLIDES_USE_WORKERS_AI:true",
-    "deploy": "wrangler deploy",
-    "slides:compile": "tsx src/cli.ts compile",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.worker.json",
-    "test": "vitest run",
+    "dev": "bun run --cwd examples/basic dev",
+    "deploy:basic": "bun run --cwd examples/basic deploy",
+    "slides:compile": "bun run --cwd packages/hono-slides slides:compile",
+    "typecheck": "bun run --cwd packages/hono-slides typecheck && bun run --cwd examples/basic typecheck",
+    "test": "bun run --cwd packages/hono-slides test && bun run --cwd examples/basic test",
     "check": "bun run typecheck && bun run test"
-  },
-  "dependencies": {
-    "hono": "^4.10.7"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.16.12",
