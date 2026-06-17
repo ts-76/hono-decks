@@ -1,48 +1,32 @@
 # hono-slides
 
-Hono + Cloudflare Workers で動く、MDX-like スライドデック runtime です。
+Hono + Cloudflare Workers で動く Markdown/MDX-like slide runtime です。
 
-## できること
-
-- `---` 区切りの Markdown/MDX-like をスライドへ compile
-- deck/slide frontmatter、presenter notes、MDX component metadata、asset refs、compile warnings を manifest として保持
-- `decks/deck1/deck.mdx` と `decks/deck1.mdx` の file-based routing
-- production では slug route で iframe viewer と最小の閲覧操作だけを提供
-- development では `/edit` 配下で editor、hot reload、Agent chat、proposal apply を提供
-- Cloudflare Agents と Workers AI Code Mode を使った編集 proposal の入口を提供
-
-## Deck Files
-
-Directory deck はローカル asset を同じ slug 配下で扱えます。
+このリポジトリは monorepo です。ライブラリ本体とサンプル Worker を分けています。
 
 ```txt
-decks/
-  deck1/
-    deck.mdx
-    assets/
-      image.png
+packages/
+  hono-slides/        # runtime, parser, compiler, router, CLI
+examples/
+  basic/              # basic Cloudflare Workers sample
 ```
 
-Single-file deck は remote/R2/public asset を前提にできます。
+## Commands
 
-```txt
-decks/
-  deck2.mdx
+```bash
+bun install
+bun run check
+bun run dev
 ```
 
-`https://...`, `r2://...`, `/public/...` のような参照は manifest の `AssetRef` として保持します。deck frontmatter の `assets: [...]` からも同じ external/public/R2 refs を収集できます。remote/R2 の存在確認や署名 URL 化は custom `DeckSource` や配信側で扱うため、compile warning にも載せます。
+- `bun run dev` は `examples/basic` の Worker sample を起動します。
+- `bun run check` は package と sample の typecheck/test をまとめて実行します。
+- package だけ確認する場合は `bun run --cwd packages/hono-slides check` を使います。
+- sample だけ確認する場合は `bun run --cwd examples/basic check` を使います。
 
-Directory deck の `./assets/image.png` や `assets/image.png` は、Markdown image、slide background、built-in MDX component の asset-like props で public path に rewrite されます。`Hero` は built-in component として描画し、未知の MDX component は安全側で placeholder と compile warning に残します。
+## Package
 
-Frontmatter は scalar、inline array、複数行 list、shallow object、`|` block text を扱います。壊れた frontmatter 行は compile error にし、未知キーは `meta` に保持して compile warning にも載せます。
-
-同じ slug の `deck1.mdx` と `deck1/deck.mdx` は衝突として扱います。
-
-`draft: true` の deck は production の index/direct viewing route から隠し、development router では表示します。
-
-## Production Router
-
-build 時に manifest を生成し、runtime では `DeckSource` から compiled deck を返します。
+`packages/hono-slides` が再利用するライブラリ本体です。
 
 ```ts
 import { Hono } from "hono";
@@ -55,129 +39,46 @@ app.route(
   "/slides",
   honoSlidesRouter({
     source: manifestDeckSource(deckManifest),
-    dev: false,
   }),
 );
 
 export default app;
 ```
 
-Node 側の I/O は build/dev に閉じます。
+local deck files から manifest module を生成する CLI も package 側にあります。
 
-```ts
-import { compileDecks } from "hono-slides/node";
-
-await compileDecks({
-  cwd: process.cwd(),
-  root: "decks",
-  mountPath: "/slides",
-  out: "src/generated/deck-manifest.ts",
-});
+```bash
+bun run slides:compile -- --root decks --out src/generated/hono-slides-manifest.ts --mount /slides
 ```
 
-local file-based dev sample として、Node 側で `LocalDeckIO` / dev runtime / Hono router をまとめて配線する helper もあります。
+## Basic Example
 
-```ts
-import { serve } from "@hono/node-server";
-import { createLocalDevSlidesApp } from "hono-slides/node";
+`examples/basic` は in-memory deck を Cloudflare Workers 上で表示する最小サンプルです。
 
-const { app, stop } = await createLocalDevSlidesApp({
-  cwd: process.cwd(),
-  root: "decks",
-  mountPath: "/slides",
-});
-
-serve({ fetch: app.fetch, port: 3000 });
-process.once("SIGINT", () => stop());
+```bash
+bun run --cwd examples/basic dev
 ```
 
-この helper は `/slides` に dev router を mount し、`/slides/:slug/edit`、`/slides/:slug/edit/save`、`/slides/:slug/edit/events` を local files に接続します。production build では manifest compile + `manifestDeckSource()` を使う想定です。
+起動後は次の route を確認できます。
 
-## Development Router
+- `GET /` は `/decks` に redirect
+- `GET /decks` は deck index
+- `GET /decks/sample` は viewer
+- `GET /decks/sample/render` は固定キャンバスの render page
 
-development では raw MDX の read/write/watch だけを `LocalDeckIO` に任せ、compile、preview event、HMR surface は Hono 側で扱います。
+## Architecture
 
-```ts
-import { Hono } from "hono";
-import { routeAgentRequest } from "agents";
-import {
-  compileMarkdown,
-  createCloudflareDeckAgentChat,
-  createDevDeckRuntime,
-  createPreviewEventHub,
-  honoSlidesRouter,
-} from "hono-slides";
-import { buildDeckManifestFromFileSystem, createLocalDeckIO } from "hono-slides/node";
+MVP では parse と view の層を中心にしています。
 
-const cwd = process.cwd();
-const localDeckIO = createLocalDeckIO({ cwd, root: "decks" });
-const previewEvents = createPreviewEventHub();
-const initial = await buildDeckManifestFromFileSystem({ cwd, root: "decks", mountPath: "/slides" });
-const runtime = createDevDeckRuntime({
-  initialDecks: initial.decks,
-  localDeckIO,
-  previewEvents,
-  compiler: { compileMarkdown },
-  mountPath: "/slides",
-});
+- parse/compile: `packages/hono-slides/src/deck`
+- runtime/view: `packages/hono-slides/src/server`, `packages/hono-slides/src/runtime`
+- Node-only local I/O: `packages/hono-slides/src/node`
 
-runtime.start();
-
-const app = new Hono();
-app.route(
-  "/slides",
-  honoSlidesRouter({
-    source: runtime.source,
-    dev: true,
-    localDeckIO,
-    previewEvents,
-    onFileChange: runtime.handleFileChange,
-    agentChat: createCloudflareDeckAgentChat({
-      agentPath: "slide-assistant",
-      routeAgentRequest,
-    }),
-  }),
-);
-```
-
-- `GET /slides/:slug` は公開 viewer。1920x1080 の render page を iframe で表示し、Prev / Next / Full と click / keyboard 操作だけを提供します。
-- `GET /slides/:slug/render` は固定 1920x1080 の実レンダリングページです。
-- `GET /slides/:slug/edit` は development-only の編集、Agent chat、Apply、preview controller ページです。
-- `POST /slides/:slug/edit/save` は raw MDX 保存です。
-- `GET /slides/:slug/edit/events` は preview event stream です。
-- `POST /slides/:slug/edit/agent/chat` は Agent への chat/proposal request です。
-- `POST /slides/:slug/edit/apply` は proposal を raw MDX に適用します。
-
-`/slides/:slug/presentation` は互換性のため `/slides/:slug/render` へ redirect します。新しい UI、docs、sample は `/slides/:slug/render` を使います。
-
-development の render page は `EventSource` で edit event stream を購読し、deck update 時に full reload します。`/edit` の preview iframe は `?live=0` で render page 側の購読を止め、editor 本体だけが event stream を購読して preview を reload します。
-
-editor の Agent chat と Apply は textarea の現在値を送るため、保存前の内容にも提案を作成・適用できます。実際の永続化は `/edit/apply` または `/edit/save` 経由でだけ行われます。
-
-## Cloudflare Agents
-
-`SlideAssistant` Durable Object を export しています。
-
-- `/agents/slide-assistant/{deck-session}/suggest`
-- `/agents/slide-assistant/{deck-session}/chat`
-
-development router の `agentChat` callback には `slug`, `sessionId`, `agentInstanceName`, `mode`, `baseMarkdownHash`, `sourcePath`, `markdown`, `instruction`, `activeSlide`, `useWorkersAI` が渡ります。`agentInstanceName` は deck slug と session id から生成されるため、会話履歴を deck/user session ごとに分けられます。
-
-`SlideAssistant` は `@cloudflare/ai-chat` の `AIChatAgent` として実装しています。WebSocket chat client からは `/agents/slide-assistant/{deck-session}` に接続し、`useAgentChat` の request body に `slug`, `sessionId`, `markdown`, `sourcePath`, `baseMarkdownHash`, `activeSlide`, `slideCount` を渡せます。Hono router の JSON chat endpoint は development-only の `/slides/:slug/edit/agent/chat` です。
-
-`mode: "code"` では Workers AI + Code Mode tool を試し、編集 proposal を返します。Agent chat は proposal を作るだけで保存は行いません。edit page でユーザーが `Apply` を選んだときだけ Hono の `/edit/apply` route が raw MDX に反映します。`AI` または `LOADER` binding がない場合、または model/tool 実行に失敗した場合は固定の代替 proposal を返さず、JSON error を返します。WebSocket chat では `requestEditProposalApproval` client-side tool により、ブラウザ側で proposal approval UI を出す構成にできます。
-
-`wrangler.toml` では Code Mode の worker loader を有効化しています。Workers AI を使う場合は `AI` binding を有効化してください。
-
-```toml
-[ai]
-binding = "AI"
-remote = true
-```
+edit/agent 実装は MVP から外しています。後から戻しやすいように、view 側は `DeckSource` と router options を境界にしており、編集層は別 package や feature branch から差し込む想定です。
 
 ## Legacy Middleware
 
-単一 deck を route middleware として扱う `honoSlides()` も引き続き使えます。
+単一 deck を route middleware として扱う `honoSlides()` も使えます。
 
 ```ts
 import { Hono } from "hono";
@@ -202,81 +103,4 @@ app.post("/api/preview", honoSlides({ respond: false }), (c) => {
     html: c.var.slideHtml,
   });
 });
-```
-
-## MDX-like Example
-
-```md
----
-title: Cover
-layout: cover
----
-
-# Hono Slides
-
-<Hero title="Fast decks on Workers" />
-
----
-title: Speaker Notes
-notes: Keep this hidden in normal viewing.
----
-
-## Slide 2
-
-- Markdown bullets
-- `code`
-```
-
-## CLI: manifest compile
-
-packaging/export 用には、local deck files から manifest module を生成できます。
-
-```bash
-bun run slides:compile -- --root decks --out src/generated/hono-slides-manifest.ts --mount /slides
-```
-
-同じ処理は package bin としても公開しています。
-
-```bash
-hono-slides compile --root decks --out src/generated/hono-slides-manifest.ts --mount /slides
-```
-
-- `--root` は deck root directory（例: `decks`）
-- `--out` は生成する TypeScript manifest module
-- `--mount` は local asset の public URL prefix
-
-生成された manifest は `manifestDeckSource()` や `honoSlidesRouter()` の custom source に接続できます。
-
-## 対応残件
-
-現時点の実装は multi-deck routing、compiled manifest、dev editor、hot reload、Cloudflare Agent proposal の土台、packaging/export 向け manifest compile CLI までを対象にしています。次に残している主な対応は次の通りです。
-
-- `route` frontmatter はまだ canonical slug には使いません。将来入れる場合も file-based slug の alias として扱い、衝突検出を追加します。
-- 未知の MDX component は実行せず placeholder と warning として扱います。`Hero` 以外の built-in component や theme-driven renderer は今後の拡張です。
-- remote/R2 asset は `AssetRef` と warning までを生成します。存在確認、署名 URL 化、R2 bucket 連携は custom `DeckSource` や配信側で実装します。
-- production sample は閲覧 route のみです。R2/custom source sample は今後追加します。local file-based dev は `createLocalDevSlidesApp()` helper で最小 sample として扱えます。
-- PDF export、remote control、share/QR、presenter view の別 route 化は初期実装の範囲外です。
-
-## Sample 起動確認
-
-同梱 Worker sample は、Hero component、公開 viewer、render page、development edit/chat/save/apply を一通り触れる実用デモです。保存は起動中の in-memory sample deck に反映され、プロセスを再起動すると初期内容に戻ります。
-
-```bash
-bun run dev -- --port 8791
-```
-
-起動後に次の route を確認できます。
-
-- `GET /` は `/decks` に redirect
-- `GET /decks` は sample deck index
-- `GET /decks/sample` は公開 viewer。Prev / Next / Full と click / keyboard 操作だけを提供します。
-- `GET /decks/sample/render` は固定キャンバスの実レンダリングページです。
-- `GET /decks/sample/edit` は sample deck editor、Agent chat、Apply、preview controller をまとめた開発用 workspace です。
-- `POST /decks/sample/edit/agent/chat` は Cloudflare Agent chat。編集案を返すだけで保存はしません。
-- `POST /decks/sample/edit/apply` はユーザーが `Apply` した proposal だけを保存します。`wrangler.toml` では Workers AI binding を `remote = true` で有効化しています。`bun run dev` は `HONO_SLIDES_USE_WORKERS_AI:true` で Workers AI を使います。
-
-## Quality
-
-```bash
-bun run check
 ```

@@ -1,11 +1,10 @@
 import { Hono } from "hono";
-import { compileMarkdown } from "./deck/compiler";
-import { honoSlides } from "./server/middleware";
-import { honoSlidesRouter } from "./server/router";
-import type { DeckSource } from "./deck/model";
-import type { Env } from "./shared/types";
+import { compileMarkdown, honoSlides, honoSlidesRouter } from "hono-slides";
+import type { DeckSource } from "hono-slides";
 
 export { honoSlides, honoSlidesRouter };
+
+interface Env {}
 
 const sampleDeck = `---
 title: Hono Slides
@@ -24,14 +23,14 @@ Cloudflare Workers で動く Slidev-like deck
 <Hero title="MDX-like components" />
 
 ---
-title: Editing
+title: Parse and View
 ---
 
-## 編集ページ
+## Parse and View
 
-- Markdown を入力
-- 即プレビュー
-- Agents に編集支援を委譲
+- Markdown/MDX-like source を compile
+- deck manifest と slide metadata を保持
+- Hono route で viewer/render page を配信
 
 ---
 layout: statement
@@ -39,7 +38,7 @@ layout: statement
 
 ## 次にやること
 
-> 自分の AI binding / MCP / tools を Agent に接続する`;
+> 自分の deck source や asset pipeline を接続する`;
 
 const app = new Hono<{ Bindings: Env }>();
 const sampleDeckSource = createSampleDeckSource();
