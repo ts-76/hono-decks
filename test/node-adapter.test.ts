@@ -149,25 +149,6 @@ describe("Node filesystem deck adapter", () => {
     }
   });
 
-  it("writes raw markdown through LocalDeckIO without compiling", async () => {
-    const cwd = await createFixture();
-    const io = createLocalDeckIO({ cwd, root: "decks" });
-    const markdown = `---
-title: Raw Save
----
-
-# Raw <Hero title="Saved" />`;
-
-    try {
-      await io.writeMarkdown("deck1", markdown);
-
-      await expect(readFile(join(cwd, "decks", "deck1", "deck.mdx"), "utf8")).resolves.toBe(markdown);
-      await expect(io.readMarkdown("deck1")).resolves.toBe(markdown);
-    } finally {
-      await rm(cwd, { recursive: true, force: true });
-    }
-  });
-
   it("reads local deck assets through LocalDeckIO", async () => {
     const cwd = await createFixture();
     const io = createLocalDeckIO({ cwd, root: "decks" });
@@ -180,17 +161,6 @@ title: Raw Save
       await expect(io.readAsset?.("../outside.png")).rejects.toThrow(
         "Asset path must be a relative path inside the current working directory",
       );
-    } finally {
-      await rm(cwd, { recursive: true, force: true });
-    }
-  });
-
-  it("rejects LocalDeckIO writes for unknown slugs", async () => {
-    const cwd = await createFixture();
-    const io = createLocalDeckIO({ cwd, root: "decks" });
-
-    try {
-      await expect(io.writeMarkdown("missing", "# Missing")).rejects.toThrow('Unknown deck slug: "missing"');
     } finally {
       await rm(cwd, { recursive: true, force: true });
     }

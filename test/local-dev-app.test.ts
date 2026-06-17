@@ -1,11 +1,11 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createLocalDevSlidesApp } from "../src/node/index";
 
 describe("local file-based dev sample app", () => {
-  it("wires filesystem decks into dev router view/edit/save/event routes", async () => {
+  it("wires filesystem decks into dev viewer routes without edit endpoints", async () => {
     const cwd = await createFixture();
 
     try {
@@ -27,26 +27,13 @@ describe("local file-based dev sample app", () => {
         expect(viewHtml).toContain("Local Deck");
         expect(viewHtml).toContain("/slides/local/render");
 
-        const presentation = await app.request("/slides/local/render");
-        expect(presentation.status).toBe(200);
-        expect(await presentation.text()).toContain("/slides/local/edit/events");
+        const render = await app.request("/slides/local/render");
+        expect(render.status).toBe(200);
+        expect(await render.text()).not.toContain("/slides/local/edit/events");
 
-        const edit = await app.request("/slides/local/edit");
-        expect(edit.status).toBe(200);
-        expect(await edit.text()).toContain("# Local Deck");
-
-        const savedMarkdown = `---\ntitle: Saved Deck\n---\n\n# Saved Deck`;
-        const save = await app.request("/slides/local/edit/save", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ markdown: savedMarkdown }),
-        });
-        expect(save.status).toBe(200);
-        await expect(readFile(join(cwd, "decks", "local", "deck.mdx"), "utf8")).resolves.toBe(savedMarkdown);
-
-        const events = await app.request("/slides/local/edit/events?once=1");
-        expect(events.status).toBe(200);
-        expect(await events.text()).toContain("event: deck:updated");
+        expect((await app.request("/slides/local/edit")).status).toBe(404);
+        expect((await app.request("/slides/local/edit/save", { method: "POST" })).status).toBe(404);
+        expect((await app.request("/slides/local/edit/events?once=1")).status).toBe(404);
       } finally {
         stop();
       }

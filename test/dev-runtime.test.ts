@@ -255,7 +255,8 @@ describe("createDevDeckRuntime", () => {
   it("does not let a slower older compile overwrite a newer file change", async () => {
     let releaseFirstCompile: (() => void) | undefined;
     const previewEvents = createPreviewEventHub();
-    const localDeckIO = createMemoryDeckIO({ deck1: "# First" });
+    const markdownBySlug = { deck1: "# First" };
+    const localDeckIO = createMemoryDeckIO(markdownBySlug);
     const runtime = createDevDeckRuntime({
       initialDecks: [initialDeck],
       localDeckIO,
@@ -277,7 +278,7 @@ describe("createDevDeckRuntime", () => {
 
     const first = runtime.handleFileChange({ type: "changed", path: "decks/deck1/deck.mdx", slug: "deck1" });
     await waitForAsyncWatchHandler();
-    await localDeckIO.writeMarkdown("deck1", "# Second");
+    markdownBySlug.deck1 = "# Second";
     await runtime.handleFileChange({ type: "changed", path: "decks/deck1/deck.mdx", slug: "deck1" });
     releaseFirstCompile?.();
     await first;
@@ -446,7 +447,6 @@ describe("createDevDeckRuntime", () => {
         async readMarkdown(slug) {
           return slug === "deck2" ? "# Deck Two\n\n![Remote](https://cdn.example.com/deck2.png)" : null;
         },
-        async writeMarkdown() {},
       },
       compiler: {
         async compileMarkdown(input) {
@@ -492,7 +492,6 @@ describe("createDevDeckRuntime", () => {
         async readMarkdown() {
           throw new Error("read failed");
         },
-        async writeMarkdown() {},
       },
       compiler: {
         async compileMarkdown() {
@@ -570,9 +569,6 @@ function createMemoryDeckIO(
     },
     async readMarkdown(slug) {
       return markdownBySlug[slug] ?? null;
-    },
-    async writeMarkdown(slug, markdown) {
-      markdownBySlug[slug] = markdown;
     },
     async readAsset(path) {
       return assetsByPath[path] ?? null;
