@@ -1,10 +1,18 @@
 import { describe, expect, it } from "vitest";
+import { deckManifest } from "../src/generated/deck-manifest";
 
 async function sampleApp() {
   return (await import("../src/index")).default;
 }
 
 describe("sample Worker app", () => {
+  it("uses a directory-based sample deck manifest", () => {
+    expect(deckManifest.decks).toHaveLength(1);
+    expect(deckManifest.decks[0]?.slug).toBe("sample");
+    expect(deckManifest.decks[0]?.sourcePath).toBe("decks/sample/deck.mdx");
+    expect(deckManifest.decks[0]?.kind).toBe("directory");
+  });
+
   it("routes the deployed root to the compiled deck index", async () => {
     const app = await sampleApp();
     const response = await app.request("/");
