@@ -1,23 +1,26 @@
 import { describe, expect, it } from "vitest";
 import { Badge } from "../decks/sample/components";
-import { deckComponents } from "../src/generated/deck-components";
-import { deckManifest } from "../src/generated/deck-manifest";
+import { decks, decksRouter } from "../src/generated/decks";
 
 async function sampleApp() {
   return (await import("../src/index")).default;
 }
 
 describe("sample Worker app", () => {
-  it("uses a directory-based sample deck manifest", () => {
-    expect(deckManifest.decks).toHaveLength(1);
-    expect(deckManifest.decks[0]?.slug).toBe("sample");
-    expect(deckManifest.decks[0]?.sourcePath).toBe("decks/sample/deck.mdx");
-    expect(deckManifest.decks[0]?.kind).toBe("directory");
+  it("uses a generated module-backed deck source", async () => {
+    const entries = await decks.source.listDecks({} as never);
+
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      slug: "sample",
+      sourcePath: "decks/sample/deck.mdx",
+    });
+    expect(typeof decks.router).toBe("function");
   });
 
   it("exports slide components from the sample deck directory", () => {
     expect(typeof Badge).toBe("function");
-    expect(Object.keys(deckComponents)).toEqual([expect.stringMatching(/^Badge__sample_[a-z0-9]+$/)]);
+    expect(typeof decksRouter).toBe("function");
   });
 
   it("routes the deployed root to the compiled deck index", async () => {
@@ -54,6 +57,8 @@ describe("sample Worker app", () => {
     expect(html).toContain("<h1>MDX-like components</h1>");
     expect(html).toContain('class="sample-badge"');
     expect(html).toContain("Rendered by a Hono JSX component");
+    expect(html).toContain("MDX expression props");
+    expect(html).toContain("MDX expression children");
     expect(html).not.toContain('MDX component "Hero" is rendered as a placeholder.');
     expect(html).not.toContain("mdx-component");
   });

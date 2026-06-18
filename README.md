@@ -1,12 +1,12 @@
-# hono-slides
+# hono-decks
 
-Hono + Cloudflare Workers で動く Markdown/MDX slide runtime です。Markdown/MDX を build-time に manifest 化し、Worker runtime では `hono/jsx` component registry を使って描画します。
+Hono + Cloudflare Workers で動く MDX slide runtime です。MDX を build-time に `hono/jsx` 向け module へ compile し、Worker runtime では生成済み router と slide module を普通の app code として bundle/import します。
 
 このリポジトリは monorepo です。ライブラリ本体とサンプル Worker を分けています。
 
 ```txt
 packages/
-  hono-slides/        # runtime, parser, compiler, router, CLI
+  decks/             # runtime, parser, compiler, router, CLI
 examples/
   basic/              # basic Cloudflare Workers sample
 ```
@@ -21,57 +21,51 @@ bun run dev
 
 - `bun run dev` は `examples/basic` の Worker sample を起動します。
 - `bun run check` は package と sample の typecheck/test をまとめて実行します。
-- package だけ確認する場合は `bun run --cwd packages/hono-slides check` を使います。
+- package だけ確認する場合は `bun run --cwd packages/decks check` を使います。
 - sample だけ確認する場合は `bun run --cwd examples/basic check` を使います。
 
 ## Package
 
-`packages/hono-slides` が再利用するライブラリ本体です。
+`packages/decks` が再利用するライブラリ本体です。
 
 ```ts
+// src/index.ts
 import { Hono } from "hono";
-import { honoSlidesRouter, manifestDeckSource } from "hono-slides";
-import { deckComponents } from "./generated/deck-components";
-import { deckManifest } from "./generated/deck-manifest";
+import { decksRouter } from "./generated/decks";
 
 const app = new Hono();
 
-app.route(
-  "/slides",
-  honoSlidesRouter({
-    source: manifestDeckSource(deckManifest),
-    components: deckComponents,
-  }),
-);
-
-export default app;
+app.route("/decks", decksRouter());
 ```
 
-local deck files から manifest module を生成する CLI も package 側にあります。ファイル読み取りと MDX parse は build-time に閉じ、Worker runtime は生成済み manifest を import します。
+local deck files から generated router と slide module を生成する CLI も package 側にあります。ファイル読み取りと MDX compile は build-time に閉じ、Worker runtime は生成済み module を import します。
 
 ```bash
-hono-slides compile \
+hono-decks compile \
   --root decks \
-  --out src/generated/hono-slides-manifest.ts \
-  --components-out src/generated/hono-slides-components.ts \
+  --out src/generated \
   --mount /slides
 ```
 
-`--components-out` を指定すると、`decks/*/components/index.tsx` または `index.ts` の大文字 named export を deck component として取り込みます。同名 component は build-time に deck slug と source module path から作った stable hash 名へ rewrite されるため、複数 deck の `<Badge />` が衝突しません。
+生成される `src/generated/decks.ts` は利用側 entry です。通常は `decksRouter()` をそのまま mount します。
 
-MDX の JSX component は登録済み component のみ描画されます。`import` / `export` / JavaScript expression はまだ実行せず warning として扱うため、Worker runtime に任意コード実行を持ち込みません。
+`decks/*/components/index.tsx` または `index.ts` の named export は deck-local component として取り込まれます。deck ごとに `MDXContent` へ component map を渡すため、複数 deck に同名の `<Badge />` があっても server render 側では衝突しません。
+
+MDX は `@mdx-js/mdx` で build-time に compile されます。`import` / `export` / JavaScript expression は MDX の標準 model に従って生成済み module 内で実行され、Worker runtime で raw MDX string を `eval` することはありません。
 
 ```mdx
+export const label = 'Rendered ' + 'by Hono JSX'
+
 # Component Slide
 
-<Badge label="Rendered by Hono JSX" />
+<Badge label={label} />
 ```
 
 client side interactivity が必要な component は island として出力し、ユーザー側の client bundle から `hono/jsx/dom` で hydrate します。
 
 ```tsx
 import { useState } from "hono/jsx";
-import { hydrateSlideIslands } from "hono-slides/client";
+import { hydrateSlideIslands } from "@hono/decks/client";
 
 function Counter() {
   const [count, setCount] = useState(0);
@@ -81,6 +75,18 @@ function Counter() {
 hydrateSlideIslands({
   components: { Counter },
 });
+```
+
+`style` と `clientEntry` は必要な deck だけ generated router に渡します。`style` は base presentation CSS に足すテーマ CSS、`clientEntry` は `client: true` な component を `hono/jsx/dom` で hydrate する browser bundle の接続口です。静的な server-rendered deck ではどちらも不要です。
+
+```ts
+app.route("/decks", decksRouter({
+  style: `
+    :root { --accent: #00e0ff; }
+    .slide h1 { color: var(--accent); }
+  `,
+  clientEntry: "/assets/decks.client.js",
+}));
 ```
 
 ## Basic Example
@@ -96,11 +102,13 @@ examples/basic/
         index.tsx
   src/
     generated/
-      deck-components.ts
-      deck-manifest.ts
+      decks.ts
+      decks/
+        sample/
+          slide-0.ts
 ```
 
-`dev`、`typecheck`、`test`、`deploy` は事前に `bun run slides:compile` を実行し、`decks/sample/deck.mdx` から `src/generated/deck-manifest.ts` と `src/generated/deck-components.ts` を更新します。Worker runtime は生成済み manifest と component registry を import するだけで、file system の読み取りは build-time CLI に閉じています。
+`dev`、`typecheck`、`test`、`deploy` は事前に `bun run decks:compile` を実行し、`decks/sample/deck.mdx` から `src/generated/decks.ts` と slide module 群を更新します。Worker runtime は生成済み router を import するだけで、file system の読み取りは build-time CLI に閉じています。
 
 ```bash
 bun run --cwd examples/basic dev
@@ -117,32 +125,32 @@ bun run --cwd examples/basic dev
 
 MVP では parse と view の層を中心にしています。`deck` は domain model に絞り、カテゴリの異なる処理は別ディレクトリに分けています。
 
-- domain model: `packages/hono-slides/src/deck`
-- parse: `packages/hono-slides/src/parser`
-- render: `packages/hono-slides/src/renderer`
-- client islands: `packages/hono-slides/src/client`
-- compile: `packages/hono-slides/src/compiler`
-- manifest generation: `packages/hono-slides/src/generator`
-- manifest source adapter: `packages/hono-slides/src/source`
-- file routing: `packages/hono-slides/src/routing`
-- runtime/view: `packages/hono-slides/src/server`, `packages/hono-slides/src/runtime`
-- Node-only local I/O: `packages/hono-slides/src/node`
+- domain model: `packages/decks/src/deck`
+- parse: `packages/decks/src/parser`
+- render: `packages/decks/src/renderer`
+- client islands: `packages/decks/src/client`
+- compile: `packages/decks/src/compiler`
+- MDX module/router generation: `packages/decks/src/generator`
+- manifest source adapter: `packages/decks/src/source`
+- file routing: `packages/decks/src/routing`
+- runtime/view: `packages/decks/src/server`, `packages/decks/src/runtime`
+- Node-only local I/O: `packages/decks/src/node`
 
 edit/agent 実装は MVP から外しています。後から戻しやすいように、view 側は `DeckSource` と router options を境界にしており、編集層は別 package や feature branch から差し込む想定です。
 
 ## Legacy Middleware
 
-単一 deck を route middleware として扱う `honoSlides()` も使えます。
+単一 deck を route middleware として扱う `deckMiddleware()` も使えます。
 
 ```ts
 import { Hono } from "hono";
-import { honoSlides } from "hono-slides";
+import { deckMiddleware } from "@hono/decks";
 
 const app = new Hono();
 
 app.use(
   "/deck",
-  honoSlides({
+  deckMiddleware({
     markdown: `# Hello\n\n---\n\n## Second`,
   }),
 );
@@ -151,7 +159,7 @@ app.use(
 下流 handler で自分の API response にしたい場合は `respond: false` を使います。
 
 ```ts
-app.post("/api/preview", honoSlides({ respond: false }), (c) => {
+app.post("/api/preview", deckMiddleware({ respond: false }), (c) => {
   return c.json({
     deck: c.var.slideDeck,
     html: c.var.slideHtml,

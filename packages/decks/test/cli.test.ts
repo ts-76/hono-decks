@@ -1,0 +1,140 @@
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+import { runHonoDecksCli } from "../src/node/cli";
+
+describe("hono-decks CLI", () => {
+  it("compiles local decks into generated router and slide modules", async () => {
+    const cwd = await createFixture();
+    const stdout: string[] = [];
+
+    try {
+      const result = await runHonoDecksCli({
+        argv: ["compile", "--root", "decks", "--out", "src/generated", "--mount", "/slides"],
+        cwd,
+        stdout: (line) => stdout.push(line),
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(stdout.join("\n")).toContain("Compiled 2 decks");
+
+      const output = await readFile(join(cwd, "src", "generated", "decks.ts"), "utf8");
+      expect(output).toContain("export const decks = defineDecks({");
+      expect(output).toContain('slug: "intro"');
+      expect(output).toContain('"publicPath": "/slides/intro/assets/hero.png"');
+      expect(output).toContain('import Slide_intro_0 from "./decks/intro/slide-0";');
+
+      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "intro", "slide-0.ts"), "utf8");
+      expect(slideOutput).toContain('from "hono/jsx/jsx-runtime"');
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("imports deck-local components without rewriting MDX component names", async () => {
+    const cwd = await createFixture();
+    const stdout: string[] = [];
+
+    try {
+      await mkdir(join(cwd, "decks", "intro", "components"), { recursive: true });
+      await writeFile(
+        join(cwd, "decks", "intro", "components", "index.tsx"),
+        `export function Badge() {
+  return <p>Intro badge</p>;
+}
+`,
+        "utf8",
+      );
+      await writeFile(
+        join(cwd, "decks", "intro", "deck.mdx"),
+        `# Intro
+
+<Badge label="Intro" />`,
+        "utf8",
+      );
+
+      const result = await runHonoDecksCli({
+        argv: ["compile", "--root", "decks", "--out", "src/generated", "--mount", "/slides"],
+        cwd,
+        stdout: (line) => stdout.push(line),
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(stdout.join("\n")).toContain("Compiled 2 decks");
+
+      const routerOutput = await readFile(join(cwd, "src", "generated", "decks.ts"), "utf8");
+      expect(routerOutput).toContain('import { defineDecks } from "@hono/decks";');
+      expect(routerOutput).toContain('import type { DecksRouterOverrides } from "@hono/decks";');
+      expect(routerOutput).toContain('import * as Components_intro from "../../decks/intro/components";');
+      expect(routerOutput).toContain("componentRegistry: Components_intro");
+      expect(routerOutput).toContain("export function decksRouter(options: DecksRouterOverrides = {})");
+
+      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "intro", "slide-0.ts"), "utf8");
+      expect(slideOutput).toContain("{Badge} = _components");
+      expect(slideOutput).toContain("_jsx(Badge");
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("reports usage errors without writing files", async () => {
+    const cwd = await createFixture();
+    const stderr: string[] = [];
+
+    try {
+      const result = await runHonoDecksCli({
+        argv: ["compile", "--root", "decks"],
+        cwd,
+        stderr: (line) => stderr.push(line),
+      });
+
+      expect(result.exitCode).toBe(1);
+      expect(stderr.join("\n")).toContain("Missing required option: --out");
+      await expect(readFile(join(cwd, "src", "generated", "hono-decks-manifest.ts"), "utf8")).rejects.toThrow();
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("prints help", async () => {
+    const stdout: string[] = [];
+
+    const result = await runHonoDecksCli({
+      argv: ["--help"],
+      cwd: "/workspace",
+      stdout: (line) => stdout.push(line),
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(stdout.join("\n")).toContain("hono-decks compile --root decks --out src/generated");
+    expect(stdout.join("\n")).toContain("Output directory for generated deck modules.");
+  });
+});
+
+async function createFixture(): Promise<string> {
+  const cwd = await mkdtemp(join(tmpdir(), "hono-decks-cli-"));
+  await mkdir(join(cwd, "decks", "intro", "assets"), { recursive: true });
+  await writeFile(
+    join(cwd, "decks", "intro", "deck.mdx"),
+    `---
+title: Intro
+---
+
+# Intro
+
+![Hero](./assets/hero.png)`,
+    "utf8",
+  );
+  await writeFile(join(cwd, "decks", "intro", "assets", "hero.png"), new Uint8Array([1, 2, 3]));
+  await writeFile(
+    join(cwd, "decks", "closing.mdx"),
+    `---
+title: Closing
+---
+
+# Closing`,
+    "utf8",
+  );
+  return cwd;
+}

@@ -1,4 +1,4 @@
-name = "hono-slides"
+name = "hono-decks-basic"
 main = "src/index.ts"
 account_id = "d8c5d2da42e8c9f7c416d5d34fc7530c"
 compatibility_date = "2026-06-01"
