@@ -29,9 +29,9 @@ export function renderCompiledDeck(
   } = {},
 ): string {
   const components = normalizeComponents(input.components);
-  return `<main class="hono-decks-stage hono-decks-deck" data-hono-decks-stage data-deck-slug="${escapeHtml(deck.slug)}">${deck.slides
+  return `<main class="hono-decks-stage" data-hono-decks-stage data-deck-slug="${escapeHtml(deck.slug)}"><div class="hono-decks-deck" data-hono-decks-deck>${deck.slides
     .map((slide) => renderCompiledSlide(slide, deck.assets, { components }))
-    .join("\n")}</main>`;
+    .join("\n")}</div></main>`;
 }
 
 export async function renderCompiledDeckAsync(
@@ -44,9 +44,9 @@ export async function renderCompiledDeckAsync(
   const slides = await Promise.all(
     deck.slides.map((slide) => renderCompiledSlideAsync(slide, deck.assets, { components })),
   );
-  return `<main class="hono-decks-stage hono-decks-deck" data-hono-decks-stage data-deck-slug="${escapeHtml(deck.slug)}">${slides.join(
+  return `<main class="hono-decks-stage" data-hono-decks-stage data-deck-slug="${escapeHtml(deck.slug)}"><div class="hono-decks-deck" data-hono-decks-deck>${slides.join(
     "\n",
-  )}</main>`;
+  )}</div></main>`;
 }
 
 export function renderCompiledSlide(
@@ -178,9 +178,9 @@ function mergeComponentInputs(
 function basePresentationStyle(): string {
   return `
 :root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0b1020;color:#eef2ff;--hono-decks-width:1920px;--hono-decks-height:1080px}
-html,body{margin:0;width:var(--hono-decks-width);height:var(--hono-decks-height);overflow:hidden}
-.hono-decks-stage{width:var(--hono-decks-width);height:var(--hono-decks-height);overflow:hidden;background:#0b1020;position:relative}
-.hono-decks-deck{display:grid;gap:1rem;padding:1rem;width:100%;height:100%;box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden}
+.hono-decks-stage{width:100vw;height:100vh;overflow:hidden;background:#0b1020;position:relative;display:grid;place-items:center}
+.hono-decks-deck{display:grid;gap:1rem;padding:1rem;width:var(--hono-decks-width);height:var(--hono-decks-height);box-sizing:border-box;transform-origin:left top}
 .slide{aspect-ratio:16/9;border:1px solid rgba(255,255,255,.13);border-radius:24px;padding:clamp(1.2rem,3vw,3rem);background:linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.035));overflow:hidden}
 .slide.layout-cover,.slide.layout-statement{display:flex;flex-direction:column;justify-content:center}
 .mdx-hero{height:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,42%);gap:clamp(1rem,3vw,3rem);align-items:center}
@@ -201,7 +201,18 @@ function renderPresentationScript(): string {
   return `<script>
 (() => {
   const slides = Array.from(document.querySelectorAll(".slide"));
+  const stage = document.querySelector("[data-hono-decks-stage]");
+  const deck = document.querySelector("[data-hono-decks-deck]");
+  const DESIGN_WIDTH = 1920;
+  const DESIGN_HEIGHT = 1080;
   let index = 0;
+
+  function fitDeck() {
+    if (!(stage instanceof HTMLElement) || !(deck instanceof HTMLElement)) return;
+    const bounds = stage.getBoundingClientRect();
+    const scale = Math.min(bounds.width / DESIGN_WIDTH, bounds.height / DESIGN_HEIGHT);
+    deck.style.transform = "scale(" + scale + ")";
+  }
 
   function publishState() {
     if (window.parent !== window) window.parent.postMessage({ type: "hono-decks:state", index, slideCount: slides.length }, "*");
@@ -261,6 +272,8 @@ function renderPresentationScript(): string {
     if (message.action === "overview") toggleOverview();
   });
 
+  window.addEventListener("resize", fitDeck);
+  fitDeck();
   show(0);
 })();
 </script>`;

@@ -43,6 +43,11 @@ describe("sample Worker app", () => {
     const html = await response.text();
     expect(html).toContain("<title>Hono Slides</title>");
     expect(html).toContain('src="/decks/sample/render"');
+    expect(html).toContain(".hono-decks-frame-stage iframe{width:100%;height:100%");
+    expect(html).not.toContain('width="1920"');
+    expect(html).not.toContain('height="1080"');
+    expect(html).not.toContain("DESIGN_WIDTH");
+    expect(html).not.toContain("stage.style.transform");
     expect(html).toContain('id="hono-css"');
     expect(html).toContain("radial-gradient(circle at top,#1e2b5c,#050816 62%)");
     expect(html).toContain('data-action="previous"');
@@ -94,6 +99,9 @@ describe("sample Worker app", () => {
     expect(html).toContain("Interactive count");
     expect(html).toContain('src="/decks/sample/assets/r2-cache.svg"');
     expect(html).not.toContain("/decks/sample//decks/sample/assets");
+    expect(html).toContain('data-hono-decks-deck');
+    expect(html).toContain("function fitDeck()");
+    expect(html).toContain('deck.style.transform = "scale(" + scale + ")"');
     expect(html).toContain('<script type="module" src="/decks/_assets/client.js"></script>');
     expect(html).not.toContain('MDX component "Hero" is rendered as a placeholder.');
     expect(html).not.toContain("mdx-component");
