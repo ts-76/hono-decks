@@ -28,6 +28,64 @@ describe("hono-slides CLI", () => {
     }
   });
 
+  it("generates a deck component registry module and rewrites component names to stable internal names", async () => {
+    const cwd = await createFixture();
+    const stdout: string[] = [];
+
+    try {
+      await mkdir(join(cwd, "decks", "intro", "components"), { recursive: true });
+      await writeFile(
+        join(cwd, "decks", "intro", "components", "index.tsx"),
+        `export function Badge() {
+  return <p>Intro badge</p>;
+}
+`,
+        "utf8",
+      );
+      await writeFile(
+        join(cwd, "decks", "intro", "deck.mdx"),
+        `# Intro
+
+<Badge label="Intro" />`,
+        "utf8",
+      );
+
+      const result = await runHonoSlidesCli({
+        argv: [
+          "compile",
+          "--root",
+          "decks",
+          "--out",
+          "src/generated/hono-slides-manifest.ts",
+          "--components-out",
+          "src/generated/hono-slides-components.ts",
+          "--mount",
+          "/slides",
+        ],
+        cwd,
+        stdout: (line) => stdout.push(line),
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(stdout.join("\n")).toContain("Compiled 2 decks");
+      expect(stdout.join("\n")).toContain("Generated deck component registry to src/generated/hono-slides-components.ts");
+
+      const manifestOutput = await readFile(join(cwd, "src", "generated", "hono-slides-manifest.ts"), "utf8");
+      const internalName = /"name": "(Badge__intro_[a-z0-9]+)"/.exec(manifestOutput)?.[1];
+      expect(internalName).toBeTruthy();
+      expect(manifestOutput).not.toContain('"name": "Badge"');
+
+      const registryOutput = await readFile(join(cwd, "src", "generated", "hono-slides-components.ts"), "utf8");
+      expect(registryOutput).toContain('import { defineSlideComponents } from "hono-slides";');
+      expect(registryOutput).toContain('import { Badge as Badge__intro_');
+      expect(registryOutput).toContain('} from "../../decks/intro/components";');
+      expect(registryOutput).toContain(`"${internalName}": ${internalName}`);
+      expect(registryOutput).toContain("export const deckComponents = defineSlideComponents({");
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("reports usage errors without writing files", async () => {
     const cwd = await createFixture();
     const stderr: string[] = [];

@@ -1,10 +1,16 @@
 import type { AssetRef, CompiledDeck, CompiledSlide } from "../deck/model";
-import { builtInSlideComponents, defineSlideComponents, renderSlideNodes } from "./jsx-renderer";
+import { builtInSlideComponents, defineSlideComponents, renderSlideNodes, renderSlideNodesAsync } from "./jsx-renderer";
 import type { SlideComponentInput, SlideComponentRegistry } from "./jsx-renderer";
 
 export { defineSlideComponents };
 export { builtInSlideComponents };
-export type { SlideComponent, SlideComponentDefinition, SlideComponentInput, SlideComponentRegistry } from "./jsx-renderer";
+export type {
+  SlideComponent,
+  SlideComponentDefinition,
+  SlideComponentInput,
+  SlideComponentProps,
+  SlideComponentRegistry,
+} from "./jsx-renderer";
 
 export function renderCompiledDeck(
   deck: CompiledDeck,
@@ -16,6 +22,21 @@ export function renderCompiledDeck(
   return `<main class="hono-slides-stage hono-slides-deck" data-hono-slides-stage data-deck-slug="${escapeHtml(deck.slug)}">${deck.slides
     .map((slide) => renderCompiledSlide(slide, deck.assets, { components }))
     .join("\n")}</main>`;
+}
+
+export async function renderCompiledDeckAsync(
+  deck: CompiledDeck,
+  input: {
+    components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
+  } = {},
+): Promise<string> {
+  const components = normalizeComponents(input.components);
+  const slides = await Promise.all(
+    deck.slides.map((slide) => renderCompiledSlideAsync(slide, deck.assets, { components })),
+  );
+  return `<main class="hono-slides-stage hono-slides-deck" data-hono-slides-stage data-deck-slug="${escapeHtml(deck.slug)}">${slides.join(
+    "\n",
+  )}</main>`;
 }
 
 export function renderCompiledSlide(
@@ -33,6 +54,28 @@ export function renderCompiledSlide(
   const notesHtml = notes ? `<aside class="speaker-notes" hidden>${escapeHtml(notes)}</aside>` : "";
   const html = slide.nodes?.length
     ? renderSlideNodes(slide.nodes, { components: input.components, assets })
+    : rewriteLocalAssetUrls(slide.html, assets);
+  const style = slide.meta.background ? ` style="${escapeHtml(backgroundStyle(slide.meta.background, assets))}"` : "";
+  const transition = slide.meta.transition ? ` data-transition="${escapeHtml(safeClass(slide.meta.transition))}"` : "";
+
+  return `<section class="${classes}" data-slide-index="${slide.index}"${slide.meta.title ? ` aria-label="${escapeHtml(slide.meta.title)}"` : ""}${transition}${style}>${html}${notesHtml}</section>`;
+}
+
+export async function renderCompiledSlideAsync(
+  slide: CompiledSlide,
+  assets: AssetRef[] = [],
+  input: {
+    components?: SlideComponentRegistry;
+  } = {},
+): Promise<string> {
+  const layout = slide.meta.layout ?? "default";
+  const classes = ["slide", `layout-${safeClass(layout)}`, slide.meta.className ? safeClass(slide.meta.className) : ""]
+    .filter(Boolean)
+    .join(" ");
+  const notes = slide.notes ?? slide.meta.notes;
+  const notesHtml = notes ? `<aside class="speaker-notes" hidden>${escapeHtml(notes)}</aside>` : "";
+  const html = slide.nodes?.length
+    ? await renderSlideNodesAsync(slide.nodes, { components: input.components, assets })
     : rewriteLocalAssetUrls(slide.html, assets);
   const style = slide.meta.background ? ` style="${escapeHtml(backgroundStyle(slide.meta.background, assets))}"` : "";
   const transition = slide.meta.transition ? ` data-transition="${escapeHtml(safeClass(slide.meta.transition))}"` : "";
@@ -64,6 +107,37 @@ export function renderCompiledDeckPage(input: {
 <body>
   ${warnings}
   ${renderCompiledDeck(deck, { components: input.components })}
+  ${renderPresentationScript()}
+  ${input.liveReloadPath ? renderLiveReloadScript(input.liveReloadPath) : ""}
+  ${input.clientEntry ? renderClientEntryScript(input.clientEntry) : ""}
+</body>
+</html>`;
+}
+
+export async function renderCompiledDeckPageAsync(input: {
+  deck: CompiledDeck;
+  mountPath: string;
+  style?: string;
+  liveReloadPath?: string;
+  components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
+  clientEntry?: string;
+}): Promise<string> {
+  const { deck } = input;
+  const warnings = deck.warnings.length
+    ? `<aside class="hono-slides-warnings">${deck.warnings.map((warning) => `<p>${escapeHtml(warning.message)}</p>`).join("")}</aside>`
+    : "";
+
+  return `<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${escapeHtml(deck.meta.title ?? deck.slug)}</title>
+  <style>${basePresentationStyle()}${input.style ?? ""}</style>
+</head>
+<body>
+  ${warnings}
+  ${await renderCompiledDeckAsync(deck, { components: input.components })}
   ${renderPresentationScript()}
   ${input.liveReloadPath ? renderLiveReloadScript(input.liveReloadPath) : ""}
   ${input.clientEntry ? renderClientEntryScript(input.clientEntry) : ""}

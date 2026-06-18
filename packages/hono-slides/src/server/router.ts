@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { renderCompiledDeckPage } from "../renderer/compiled-render";
+import { renderCompiledDeckPageAsync } from "../renderer/compiled-render";
 import type { DeckSource } from "../deck/model";
 import type { SlideComponentInput, SlideComponentRegistry } from "../renderer/compiled-render";
 
@@ -48,7 +48,7 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
     if (!deck || (!isDevEnabled(options) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
     const mountPath = stripPathSuffix(c.req.path, `/${slug}/render`);
     return c.html(
-      renderCompiledDeckPage({
+      await renderCompiledDeckPageAsync({
         deck,
         mountPath,
         style: options.style,

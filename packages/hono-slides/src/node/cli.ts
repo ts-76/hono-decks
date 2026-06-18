@@ -14,20 +14,22 @@ export interface RunHonoSlidesCliResult {
 interface CompileCommandOptions {
   root?: string;
   out?: string;
+  componentsOut?: string;
   mountPath?: string;
 }
 
 const USAGE = `Usage:
-  hono-slides compile --root decks --out src/generated/hono-slides-manifest.ts [--mount /slides]
+  hono-slides compile --root decks --out src/generated/hono-slides-manifest.ts [--components-out src/generated/hono-slides-components.ts] [--mount /slides]
 
 Commands:
   compile, build   Compile local deck files into a generated manifest module.
 
 Options:
-  --root <path>    Deck root directory relative to the current working directory.
-  --out <path>     Output TypeScript manifest module path.
-  --mount <path>   Public mount path used for local asset URLs.
-  -h, --help       Show this help.`;
+  --root <path>            Deck root directory relative to the current working directory.
+  --out <path>             Output TypeScript manifest module path.
+  --components-out <path>  Output TypeScript component registry module path.
+  --mount <path>           Public mount path used for local asset URLs.
+  -h, --help               Show this help.`;
 
 export async function runHonoSlidesCli(input: RunHonoSlidesCliInput): Promise<RunHonoSlidesCliResult> {
   const stdout = input.stdout ?? (() => undefined);
@@ -74,9 +76,13 @@ export async function runHonoSlidesCli(input: RunHonoSlidesCliInput): Promise<Ru
       cwd: input.cwd,
       root,
       out,
+      componentsOut: parsed.options.componentsOut,
       mountPath: parsed.options.mountPath,
     });
     stdout(`Compiled ${manifest.decks.length} decks to ${out}`);
+    if (parsed.options.componentsOut) {
+      stdout(`Generated deck component registry to ${parsed.options.componentsOut}`);
+    }
     return { exitCode: 0 };
   } catch (error) {
     stderr(error instanceof Error ? error.message : String(error));
@@ -91,12 +97,13 @@ function parseCompileArgs(args: string[]): { options: CompileCommandOptions; err
     const arg = args[index];
     if (arg === "--help" || arg === "-h") return { options, help: true };
 
-    if (arg === "--root" || arg === "--out" || arg === "--mount") {
+    if (arg === "--root" || arg === "--out" || arg === "--components-out" || arg === "--mount") {
       const value = args[index + 1];
       if (!value || value.startsWith("--")) return { options, error: `Missing value for ${arg}` };
       index += 1;
       if (arg === "--root") options.root = value;
       if (arg === "--out") options.out = value;
+      if (arg === "--components-out") options.componentsOut = value;
       if (arg === "--mount") options.mountPath = value;
       continue;
     }

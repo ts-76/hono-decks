@@ -17,6 +17,7 @@
     "examples/basic": {
       "name": "@hono-slides/example-basic",
       "dependencies": {
+        "hono": "^4.10.7",
         "hono-slides": "workspace:*",
       },
     },

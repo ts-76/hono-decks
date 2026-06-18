@@ -1,7 +1,8 @@
 import { jsx } from "hono/jsx/jsx-runtime";
+import { HtmlEscapedCallbackPhase, resolveCallback } from "hono/utils/html";
 import type { SlideNode, SlidePropValue } from "../shared/types";
 
-export type SlideComponentProps = Record<string, SlidePropValue | SlideNode[] | undefined> & {
+export type SlideComponentProps = Record<string, unknown> & {
   children?: unknown;
 };
 
@@ -66,6 +67,17 @@ export function renderSlideNodes(
   return normalizeVoidElementSpacing(nodes.map((node) => String(renderSlideNode(node, input))).join(""));
 }
 
+export async function renderSlideNodesAsync(
+  nodes: SlideNode[],
+  input: {
+    components?: SlideComponentRegistry;
+    assets?: Array<{ sourcePath: string; publicPath: string; type: string }>;
+  } = {},
+): Promise<string> {
+  const rendered = await Promise.all(nodes.map((node) => renderJsxValue(renderSlideNode(node, input))));
+  return normalizeVoidElementSpacing(rendered.join(""));
+}
+
 function renderSlideNode(
   node: SlideNode,
   input: {
@@ -105,7 +117,7 @@ function renderComponentNode(
 
   const props = stripRuntimeProps(rewriteAssetProps(node.props, input.assets));
   const children = node.children.map((child) => renderSlideNode(child, input));
-  const element = jsx(definition.component, { ...props, children });
+  const element = definition.component({ ...props, children });
   if (!definition.client && node.props.client !== true) return element;
   const rendered = String(element);
 
@@ -114,6 +126,13 @@ function renderComponentNode(
     "data-hono-slides-props": JSON.stringify(props),
     dangerouslySetInnerHTML: { __html: rendered },
   });
+}
+
+async function renderJsxValue(value: unknown): Promise<string> {
+  const resolved = value instanceof Promise ? await value : value;
+  if (typeof resolved === "string") return resolved;
+  if (typeof resolved !== "object" || resolved === null) return String(resolved ?? "");
+  return resolveCallback(resolved as never, HtmlEscapedCallbackPhase.Stringify, false, {});
 }
 
 function renderComponentPlaceholder(node: Extract<SlideNode, { type: "component" }>): unknown {
