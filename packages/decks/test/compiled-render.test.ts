@@ -71,6 +71,25 @@ describe("compiled deck rendering", () => {
     expect(html).not.toContain("/edit");
   });
 
+  it("keeps a 1920x1080 deck canvas and scales it inside the iframe viewport", () => {
+    const html = renderCompiledDeckPage({ deck, mountPath: "/decks" });
+
+    expect(html).toContain('class="hono-decks-stage"');
+    expect(html).toContain('class="hono-decks-deck"');
+    expect(html).toContain('data-hono-decks-deck');
+    expect(html).toContain("--hono-decks-width:1920px");
+    expect(html).toContain("--hono-decks-height:1080px");
+    expect(html).toContain("html,body{margin:0;width:100%;height:100%;overflow:hidden}");
+    expect(html).toContain(".hono-decks-stage{width:100vw;height:100vh");
+    expect(html).toContain(".hono-decks-deck{display:grid;gap:1rem;padding:1rem;width:var(--hono-decks-width);height:var(--hono-decks-height)");
+    expect(html).toContain("transform-origin:left top");
+    expect(html).toContain("function fitDeck()");
+    expect(html).toContain("Math.min(bounds.width / DESIGN_WIDTH, bounds.height / DESIGN_HEIGHT)");
+    expect(html).toContain('deck.style.transform = "scale(" + scale + ")"');
+    expect(html).toContain('window.addEventListener("resize", fitDeck)');
+    expect(html).not.toContain("html,body{margin:0;width:var(--hono-decks-width);height:var(--hono-decks-height)");
+  });
+
   it("rewrites local relative asset image sources to manifest public paths", () => {
     const html = renderCompiledDeckPage({
       deck: {

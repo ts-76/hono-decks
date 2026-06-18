@@ -41,6 +41,13 @@ describe("decksRouter", () => {
     const html = await response.text();
     expect(html).toContain('data-hono-decks-viewer');
     expect(html).toContain('src="/slides/deck1/render"');
+    expect(html).toContain(".hono-decks-viewport{width:min(100vw,calc(100vh * 16 / 9));aspect-ratio:16/9");
+    expect(html).toContain(".hono-decks-frame-stage{width:100%;height:100%");
+    expect(html).toContain(".hono-decks-frame-stage iframe{width:100%;height:100%");
+    expect(html).not.toContain('width="1920"');
+    expect(html).not.toContain('height="1080"');
+    expect(html).not.toContain("DESIGN_WIDTH");
+    expect(html).not.toContain("stage.style.transform");
     expect(html).toContain('data-action="previous"');
     expect(html).toContain('data-action="next"');
     expect(html).toContain('data-action="fullscreen"');

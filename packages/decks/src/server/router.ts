@@ -325,8 +325,6 @@ function renderViewerFrame(input: { title: string; renderUrl: string }): DeckRen
         children: jsx("iframe", {
           title: input.title,
           src: input.renderUrl,
-          width: "1920",
-          height: "1080",
         }),
       }),
     }),
@@ -334,7 +332,7 @@ function renderViewerFrame(input: { title: string; renderUrl: string }): DeckRen
 }
 
 function renderViewerFrameHtml(input: { title: string; renderUrl: string }): string {
-  return `<div class="hono-decks-viewer-stage" data-hono-decks-frame><div class="hono-decks-viewport" data-viewer-viewport><div class="hono-decks-frame-stage" data-viewer-stage><iframe title="${escapeHtml(input.title)}" src="${escapeHtml(input.renderUrl)}" width="1920" height="1080"></iframe></div></div></div>`;
+  return `<div class="hono-decks-viewer-stage" data-hono-decks-frame><div class="hono-decks-viewport" data-viewer-viewport><div class="hono-decks-frame-stage" data-viewer-stage><iframe title="${escapeHtml(input.title)}" src="${escapeHtml(input.renderUrl)}"></iframe></div></div></div>`;
 }
 
 function renderViewerControls(): DeckRenderable {
@@ -393,9 +391,9 @@ body{overflow:hidden}
 [data-hono-decks-viewer]{min-height:100vh;display:grid;place-items:center;box-sizing:border-box}
 .hono-decks-viewer-shell{display:grid;place-items:center;gap:12px;min-width:0;min-height:0}
 .hono-decks-viewer-stage{display:grid;place-items:center;min-width:0;min-height:0}
-.hono-decks-viewport{width:min(100vw,calc(100vh * 16 / 9));height:min(100vh,calc(100vw * 9 / 16));position:relative;overflow:hidden}
-.hono-decks-frame-stage{width:1920px;height:1080px;transform-origin:top left}
-.hono-decks-frame-stage iframe{width:1920px;height:1080px;border:0;display:block;background:#0b1020}
+.hono-decks-viewport{width:min(100vw,calc(100vh * 16 / 9));aspect-ratio:16/9;position:relative;overflow:hidden}
+.hono-decks-frame-stage{width:100%;height:100%}
+.hono-decks-frame-stage iframe{width:100%;height:100%;border:0;display:block;background:#0b1020}
 .hono-decks-viewer-controls{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:8px;align-items:center}
 .hono-decks-viewer-toc button,.hono-decks-viewer-controls button{font:inherit}`;
 }
@@ -405,22 +403,9 @@ function renderViewerScript(): string {
 (() => {
   const root = document.querySelector("[data-hono-decks-viewer]");
   const viewport = document.querySelector("[data-viewer-viewport]");
-  const stage = document.querySelector("[data-viewer-stage]");
   const iframe = document.querySelector("iframe");
   const position = document.querySelector("[data-slide-position]");
-  const DESIGN_WIDTH = 1920;
-  const DESIGN_HEIGHT = 1080;
   let activeSlideIndex = 0;
-  function resize() {
-    if (!viewport || !stage) return;
-    const bounds = viewport.parentElement?.getBoundingClientRect();
-    const availableWidth = bounds?.width || window.innerWidth;
-    const availableHeight = bounds?.height || window.innerHeight;
-    const scale = Math.min(availableWidth / DESIGN_WIDTH, availableHeight / DESIGN_HEIGHT);
-    stage.style.transform = "scale(" + scale + ")";
-    viewport.style.width = String(DESIGN_WIDTH * scale) + "px";
-    viewport.style.height = String(DESIGN_HEIGHT * scale) + "px";
-  }
 
   function sendCommand(action, index) {
     iframe?.contentWindow?.postMessage({ type: "hono-decks:command", action, index }, "*");
@@ -453,7 +438,6 @@ function renderViewerScript(): string {
     });
   });
   viewport?.addEventListener("click", viewerClick);
-  window.addEventListener("resize", resize);
   window.addEventListener("message", (event) => {
     const message = event.data;
     if (!message || message.type !== "hono-decks:state") return;
@@ -465,7 +449,6 @@ function renderViewerScript(): string {
     if (event.key === "ArrowLeft") sendCommand("previous");
     if (event.key === "f") void toggleViewerFullscreen();
   });
-  resize();
 })();
   </script>`;
 }
