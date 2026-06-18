@@ -2,6 +2,8 @@
 
 This document tracks the sample and package-level verification cases that should exist before `@hono/decks` is treated as a general slide system. The goal is to keep the official examples small but representative: each feature should have at least one package test and, when useful, one Worker sample route or deck.
 
+For the recommended implementation order, see [Verification Priorities](./verification-priorities.md).
+
 Status:
 
 - `done`: covered by current package or sample tests.
