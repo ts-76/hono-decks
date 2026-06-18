@@ -30,24 +30,17 @@ bun run dev
 
 ```ts
 import { Hono } from "hono";
-import { jsx } from "hono/jsx/jsx-runtime";
-import { defineSlideComponents, honoSlidesRouter, manifestDeckSource } from "hono-slides";
+import { honoSlidesRouter, manifestDeckSource } from "hono-slides";
+import { deckComponents } from "./generated/deck-components";
 import { deckManifest } from "./generated/deck-manifest";
 
 const app = new Hono();
-const components = defineSlideComponents({
-  Badge: (props) =>
-    jsx("p", {
-      class: "badge",
-      children: String(props.label),
-    }),
-});
 
 app.route(
   "/slides",
   honoSlidesRouter({
     source: manifestDeckSource(deckManifest),
-    components,
+    components: deckComponents,
   }),
 );
 
@@ -57,10 +50,16 @@ export default app;
 local deck files から manifest module を生成する CLI も package 側にあります。ファイル読み取りと MDX parse は build-time に閉じ、Worker runtime は生成済み manifest を import します。
 
 ```bash
-hono-slides compile --root decks --out src/generated/hono-slides-manifest.ts --mount /slides
+hono-slides compile \
+  --root decks \
+  --out src/generated/hono-slides-manifest.ts \
+  --components-out src/generated/hono-slides-components.ts \
+  --mount /slides
 ```
 
-MDX の JSX component は登録済み component のみ描画されます。`import` / `export` / JavaScript expression は実行せず warning として扱うため、Worker runtime に任意コード実行を持ち込みません。
+`--components-out` を指定すると、`decks/*/components/index.tsx` または `index.ts` の大文字 named export を deck component として取り込みます。同名 component は build-time に deck slug と source module path から作った stable hash 名へ rewrite されるため、複数 deck の `<Badge />` が衝突しません。
+
+MDX の JSX component は登録済み component のみ描画されます。`import` / `export` / JavaScript expression はまだ実行せず warning として扱うため、Worker runtime に任意コード実行を持ち込みません。
 
 ```mdx
 # Component Slide
@@ -93,12 +92,15 @@ examples/basic/
   decks/
     sample/
       deck.mdx
+      components/
+        index.tsx
   src/
     generated/
+      deck-components.ts
       deck-manifest.ts
 ```
 
-`dev`、`typecheck`、`test`、`deploy` は事前に `bun run slides:compile` を実行し、`decks/sample/deck.mdx` から `src/generated/deck-manifest.ts` を更新します。Worker runtime は生成済み manifest を import するだけで、file system の読み取りは build-time CLI に閉じています。
+`dev`、`typecheck`、`test`、`deploy` は事前に `bun run slides:compile` を実行し、`decks/sample/deck.mdx` から `src/generated/deck-manifest.ts` と `src/generated/deck-components.ts` を更新します。Worker runtime は生成済み manifest と component registry を import するだけで、file system の読み取りは build-time CLI に閉じています。
 
 ```bash
 bun run --cwd examples/basic dev

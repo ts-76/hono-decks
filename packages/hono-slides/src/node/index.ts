@@ -7,6 +7,11 @@ import { compileMarkdown } from "../compiler/compiler";
 import { createDevDeckRuntime } from "../runtime/dev-runtime";
 import { resolveDeckFiles } from "../routing/file-routing";
 import { buildDeckManifest, emitDeckManifestModule } from "../generator/manifest-generator";
+import {
+  applyDeckComponentRegistry,
+  emitDeckComponentRegistryModule,
+} from "../generator/component-registry";
+import type { DeckComponentExport, ResolvedDeckComponentExport } from "../generator/component-registry";
 import { honoSlidesRouter } from "../server/router";
 
 export interface BuildDeckManifestFromFileSystemInput {
@@ -20,8 +25,14 @@ export interface WriteDeckManifestModuleInput {
   outFile: string;
 }
 
+export interface WriteDeckComponentRegistryModuleInput {
+  components: ResolvedDeckComponentExport[];
+  outFile: string;
+}
+
 export interface CompileDecksInput extends BuildDeckManifestFromFileSystemInput {
   out: string;
+  componentsOut?: string;
 }
 
 export interface CreateLocalDeckIOInput {
@@ -73,11 +84,40 @@ export async function createLocalDevSlidesApp(input: CreateLocalDevSlidesAppInpu
 
 export async function compileDecks(input: CompileDecksInput): Promise<DeckManifest> {
   const out = normalizeRelativePath(input.out, "Output path");
-  const manifest = await buildDeckManifestFromFileSystem(input);
+  const componentsOut = input.componentsOut
+    ? normalizeRelativePath(input.componentsOut, "Components output path")
+    : undefined;
+  const root = normalizeDeckRoot(input.root);
+  const paths = await listFiles(input.cwd, join(input.cwd, root));
+  const initialManifest = await buildDeckManifestFromPaths({
+    cwd: input.cwd,
+    root,
+    paths,
+    mountPath: input.mountPath,
+  });
+  const componentExports = componentsOut
+    ? await discoverDeckComponentExports({
+        cwd: input.cwd,
+        root,
+        paths,
+        componentsOut,
+      })
+    : [];
+  const registry = applyDeckComponentRegistry({
+    manifest: initialManifest,
+    components: componentExports,
+  });
+  const manifest = registry.manifest;
   await writeDeckManifestModule({
     manifest,
     outFile: join(input.cwd, out),
   });
+  if (componentsOut) {
+    await writeDeckComponentRegistryModule({
+      components: registry.components,
+      outFile: join(input.cwd, componentsOut),
+    });
+  }
   return manifest;
 }
 
@@ -127,9 +167,23 @@ export async function buildDeckManifestFromFileSystem(
   const rootDir = join(input.cwd, root);
   const paths = await listFiles(input.cwd, rootDir);
 
-  return buildDeckManifest({
+  return buildDeckManifestFromPaths({
+    cwd: input.cwd,
     root,
     paths,
+    mountPath: input.mountPath,
+  });
+}
+
+async function buildDeckManifestFromPaths(input: {
+  cwd: string;
+  root: string;
+  paths: string[];
+  mountPath?: string;
+}): Promise<DeckManifest> {
+  return buildDeckManifest({
+    root: input.root,
+    paths: input.paths,
     mountPath: input.mountPath,
     readText: (path) => readFile(join(input.cwd, path), "utf8"),
     readBinary: (path) => readFile(join(input.cwd, path)),
@@ -139,6 +193,69 @@ export async function buildDeckManifestFromFileSystem(
 export async function writeDeckManifestModule(input: WriteDeckManifestModuleInput): Promise<void> {
   await mkdir(dirname(input.outFile), { recursive: true });
   await writeFile(input.outFile, emitDeckManifestModule(input.manifest), "utf8");
+}
+
+export async function writeDeckComponentRegistryModule(input: WriteDeckComponentRegistryModuleInput): Promise<void> {
+  await mkdir(dirname(input.outFile), { recursive: true });
+  await writeFile(input.outFile, emitDeckComponentRegistryModule(input.components), "utf8");
+}
+
+async function discoverDeckComponentExports(input: {
+  cwd: string;
+  root: string;
+  paths: string[];
+  componentsOut: string;
+}): Promise<DeckComponentExport[]> {
+  const resolved = resolveDeckFiles(input.paths, input.root);
+  const components: DeckComponentExport[] = [];
+
+  for (const deck of resolved) {
+    if (deck.kind !== "directory") continue;
+    const moduleSourcePath = findComponentModule(input.paths, input.root, deck.slug);
+    if (!moduleSourcePath) continue;
+    const source = await readFile(join(input.cwd, moduleSourcePath), "utf8");
+    const modulePath = toImportPath(input.componentsOut, moduleSourcePath);
+    components.push(
+      ...extractComponentExportNames(source).map((exportName) => ({
+        slug: deck.slug,
+        sourcePath: moduleSourcePath,
+        modulePath,
+        exportName,
+      })),
+    );
+  }
+
+  return components;
+}
+
+function findComponentModule(paths: string[], root: string, slug: string): string | undefined {
+  const base = `${normalizePath(root).replace(/\/$/, "")}/${slug}/components/index`;
+  return paths.find((path) => {
+    const normalized = normalizePath(path);
+    return normalized === `${base}.tsx` || normalized === `${base}.ts` || normalized === `${base}.jsx` || normalized === `${base}.js`;
+  });
+}
+
+function extractComponentExportNames(source: string): string[] {
+  const names = new Set<string>();
+  for (const match of source.matchAll(/\bexport\s+function\s+([A-Z][A-Za-z0-9_]*)\b/g)) {
+    names.add(match[1]);
+  }
+  for (const match of source.matchAll(/\bexport\s+const\s+([A-Z][A-Za-z0-9_]*)\b/g)) {
+    names.add(match[1]);
+  }
+  return [...names].sort();
+}
+
+function toImportPath(fromFile: string, targetFile: string): string {
+  const fromDir = dirname(normalizePath(fromFile));
+  const target = stripScriptExtension(normalizePath(targetFile));
+  const relativePath = normalizePath(relative(fromDir, target));
+  return relativePath.startsWith(".") ? relativePath : `./${relativePath}`;
+}
+
+function stripScriptExtension(path: string): string {
+  return path.replace(/\/index\.(tsx|ts|jsx|js)$/, "").replace(/\.(tsx|ts|jsx|js)$/, "");
 }
 
 async function listDeckEntries(input: CreateLocalDeckIOInput): Promise<DeckFileEntry[]> {

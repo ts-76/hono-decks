@@ -6,13 +6,17 @@ export {
   builtInSlideComponents,
   defineSlideComponents,
   renderCompiledDeck,
+  renderCompiledDeckAsync,
   renderCompiledDeckPage,
+  renderCompiledDeckPageAsync,
   renderCompiledSlide,
+  renderCompiledSlideAsync,
 } from "./renderer/compiled-render";
 export type {
   SlideComponent,
   SlideComponentDefinition,
   SlideComponentInput,
+  SlideComponentProps,
   SlideComponentRegistry,
 } from "./renderer/compiled-render";
 export { compileMarkdown } from "./compiler/compiler";
@@ -20,6 +24,13 @@ export { createDevDeckRuntime } from "./runtime/dev-runtime";
 export type { DevDeckRuntime, DevDeckRuntimeInput } from "./runtime/dev-runtime";
 export { buildDeckManifest, emitDeckManifestModule } from "./generator/manifest-generator";
 export type { BuildDeckManifestInput } from "./generator/manifest-generator";
+export { applyDeckComponentRegistry, emitDeckComponentRegistryModule } from "./generator/component-registry";
+export type {
+  ApplyDeckComponentRegistryInput,
+  ApplyDeckComponentRegistryResult,
+  DeckComponentExport,
+  ResolvedDeckComponentExport,
+} from "./generator/component-registry";
 export { createPreviewEventHub } from "./runtime/preview-events";
 export type { PreviewEvent, PreviewEventHub, PreviewEventType } from "./runtime/preview-events";
 export { honoSlidesRouter } from "./server/router";

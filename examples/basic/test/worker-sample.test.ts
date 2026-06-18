@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { Badge } from "../decks/sample/components";
+import { deckComponents } from "../src/generated/deck-components";
 import { deckManifest } from "../src/generated/deck-manifest";
 
 async function sampleApp() {
@@ -11,6 +13,11 @@ describe("sample Worker app", () => {
     expect(deckManifest.decks[0]?.slug).toBe("sample");
     expect(deckManifest.decks[0]?.sourcePath).toBe("decks/sample/deck.mdx");
     expect(deckManifest.decks[0]?.kind).toBe("directory");
+  });
+
+  it("exports slide components from the sample deck directory", () => {
+    expect(typeof Badge).toBe("function");
+    expect(Object.keys(deckComponents)).toEqual([expect.stringMatching(/^Badge__sample_[a-z0-9]+$/)]);
   });
 
   it("routes the deployed root to the compiled deck index", async () => {

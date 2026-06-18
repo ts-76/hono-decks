@@ -53,7 +53,7 @@ export const deckManifest = {
             },
             {
               "type": "component",
-              "name": "Badge",
+              "name": "Badge__sample_20tb30",
               "props": {
                 "label": "Rendered by a Hono JSX component"
               },
@@ -71,7 +71,7 @@ export const deckManifest = {
             },
             {
               "id": "sample-0-1",
-              "name": "Badge",
+              "name": "Badge__sample_20tb30",
               "props": {
                 "label": "Rendered by a Hono JSX component"
               },

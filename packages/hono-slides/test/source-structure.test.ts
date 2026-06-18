@@ -12,7 +12,9 @@ describe("source directory structure", () => {
     );
     await expect(readdir(join(srcRoot, "client"))).resolves.toContain("islands.ts");
     await expect(readdir(join(srcRoot, "compiler"))).resolves.toContain("compiler.ts");
-    await expect(readdir(join(srcRoot, "generator"))).resolves.toContain("manifest-generator.ts");
+    await expect(readdir(join(srcRoot, "generator"))).resolves.toEqual(
+      expect.arrayContaining(["component-registry.ts", "manifest-generator.ts"]),
+    );
     await expect(readdir(join(srcRoot, "source"))).resolves.toContain("manifest-source.ts");
     await expect(readdir(join(srcRoot, "routing"))).resolves.toContain("file-routing.ts");
 
