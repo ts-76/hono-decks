@@ -171,6 +171,8 @@ examples/basic/
 
 `dev`、`typecheck`、`test`、`deploy` は事前に `bun run decks:compile` を実行し、`decks/sample/deck.mdx` から `src/generated/decks.ts` と slide module 群を更新します。sample ではさらに deck-local な `decks/sample/components/client/index.tsx` を browser bundle 化して `src/generated/client-entry.ts` に埋め込み、`client: true` component を `hono/jsx/dom` で hydrate します。Worker runtime は生成済み router/client asset を import するだけで、file system の読み取りは build-time CLI に閉じています。
 
+今後 sample で検証する media、embed、code block、animation、accessibility、export などの項目は [Verification Matrix](docs/verification-matrix.md) にまとめています。
+
 ```bash
 bun run --cwd examples/basic dev
 ```
