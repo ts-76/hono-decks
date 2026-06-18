@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
 import type { CompiledDeck } from "../src/deck/model";
-import { manifestDeckSource } from "../src/deck/manifest-source";
+import { manifestDeckSource } from "../src/source/manifest-source";
 import { honoSlidesRouter } from "../src/server/router";
 
 const deck = {

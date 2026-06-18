@@ -1,4 +1,4 @@
-import type { DeckKind } from "./model";
+import type { DeckKind } from "../deck/model";
 
 export interface ResolvedDeckFile {
   slug: string;

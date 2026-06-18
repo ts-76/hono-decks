@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { manifestDeckSource } from "../src/deck/manifest-source";
+import { manifestDeckSource } from "../src/source/manifest-source";
 import type { CompiledDeck } from "../src/deck/model";
 
 const deck = {

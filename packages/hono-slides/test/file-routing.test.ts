@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveDeckFiles } from "../src/deck/file-routing";
+import { resolveDeckFiles } from "../src/routing/file-routing";
 
 describe("resolveDeckFiles", () => {
   it("resolves directory decks and single-file decks", () => {

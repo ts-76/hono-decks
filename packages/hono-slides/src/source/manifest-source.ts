@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import type { AssetRef, CompiledDeck, DeckEntry, DeckManifest, DeckSource } from "./model";
+import type { AssetRef, CompiledDeck, DeckEntry, DeckManifest, DeckSource } from "../deck/model";
 
 export function manifestDeckSource(manifest: DeckManifest): DeckSource {
   const decks = new Map(manifest.decks.map((deck) => [deck.slug, deck]));

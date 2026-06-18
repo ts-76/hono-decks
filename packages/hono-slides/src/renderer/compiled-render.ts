@@ -1,4 +1,4 @@
-import type { AssetRef, CompiledDeck, CompiledSlide } from "./model";
+import type { AssetRef, CompiledDeck, CompiledSlide } from "../deck/model";
 
 export function renderCompiledDeck(deck: CompiledDeck): string {
   return `<main class="hono-slides-stage hono-slides-deck" data-hono-slides-stage data-deck-slug="${escapeHtml(deck.slug)}">${deck.slides
