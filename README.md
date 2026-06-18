@@ -80,9 +80,15 @@ bun run --cwd examples/basic dev
 
 ## Architecture
 
-MVP では parse と view の層を中心にしています。
+MVP では parse と view の層を中心にしています。`deck` は domain model に絞り、カテゴリの異なる処理は別ディレクトリに分けています。
 
-- parse/compile: `packages/hono-slides/src/deck`
+- domain model: `packages/hono-slides/src/deck`
+- parse: `packages/hono-slides/src/parser`
+- render: `packages/hono-slides/src/renderer`
+- compile: `packages/hono-slides/src/compiler`
+- manifest generation: `packages/hono-slides/src/generator`
+- manifest source adapter: `packages/hono-slides/src/source`
+- file routing: `packages/hono-slides/src/routing`
 - runtime/view: `packages/hono-slides/src/server`, `packages/hono-slides/src/runtime`
 - Node-only local I/O: `packages/hono-slides/src/node`
 

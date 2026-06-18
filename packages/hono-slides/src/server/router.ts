@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { renderCompiledDeckPage } from "../deck/compiled-render";
+import { renderCompiledDeckPage } from "../renderer/compiled-render";
 import type { DeckSource } from "../deck/model";
 
 export interface HonoSlidesRouterExtension {

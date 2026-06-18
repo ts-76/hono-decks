@@ -3,10 +3,10 @@ import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { Hono } from "hono";
 import type { DeckFileChange, DeckFileEntry, DeckManifest, LocalDeckIO } from "../deck/model";
-import { compileMarkdown } from "../deck/compiler";
+import { compileMarkdown } from "../compiler/compiler";
 import { createDevDeckRuntime } from "../runtime/dev-runtime";
-import { resolveDeckFiles } from "../deck/file-routing";
-import { buildDeckManifest, emitDeckManifestModule } from "../deck/manifest-generator";
+import { resolveDeckFiles } from "../routing/file-routing";
+import { buildDeckManifest, emitDeckManifestModule } from "../generator/manifest-generator";
 import { honoSlidesRouter } from "../server/router";
 
 export interface BuildDeckManifestFromFileSystemInput {

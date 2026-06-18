@@ -1,6 +1,6 @@
 import type { Context, MiddlewareHandler } from "hono";
-import { parseDeck } from "../deck/parser";
-import { renderDeck } from "../deck/render";
+import { parseDeck } from "../parser/parser";
+import { renderDeck } from "../renderer/render";
 import type { SlideDeck } from "../shared/types";
 
 declare module "hono" {

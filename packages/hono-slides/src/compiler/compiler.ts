@@ -1,6 +1,6 @@
-import { CompileError } from "./model";
-import { parseDeck } from "./parser";
-import { renderBlock } from "./render-block";
+import { CompileError } from "../deck/model";
+import { parseDeck } from "../parser/parser";
+import { renderBlock } from "../renderer/render-block";
 import type {
   CompileDeckInput,
   CompiledDeck,
@@ -9,7 +9,7 @@ import type {
   DeckFrontmatter,
   SlideFrontmatter,
   AssetRef,
-} from "./model";
+} from "../deck/model";
 import type { SlideBlock } from "../shared/types";
 
 export async function compileMarkdown(input: CompileDeckInput): Promise<CompiledDeck> {

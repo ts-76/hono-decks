@@ -1,6 +1,6 @@
-import { compileMarkdown } from "./compiler";
-import type { AssetRef, DeckManifest } from "./model";
-import { resolveDeckFiles } from "./file-routing";
+import { compileMarkdown } from "../compiler/compiler";
+import type { AssetRef, DeckManifest } from "../deck/model";
+import { resolveDeckFiles } from "../routing/file-routing";
 
 export interface BuildDeckManifestInput {
   root: string;

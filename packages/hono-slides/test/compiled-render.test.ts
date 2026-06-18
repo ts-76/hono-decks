@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { renderCompiledDeck, renderCompiledDeckPage } from "../src/deck/compiled-render";
+import { renderCompiledDeck, renderCompiledDeckPage } from "../src/renderer/compiled-render";
 import type { CompiledDeck } from "../src/deck/model";
 
 const deck = {
