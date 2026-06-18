@@ -2,6 +2,19 @@ export { honoSlides, renderDeckPage } from "./server/middleware";
 export type { HonoSlidesOptions } from "./server/middleware";
 export { parseDeck } from "./parser/parser";
 export { renderDeck, renderSlide } from "./renderer/render";
+export {
+  builtInSlideComponents,
+  defineSlideComponents,
+  renderCompiledDeck,
+  renderCompiledDeckPage,
+  renderCompiledSlide,
+} from "./renderer/compiled-render";
+export type {
+  SlideComponent,
+  SlideComponentDefinition,
+  SlideComponentInput,
+  SlideComponentRegistry,
+} from "./renderer/compiled-render";
 export { compileMarkdown } from "./compiler/compiler";
 export { createDevDeckRuntime } from "./runtime/dev-runtime";
 export type { DevDeckRuntime, DevDeckRuntimeInput } from "./runtime/dev-runtime";
@@ -32,4 +45,4 @@ export type {
   LocalDeckIO,
   SlideFrontmatter,
 } from "./deck/model";
-export type { Slide, SlideBlock, SlideDeck } from "./shared/types";
+export type { Slide, SlideBlock, SlideDeck, SlideNode, SlidePropValue } from "./shared/types";

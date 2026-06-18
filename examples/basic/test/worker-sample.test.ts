@@ -45,6 +45,8 @@ describe("sample Worker app", () => {
     const html = await response.text();
     expect(html).toContain('class="mdx-hero');
     expect(html).toContain("<h1>MDX-like components</h1>");
+    expect(html).toContain('class="sample-badge"');
+    expect(html).toContain("Rendered by a Hono JSX component");
     expect(html).not.toContain('MDX component "Hero" is rendered as a placeholder.');
     expect(html).not.toContain("mdx-component");
   });

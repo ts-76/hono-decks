@@ -1,6 +1,6 @@
 # hono-slides
 
-Hono + Cloudflare Workers で動く Markdown/MDX-like slide runtime です。
+Hono + Cloudflare Workers で動く Markdown/MDX slide runtime です。Markdown/MDX を build-time に manifest 化し、Worker runtime では `hono/jsx` component registry を使って描画します。
 
 このリポジトリは monorepo です。ライブラリ本体とサンプル Worker を分けています。
 
@@ -30,25 +30,58 @@ bun run dev
 
 ```ts
 import { Hono } from "hono";
-import { honoSlidesRouter, manifestDeckSource } from "hono-slides";
+import { jsx } from "hono/jsx/jsx-runtime";
+import { defineSlideComponents, honoSlidesRouter, manifestDeckSource } from "hono-slides";
 import { deckManifest } from "./generated/deck-manifest";
 
 const app = new Hono();
+const components = defineSlideComponents({
+  Badge: (props) =>
+    jsx("p", {
+      class: "badge",
+      children: String(props.label),
+    }),
+});
 
 app.route(
   "/slides",
   honoSlidesRouter({
     source: manifestDeckSource(deckManifest),
+    components,
   }),
 );
 
 export default app;
 ```
 
-local deck files から manifest module を生成する CLI も package 側にあります。
+local deck files から manifest module を生成する CLI も package 側にあります。ファイル読み取りと MDX parse は build-time に閉じ、Worker runtime は生成済み manifest を import します。
 
 ```bash
 hono-slides compile --root decks --out src/generated/hono-slides-manifest.ts --mount /slides
+```
+
+MDX の JSX component は登録済み component のみ描画されます。`import` / `export` / JavaScript expression は実行せず warning として扱うため、Worker runtime に任意コード実行を持ち込みません。
+
+```mdx
+# Component Slide
+
+<Badge label="Rendered by Hono JSX" />
+```
+
+client side interactivity が必要な component は island として出力し、ユーザー側の client bundle から `hono/jsx/dom` で hydrate します。
+
+```tsx
+import { useState } from "hono/jsx";
+import { hydrateSlideIslands } from "hono-slides/client";
+
+function Counter() {
+  const [count, setCount] = useState(0);
+  return <button onClick={() => setCount(count + 1)}>{count}</button>;
+}
+
+hydrateSlideIslands({
+  components: { Counter },
+});
 ```
 
 ## Basic Example
@@ -85,6 +118,7 @@ MVP では parse と view の層を中心にしています。`deck` は domain 
 - domain model: `packages/hono-slides/src/deck`
 - parse: `packages/hono-slides/src/parser`
 - render: `packages/hono-slides/src/renderer`
+- client islands: `packages/hono-slides/src/client`
 - compile: `packages/hono-slides/src/compiler`
 - manifest generation: `packages/hono-slides/src/generator`
 - manifest source adapter: `packages/hono-slides/src/source`

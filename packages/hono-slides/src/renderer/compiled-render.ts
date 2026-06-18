@@ -1,19 +1,39 @@
 import type { AssetRef, CompiledDeck, CompiledSlide } from "../deck/model";
+import { builtInSlideComponents, defineSlideComponents, renderSlideNodes } from "./jsx-renderer";
+import type { SlideComponentInput, SlideComponentRegistry } from "./jsx-renderer";
 
-export function renderCompiledDeck(deck: CompiledDeck): string {
+export { defineSlideComponents };
+export { builtInSlideComponents };
+export type { SlideComponent, SlideComponentDefinition, SlideComponentInput, SlideComponentRegistry } from "./jsx-renderer";
+
+export function renderCompiledDeck(
+  deck: CompiledDeck,
+  input: {
+    components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
+  } = {},
+): string {
+  const components = normalizeComponents(input.components);
   return `<main class="hono-slides-stage hono-slides-deck" data-hono-slides-stage data-deck-slug="${escapeHtml(deck.slug)}">${deck.slides
-    .map((slide) => renderCompiledSlide(slide, deck.assets))
+    .map((slide) => renderCompiledSlide(slide, deck.assets, { components }))
     .join("\n")}</main>`;
 }
 
-export function renderCompiledSlide(slide: CompiledSlide, assets: AssetRef[] = []): string {
+export function renderCompiledSlide(
+  slide: CompiledSlide,
+  assets: AssetRef[] = [],
+  input: {
+    components?: SlideComponentRegistry;
+  } = {},
+): string {
   const layout = slide.meta.layout ?? "default";
   const classes = ["slide", `layout-${safeClass(layout)}`, slide.meta.className ? safeClass(slide.meta.className) : ""]
     .filter(Boolean)
     .join(" ");
   const notes = slide.notes ?? slide.meta.notes;
   const notesHtml = notes ? `<aside class="speaker-notes" hidden>${escapeHtml(notes)}</aside>` : "";
-  const html = rewriteLocalAssetUrls(slide.html, assets);
+  const html = slide.nodes?.length
+    ? renderSlideNodes(slide.nodes, { components: input.components, assets })
+    : rewriteLocalAssetUrls(slide.html, assets);
   const style = slide.meta.background ? ` style="${escapeHtml(backgroundStyle(slide.meta.background, assets))}"` : "";
   const transition = slide.meta.transition ? ` data-transition="${escapeHtml(safeClass(slide.meta.transition))}"` : "";
 
@@ -25,6 +45,8 @@ export function renderCompiledDeckPage(input: {
   mountPath: string;
   style?: string;
   liveReloadPath?: string;
+  components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
+  clientEntry?: string;
 }): string {
   const { deck } = input;
   const warnings = deck.warnings.length
@@ -41,11 +63,21 @@ export function renderCompiledDeckPage(input: {
 </head>
 <body>
   ${warnings}
-  ${renderCompiledDeck(deck)}
+  ${renderCompiledDeck(deck, { components: input.components })}
   ${renderPresentationScript()}
   ${input.liveReloadPath ? renderLiveReloadScript(input.liveReloadPath) : ""}
+  ${input.clientEntry ? renderClientEntryScript(input.clientEntry) : ""}
 </body>
 </html>`;
+}
+
+function normalizeComponents(
+  components: SlideComponentRegistry | Record<string, SlideComponentInput> | undefined,
+): SlideComponentRegistry | undefined {
+  return {
+    ...builtInSlideComponents,
+    ...(components ? defineSlideComponents(components) : {}),
+  };
 }
 
 function basePresentationStyle(): string {
@@ -148,6 +180,10 @@ function renderLiveReloadScript(eventsPath: string): string {
   } catch {}
 })();
 </script>`;
+}
+
+function renderClientEntryScript(clientEntry: string): string {
+  return `<script type="module" src="${escapeHtml(clientEntry)}"></script>`;
 }
 
 function safeClass(value: string): string {

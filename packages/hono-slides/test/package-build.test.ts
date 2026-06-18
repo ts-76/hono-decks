@@ -24,6 +24,10 @@ describe("package build metadata", () => {
         types: "./dist/cli.d.ts",
         import: "./dist/cli.js",
       },
+      "./client": {
+        types: "./dist/client.d.ts",
+        import: "./dist/client.js",
+      },
       "./node": {
         types: "./dist/node.d.ts",
         import: "./dist/node.js",

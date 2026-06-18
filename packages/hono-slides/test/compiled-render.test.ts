@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { renderCompiledDeck, renderCompiledDeckPage } from "../src/renderer/compiled-render";
+import { jsx } from "hono/jsx/jsx-runtime";
+import { defineSlideComponents, renderCompiledDeck, renderCompiledDeckPage } from "../src/renderer/compiled-render";
 import type { CompiledDeck } from "../src/deck/model";
 
 const deck = {
@@ -153,5 +154,76 @@ describe("compiled deck rendering", () => {
     });
 
     expect(html).toContain('style="background-image:url(&quot;/slides/deck1/assets/bg.png&quot;)"');
+  });
+
+  it("renders registered Hono JSX components from compiled slide nodes", () => {
+    const html = renderCompiledDeckPage({
+      deck: {
+        ...deck,
+        slides: [
+          {
+            ...deck.slides[0],
+            nodes: [
+              {
+                type: "component",
+                name: "Columns",
+                props: { gap: "wide" },
+                children: [
+                  { type: "element", tag: "div", props: {}, children: [{ type: "text", value: "Left" }] },
+                  { type: "element", tag: "div", props: {}, children: [{ type: "text", value: "Right" }] },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      mountPath: "/slides",
+      components: defineSlideComponents({
+        Columns: (props) =>
+          jsx("section", {
+            class: `columns columns-${String(props.gap)}`,
+            children: props.children,
+          }),
+      }),
+    });
+
+    expect(html).toContain('class="columns columns-wide"');
+    expect(html).toContain("<div>Left</div>");
+    expect(html).toContain("<div>Right</div>");
+    expect(html).not.toContain("mdx-component");
+  });
+
+  it("marks client slide components as islands and loads the configured client entry", () => {
+    const html = renderCompiledDeckPage({
+      deck: {
+        ...deck,
+        slides: [
+          {
+            ...deck.slides[0],
+            nodes: [
+              {
+                type: "component",
+                name: "Counter",
+                props: { label: "Clicks", client: true },
+                children: [],
+              },
+            ],
+          },
+        ],
+      },
+      mountPath: "/slides",
+      clientEntry: "/assets/slides.client.js",
+      components: defineSlideComponents({
+        Counter: {
+          client: true,
+          component: (props) => jsx("button", { type: "button", children: String(props.label) }),
+        },
+      }),
+    });
+
+    expect(html).toContain('data-hono-slides-island="Counter"');
+    expect(html).toContain('data-hono-slides-props="{&quot;label&quot;:&quot;Clicks&quot;}"');
+    expect(html).toContain('<script type="module" src="/assets/slides.client.js"></script>');
+    expect(html).toContain("<button type=\"button\">Clicks</button>");
   });
 });

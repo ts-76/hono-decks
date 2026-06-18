@@ -10,7 +10,7 @@ import type {
   SlideFrontmatter,
   AssetRef,
 } from "../deck/model";
-import type { SlideBlock } from "../shared/types";
+import type { SlideBlock, SlideNode } from "../shared/types";
 
 export async function compileMarkdown(input: CompileDeckInput): Promise<CompiledDeck> {
   const { attrs: deckAttrs, body } = readFrontmatter(input.markdown);
@@ -48,8 +48,8 @@ function compileSlide(
     warnings.push({ code: "parse-warning", message: warning, slideIndex: index });
   }
   const blocks = parsed.slides[0]?.blocks ?? [];
-  const components = collectComponents(slug, index, blocks);
-  addComponentPlaceholderWarnings(warnings, components, index);
+  const nodes = parsed.slides[0]?.nodes ?? [];
+  const components = collectComponents(slug, index, nodes, blocks);
   const firstParsedSlide = parsed.slides[0];
   const meta = toSlideFrontmatter(attrs, firstParsedSlide?.title, firstParsedSlide?.layout, firstParsedSlide?.className);
   addUnknownFrontmatterWarnings(warnings, meta.meta, "slide", index);
@@ -58,6 +58,7 @@ function compileSlide(
     index,
     meta,
     html: blocks.map(renderBlock).join("\n"),
+    nodes,
     components,
     notes: meta.notes,
   };
@@ -76,25 +77,6 @@ function addUnknownFrontmatterWarnings(
       ...(slideIndex !== undefined ? { slideIndex } : {}),
     });
   }
-}
-
-function addComponentPlaceholderWarnings(
-  warnings: CompiledDeck["warnings"],
-  components: ComponentPlaceholder[],
-  slideIndex: number,
-): void {
-  for (const component of components) {
-    if (isBuiltInComponent(component.name)) continue;
-    warnings.push({
-      code: "unsupported-mdx-component",
-      message: `MDX component "${component.name}" is rendered as a placeholder.`,
-      slideIndex,
-    });
-  }
-}
-
-function isBuiltInComponent(name: string): boolean {
-  return name === "Hero";
 }
 
 function addExternalAssetWarnings(warnings: CompiledDeck["warnings"], assets: AssetRef[]): void {
@@ -150,15 +132,40 @@ function splitSlideSources(source: string): string[] {
   return slides;
 }
 
-function collectComponents(slug: string, slideIndex: number, blocks: SlideBlock[]): ComponentPlaceholder[] {
-  return blocks
-    .filter((block): block is Extract<SlideBlock, { type: "component" }> => block.type === "component")
-    .map((block, componentIndex) => ({
-      id: `${slug}-${slideIndex}-${componentIndex}`,
-      name: block.name,
-      props: block.props,
-      source: block.raw,
-    }));
+function collectComponents(
+  slug: string,
+  slideIndex: number,
+  nodes: SlideNode[],
+  legacyBlocks: SlideBlock[],
+): ComponentPlaceholder[] {
+  const componentNodes = collectComponentNodes(nodes);
+  const legacyComponents = legacyBlocks.filter(
+    (block): block is Extract<SlideBlock, { type: "component" }> => block.type === "component",
+  );
+  const components = componentNodes.map((block, componentIndex) => ({
+    id: `${slug}-${slideIndex}-${componentIndex}`,
+    name: block.name,
+    props: block.props,
+    source: legacyComponents[componentIndex]?.raw ?? block.source ?? `<${block.name} />`,
+  }));
+
+  if (components.length > 0) return components;
+
+  return legacyComponents.map((block, componentIndex) => ({
+    id: `${slug}-${slideIndex}-${componentIndex}`,
+    name: block.name,
+    props: block.props,
+    source: block.raw,
+  }));
+}
+
+function collectComponentNodes(nodes: SlideNode[]): Array<Extract<SlideNode, { type: "component" }> & { source?: string }> {
+  const components: Array<Extract<SlideNode, { type: "component" }> & { source?: string }> = [];
+  for (const node of nodes) {
+    if (node.type === "component") components.push(node);
+    if ("children" in node) components.push(...collectComponentNodes(node.children));
+  }
+  return components;
 }
 
 function readFrontmatter(source: string): { attrs: Record<string, unknown>; body: string } {

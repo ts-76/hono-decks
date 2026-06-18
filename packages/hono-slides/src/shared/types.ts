@@ -17,8 +17,23 @@ export interface Slide {
   layout: string;
   className?: string;
   blocks: SlideBlock[];
+  nodes: SlideNode[];
   raw: string;
 }
+
+export type SlideNode =
+  | { type: "text"; value: string }
+  | { type: "element"; tag: string; props: Record<string, SlidePropValue | undefined>; children: SlideNode[] }
+  | { type: "code"; lang?: string; value: string }
+  | {
+      type: "component";
+      name: string;
+      props: Record<string, SlidePropValue | undefined>;
+      children: SlideNode[];
+      source?: string;
+    };
+
+export type SlidePropValue = string | number | boolean;
 
 export type SlideBlock =
   | { type: "heading"; depth: 1 | 2 | 3; text: string }
@@ -27,7 +42,7 @@ export type SlideBlock =
   | { type: "code"; lang?: string; code: string }
   | { type: "blockquote"; text: string }
   | { type: "image"; alt: string; src: string; title?: string }
-  | { type: "component"; name: string; props: Record<string, string | boolean>; raw: string };
+  | { type: "component"; name: string; props: Record<string, SlidePropValue>; raw: string };
 
 export interface AgentSuggestRequest {
   markdown: string;
