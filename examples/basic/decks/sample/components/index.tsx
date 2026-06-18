@@ -1,5 +1,5 @@
 import { createCssContext } from "hono/css";
-import type { SlideComponentProps } from "hono-slides";
+import type { SlideComponentProps } from "@hono/decks";
 
 const { css, Style } = createCssContext({
   id: "sample-deck",

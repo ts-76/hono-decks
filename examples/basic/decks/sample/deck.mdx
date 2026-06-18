@@ -3,6 +3,9 @@ title: Hono Slides
 description: Hono + Cloudflare Workers で動く MDX-like slide runtime
 ---
 
+export const badgeLabel = 'Rendered ' + 'by a Hono JSX component'
+export const topics = ['MDX expression props', 'MDX expression children']
+
 ---
 title: Hono Slides
 layout: cover
@@ -14,7 +17,9 @@ Cloudflare Workers で動く Slidev-like deck
 
 <Hero title="MDX-like components" />
 
-<Badge label="Rendered by a Hono JSX component" />
+<Badge label={badgeLabel} />
+
+{topics.map((topic) => <Badge label={topic} />)}
 
 ---
 title: Parse and View

@@ -1,22 +1,14 @@
 import { Hono } from "hono";
-import { honoSlides, honoSlidesRouter, manifestDeckSource } from "hono-slides";
-import { deckComponents } from "./generated/deck-components";
-import { deckManifest } from "./generated/deck-manifest";
+import { decksRouter } from "./generated/decks";
 
-export { honoSlides, honoSlidesRouter };
+export { decksRouter };
 
 interface Env {}
 
 const app = new Hono<{ Bindings: Env }>();
 
 app.get("/", (c) => c.redirect("/decks"));
-app.route(
-  "/decks",
-  honoSlidesRouter({
-    source: manifestDeckSource(deckManifest),
-    components: deckComponents,
-  }),
-);
+app.route("/decks", decksRouter());
 
 app.notFound((c) => c.json({ error: "Not found" }, 404));
 

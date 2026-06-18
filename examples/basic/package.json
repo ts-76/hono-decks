@@ -1,17 +1,17 @@
 {
-  "name": "@hono-slides/example-basic",
+  "name": "@hono-decks/example-basic",
   "private": true,
   "type": "module",
   "scripts": {
-    "slides:compile": "bun run --cwd ../../packages/hono-slides build && node ../../packages/hono-slides/dist/bin.js compile --root decks --out src/generated/deck-manifest.ts --components-out src/generated/deck-components.ts --mount /decks",
-    "dev": "bun run slides:compile && wrangler dev",
-    "deploy": "bun run slides:compile && wrangler deploy",
-    "typecheck": "bun run slides:compile && tsc --noEmit",
-    "test": "bun run slides:compile && vitest run",
+    "decks:compile": "bun run --cwd ../../packages/decks build && node ../../packages/decks/dist/bin.js compile --root decks --out src/generated --mount /decks",
+    "dev": "bun run decks:compile && wrangler dev",
+    "deploy": "bun run decks:compile && wrangler deploy",
+    "typecheck": "bun run decks:compile && tsc --noEmit",
+    "test": "bun run decks:compile && vitest run",
     "check": "bun run typecheck && bun run test"
   },
   "dependencies": {
     "hono": "^4.10.7",
-    "hono-slides": "workspace:*"
+    "@hono/decks": "workspace:*"
   }
 }
