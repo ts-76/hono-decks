@@ -104,6 +104,60 @@ customSlideKey: kept
     );
   });
 
+  it("compiles MDX JSX components with children into serializable slide nodes", async () => {
+    const deck = await compileMarkdown({
+      slug: "deck1",
+      sourcePath: "decks/deck1/deck.mdx",
+      kind: "directory",
+      markdown: `# Component Slide
+
+<Columns gap="wide">
+  <div>Left **side**</div>
+  <div>Right</div>
+</Columns>`,
+    });
+
+    expect(deck.slides[0].nodes).toEqual([
+      {
+        type: "element",
+        tag: "h1",
+        props: {},
+        children: [{ type: "text", value: "Component Slide" }],
+      },
+      {
+        type: "component",
+        name: "Columns",
+        props: { gap: "wide" },
+        children: [
+          {
+            type: "element",
+            tag: "div",
+            props: {},
+            children: [
+              { type: "text", value: "Left " },
+              { type: "element", tag: "strong", props: {}, children: [{ type: "text", value: "side" }] },
+            ],
+          },
+          {
+            type: "element",
+            tag: "div",
+            props: {},
+            children: [{ type: "text", value: "Right" }],
+          },
+        ],
+      },
+    ]);
+    expect(deck.slides[0].html).toContain("mdx-component");
+    expect(deck.slides[0].components).toEqual([
+      {
+        id: "deck1-0-0",
+        name: "Columns",
+        props: { gap: "wide" },
+        source: expect.stringContaining("<Columns"),
+      },
+    ]);
+  });
+
   it("rejects local relative assets in single-file decks", async () => {
     await expect(
       compileMarkdown({
@@ -385,6 +439,55 @@ const unclosed = true;`,
       message: "Slide 1: code fence is not closed.",
       slideIndex: 0,
     });
+  });
+
+  it("does not execute MDX imports exports or JavaScript expressions", async () => {
+    const deck = await compileMarkdown({
+      slug: "deck1",
+      sourcePath: "decks/deck1/deck.mdx",
+      kind: "directory",
+      markdown: `import Secret from "./secret"
+
+# One
+
+{1 + 1}
+
+<Hero title="Safe" count={1} />`,
+    });
+
+    expect(deck.slides[0].nodes).toEqual([
+      {
+        type: "element",
+        tag: "h1",
+        props: {},
+        children: [{ type: "text", value: "One" }],
+      },
+      {
+        type: "component",
+        name: "Hero",
+        props: { title: "Safe" },
+        children: [],
+      },
+    ]);
+    expect(deck.warnings).toEqual(
+      expect.arrayContaining([
+        {
+          code: "parse-warning",
+          message: "Slide 1: MDX import/export syntax is ignored.",
+          slideIndex: 0,
+        },
+        {
+          code: "parse-warning",
+          message: "Slide 1: MDX JavaScript expressions are ignored.",
+          slideIndex: 0,
+        },
+        {
+          code: "parse-warning",
+          message: "Slide 1: MDX JavaScript expression props are ignored on Hero.count.",
+          slideIndex: 0,
+        },
+      ]),
+    );
   });
 
   it("exports the compiler from the public module", async () => {

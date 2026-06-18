@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { renderCompiledDeckPage } from "../renderer/compiled-render";
 import type { DeckSource } from "../deck/model";
+import type { SlideComponentInput, SlideComponentRegistry } from "../renderer/compiled-render";
 
 export interface HonoSlidesRouterExtension {
   path: string;
@@ -13,6 +14,8 @@ export interface HonoSlidesRouterOptions {
   extensions?: HonoSlidesRouterExtension[];
   liveReloadPath?(slug: string, mountPath: string): string | undefined;
   style?: string;
+  components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
+  clientEntry?: string;
 }
 
 export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
@@ -49,6 +52,8 @@ export function honoSlidesRouter(options: HonoSlidesRouterOptions): Hono {
         deck,
         mountPath,
         style: options.style,
+        components: options.components,
+        clientEntry: options.clientEntry,
         liveReloadPath: isDevEnabled(options) ? options.liveReloadPath?.(slug, mountPath) : undefined,
       }),
     );

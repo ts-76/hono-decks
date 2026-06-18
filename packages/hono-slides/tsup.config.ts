@@ -4,6 +4,7 @@ export default defineConfig({
   entry: {
     mod: "src/mod.ts",
     cli: "src/cli.ts",
+    client: "src/client.ts",
     node: "src/node.ts",
     index: "src/index.ts",
     bin: "src/bin.ts",

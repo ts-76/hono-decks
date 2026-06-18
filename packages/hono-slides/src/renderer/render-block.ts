@@ -1,4 +1,4 @@
-import type { SlideBlock } from "../shared/types";
+import type { SlideBlock, SlidePropValue } from "../shared/types";
 
 export function renderBlock(block: SlideBlock): string {
   switch (block.type) {
@@ -28,7 +28,7 @@ export function renderBlock(block: SlideBlock): string {
   }
 }
 
-function renderHero(props: Record<string, string | boolean>): string {
+function renderHero(props: Record<string, SlidePropValue>): string {
   const title = stringProp(props, "title");
   const subtitle = stringProp(props, "subtitle") ?? stringProp(props, "description");
   const eyebrow = stringProp(props, "eyebrow");
@@ -44,12 +44,12 @@ function renderHero(props: Record<string, string | boolean>): string {
   }${subtitle ? `<p class="mdx-hero-subtitle">${inline(subtitle)}</p>` : ""}</div></section>`;
 }
 
-function stringProp(props: Record<string, string | boolean>, key: string): string | undefined {
+function stringProp(props: Record<string, SlidePropValue>, key: string): string | undefined {
   const value = props[key];
   return typeof value === "string" && value.trim() ? value : undefined;
 }
 
-function renderProps(props: Record<string, string | boolean>): string {
+function renderProps(props: Record<string, SlidePropValue>): string {
   const entries = Object.entries(props);
   if (entries.length === 0) return "";
   return `<dl>${entries

@@ -8,8 +8,9 @@ describe("source directory structure", () => {
   it("keeps deck as the domain model category and separates parser renderer generator source and routing", async () => {
     await expect(readdir(join(srcRoot, "parser"))).resolves.toContain("parser.ts");
     await expect(readdir(join(srcRoot, "renderer"))).resolves.toEqual(
-      expect.arrayContaining(["compiled-render.ts", "render-block.ts", "render.ts"]),
+      expect.arrayContaining(["compiled-render.ts", "jsx-renderer.ts", "render-block.ts", "render.ts"]),
     );
+    await expect(readdir(join(srcRoot, "client"))).resolves.toContain("islands.ts");
     await expect(readdir(join(srcRoot, "compiler"))).resolves.toContain("compiler.ts");
     await expect(readdir(join(srcRoot, "generator"))).resolves.toContain("manifest-generator.ts");
     await expect(readdir(join(srcRoot, "source"))).resolves.toContain("manifest-source.ts");

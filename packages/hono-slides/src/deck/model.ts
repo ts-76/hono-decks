@@ -1,4 +1,5 @@
 import type { Context } from "hono";
+import type { SlideNode } from "../shared/types";
 
 export type DeckKind = "directory" | "single-file";
 
@@ -50,6 +51,7 @@ export interface CompiledSlide {
   index: number;
   meta: SlideFrontmatter;
   html: string;
+  nodes?: SlideNode[];
   components: ComponentPlaceholder[];
   notes?: string;
 }

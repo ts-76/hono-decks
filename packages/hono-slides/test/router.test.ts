@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { jsx } from "hono/jsx/jsx-runtime";
 import { describe, expect, it } from "vitest";
 import type { CompiledDeck } from "../src/deck/model";
 import { manifestDeckSource } from "../src/source/manifest-source";
@@ -58,6 +59,42 @@ describe("honoSlidesRouter", () => {
     expect(html).toContain("--hono-slides-height:1080px");
     expect(html).toContain('window.addEventListener("message"');
     expect(html).not.toContain('data-hono-slides-controls');
+  });
+
+  it("passes Hono JSX slide components and client entrypoint to render routes", async () => {
+    const componentDeck = {
+      ...deck,
+      slides: [
+        {
+          ...deck.slides[0],
+          nodes: [
+            {
+              type: "component",
+              name: "Badge",
+              props: { label: "Worker-safe" },
+              children: [],
+            },
+          ],
+        },
+      ],
+    } satisfies CompiledDeck;
+    const app = new Hono();
+    app.route(
+      "/slides",
+      honoSlidesRouter({
+        source: manifestDeckSource({ decks: [componentDeck] }),
+        clientEntry: "/assets/slides.client.js",
+        components: {
+          Badge: (props) => jsx("strong", { class: "badge", children: String(props.label) }),
+        },
+      }),
+    );
+
+    const html = await (await app.request("/slides/deck1/render")).text();
+
+    expect(html).toContain('class="badge"');
+    expect(html).toContain("Worker-safe");
+    expect(html).toContain('<script type="module" src="/assets/slides.client.js"></script>');
   });
 
   it("lets callers mount future feature routers without coupling viewer routes to edit code", async () => {
