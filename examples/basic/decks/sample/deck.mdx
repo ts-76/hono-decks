@@ -21,6 +21,8 @@ Cloudflare Workers で動く Slidev-like deck
 
 {topics.map((topic) => <Badge label={topic} />)}
 
+<Counter label="Interactive count" initial={1} />
+
 ---
 title: Parse and View
 ---
@@ -30,6 +32,8 @@ title: Parse and View
 - Markdown/MDX-like source を compile
 - deck manifest と slide metadata を保持
 - Hono route で viewer/render page を配信
+
+![R2 cached local asset](./assets/r2-cache.svg)
 
 ---
 layout: statement

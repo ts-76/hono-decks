@@ -9,6 +9,7 @@ export interface CompileMdxModuleDecksInput {
   mountPath?: string;
   decks: ResolvedDeckFile[];
   componentModulePaths?: Record<string, string>;
+  clientComponentIds?: Record<string, Record<string, string>>;
   readText(path: string): Promise<string>;
   readBinary?(path: string): Promise<Uint8Array>;
 }
@@ -17,6 +18,7 @@ export interface GeneratedModuleDeck {
   deck: CompiledDeck;
   slideModules: GeneratedSlideModule[];
   componentModulePath?: string;
+  clientComponentIds?: Record<string, string>;
 }
 
 export interface GeneratedSlideModule {
@@ -75,6 +77,7 @@ async function compileMdxModuleDeck(
 
   return {
     componentModulePath,
+    clientComponentIds: input.clientComponentIds?.[entry.slug],
     deck: {
       slug: entry.slug,
       sourcePath: entry.sourcePath,
@@ -124,10 +127,27 @@ function emitModuleDecksRouter(input: { decks: GeneratedModuleDeck[] }): string 
   return `// @ts-nocheck
 import { defineDecks } from "@hono/decks";
 import type { DecksRouterOverrides } from "@hono/decks";
+import { decksClientEntry } from "./client-entry";
 ${slideImports}
 ${componentImports}
 
+function withClientComponentIds(module, clientIds) {
+  const registry = {};
+  for (const [name, value] of Object.entries(module)) {
+    const clientId = clientIds[name];
+    if (typeof value === "function") {
+      registry[name] = clientId ? { component: value, clientId } : value;
+      continue;
+    }
+    if (value && typeof value === "object" && "component" in value) {
+      registry[name] = clientId ? { ...value, clientId } : value;
+    }
+  }
+  return registry;
+}
+
 export const decks = defineDecks({
+  clientEntryAsset: decksClientEntry,
   decks: [
 ${input.decks.map(emitDeckObject).join(",\n")}
   ]
@@ -146,7 +166,11 @@ function emitDeckObject(deck: GeneratedModuleDeck): string {
       kind: ${JSON.stringify(deck.deck.kind)},
       meta: ${serializeValue(deck.deck.meta, 3)},
       assets: ${serializeValue(deck.deck.assets, 3)},
-      componentRegistry: ${deck.componentModulePath ? componentImportName(deck.deck.slug) : "{}"},
+      componentRegistry: ${
+        deck.componentModulePath
+          ? `withClientComponentIds(${componentImportName(deck.deck.slug)}, ${serializeValue(deck.clientComponentIds ?? {}, 3)})`
+          : "{}"
+      },
       warnings: [],
       slides: [
 ${deck.deck.slides
@@ -316,11 +340,14 @@ function rewriteAssetUrls(source: string, assets: AssetRef[]): string {
   let result = source;
   for (const asset of assets) {
     const assetPath = localAssetRelativePath(asset.sourcePath);
-    for (const prefix of ["./assets/", "assets/"]) {
-      result = result.replaceAll(`${prefix}${assetPath}`, asset.publicPath);
-    }
+    result = result.replaceAll(`./assets/${assetPath}`, asset.publicPath);
+    result = result.replace(new RegExp(`(?<!/)assets/${escapeRegExp(assetPath)}`, "g"), asset.publicPath);
   }
   return result;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function rewriteRelativeMdxImports(source: string, sourceDir: string, generatedDir: string): string {

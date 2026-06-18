@@ -7,8 +7,9 @@ function _createMdxContent(props) {
     h1: "h1",
     p: "p",
     ...props.components
-  }, {Badge, Hero} = _components;
+  }, {Badge, Counter, Hero} = _components;
   if (!Badge) _missingMdxReference("Badge", true);
+  if (!Counter) _missingMdxReference("Counter", true);
   if (!Hero) _missingMdxReference("Hero", true);
   return _jsxs(_Fragment, {
     children: [_jsx(_components.h1, {
@@ -21,7 +22,10 @@ function _createMdxContent(props) {
       label: badgeLabel
     }), "\n", topics.map(topic => _jsx(Badge, {
       label: topic
-    }))]
+    })), "\n", _jsx(Counter, {
+      label: "Interactive count",
+      initial: 1
+    })]
   });
 }
 export default function MDXContent(props = {}) {

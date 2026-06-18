@@ -1,16 +1,22 @@
 import { jsx } from "hono/jsx/jsx-runtime";
 import { HtmlEscapedCallbackPhase, resolveCallback } from "hono/utils/html";
+import type { Child } from "hono/jsx";
+import type { HtmlEscapedString } from "hono/utils/html";
 import type { SlideNode, SlidePropValue } from "../shared/types";
 
+export type MaybePromise<T> = T | Promise<T>;
+export type DeckRenderable = Child | HtmlEscapedString;
+
 export type SlideComponentProps = Record<string, unknown> & {
-  children?: unknown;
+  children?: DeckRenderable;
 };
 
-export type SlideComponent = (props: SlideComponentProps) => unknown;
+export type SlideComponent = (props: SlideComponentProps) => DeckRenderable;
 
 export interface SlideComponentDefinition {
   component: SlideComponent;
   client?: boolean;
+  clientId?: string;
 }
 
 export type SlideComponentInput = SlideComponent | SlideComponentDefinition;
@@ -54,21 +60,21 @@ export function createMdxComponents(
   input: {
     assets?: Array<{ sourcePath: string; publicPath: string; type: string }>;
   } = {},
-): Record<string, unknown> {
-  const components: Record<string, unknown> = {
+): Record<string, (props: Record<string, unknown>) => DeckRenderable> {
+  const components: Record<string, (props: Record<string, unknown>) => DeckRenderable> = {
     img: (props: Record<string, unknown>) => jsx("img", rewriteAssetProps(props, input.assets)),
     a: (props: Record<string, unknown>) => jsx("a", rewriteAssetProps(props, input.assets)),
   };
 
   for (const [name, definition] of Object.entries(registry)) {
     components[name] = (props: Record<string, unknown> = {}) =>
-      renderRegisteredComponent(name, definition, props, props.children, input.assets);
+      renderRegisteredComponent(name, definition, props, props.children as DeckRenderable, input.assets);
   }
 
   return components;
 }
 
-function heroImage(props: SlideComponentProps): unknown {
+function heroImage(props: SlideComponentProps): DeckRenderable {
   const image = typeof props.image === "string" ? props.image : typeof props.src === "string" ? props.src : undefined;
   if (!image) return "";
   const alt =
@@ -103,7 +109,7 @@ function renderSlideNode(
     components?: SlideComponentRegistry;
     assets?: Array<{ sourcePath: string; publicPath: string; type: string }>;
   },
-): unknown {
+): DeckRenderable {
   switch (node.type) {
     case "text":
       return String(node.value);
@@ -130,7 +136,7 @@ function renderComponentNode(
     components?: SlideComponentRegistry;
     assets?: Array<{ sourcePath: string; publicPath: string; type: string }>;
   },
-): unknown {
+): DeckRenderable {
   const definition = input.components?.[node.name];
   if (!definition) return renderComponentPlaceholder(node);
 
@@ -142,30 +148,30 @@ function renderRegisteredComponent(
   name: string,
   definition: SlideComponentDefinition,
   props: Record<string, unknown>,
-  children: unknown,
+  children: DeckRenderable,
   assets: Array<{ sourcePath: string; publicPath: string; type: string }> = [],
-): unknown {
+): DeckRenderable {
   const rewritten = rewriteAssetProps(props, assets);
   const componentProps = stripRuntimeProps(rewritten);
   const element = definition.component({ ...componentProps, children });
   if (!definition.client && rewritten.client !== true) return element;
-  const rendered = String(element);
 
   return jsx("div", {
-    "data-hono-decks-island": name,
+    "data-hono-decks-island": definition.clientId ?? name,
     "data-hono-decks-props": JSON.stringify(serializableProps(componentProps)),
-    dangerouslySetInnerHTML: { __html: rendered },
+    children: element,
   });
 }
 
-export async function renderJsxValue(value: unknown): Promise<string> {
+export async function renderJsxValue(value: MaybePromise<DeckRenderable>): Promise<string> {
   const resolved = value instanceof Promise ? await value : value;
   if (typeof resolved === "string") return resolved;
-  if (typeof resolved !== "object" || resolved === null) return String(resolved ?? "");
+  if (resolved === null || resolved === undefined || typeof resolved === "boolean") return "";
+  if (typeof resolved === "number") return String(resolved);
   return resolveCallback(resolved as never, HtmlEscapedCallbackPhase.Stringify, false, {});
 }
 
-function renderComponentPlaceholder(node: Extract<SlideNode, { type: "component" }>): unknown {
+function renderComponentPlaceholder(node: Extract<SlideNode, { type: "component" }>): DeckRenderable {
   return jsx("div", {
     class: "mdx-component",
     "data-component": node.name,

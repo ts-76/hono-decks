@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import type { SlideComponentInput } from "../renderer/compiled-render";
+import type { DeckRenderable, MaybePromise, SlideComponentInput } from "../renderer/compiled-render";
 import type { SlideNode } from "../shared/types";
 
 export type DeckKind = "directory" | "single-file";
@@ -39,6 +39,8 @@ export interface AssetRef {
   publicPath: string;
   type: "local" | "remote" | "r2" | "public";
   contentType?: string;
+  cacheControl?: string | false;
+  r2Key?: string;
   body?: BodyInit;
 }
 
@@ -53,7 +55,7 @@ export interface CompiledSlide {
   meta: SlideFrontmatter;
   html: string;
   nodes?: SlideNode[];
-  render?: (props?: { components?: Record<string, unknown> }) => unknown;
+  render?: (props?: { components?: Record<string, unknown> }) => MaybePromise<DeckRenderable>;
   components: ComponentPlaceholder[];
   notes?: string;
 }

@@ -20,13 +20,18 @@ describe("hono-decks CLI", () => {
       expect(stdout.join("\n")).toContain("Compiled 2 decks");
 
       const output = await readFile(join(cwd, "src", "generated", "decks.ts"), "utf8");
+      expect(output).toContain('import { decksClientEntry } from "./client-entry";');
       expect(output).toContain("export const decks = defineDecks({");
+      expect(output).toContain("clientEntryAsset: decksClientEntry");
       expect(output).toContain('slug: "intro"');
       expect(output).toContain('"publicPath": "/slides/intro/assets/hero.png"');
       expect(output).toContain('import Slide_intro_0 from "./decks/intro/slide-0";');
 
       const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "intro", "slide-0.ts"), "utf8");
       expect(slideOutput).toContain('from "hono/jsx/jsx-runtime"');
+
+      const clientOutput = await readFile(join(cwd, "src", "generated", "client-entry.ts"), "utf8");
+      expect(clientOutput).toBe('export const decksClientEntry = "";\n');
     } finally {
       await rm(cwd, { recursive: true, force: true });
     }
@@ -67,7 +72,7 @@ describe("hono-decks CLI", () => {
       expect(routerOutput).toContain('import { defineDecks } from "@hono/decks";');
       expect(routerOutput).toContain('import type { DecksRouterOverrides } from "@hono/decks";');
       expect(routerOutput).toContain('import * as Components_intro from "../../decks/intro/components";');
-      expect(routerOutput).toContain("componentRegistry: Components_intro");
+      expect(routerOutput).toContain("componentRegistry: withClientComponentIds(Components_intro, {})");
       expect(routerOutput).toContain("export function decksRouter(options: DecksRouterOverrides = {})");
 
       const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "intro", "slide-0.ts"), "utf8");

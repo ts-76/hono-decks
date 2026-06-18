@@ -13,6 +13,8 @@ export {
   renderCompiledSlideAsync,
 } from "./renderer/compiled-render";
 export type {
+  DeckRenderable,
+  MaybePromise,
   SlideComponent,
   SlideComponentDefinition,
   SlideComponentInput,
@@ -33,11 +35,32 @@ export type {
 } from "./generator/component-registry";
 export { createPreviewEventHub } from "./runtime/preview-events";
 export type { PreviewEvent, PreviewEventHub, PreviewEventType } from "./runtime/preview-events";
+export { serveDecksClientEntry } from "./server/client-entry";
+export type { ServeDecksClientEntryOptions } from "./server/client-entry";
 export { defineDecks } from "./server/define-decks";
 export type { DefinedDecks, DecksOptions, DecksRouterOverrides } from "./server/define-decks";
-export { decksRouter } from "./server/router";
-export type { DecksRouterExtension, DecksRouterOptions } from "./server/router";
+export { createDeckViewerParts, deckContext, decksRouter } from "./server/router";
+export type {
+  DeckContextOptions,
+  DeckContextVariables,
+  DeckPageMeta,
+  DeckTocItem,
+  DeckViewerOptions,
+  DeckViewerParts,
+  DeckViewerRenderInput,
+  DecksRouterExtension,
+  DecksRouterOptions,
+} from "./server/router";
 export { manifestDeckSource } from "./source/manifest-source";
+export { withR2Assets } from "./source/r2-assets";
+export type {
+  R2AssetKeyInput,
+  R2AssetSourceOptions,
+  R2BucketLike,
+  R2BucketResolver,
+  R2ObjectBodyLike,
+  R2ObjectHttpMetadataLike,
+} from "./source/r2-assets";
 export { resolveDeckFiles } from "./routing/file-routing";
 export type { ResolvedDeckFile } from "./routing/file-routing";
 export { CompileError } from "./deck/model";
