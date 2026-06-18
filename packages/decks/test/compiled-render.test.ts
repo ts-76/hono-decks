@@ -216,12 +216,13 @@ describe("compiled deck rendering", () => {
       components: defineSlideComponents({
         Counter: {
           client: true,
+          clientId: "Counter__deck1_abcd1234",
           component: (props) => jsx("button", { type: "button", children: String(props.label) }),
         },
       }),
     });
 
-    expect(html).toContain('data-hono-decks-island="Counter"');
+    expect(html).toContain('data-hono-decks-island="Counter__deck1_abcd1234"');
     expect(html).toContain('data-hono-decks-props="{&quot;label&quot;:&quot;Clicks&quot;}"');
     expect(html).toContain('<script type="module" src="/assets/slides.client.js"></script>');
     expect(html).toContain("<button type=\"button\">Clicks</button>");

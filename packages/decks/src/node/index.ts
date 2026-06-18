@@ -1,6 +1,7 @@
 import { existsSync, watch } from "node:fs";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
+import { build as buildBrowserBundle } from "esbuild";
 import { Hono } from "hono";
 import type { DeckFileChange, DeckFileEntry, DeckManifest, LocalDeckIO } from "../deck/model";
 import { compileMarkdown } from "../compiler/compiler";
@@ -100,12 +101,21 @@ export async function compileDecks(input: CompileDecksInput): Promise<DeckManife
       return path ? [[deck.slug, path]] : [];
     }),
   );
+  const clientEntryPaths = resolved.flatMap((deck) => {
+    const path = deck.kind === "directory" ? findClientEntryModule(paths, root, deck.slug) : undefined;
+    return path ? [{ slug: deck.slug, sourcePath: path }] : [];
+  });
+  const clientComponentIds = await discoverClientComponentIds({
+    cwd: input.cwd,
+    clientEntries: clientEntryPaths,
+  });
   const generated = await compileMdxModuleDecks({
     root,
     outDir: out,
     mountPath: input.mountPath,
     decks: resolved,
     componentModulePaths,
+    clientComponentIds,
     readText: (path) => readFile(join(input.cwd, path), "utf8"),
     readBinary: (path) => readFile(join(input.cwd, path)),
   });
@@ -116,6 +126,10 @@ export async function compileDecks(input: CompileDecksInput): Promise<DeckManife
     }
   }
   await writeTextFile(join(input.cwd, out, "decks.ts"), generated.routerModule);
+  await writeTextFile(
+    join(input.cwd, out, "client-entry.ts"),
+    await emitClientEntryModule({ cwd: input.cwd, clientEntries: clientEntryPaths, clientComponentIds }),
+  );
 
   const manifest = { decks: generated.decks.map((deck) => deck.deck) };
   return manifest;
@@ -246,6 +260,96 @@ function findComponentModule(paths: string[], root: string, slug: string): strin
   });
 }
 
+function findClientEntryModule(paths: string[], root: string, slug: string): string | undefined {
+  const base = `${normalizePath(root).replace(/\/$/, "")}/${slug}/components/client/index`;
+  return paths.find((path) => {
+    const normalized = normalizePath(path);
+    return normalized === `${base}.tsx` || normalized === `${base}.ts` || normalized === `${base}.jsx` || normalized === `${base}.js`;
+  });
+}
+
+interface ClientEntryModule {
+  slug: string;
+  sourcePath: string;
+}
+
+async function discoverClientComponentIds(input: {
+  cwd: string;
+  clientEntries: ClientEntryModule[];
+}): Promise<Record<string, Record<string, string>>> {
+  const result: Record<string, Record<string, string>> = {};
+  for (const entry of input.clientEntries) {
+    const source = await readFile(join(input.cwd, entry.sourcePath), "utf8");
+    const exports = extractComponentExportNames(source);
+    result[entry.slug] = Object.fromEntries(exports.map((name) => [name, clientComponentId(entry.slug, name)]));
+  }
+  return result;
+}
+
+async function emitClientEntryModule(input: {
+  cwd: string;
+  clientEntries: ClientEntryModule[];
+  clientComponentIds: Record<string, Record<string, string>>;
+}): Promise<string> {
+  const imports: string[] = [];
+  const registrations: string[] = [];
+
+  for (const entry of input.clientEntries) {
+    const ids = input.clientComponentIds[entry.slug] ?? {};
+    for (const [exportName, clientId] of Object.entries(ids)) {
+      const localName = clientImportName(entry.slug, exportName);
+      imports.push(`import { ${exportName} as ${localName} } from ${JSON.stringify(join(input.cwd, entry.sourcePath))};`);
+      registrations.push(`${JSON.stringify(clientId)}: ${localName}`);
+    }
+  }
+
+  if (registrations.length === 0) return 'export const decksClientEntry = "";\n';
+
+  const entryContents = `import { hydrateSlideIslands } from "@hono/decks/client";
+${imports.join("\n")}
+
+hydrateSlideIslands({
+  components: {
+    ${registrations.join(",\n    ")}
+  }
+});
+`;
+  const result = await buildBrowserBundle({
+    stdin: {
+      contents: entryContents,
+      resolveDir: input.cwd,
+      sourcefile: "hono-decks-client-entry.tsx",
+      loader: "tsx",
+    },
+    bundle: true,
+    write: false,
+    format: "esm",
+    platform: "browser",
+    target: "es2022",
+    jsx: "automatic",
+    jsxImportSource: "hono/jsx/dom",
+    nodePaths: nodeModuleFallbackPaths(input.cwd),
+    sourcemap: false,
+    minify: false,
+  });
+  const output = result.outputFiles[0];
+  if (!output) throw new Error("Client entry did not produce output.");
+
+  return `export const decksClientEntry = ${JSON.stringify(output.text)};\n`;
+}
+
+function nodeModuleFallbackPaths(cwd: string): string[] {
+  const current = process.cwd();
+  return [
+    join(cwd, "node_modules"),
+    join(cwd, "..", "node_modules"),
+    join(cwd, "..", "..", "node_modules"),
+    join(current, "node_modules"),
+    join(current, "..", "node_modules"),
+    join(current, "..", "..", "node_modules"),
+  ];
+}
+
 function extractComponentExportNames(source: string): string[] {
   const names = new Set<string>();
   for (const match of source.matchAll(/\bexport\s+function\s+([A-Z][A-Za-z0-9_]*)\b/g)) {
@@ -255,6 +359,27 @@ function extractComponentExportNames(source: string): string[] {
     names.add(match[1]);
   }
   return [...names].sort();
+}
+
+function clientComponentId(slug: string, exportName: string): string {
+  const base = `${exportName}__${safeIdentifier(slug)}`;
+  return `${base}_${hashString(`${slug}:${exportName}`).slice(0, 8)}`;
+}
+
+function clientImportName(slug: string, exportName: string): string {
+  return `${safeIdentifier(exportName)}__${safeIdentifier(slug)}_${hashString(`${slug}:${exportName}`).slice(0, 8)}`;
+}
+
+function hashString(value: string): string {
+  let hash = 5381;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 33) ^ value.charCodeAt(index);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function safeIdentifier(value: string): string {
+  return value.replace(/[^A-Za-z0-9_$]+/g, "_").replace(/^[^A-Za-z_$]+/, "_") || "_";
 }
 
 function toImportPath(fromFile: string, targetFile: string): string {

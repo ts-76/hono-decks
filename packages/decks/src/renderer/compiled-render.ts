@@ -13,6 +13,8 @@ export { defineSlideComponents };
 export { createMdxComponents };
 export { builtInSlideComponents };
 export type {
+  DeckRenderable,
+  MaybePromise,
   SlideComponent,
   SlideComponentDefinition,
   SlideComponentInput,
@@ -253,6 +255,7 @@ function renderPresentationScript(): string {
     if (!message || message.type !== "hono-decks:command") return;
     if (message.action === "previous") show(index - 1);
     if (message.action === "next") show(index + 1);
+    if (message.action === "goTo" && Number.isInteger(message.index)) show(message.index);
     if (message.action === "fullscreen") void toggleFullscreen();
     if (message.action === "presenter") togglePresenter();
     if (message.action === "overview") toggleOverview();

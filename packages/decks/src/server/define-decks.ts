@@ -17,7 +17,7 @@ export type DecksOptions = Omit<DecksRouterOptions, "source"> &
       }
   );
 
-export type DecksRouterOverrides = Partial<Omit<DecksRouterOptions, "source" | "components">> & {
+export type DecksRouterOverrides = Partial<Omit<DecksRouterOptions, "components" | "clientEntryAsset">> & {
   components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
 };
 
@@ -38,10 +38,11 @@ export function defineDecks(options: DecksOptions): DefinedDecks {
   return {
     source,
     router(overrides = {}) {
+      const nextSource = overrides.source ?? source;
       return decksRouter({
         ...baseOptions,
         ...overrides,
-        source,
+        source: nextSource,
       });
     },
   };

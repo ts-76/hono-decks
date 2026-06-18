@@ -36,3 +36,7 @@ declare module "node:path" {
 declare module "node:os" {
   export function tmpdir(): string;
 }
+
+declare const process: {
+  cwd(): string;
+};

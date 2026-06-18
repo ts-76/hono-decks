@@ -5,7 +5,9 @@ export const topics = ['MDX expression props', 'MDX expression children'];
 function _createMdxContent(props) {
   const _components = {
     h2: "h2",
+    img: "img",
     li: "li",
+    p: "p",
     ul: "ul",
     ...props.components
   };
@@ -20,6 +22,11 @@ function _createMdxContent(props) {
       }), "\n", _jsx(_components.li, {
         children: "Hono route で viewer/render page を配信"
       }), "\n"]
+    }), "\n", _jsx(_components.p, {
+      children: _jsx(_components.img, {
+        src: "/decks/sample/assets/r2-cache.svg",
+        alt: "R2 cached local asset"
+      })
     })]
   });
 }

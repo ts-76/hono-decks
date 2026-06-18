@@ -61,23 +61,41 @@ export const label = 'Rendered ' + 'by Hono JSX'
 <Badge label={label} />
 ```
 
-client side interactivity が必要な component は island として出力し、ユーザー側の client bundle から `hono/jsx/dom` で hydrate します。
+client side interactivity が必要な component は island として出力します。`decks/*/components/client/index.tsx` の named export は compile 時に browser bundle へ取り込まれ、`hydrateSlideIslands()` の registry は自動生成されます。同名 component が複数 deck にあっても、生成時に stable hash 付き id を割り当てるため client hydration 側でも衝突しません。生成された `decksRouter()` は browser bundle を mount 配下の `/_assets/client.js` で自動配信するため、通常はアプリ側で client entry の route を手で書く必要はありません。
 
 ```tsx
-import { useState } from "hono/jsx";
-import { hydrateSlideIslands } from "@hono/decks/client";
+import { useState } from "hono/jsx/dom";
 
-function Counter() {
+export function Counter() {
   const [count, setCount] = useState(0);
   return <button onClick={() => setCount(count + 1)}>{count}</button>;
 }
-
-hydrateSlideIslands({
-  components: { Counter },
-});
 ```
 
-`style` と `clientEntry` は必要な deck だけ generated router に渡します。`style` は base presentation CSS に足すテーマ CSS、`clientEntry` は `client: true` な component を `hono/jsx/dom` で hydrate する browser bundle の接続口です。静的な server-rendered deck ではどちらも不要です。
+ローカル画像を R2 に置いて Worker 経由で配信したい場合は、生成済み `decks.source` を `withR2Assets()` で包みます。MDX 側は `./assets/image.png` のまま書けます。compile で生成される `/decks/:slug/assets/...` URL は維持し、R2 binding がある環境では R2 object を返し、無い環境では生成済み local asset にフォールバックします。
+
+```tsx
+import { Hono } from "hono";
+import { withR2Assets, type R2BucketLike } from "@hono/decks";
+import { decks, decksRouter } from "./generated/decks";
+
+const app = new Hono<{
+  Bindings: {
+    DECK_ASSETS?: R2BucketLike;
+  };
+}>();
+
+const source = withR2Assets(decks.source, {
+  bucket: (c) => c.env.DECK_ASSETS,
+  cacheControl: "public, max-age=31536000, immutable",
+});
+
+app.route("/decks", decksRouter({ source }));
+```
+
+この package は R2 upload までは行いません。`withR2Assets()` は `decks/sample/assets/image.png` のような generated asset の `sourcePath` を R2 key として読むため、deploy 前に同じ key で object を置いてください。ローカル test では `Cache-Control` header と R2 binding 経由の response を検証できますが、Cloudflare edge cache の hit/miss は deploy 後に `cf-cache-status` や `age` を見る smoke check で確認します。
+
+`style` は必要な deck だけ generated router に渡します。`style` は `/:slug/render` の presentation document に足すテーマ CSS です。`clientEntry` は独自の asset pipeline や CDN から browser bundle を配信したい場合だけ使う外部URL override です。静的な server-rendered deck ではどちらも不要です。
 
 ```ts
 app.route("/decks", decksRouter({
@@ -85,8 +103,48 @@ app.route("/decks", decksRouter({
     :root { --accent: #00e0ff; }
     .slide h1 { color: var(--accent); }
   `,
-  clientEntry: "/assets/decks.client.js",
 }));
+```
+
+`/:slug` の viewer shell は `viewer` で調整できます。`viewer.style` は iframe を包む slug page 用の簡易 raw CSS で、slide document には入りません。Hono JSX や `hono/css` を使いたい場合は `viewer.head` に head 要素を渡します。
+
+```tsx
+import { css, Style } from "hono/css";
+
+const viewerStyle = css`
+  [data-hono-decks-viewer] { background: #050816; }
+`;
+
+app.route("/decks", decksRouter({
+  viewer: {
+    controls: false,
+    head: <Style>{viewerStyle}</Style>,
+    render: ({ frame, toc, controls }) => (
+      <main>
+        <aside>{toc}</aside>
+        {frame}
+        {controls}
+      </main>
+    ),
+  },
+}));
+```
+
+標準 router ではなく deck-aware な独自ページやAPIを作る場合は `deckContext()` を使います。details、embed、analytics、OGP meta などに必要な deck 情報と viewer parts を `c.var` から参照できます。
+
+```tsx
+import { deckContext, type DeckContextVariables } from "@hono/decks";
+
+const app = new Hono<{ Variables: DeckContextVariables }>();
+
+app.get("/decks/:slug/embed", deckContext({ source: decks.source }), (c) => {
+  return c.html(`
+    <main>
+      <title>${c.var.deckMeta.title}</title>
+      ${c.var.deckViewer.frameHtml}
+    </main>
+  `);
+});
 ```
 
 ## Basic Example
@@ -100,15 +158,18 @@ examples/basic/
       deck.mdx
       components/
         index.tsx
+        client/
+          index.tsx
   src/
     generated/
+      client-entry.ts
       decks.ts
       decks/
         sample/
           slide-0.ts
 ```
 
-`dev`、`typecheck`、`test`、`deploy` は事前に `bun run decks:compile` を実行し、`decks/sample/deck.mdx` から `src/generated/decks.ts` と slide module 群を更新します。Worker runtime は生成済み router を import するだけで、file system の読み取りは build-time CLI に閉じています。
+`dev`、`typecheck`、`test`、`deploy` は事前に `bun run decks:compile` を実行し、`decks/sample/deck.mdx` から `src/generated/decks.ts` と slide module 群を更新します。sample ではさらに deck-local な `decks/sample/components/client/index.tsx` を browser bundle 化して `src/generated/client-entry.ts` に埋め込み、`client: true` component を `hono/jsx/dom` で hydrate します。Worker runtime は生成済み router/client asset を import するだけで、file system の読み取りは build-time CLI に閉じています。
 
 ```bash
 bun run --cwd examples/basic dev

@@ -1,7 +1,12 @@
 import { Hono } from "hono";
+import type { Context, MiddlewareHandler } from "hono";
+import { jsx } from "hono/jsx/jsx-runtime";
 import { renderCompiledDeckPageAsync } from "../renderer/compiled-render";
-import type { DeckSource } from "../deck/model";
+import { renderJsxValue } from "../renderer/jsx-renderer";
+import type { CompiledDeck, DeckSource } from "../deck/model";
+import type { DeckRenderable, MaybePromise } from "../renderer/compiled-render";
 import type { SlideComponentInput, SlideComponentRegistry } from "../renderer/compiled-render";
+import { serveDecksClientEntry } from "./client-entry";
 
 export interface DecksRouterExtension {
   path: string;
@@ -16,10 +21,71 @@ export interface DecksRouterOptions {
   style?: string;
   components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
   clientEntry?: string;
+  clientEntryAsset?: string;
+  clientEntryAssetPath?: string;
+  viewer?: DeckViewerOptions;
+}
+
+export interface DeckViewerOptions {
+  controls?: boolean;
+  style?: string;
+  head?: MaybePromise<DeckRenderable>;
+  render?(input: DeckViewerRenderInput): MaybePromise<DeckRenderable>;
+}
+
+export interface DeckTocItem {
+  index: number;
+  title?: string;
+  label: string;
+}
+
+export interface DeckPageMeta {
+  title: string;
+  description?: string;
+  canonicalPath: string;
+  renderPath: string;
+  imagePath?: string;
+}
+
+export interface DeckViewerParts {
+  slug: string;
+  title: string;
+  renderUrl: string;
+  frame: DeckRenderable;
+  frameHtml: string;
+  controls: DeckRenderable | null;
+  controlsHtml: string | null;
+  toc: DeckRenderable;
+  tocHtml: string;
+  slides: DeckTocItem[];
+  meta: DeckPageMeta;
+}
+
+export interface DeckViewerRenderInput extends DeckViewerParts {
+  deck: CompiledDeck;
+  mountPath: string;
+}
+
+export interface DeckContextVariables {
+  deck: CompiledDeck;
+  deckViewer: DeckViewerParts;
+  deckToc: DeckTocItem[];
+  deckMeta: DeckPageMeta;
+}
+
+export interface DeckContextOptions {
+  source: DeckSource;
+  dev?: boolean;
+  mountPath?: string;
+  viewer?: Pick<DeckViewerOptions, "controls">;
 }
 
 export function decksRouter(options: DecksRouterOptions): Hono {
   const router = new Hono();
+
+  if (options.clientEntryAsset) {
+    router.get(normalizeClientEntryAssetPath(options.clientEntryAssetPath), serveDecksClientEntry(options.clientEntryAsset));
+  }
 
   for (const extension of options.extensions ?? []) {
     router.route(extension.path, extension.router);
@@ -47,13 +113,14 @@ export function decksRouter(options: DecksRouterOptions): Hono {
     const deck = await options.source.getCompiledDeck(c, slug);
     if (!deck || (!isDevEnabled(options) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
     const mountPath = stripPathSuffix(c.req.path, `/${slug}/render`);
+    const clientEntry = options.clientEntry ?? resolveGeneratedClientEntryUrl(options, mountPath);
     return c.html(
       await renderCompiledDeckPageAsync({
         deck,
         mountPath,
         style: options.style,
         components: options.components,
-        clientEntry: options.clientEntry,
+        clientEntry,
         liveReloadPath: isDevEnabled(options) ? options.liveReloadPath?.(slug, mountPath) : undefined,
       }),
     );
@@ -70,15 +137,69 @@ export function decksRouter(options: DecksRouterOptions): Hono {
     if (!deck || (!isDevEnabled(options) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
     const mountPath = stripPathSuffix(c.req.path, `/${slug}`);
     return c.html(
-      renderDeckViewerPage({
-        slug,
-        title: deck.meta.title ?? slug,
+      await renderDeckViewerPage({
+        deck,
         mountPath,
+        viewer: options.viewer,
       }),
     );
   });
 
   return router;
+}
+
+export function deckContext(options: DeckContextOptions): MiddlewareHandler<{ Variables: DeckContextVariables }> {
+  return async (c, next) => {
+    const slug = c.req.param("slug");
+    if (!slug) return c.json({ error: "Deck not found", slug: "" }, 404);
+    const deck = await options.source.getCompiledDeck(c, slug);
+    if (!deck || (options.dev !== true && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
+    const mountPath = options.mountPath ?? inferMountPath(c.req.path, slug);
+    const viewer = createDeckViewerParts({
+      deck,
+      mountPath,
+      controls: options.viewer?.controls,
+    });
+
+    c.set("deck", deck);
+    c.set("deckViewer", viewer);
+    c.set("deckToc", viewer.slides);
+    c.set("deckMeta", viewer.meta);
+    await next();
+  };
+}
+
+export function createDeckViewerParts(input: {
+  deck: CompiledDeck;
+  mountPath: string;
+  controls?: boolean;
+}): DeckViewerParts {
+  const slug = input.deck.slug;
+  const title = input.deck.meta.title ?? slug;
+  const basePath = input.mountPath.replace(/\/$/, "");
+  const canonicalPath = `${basePath}/${encodeURIComponent(slug)}`;
+  const renderUrl = `${canonicalPath}/render`;
+  const slides = createDeckToc(input.deck);
+  const meta: DeckPageMeta = {
+    title,
+    description: input.deck.meta.description,
+    canonicalPath,
+    renderPath: renderUrl,
+  };
+
+  return {
+    slug,
+    title,
+    renderUrl,
+    frame: renderViewerFrame({ title, renderUrl }),
+    frameHtml: renderViewerFrameHtml({ title, renderUrl }),
+    controls: input.controls === false ? null : renderViewerControls(),
+    controlsHtml: input.controls === false ? null : renderViewerControlsHtml(),
+    toc: renderViewerToc(slides),
+    tocHtml: renderViewerTocHtml(slides),
+    slides,
+    meta,
+  };
 }
 
 function isDevEnabled(options: DecksRouterOptions): boolean {
@@ -94,6 +215,24 @@ function extractAssetPath(path: string, slug: string): string {
 
 function stripPathSuffix(path: string, suffix: string): string {
   return path.endsWith(suffix) ? path.slice(0, -suffix.length) : path;
+}
+
+function inferMountPath(path: string, slug: string): string {
+  const marker = `/${slug}`;
+  const markerIndex = path.indexOf(marker);
+  if (markerIndex === -1) return "";
+  return path.slice(0, markerIndex) || "/";
+}
+
+function resolveGeneratedClientEntryUrl(options: DecksRouterOptions, mountPath: string): string | undefined {
+  if (!options.clientEntryAsset) return undefined;
+  const basePath = mountPath === "/" ? "" : mountPath.replace(/\/$/, "");
+  return `${basePath}${normalizeClientEntryAssetPath(options.clientEntryAssetPath)}`;
+}
+
+function normalizeClientEntryAssetPath(path = "/_assets/client.js"): string {
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return normalized.replace(/\/{2,}/g, "/");
 }
 
 function renderDeckIndex(decks: Awaited<ReturnType<DeckSource["listDecks"]>>, mountPath: string): string {
@@ -123,43 +262,146 @@ function renderDeckIndex(decks: Awaited<ReturnType<DeckSource["listDecks"]>>, mo
 </html>`;
 }
 
-function renderDeckViewerPage(input: { slug: string; title: string; mountPath: string }): string {
-  const renderUrl = `${input.mountPath}/${encodeURIComponent(input.slug)}/render`;
+async function renderDeckViewerPage(input: {
+  deck: CompiledDeck;
+  mountPath: string;
+  viewer?: DeckViewerOptions;
+}): Promise<string> {
+  const parts = createDeckViewerParts({
+    deck: input.deck,
+    mountPath: input.mountPath,
+    controls: input.viewer?.controls,
+  });
+  const content =
+    input.viewer?.render?.({
+      ...parts,
+      deck: input.deck,
+      mountPath: input.mountPath,
+    }) ??
+    jsx("main", {
+      "data-hono-decks-viewer": true,
+      "data-deck-slug": parts.slug,
+      children: jsx("div", {
+        class: "hono-decks-viewer-shell",
+        children: [parts.frame, parts.controls],
+      }),
+    });
+  const head = input.viewer?.head ? await renderJsxValue(await input.viewer.head) : "";
+
   return `<!doctype html>
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${escapeHtml(input.title)}</title>
-  <style>
-    :root { color-scheme: dark; background: #050816; color: #eef2ff; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
-    body { margin: 0; min-height: 100vh; overflow: hidden; }
-    [data-hono-decks-viewer] { min-height: 100vh; display: grid; place-items: center; gap: 16px; padding: 16px; box-sizing: border-box; background: radial-gradient(circle at top, #1e2b5c, #050816 62%); }
-    .hono-decks-viewer-stage { display: grid; place-items: center; min-width: 0; min-height: 0; }
-    .hono-decks-viewport { width: min(100vw, calc(100vh * 16 / 9)); height: min(100vh, calc(100vw * 9 / 16)); position: relative; overflow: hidden; }
-    .hono-decks-frame-stage { width: 1920px; height: 1080px; transform-origin: top left; }
-    iframe { width: 1920px; height: 1080px; border: 0; display: block; background: #0b1020; }
-    .hono-decks-viewer-controls { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); display: flex; gap: 8px; align-items: center; padding: 8px 10px; border-radius: 999px; background: rgba(5, 8, 22, .72); backdrop-filter: blur(12px); }
-    .hono-decks-viewer-controls button, .hono-decks-viewer-controls a { border: 1px solid rgba(255,255,255,.22); border-radius: 999px; background: rgba(255,255,255,.1); color: inherit; padding: 8px 12px; cursor: pointer; font: inherit; text-decoration: none; }
-  </style>
+  <title>${escapeHtml(parts.title)}</title>
+  <style>${baseViewerStyle()}${input.viewer?.style ?? ""}</style>
+  ${head}
 </head>
 <body>
-  <main data-hono-decks-viewer data-deck-slug="${escapeHtml(input.slug)}">
-    <div class="hono-decks-viewer-stage">
-      <div class="hono-decks-viewport" data-viewer-viewport>
-        <div class="hono-decks-frame-stage" data-viewer-stage>
-          <iframe title="${escapeHtml(input.title)}" src="${escapeHtml(renderUrl)}" width="1920" height="1080"></iframe>
-        </div>
-      </div>
-      <nav class="hono-decks-viewer-controls" aria-label="Viewer controls">
-        <button type="button" data-action="previous">Prev</button>
-        <span data-slide-position>1 / ?</span>
-        <button type="button" data-action="next">Next</button>
-        <button type="button" data-action="fullscreen">Full</button>
-      </nav>
-    </div>
-  </main>
-  <script>
+  ${await renderJsxValue(await content)}
+  ${renderViewerScript()}
+</body>
+</html>`;
+}
+
+function createDeckToc(deck: CompiledDeck): DeckTocItem[] {
+  return deck.slides.map((slide) => ({
+    index: slide.index,
+    title: slide.meta.title,
+    label: slide.meta.title ?? `Slide ${slide.index + 1}`,
+  }));
+}
+
+function renderViewerFrame(input: { title: string; renderUrl: string }): DeckRenderable {
+  return jsx("div", {
+    class: "hono-decks-viewer-stage",
+    "data-hono-decks-frame": true,
+    children: jsx("div", {
+      class: "hono-decks-viewport",
+      "data-viewer-viewport": true,
+      children: jsx("div", {
+        class: "hono-decks-frame-stage",
+        "data-viewer-stage": true,
+        children: jsx("iframe", {
+          title: input.title,
+          src: input.renderUrl,
+          width: "1920",
+          height: "1080",
+        }),
+      }),
+    }),
+  });
+}
+
+function renderViewerFrameHtml(input: { title: string; renderUrl: string }): string {
+  return `<div class="hono-decks-viewer-stage" data-hono-decks-frame><div class="hono-decks-viewport" data-viewer-viewport><div class="hono-decks-frame-stage" data-viewer-stage><iframe title="${escapeHtml(input.title)}" src="${escapeHtml(input.renderUrl)}" width="1920" height="1080"></iframe></div></div></div>`;
+}
+
+function renderViewerControls(): DeckRenderable {
+  return jsx("nav", {
+    class: "hono-decks-viewer-controls",
+    "data-hono-decks-viewer-controls": true,
+    "aria-label": "Viewer controls",
+    children: [
+      jsx("button", { type: "button", "data-action": "previous", children: "Prev" }),
+      jsx("span", { "data-slide-position": true, children: "1 / ?" }),
+      jsx("button", { type: "button", "data-action": "next", children: "Next" }),
+      jsx("button", { type: "button", "data-action": "fullscreen", children: "Full" }),
+    ],
+  });
+}
+
+function renderViewerControlsHtml(): string {
+  return `<nav class="hono-decks-viewer-controls" data-hono-decks-viewer-controls aria-label="Viewer controls"><button type="button" data-action="previous">Prev</button><span data-slide-position>1 / ?</span><button type="button" data-action="next">Next</button><button type="button" data-action="fullscreen">Full</button></nav>`;
+}
+
+function renderViewerToc(slides: DeckTocItem[]): DeckRenderable {
+  return jsx("nav", {
+    class: "hono-decks-viewer-toc",
+    "data-hono-decks-toc": true,
+    "aria-label": "Slide navigation",
+    children: jsx("ol", {
+      children: slides.map((slide) =>
+        jsx("li", {
+          children: jsx("button", {
+            type: "button",
+            "data-action": "goTo",
+            "data-slide-index": String(slide.index),
+            children: slide.label,
+          }),
+        }),
+      ),
+    }),
+  });
+}
+
+function renderViewerTocHtml(slides: DeckTocItem[]): string {
+  const items = slides
+    .map(
+      (slide) =>
+        `<li><button type="button" data-action="goTo" data-slide-index="${slide.index}">${escapeHtml(slide.label)}</button></li>`,
+    )
+    .join("");
+  return `<nav class="hono-decks-viewer-toc" data-hono-decks-toc aria-label="Slide navigation"><ol>${items}</ol></nav>`;
+}
+
+function baseViewerStyle(): string {
+  return `
+:root{color-scheme:dark;background:#050816;color:#eef2ff;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+html,body{margin:0;min-height:100vh}
+body{overflow:hidden}
+[data-hono-decks-viewer]{min-height:100vh;display:grid;place-items:center;box-sizing:border-box}
+.hono-decks-viewer-shell{display:grid;place-items:center;gap:12px;min-width:0;min-height:0}
+.hono-decks-viewer-stage{display:grid;place-items:center;min-width:0;min-height:0}
+.hono-decks-viewport{width:min(100vw,calc(100vh * 16 / 9));height:min(100vh,calc(100vw * 9 / 16));position:relative;overflow:hidden}
+.hono-decks-frame-stage{width:1920px;height:1080px;transform-origin:top left}
+.hono-decks-frame-stage iframe{width:1920px;height:1080px;border:0;display:block;background:#0b1020}
+.hono-decks-viewer-controls{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:8px;align-items:center}
+.hono-decks-viewer-toc button,.hono-decks-viewer-controls button{font:inherit}`;
+}
+
+function renderViewerScript(): string {
+  return `<script>
 (() => {
   const root = document.querySelector("[data-hono-decks-viewer]");
   const viewport = document.querySelector("[data-viewer-viewport]");
@@ -180,8 +422,8 @@ function renderDeckViewerPage(input: { slug: string; title: string; mountPath: s
     viewport.style.height = String(DESIGN_HEIGHT * scale) + "px";
   }
 
-  function sendCommand(action) {
-    iframe?.contentWindow?.postMessage({ type: "hono-decks:command", action }, "*");
+  function sendCommand(action, index) {
+    iframe?.contentWindow?.postMessage({ type: "hono-decks:command", action, index }, "*");
   }
 
   function viewerClick(event) {
@@ -204,6 +446,12 @@ function renderDeckViewerPage(input: { slug: string; title: string; mountPath: s
   document.querySelector("[data-action='previous']")?.addEventListener("click", () => sendCommand("previous"));
   document.querySelector("[data-action='next']")?.addEventListener("click", () => sendCommand("next"));
   document.querySelector("[data-action='fullscreen']")?.addEventListener("click", () => { void toggleViewerFullscreen(); });
+  document.querySelectorAll("[data-action='goTo']").forEach((control) => {
+    control.addEventListener("click", () => {
+      const index = Number(control.getAttribute("data-slide-index"));
+      if (Number.isFinite(index)) iframe?.contentWindow?.postMessage({ type: "hono-decks:command", action: "goTo", index }, "*");
+    });
+  });
   viewport?.addEventListener("click", viewerClick);
   window.addEventListener("resize", resize);
   window.addEventListener("message", (event) => {
@@ -219,9 +467,7 @@ function renderDeckViewerPage(input: { slug: string; title: string; mountPath: s
   });
   resize();
 })();
-  </script>
-</body>
-</html>`;
+  </script>`;
 }
 
 function escapeHtml(value: string): string {

@@ -62,6 +62,28 @@ describe("Node filesystem deck adapter", () => {
     const cwd = await createFixture();
 
     try {
+      await mkdir(join(cwd, "decks", "deck1", "components", "client"), { recursive: true });
+      await writeFile(
+        join(cwd, "decks", "deck1", "components", "index.tsx"),
+        `export const Counter = {
+  client: true,
+  component() {
+    return <button type="button">0</button>;
+  },
+};
+`,
+        "utf8",
+      );
+      await writeFile(
+        join(cwd, "decks", "deck1", "components", "client", "index.tsx"),
+        `/** @jsxImportSource hono/jsx/dom */
+export function Counter() {
+  return <button type="button">0</button>;
+}
+`,
+        "utf8",
+      );
+
       const manifest = await compileDecks({
         cwd,
         root: "decks",
@@ -72,12 +94,26 @@ describe("Node filesystem deck adapter", () => {
       expect(manifest.decks.map((deck) => deck.slug)).toEqual(["deck1", "deck2"]);
 
       const output = await readFile(join(cwd, "src", "generated", "decks.ts"), "utf8");
+      expect(output).toContain('import { decksClientEntry } from "./client-entry";');
       expect(output).toContain("export const decks = defineDecks({");
+      expect(output).toContain("clientEntryAsset: decksClientEntry");
       expect(output).toContain('"publicPath": "/slides/deck1/assets/my%20image%231.svg"');
+      expect(output).toContain('"publicPath": "/slides/deck1/assets/plain.svg"');
       expect(output).toContain('"body": new Uint8Array([1, 2, 3])');
+      expect(output).toContain("withClientComponentIds(Components_deck1");
+      expect(output).toMatch(/"Counter": "Counter__deck1_[a-z0-9]+"/);
 
       const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.ts"), "utf8");
       expect(slideOutput).toContain('from "hono/jsx/jsx-runtime"');
+      expect(slideOutput).toContain('src: "/slides/deck1/assets/my%20image%231.svg"');
+      expect(slideOutput).toContain('src: "/slides/deck1/assets/plain.svg"');
+      expect(slideOutput).not.toContain("/slides/deck1//slides/deck1/assets");
+
+      const clientOutput = await readFile(join(cwd, "src", "generated", "client-entry.ts"), "utf8");
+      expect(clientOutput).toContain("export const decksClientEntry =");
+      expect(clientOutput).toContain("decks/deck1/components/client/index.tsx");
+      expect(clientOutput).toContain("hydrateSlideIslands");
+      expect(clientOutput).toMatch(/Counter__deck1_[a-z0-9]+/);
     } finally {
       await rm(cwd, { recursive: true, force: true });
     }
@@ -266,10 +302,15 @@ async function createFixture(): Promise<string> {
 title: Deck One
 ---
 
-# Deck One`,
+# Deck One
+
+![Diagram](./assets/my image#1.svg)
+
+![Plain](./assets/plain.svg)`,
     "utf8",
   );
   await writeFile(join(cwd, "decks", "deck1", "assets", "my image#1.svg"), new Uint8Array([1, 2, 3]));
+  await writeFile(join(cwd, "decks", "deck1", "assets", "plain.svg"), new Uint8Array([4, 5, 6]));
   await writeFile(
     join(cwd, "decks", "deck2.mdx"),
     `---

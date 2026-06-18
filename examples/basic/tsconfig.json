@@ -12,5 +12,5 @@
     "allowJs": false,
     "verbatimModuleSyntax": true
   },
-  "include": ["src/**/*.ts", "decks/**/*.tsx", "test/**/*.ts", "vitest.config.ts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "decks/**/*.tsx", "test/**/*.ts", "vitest.config.ts"]
 }
