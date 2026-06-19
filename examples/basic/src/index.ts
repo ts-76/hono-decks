@@ -12,7 +12,7 @@ interface Env {
 
 const app = new Hono<Env>();
 const deckSource = withR2Assets(decks.source, {
-  bucket: (c) => c.env.DECK_ASSETS,
+  bucket: (c) => c.env?.DECK_ASSETS,
   cacheControl: "public, max-age=31536000, immutable",
 });
 

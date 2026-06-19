@@ -52,7 +52,7 @@ export function createDevDeckRuntime(input: DevDeckRuntimeInput): DevDeckRuntime
       if (!asset || asset.body == null) return null;
 
       return new Response(asset.body, {
-        headers: asset.contentType ? { "content-type": asset.contentType } : undefined,
+        headers: localAssetHeaders(asset),
       });
     },
   };
@@ -195,6 +195,13 @@ function mergeCompiledAndLocalAssets(compiledAssets: AssetRef[], currentAssets: 
     if (!merged.has(asset.sourcePath)) merged.set(asset.sourcePath, asset);
   }
   return [...merged.values()];
+}
+
+function localAssetHeaders(asset: AssetRef): HeadersInit {
+  const headers: Record<string, string> = {};
+  if (asset.contentType) headers["content-type"] = asset.contentType;
+  if (asset.cacheControl !== false) headers["cache-control"] = asset.cacheControl ?? "public, max-age=300";
+  return headers;
 }
 
 function isAssetPath(path: string): boolean {

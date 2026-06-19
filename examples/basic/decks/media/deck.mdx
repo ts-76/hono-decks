@@ -1,0 +1,30 @@
+---
+title: Media Verification
+description: Local and remote image asset checks for @hono/decks
+---
+
+---
+title: Local JSX Image
+layout: media
+---
+
+# Media verification
+
+<img class="media-image" src="./assets/local-jsx.svg" alt="Local JSX asset" />
+
+Local JSX image paths are rewritten to generated public asset URLs.
+
+---
+title: Remote Image
+layout: media
+---
+
+# Remote image
+
+<img
+  class="media-image"
+  src="https://example.com/hono-decks-remote.png"
+  alt="Remote image asset"
+/>
+
+Remote URLs stay as normal remote URLs and are not fetched at compile time.
