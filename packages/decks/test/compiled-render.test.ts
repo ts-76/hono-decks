@@ -206,6 +206,7 @@ describe("compiled deck rendering", () => {
     expect(html).toContain(
       "[data-hono-decks-fragment]{visibility:visible!important;opacity:1!important;transform:none!important}",
     );
+    expect(html).toContain("--hono-decks-print-slot-height:80mm");
   });
 
   it("rewrites local relative asset image sources to manifest public paths", () => {

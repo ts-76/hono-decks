@@ -56,6 +56,7 @@ export function renderDeckDetailsPage(input: {
         <nav class="sample-actions" aria-label="Deck actions">
           <a href={input.meta.canonicalPath}>Open viewer</a>
           <a href={input.meta.renderPath}>Open render page</a>
+          <a href={input.meta.printPath}>Open print page</a>
           <a href={`${input.meta.canonicalPath}/embed`}>Embed view</a>
         </nav>
       </section>

@@ -157,6 +157,22 @@ describe("decksRouter", () => {
     expect(html).not.toContain('data-hono-decks-controls');
   });
 
+  it("serves a print rendering page with the A4 handout layout", async () => {
+    const app = new Hono();
+    app.route("/slides", decksRouter({ source: manifestDeckSource({ decks: [deck] }) }));
+
+    const response = await app.request("/slides/deck1/print");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/html");
+    const html = await response.text();
+    expect(html).toContain("<h1>Intro</h1>");
+    expect(html).toContain('data-hono-decks-print-preview="true"');
+    expect(html).toContain("@page{size:A4 portrait;margin:12mm}");
+    expect(html).toContain(".slide:nth-of-type(3n):not(:last-child){page-break-after:always;break-after:page}");
+    expect(html).not.toContain("function fitDeck()");
+    expect(html).not.toContain('window.addEventListener("message"');
+  });
+
   it("returns a clear 500 response when a compiled slide render fails", async () => {
     const failingDeck = {
       ...deck,
@@ -407,7 +423,12 @@ describe("decksRouter", () => {
     app.get(
       "/admin/decks/:slug",
       deckContext({ source: manifestDeckSource({ decks: [deck] }), mountPath: "/decks" }),
-      (c) => c.json({ renderUrl: c.var.deckViewer.renderUrl, canonicalPath: c.var.deckMeta.canonicalPath }),
+      (c) =>
+        c.json({
+          renderUrl: c.var.deckViewer.renderUrl,
+          canonicalPath: c.var.deckMeta.canonicalPath,
+          printPath: c.var.deckMeta.printPath,
+        }),
     );
 
     const response = await app.request("/admin/decks/deck1");
@@ -416,6 +437,7 @@ describe("decksRouter", () => {
     expect(await response.json()).toEqual({
       renderUrl: "/decks/deck1/render",
       canonicalPath: "/decks/deck1",
+      printPath: "/decks/deck1/print",
     });
   });
 

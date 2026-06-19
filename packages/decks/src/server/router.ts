@@ -46,6 +46,7 @@ export interface DeckPageMeta {
   description?: string;
   canonicalPath: string;
   renderPath: string;
+  printPath: string;
   imagePath?: string;
 }
 
@@ -135,6 +136,29 @@ export function decksRouter(options: DecksRouterOptions): Hono {
     }
   });
 
+  router.get("/:slug/print", async (c) => {
+    const slug = c.req.param("slug");
+    const deck = await options.source.getCompiledDeck(c, slug);
+    if (!deck || (!isDevEnabled(options) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
+    const mountPath = stripPathSuffix(c.req.path, `/${slug}/print`);
+    try {
+      return c.html(
+        await renderCompiledDeckPageAsync({
+          deck,
+          mountPath,
+          style: options.style,
+          theme: options.theme,
+          components: options.components,
+          printPreview: true,
+        }),
+      );
+    } catch (error) {
+      const message =
+        error instanceof RenderError ? error.message : `Render failed in ${deck.sourcePath}: ${formatErrorMessage(error)}`;
+      return c.text(message, 500);
+    }
+  });
+
   router.get("/:slug/presentation", async (c) => {
     const slug = c.req.param("slug");
     return c.redirect(`${stripPathSuffix(c.req.path, `/${slug}/presentation`)}/${encodeURIComponent(slug)}/render`, 302);
@@ -188,12 +212,14 @@ export function createDeckViewerParts(input: {
   const basePath = input.mountPath.replace(/\/$/, "");
   const canonicalPath = `${basePath}/${encodeURIComponent(slug)}`;
   const renderUrl = `${canonicalPath}/render`;
+  const printPath = `${canonicalPath}/print`;
   const slides = createDeckToc(input.deck);
   const meta: DeckPageMeta = {
     title,
     description: input.deck.meta.description,
     canonicalPath,
     renderPath: renderUrl,
+    printPath,
   };
 
   return {

@@ -307,6 +307,7 @@ bun run smoke:pdf
 - `GET /decks` は deck index
 - `GET /decks/sample` は viewer
 - `GET /decks/sample/render` は固定キャンバスの render page
+- `GET /decks/sample/print` は A4 handout の print/PDF 用 render page
 
 ## Architecture
 

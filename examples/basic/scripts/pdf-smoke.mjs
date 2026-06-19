@@ -39,7 +39,7 @@ try {
   server.stdout.on("data", (chunk) => process.stdout.write(`[wrangler] ${chunk}`));
   server.stderr.on("data", (chunk) => process.stderr.write(`[wrangler] ${chunk}`));
 
-  await waitForServer(`${baseUrl}/decks/sample/render`);
+  await waitForServer(`${baseUrl}/decks/sample/print`);
   await mkdir(artifactDir, { recursive: true });
   await agent(["--session", session, "close"], { allowFailure: true });
 
@@ -58,7 +58,7 @@ try {
 
 async function runPdfCheck(deck) {
   const pdfPath = path.join(artifactDir, `${deck.slug}.pdf`);
-  await agent(["--session", session, "open", `${baseUrl}/decks/${deck.slug}/render`]);
+  await agent(["--session", session, "open", `${baseUrl}/decks/${deck.slug}/print`]);
   await agent(["--session", session, "wait", "500"]);
   await agent(["--session", session, "pdf", pdfPath]);
 
