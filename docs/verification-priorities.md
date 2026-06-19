@@ -76,15 +76,21 @@ Rationale: iframe embeds are common and can be supported without third-party scr
 
 ### 5. Accessibility And Viewport Behavior
 
-Verify:
+Package-level coverage now verifies:
 
-- Heading order
-- Iframe titles
-- Reduced motion
-- Keyboard navigation
-- Touch navigation
-- Fixed 16:9 scaling on desktop and mobile
-- Long text, image, and code overflow
+- Heading order for index/viewer/render surfaces
+- Iframe titles for the viewer frame and embed components
+- Reduced motion CSS guards in viewer and presentation documents
+- Keyboard navigation command wiring
+- Touch navigation command wiring
+- Fixed 16:9 iframe/viewer contract and internal 1920x1080 scaling
+
+Smoke coverage is still needed for:
+
+- Desktop and mobile screenshot checks for clipping or overlap
+- Touch navigation on real mobile viewports
+- Long text, image, and code overflow in visual review
+- Color contrast for default controls and sample themes
 
 Rationale: viewer quality depends on predictable scaling and navigation. These checks also catch regressions that unit tests miss, so some of them should become browser or deployed smoke checks.
 

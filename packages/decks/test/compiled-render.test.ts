@@ -87,6 +87,7 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("Math.min(bounds.width / DESIGN_WIDTH, bounds.height / DESIGN_HEIGHT)");
     expect(html).toContain('deck.style.transform = "scale(" + scale + ")"');
     expect(html).toContain('window.addEventListener("resize", fitDeck)');
+    expect(html).toContain("@media (prefers-reduced-motion: reduce)");
     expect(html).not.toContain("html,body{margin:0;width:var(--hono-decks-width);height:var(--hono-decks-height)");
   });
 

@@ -288,10 +288,23 @@ async function renderDeckViewerPage(input: {
     jsx("main", {
       "data-hono-decks-viewer": true,
       "data-deck-slug": parts.slug,
-      children: jsx("div", {
-        class: "hono-decks-viewer-shell",
-        children: [parts.frame, parts.controls],
-      }),
+      "aria-labelledby": "hono-decks-viewer-title",
+      children: [
+        jsx("header", {
+          class: "hono-decks-viewer-header",
+          children: [
+            jsx("h1", { id: "hono-decks-viewer-title", class: "hono-decks-viewer-title", children: parts.title }),
+            jsx("p", {
+              class: "hono-decks-viewer-meta",
+              children: `${parts.slides.length} ${parts.slides.length === 1 ? "slide" : "slides"}`,
+            }),
+          ],
+        }),
+        jsx("div", {
+          class: "hono-decks-viewer-shell",
+          children: [parts.frame, parts.controls],
+        }),
+      ],
     });
   const head = input.viewer?.head ? await renderJsxValue(await input.viewer.head) : "";
 
@@ -326,6 +339,7 @@ function renderViewerFrame(input: { title: string; renderUrl: string }): DeckRen
     children: jsx("div", {
       class: "hono-decks-viewport",
       "data-viewer-viewport": true,
+      tabindex: "0",
       children: jsx("div", {
         class: "hono-decks-frame-stage",
         "data-viewer-stage": true,
@@ -339,7 +353,7 @@ function renderViewerFrame(input: { title: string; renderUrl: string }): DeckRen
 }
 
 function renderViewerFrameHtml(input: { title: string; renderUrl: string }): string {
-  return `<div class="hono-decks-viewer-stage" data-hono-decks-frame><div class="hono-decks-viewport" data-viewer-viewport><div class="hono-decks-frame-stage" data-viewer-stage><iframe title="${escapeHtml(input.title)}" src="${escapeHtml(input.renderUrl)}"></iframe></div></div></div>`;
+  return `<div class="hono-decks-viewer-stage" data-hono-decks-frame><div class="hono-decks-viewport" data-viewer-viewport tabindex="0"><div class="hono-decks-frame-stage" data-viewer-stage><iframe title="${escapeHtml(input.title)}" src="${escapeHtml(input.renderUrl)}"></iframe></div></div></div>`;
 }
 
 function renderViewerControls(): DeckRenderable {
@@ -396,13 +410,18 @@ function baseViewerStyle(): string {
 html,body{margin:0;min-height:100vh}
 body{overflow:hidden}
 [data-hono-decks-viewer]{min-height:100vh;display:grid;place-items:center;box-sizing:border-box}
+.hono-decks-viewer-header{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.hono-decks-viewer-title{margin:0;font-size:1rem;line-height:1.25}
+.hono-decks-viewer-meta{margin:.2rem 0 0;color:#cbd5e1;font-size:.82rem}
 .hono-decks-viewer-shell{display:grid;place-items:center;gap:12px;min-width:0;min-height:0}
 .hono-decks-viewer-stage{display:grid;place-items:center;min-width:0;min-height:0}
-.hono-decks-viewport{width:min(100vw,calc(100vh * 16 / 9));aspect-ratio:16/9;position:relative;overflow:hidden}
+.hono-decks-viewport{width:min(100vw,calc(100vh * 16 / 9));aspect-ratio:16/9;position:relative;overflow:hidden;touch-action:pan-y}
+.hono-decks-viewport:focus-visible{outline:2px solid currentColor;outline-offset:4px}
 .hono-decks-frame-stage{width:100%;height:100%}
 .hono-decks-frame-stage iframe{width:100%;height:100%;border:0;display:block;background:#0b1020}
 .hono-decks-viewer-controls{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:8px;align-items:center}
-.hono-decks-viewer-toc button,.hono-decks-viewer-controls button{font:inherit}`;
+.hono-decks-viewer-toc button,.hono-decks-viewer-controls button{font:inherit}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}}`;
 }
 
 function renderViewerScript(): string {
@@ -412,7 +431,8 @@ function renderViewerScript(): string {
   const viewport = document.querySelector("[data-viewer-viewport]");
   const iframe = document.querySelector("iframe");
   const position = document.querySelector("[data-slide-position]");
-  let activeSlideIndex = 0;
+  let pointerStartX = null;
+  let pointerStartY = null;
 
   function sendCommand(action, index) {
     iframe?.contentWindow?.postMessage({ type: "hono-decks:command", action, index }, "*");
@@ -425,6 +445,21 @@ function renderViewerScript(): string {
     if (!bounds) return;
     const action = event.clientX < bounds.left + bounds.width / 2 ? "previous" : "next";
     sendCommand(action);
+  }
+
+  function viewerPointerDown(event) {
+    pointerStartX = event.clientX;
+    pointerStartY = event.clientY;
+  }
+
+  function viewerPointerUp(event) {
+    if (pointerStartX === null || pointerStartY === null) return;
+    const deltaX = event.clientX - pointerStartX;
+    const deltaY = event.clientY - pointerStartY;
+    pointerStartX = null;
+    pointerStartY = null;
+    if (Math.abs(deltaX) < 48 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+    sendCommand(deltaX < 0 ? "next" : "previous");
   }
 
   async function toggleViewerFullscreen() {
@@ -445,10 +480,11 @@ function renderViewerScript(): string {
     });
   });
   viewport?.addEventListener("click", viewerClick);
+  viewport?.addEventListener("pointerdown", viewerPointerDown);
+  viewport?.addEventListener("pointerup", viewerPointerUp);
   window.addEventListener("message", (event) => {
     const message = event.data;
     if (!message || message.type !== "hono-decks:state") return;
-    activeSlideIndex = message.index;
     if (position) position.textContent = String(message.index + 1) + " / " + String(message.slideCount ?? "?");
   });
   document.addEventListener("keydown", (event) => {

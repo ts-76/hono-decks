@@ -55,7 +55,7 @@ R2 official sample direction is still open. The current package API supports bin
 | Slide transition | `transition` frontmatter | design | Package should parse and apply known transitions rather than leaving the value unused. |
 | Fragment / step display | Progressive reveal for bullets or blocks | design | Needs data model and keyboard/touch interaction semantics. |
 | Keyboard navigation | Arrow keys, space, fullscreen | done | Current viewer/render scripts cover the core path; keep route tests and add browser smoke later. |
-| Touch navigation | Tap/swipe on mobile | smoke | Needs browser/device viewport verification. |
+| Touch navigation | Tap/swipe on mobile | smoke | Package tests cover pointer swipe command wiring; browser/device viewport verification is still needed for real touch behavior. |
 
 ## Presentation And Export
 
@@ -94,10 +94,10 @@ R2 official sample direction is still open. The current package API supports bin
 
 | Area | Case | Status | Notes |
 | --- | --- | --- | --- |
-| Heading order | Deck index, viewer, render document, details pages | sample | Verify meaningful heading structure in package pages and sample layouts. |
-| Iframe title | Viewer frame and custom embed frame | done | Current viewer frame includes a title; keep this in custom components. |
-| Reduced motion | Viewer transitions and in-slide animation | design | Package should respect `prefers-reduced-motion` for transitions and controls. |
-| Fixed 16:9 scaling | Desktop and mobile viewports | smoke | Needs browser screenshot or visual checks to catch clipping and overlap. |
+| Heading order | Deck index, viewer, render document, details pages | done | Package tests cover the deck index heading, standard viewer heading, and slide labels; sample layout checks keep details/embed pages rendered through app-owned layouts. |
+| Iframe title | Viewer frame and custom embed frame | done | Current viewer frame and `EmbedFrame` include titles; keep this in custom components. |
+| Reduced motion | Viewer transitions and in-slide animation | done | Standard viewer and presentation documents include `prefers-reduced-motion` CSS guards; feature-specific animation samples should keep using the same media query. |
+| Fixed 16:9 scaling | Desktop and mobile viewports | smoke | Package tests cover parent-sized iframe viewer and internal 1920x1080 scaling; browser screenshot checks are still needed for mobile clipping and overlap. |
 | Responsive content | Long text, images, code blocks | sample | Add sample slides that stress wrapping, overflow, and viewport bounds. |
 | Color contrast | Default viewer controls and sample theme | smoke | Can be partly automated later, but visual review is still useful. |
 
