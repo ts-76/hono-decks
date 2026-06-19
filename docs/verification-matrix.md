@@ -86,7 +86,7 @@ R2 official sample direction is still open. The current package API supports bin
 | --- | --- | --- | --- |
 | Server components | Deck-local `components/index.tsx` named exports | done | Current generated registry covers deck-local server components. |
 | Client islands | Deck-local `components/client/index.tsx` named exports | done | Current generated client entry uses stable hashed ids to avoid collisions. |
-| Prop serialization | Client component props | design | Document supported primitive/JSON props and failure behavior for functions, JSX elements, dates, and class instances. |
+| Prop serialization | Client component props | done | Client islands accept JSON values and fail with component/prop context for functions, JSX values, Dates, class instances, and other non-JSON values. |
 | MDX expressions | JSX prop and children expressions | done | Current MDX module path supports standard MDX expressions as trusted app code. |
 | Component name collisions | Same export names across decks | done | Server scope is deck-local; client ids are stable-hashed. |
 

@@ -23,12 +23,12 @@ export interface Slide {
 
 export type SlideNode =
   | { type: "text"; value: string }
-  | { type: "element"; tag: string; props: Record<string, SlidePropValue | undefined>; children: SlideNode[] }
+  | { type: "element"; tag: string; props: Record<string, unknown>; children: SlideNode[] }
   | { type: "code"; lang?: string; value: string }
   | {
       type: "component";
       name: string;
-      props: Record<string, SlidePropValue | undefined>;
+      props: Record<string, unknown>;
       children: SlideNode[];
       source?: string;
     };
