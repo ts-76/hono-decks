@@ -14,6 +14,7 @@ function _createMdxContent(props) {
       lang: "ts",
       filename: "worker.ts",
       highlight: "2",
+      highlightedHtml: "<pre class=\"shiki github-dark\" style=\"background-color:#24292e;color:#e1e4e8\" tabindex=\"0\"><code><span class=\"line\"><span style=\"color:#F97583\">const</span><span style=\"color:#79B8FF\"> app</span><span style=\"color:#F97583\"> =</span><span style=\"color:#F97583\"> new</span><span style=\"color:#B392F0\"> Hono</span><span style=\"color:#E1E4E8\">()</span></span>\n<span class=\"line\"><span style=\"color:#E1E4E8\">app.</span><span style=\"color:#B392F0\">get</span><span style=\"color:#E1E4E8\">(</span><span style=\"color:#9ECBFF\">\"/\"</span><span style=\"color:#E1E4E8\">, (</span><span style=\"color:#FFAB70\">c</span><span style=\"color:#E1E4E8\">) </span><span style=\"color:#F97583\">=></span><span style=\"color:#E1E4E8\"> c.</span><span style=\"color:#B392F0\">text</span><span style=\"color:#E1E4E8\">(</span><span style=\"color:#9ECBFF\">\"ok\"</span><span style=\"color:#E1E4E8\">))</span></span></code></pre>",
       children: _jsx(_components.p, {
         children: "const app = new Hono()\napp.get(\"/\", (c) => c.text(\"ok\"))"
       })

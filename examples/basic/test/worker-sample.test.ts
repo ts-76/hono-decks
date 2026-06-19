@@ -129,20 +129,20 @@ describe("sample Worker app", () => {
     expect(html).not.toContain("./assets/local-jsx.svg");
   });
 
-  it("renders fenced code blocks with language class, escaping, and overflow styles", async () => {
+  it("renders code blocks with build-time Shiki highlighting and overflow styles", async () => {
     const app = await sampleApp();
     const response = await app.request("/decks/code/render");
 
     expect(response.status).toBe(200);
     const html = await response.text();
     expect(html).toContain("<h1>Code verification</h1>");
-    expect(html).toContain("<pre><code class=\"language-ts\"");
-    expect(html).toContain("const view = &lt;Slide title=&quot;Hello&quot; /&gt;");
-    expect(html).toContain("return items.map((item) =&gt; item.id).join(&quot;, &quot;)");
     expect(html).toContain('class="hono-decks-code-block"');
+    expect(html).toContain('class="hono-decks-code-highlight"');
+    expect(html).toContain('<pre class="shiki github-dark"');
+    expect(html).toContain('style="color:#F97583">const</span>');
     expect(html).toContain('data-filename="worker.ts"');
+    expect(html).toContain('data-highlight="2"');
     expect(html).toContain('<figcaption class="hono-decks-code-caption">worker.ts</figcaption>');
-    expect(html).toContain('app.get(&quot;/&quot;, (c) =&gt; c.text(&quot;ok&quot;))');
     expect(html).toContain(".slide pre{max-width:100%;overflow:auto");
     expect(html).toContain(".slide code{font-family:");
   });

@@ -1,4 +1,5 @@
 import { compile } from "@mdx-js/mdx";
+import { codeToHtml } from "shiki";
 import { CompileError } from "../deck/model";
 import type { AssetRef, CompiledDeck, DeckFrontmatter, DeckKind, SlideFrontmatter } from "../deck/model";
 import type { ResolvedDeckFile } from "../routing/file-routing";
@@ -30,6 +31,16 @@ export interface GeneratedSlideModule {
 export interface GeneratedMdxModuleDecks {
   decks: GeneratedModuleDeck[];
   routerModule: string;
+}
+
+interface MarkdownNode {
+  type: string;
+  name?: string;
+  value?: string;
+  lang?: string;
+  meta?: string;
+  attributes?: MarkdownNode[];
+  children?: MarkdownNode[];
 }
 
 export async function compileMdxModuleDecks(input: CompileMdxModuleDecksInput): Promise<GeneratedMdxModuleDecks> {
@@ -101,6 +112,7 @@ async function compileMdxModule(source: string, sourcePath: string, slideIndex: 
           jsxImportSource: "hono/jsx",
           format: "mdx",
           elementAttributeNameCase: "html",
+          remarkPlugins: [remarkCodeHighlight],
         },
       ),
     );
@@ -112,6 +124,84 @@ async function compileMdxModule(source: string, sourcePath: string, slideIndex: 
       "mdx-compile-error",
     );
   }
+}
+
+function remarkCodeHighlight() {
+  return async (tree: MarkdownNode) => {
+    await highlightMarkdownNode(tree);
+  };
+}
+
+async function highlightMarkdownNode(node: MarkdownNode): Promise<void> {
+  if (node.type === "code") {
+    const code = typeof node.value === "string" ? node.value : "";
+    const lang = typeof node.lang === "string" && node.lang ? node.lang : undefined;
+    const highlightedHtml = await highlightCodeBlock(code, lang);
+
+    node.type = "mdxJsxFlowElement";
+    node.name = "CodeBlock";
+    node.attributes = [
+      ...(lang ? [mdxAttribute("lang", lang)] : []),
+      mdxAttribute("highlightedHtml", highlightedHtml),
+    ];
+    node.children = [{ type: "text", value: code }];
+    delete node.value;
+    delete node.lang;
+    delete node.meta;
+    return;
+  }
+
+  if (node.type === "mdxJsxFlowElement" && node.name === "CodeBlock") {
+    const code = collectMarkdownText(node);
+    if (code.trim()) {
+      const lang = getMdxStringAttribute(node, "lang");
+      const highlightedHtml = await highlightCodeBlock(code, lang);
+      node.attributes = upsertMdxStringAttribute(node.attributes, "highlightedHtml", highlightedHtml);
+    }
+    return;
+  }
+
+  if (!Array.isArray(node.children)) return;
+  await Promise.all(node.children.map((child) => highlightMarkdownNode(child)));
+}
+
+async function highlightCodeBlock(code: string, lang: string | undefined): Promise<string> {
+  const language = lang && /^[A-Za-z0-9_#+.-]+$/.test(lang) ? lang : "text";
+  try {
+    return await codeToHtml(code, { lang: language, theme: "github-dark" });
+  } catch (error) {
+    if (language === "text") throw error;
+    return codeToHtml(code, { lang: "text", theme: "github-dark" });
+  }
+}
+
+function mdxAttribute(name: string, value: string): MarkdownNode {
+  return { type: "mdxJsxAttribute", name, value };
+}
+
+function getMdxStringAttribute(node: MarkdownNode, name: string): string | undefined {
+  const attributes = Array.isArray(node.attributes) ? node.attributes : [];
+  const attribute = attributes.find((item) => item.type === "mdxJsxAttribute" && item.name === name);
+  return typeof attribute?.value === "string" ? attribute.value : undefined;
+}
+
+function upsertMdxStringAttribute(
+  attributes: MarkdownNode["attributes"] | undefined,
+  name: string,
+  value: string,
+): MarkdownNode[] {
+  const next = Array.isArray(attributes) ? [...attributes] : [];
+  const index = next.findIndex((item) => item.type === "mdxJsxAttribute" && item.name === name);
+  const attribute = mdxAttribute(name, value);
+  if (index === -1) return [...next, attribute];
+  next[index] = attribute;
+  return next;
+}
+
+function collectMarkdownText(node: MarkdownNode): string {
+  if (typeof node.value === "string") return node.value;
+  if (!Array.isArray(node.children)) return "";
+  return node.children.map((child) => collectMarkdownText(child)).join(node.type === "paragraph" ? "\n" : "");
 }
 
 function emitModuleDecksRouter(input: { decks: GeneratedModuleDeck[] }): string {
