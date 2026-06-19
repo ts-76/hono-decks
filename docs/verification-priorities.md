@@ -85,12 +85,18 @@ Package-level coverage now verifies:
 - Touch navigation command wiring
 - Fixed 16:9 iframe/viewer contract and internal 1920x1080 scaling
 
-Smoke coverage is still needed for:
+Browser smoke coverage now exists for:
 
 - Desktop and mobile screenshot checks for clipping or overlap
-- Touch navigation on real mobile viewports
-- Long text, image, and code overflow in visual review
-- Color contrast for default controls and sample themes
+- Browser-side pointer swipe behavior
+- Sample, code, and media deck viewport screenshots
+- Default viewer control contrast
+
+Smoke coverage that still needs deployed or manual evidence:
+
+- Real-device touch navigation before release
+- Deployed R2/cache behavior
+- Longer stress content once layout/theme APIs settle
 
 Rationale: viewer quality depends on predictable scaling and navigation. These checks also catch regressions that unit tests miss, so some of them should become browser or deployed smoke checks.
 
@@ -163,7 +169,7 @@ Rationale: PDF output should be validated visually, not only through HTML assert
 
 ## Recommended Next Steps
 
-1. Add browser/deployed smoke checks once viewer scaling, touch navigation, and R2 cache behavior need visual or edge confirmation.
-2. Start layout/theme API design before adding more official sample decks.
+1. Start layout/theme API design before adding more official sample decks.
+2. Add deployed R2/cache smoke checks once a deployed Worker target is available.
 
 Keep `examples/basic/decks/sample` small. It should remain the happy-path deck for MDX expressions, deck-local server components, client islands, viewer pages, and R2 binding fallback.
