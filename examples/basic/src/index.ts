@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { deckContext, type DeckContextVariables } from "@hono/decks";
 import { createSampleDeckSource, type SampleDeckSourceBindings } from "./deck-source";
 import { decks, decksRouter } from "./generated/decks";
-import { renderDeckDetailsPage, renderDeckEmbedPage, renderHomePage, renderSampleViewerHead } from "./pages";
+import { renderDeckDetailsPage, renderDeckEmbedPage, renderHomePage, renderSampleViewerHead, sampleDeckStyle } from "./pages";
 
 interface Env {
   Bindings: SampleDeckSourceBindings;
@@ -30,6 +30,7 @@ app.route(
   "/decks",
   decksRouter({
     source: deckSource,
+    style: sampleDeckStyle,
     viewer: {
       head: renderSampleViewerHead(),
     },

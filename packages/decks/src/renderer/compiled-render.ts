@@ -269,11 +269,11 @@ function mergeComponentInputs(
 
 function basePresentationStyle(): string {
   return `
-:root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0b1020;color:#eef2ff;--hono-decks-width:1920px;--hono-decks-height:1080px}
+:root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#eef2ff;--hono-decks-width:1920px;--hono-decks-height:1080px}
 html,body{margin:0;width:100%;height:100%;overflow:hidden}
-.hono-decks-stage{width:100vw;height:100vh;overflow:hidden;background:#0b1020;position:relative;display:grid;place-items:center}
+.hono-decks-stage{width:100vw;height:100vh;overflow:hidden;position:relative;display:grid;place-items:center}
 .hono-decks-deck{display:grid;gap:1rem;width:var(--hono-decks-width);height:var(--hono-decks-height);box-sizing:border-box;transform-origin:left top}
-.slide{box-sizing:border-box;aspect-ratio:16/9;border:1px solid rgba(255,255,255,.13);padding:clamp(1.2rem,3vw,3rem);background:linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.035));overflow:hidden}
+.slide{box-sizing:border-box;aspect-ratio:16/9;padding:clamp(1.2rem,3vw,3rem);overflow:hidden}
 .slide.layout-cover,.slide.layout-statement{display:flex;flex-direction:column;justify-content:center}
 .slide code{font-family:"SFMono-Regular","Cascadia Code","Liberation Mono",Menlo,Consolas,monospace;font-size:.9em;line-height:1.45}
 .slide :not(pre)>code{border-radius:6px;background:rgba(15,23,42,.72);padding:.12em .34em}
@@ -282,7 +282,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden}
 .hono-decks-code-block{margin:1rem 0;max-width:100%}
 .hono-decks-code-caption{display:inline-flex;margin:0 0 .4rem;border:1px solid rgba(148,163,184,.24);border-radius:6px;padding:.2rem .5rem;background:rgba(15,23,42,.72);color:#cbd5e1;font-size:.82rem}
 .hono-decks-embed-frame{margin:1rem 0;max-width:100%}
-.hono-decks-embed-viewport{width:min(100%,72rem);overflow:hidden;border:1px solid rgba(148,163,184,.24);border-radius:8px;background:rgba(15,23,42,.78)}
+.hono-decks-embed-viewport{width:min(100%,72rem);overflow:hidden}
 .hono-decks-embed-viewport iframe{display:block;width:100%;height:100%;border:0}
 .hono-decks-embed-fallback{margin:.45rem 0 0;color:#cbd5e1;font-size:.84rem}
 .hono-decks-embed-fallback a{color:inherit}

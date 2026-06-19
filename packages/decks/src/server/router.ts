@@ -446,7 +446,7 @@ body{overflow:hidden}
 .hono-decks-viewport{width:min(100vw,calc(100vh * 16 / 9));aspect-ratio:16/9;position:relative;overflow:hidden;touch-action:pan-y}
 .hono-decks-viewport:focus-visible{outline:2px solid currentColor;outline-offset:4px}
 .hono-decks-frame-stage{width:100%;height:100%}
-.hono-decks-frame-stage iframe{width:100%;height:100%;border:0;display:block;background:#0b1020}
+.hono-decks-frame-stage iframe{width:100%;height:100%;border:0;display:block}
 .hono-decks-viewer-controls{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:8px;align-items:center}
 .hono-decks-viewer-toc button,.hono-decks-viewer-controls button{font:inherit}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}}`;
