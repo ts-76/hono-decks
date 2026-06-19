@@ -12,8 +12,16 @@ export interface CompileMdxModuleDecksInput {
   decks: ResolvedDeckFile[];
   componentModulePaths?: Record<string, string>;
   clientComponentIds?: Record<string, Record<string, string>>;
+  resolveOgp?(url: string): Promise<LinkCardOgpMetadata | undefined>;
   readText(path: string): Promise<string>;
   readBinary?(path: string): Promise<Uint8Array>;
+}
+
+export interface LinkCardOgpMetadata {
+  title?: string;
+  description?: string;
+  image?: string;
+  siteName?: string;
 }
 
 export interface GeneratedModuleDeck {
@@ -77,7 +85,7 @@ async function compileMdxModuleDeck(
     const slideMeta = toSlideFrontmatter(slideAttrs, warnings, index);
     const moduleSource = [prelude, rewriteAssetUrls(slideBody, assets)].filter(Boolean).join("\n\n");
     const rewrittenSource = rewriteRelativeMdxImports(moduleSource, dirname(entry.sourcePath), dirname(slideModulePath));
-    const code = await compileMdxModule(rewrittenSource, entry.sourcePath, index, slideMeta.fragments);
+    const code = await compileMdxModule(rewrittenSource, entry.sourcePath, index, slideMeta.fragments, input.resolveOgp);
 
     slideModules.push({
       path: slideModulePath,
@@ -114,8 +122,10 @@ async function compileMdxModule(
   sourcePath: string,
   slideIndex: number,
   fragments: SlideFrontmatter["fragments"],
+  resolveOgp: CompileMdxModuleDecksInput["resolveOgp"],
 ): Promise<string> {
   try {
+    const linkCardMetadata = await resolveLinkCardMetadataByUrl(source, resolveOgp);
     const compiled = String(
       await compile(
         { path: `${sourcePath}#slide-${slideIndex + 1}`, value: source },
@@ -124,7 +134,12 @@ async function compileMdxModule(
           jsxImportSource: "hono/jsx",
           format: "mdx",
           elementAttributeNameCase: "html",
-          remarkPlugins: [remarkDirective, remarkDeckSyntax(), remarkListFragments(fragments), remarkCodeHighlight],
+          remarkPlugins: [
+            remarkDirective,
+            remarkDeckSyntax({ linkCardMetadata }),
+            remarkListFragments(fragments),
+            remarkCodeHighlight,
+          ],
         },
       ),
     );
@@ -138,29 +153,37 @@ async function compileMdxModule(
   }
 }
 
-function remarkDeckSyntax() {
+function remarkDeckSyntax(input: { linkCardMetadata?: Map<string, LinkCardOgpMetadata> } = {}) {
   return () => (tree: MarkdownNode) => {
-    transformDeckSyntaxChildren(tree);
+    transformDeckSyntaxChildren(tree, input);
   };
 }
 
-function transformDeckSyntaxChildren(node: MarkdownNode): void {
+function transformDeckSyntaxChildren(
+  node: MarkdownNode,
+  input: { linkCardMetadata?: Map<string, LinkCardOgpMetadata> },
+): void {
   if (!Array.isArray(node.children)) return;
 
-  node.children = node.children.map((child) => {
-    transformDeckSyntaxChildren(child);
-    return (
-      zennEmbedNode(child) ??
+  const children: MarkdownNode[] = [];
+  for (const child of node.children) {
+    transformDeckSyntaxChildren(child, input);
+    children.push(
+      zennEmbedNode(child, input) ??
       plainUrlLinkNode(child) ??
       fireDirectiveNode(child) ??
       firePropNode(child) ??
       unknownDirectiveFallback(child) ??
-      child
+      child,
     );
-  });
+  }
+  node.children = children;
 }
 
-function zennEmbedNode(node: MarkdownNode): MarkdownNode | undefined {
+function zennEmbedNode(
+  node: MarkdownNode,
+  input: { linkCardMetadata?: Map<string, LinkCardOgpMetadata> },
+): MarkdownNode | undefined {
   if (node.type !== "paragraph" || !Array.isArray(node.children) || node.children.length !== 2) return undefined;
 
   const [prefix, link] = node.children;
@@ -184,7 +207,15 @@ function zennEmbedNode(node: MarkdownNode): MarkdownNode | undefined {
     return mdxElement("TweetEmbed", [mdxAttribute("href", link.url), mdxAttribute("label", "Open post on X")], []);
   }
   if (name === "card") {
-    return mdxElement("LinkCard", [mdxAttribute("href", link.url)], []);
+    const metadata = input.linkCardMetadata?.get(link.url);
+    return mdxElement(
+      "LinkCard",
+      [
+        mdxAttribute("href", link.url),
+        ...metadataAttributes(metadata),
+      ],
+      [],
+    );
   }
   if (name === "embed" || name === "iframe") {
     return mdxElement(
@@ -194,6 +225,43 @@ function zennEmbedNode(node: MarkdownNode): MarkdownNode | undefined {
     );
   }
   return undefined;
+}
+
+async function resolveLinkCardMetadataByUrl(
+  source: string,
+  resolveOgp: CompileMdxModuleDecksInput["resolveOgp"],
+): Promise<Map<string, LinkCardOgpMetadata>> {
+  const result = new Map<string, LinkCardOgpMetadata>();
+  if (!resolveOgp) return result;
+
+  for (const url of collectLinkCardUrls(source)) {
+    try {
+      const metadata = await resolveOgp(url);
+      if (metadata) result.set(url, metadata);
+    } catch {
+      // OGP fetch is best-effort; keep the link card fallback when metadata cannot be resolved.
+    }
+  }
+  return result;
+}
+
+function collectLinkCardUrls(source: string): string[] {
+  const urls = new Set<string>();
+  const pattern = /@\[card\]\(([^)\s]+)\)/g;
+  for (const match of source.matchAll(pattern)) {
+    urls.add(match[1]);
+  }
+  return [...urls];
+}
+
+function metadataAttributes(metadata: LinkCardOgpMetadata | undefined): MarkdownNode[] {
+  if (!metadata) return [];
+  return [
+    ...(metadata.title ? [mdxAttribute("title", metadata.title)] : []),
+    ...(metadata.description ? [mdxAttribute("description", metadata.description)] : []),
+    ...(metadata.image ? [mdxAttribute("image", metadata.image)] : []),
+    ...(metadata.siteName ? [mdxAttribute("siteName", metadata.siteName)] : []),
+  ];
 }
 
 function plainUrlLinkNode(node: MarkdownNode): MarkdownNode | undefined {

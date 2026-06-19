@@ -78,7 +78,7 @@ https://example.com/plain-link
 <Badge $fire={2} effect="scale">クリックで表示する JSX component</Badge>
 ```
 
-上の記法はそれぞれ `<EmbedFrame />`、`<SocialEmbed />`、`<LinkCard />`、`<Fragment />` 相当へ正規化されます。単独行 URL は通常リンクとして扱い、勝手にカード化しません。細かく制御したい場合は built-in component を直接書けます。独自デザインにしたい場合は `decksRouter({ theme: { components } })` で同名 component を差し替えます。
+上の記法はそれぞれ `<EmbedFrame />`、`<TweetEmbed />`、`<LinkCard />`、`<Fragment />` 相当へ正規化されます。単独行 URL は通常リンクとして扱い、勝手にカード化しません。細かく制御したい場合は built-in component を直接書けます。独自デザインにしたい場合は `decksRouter({ theme: { components } })` で同名 component を差し替えます。
 
 コードブロックは compile 時に Shiki で highlight され、生成済み slide module に HTML として埋め込まれます。Worker runtime は highlighter を読み込まず、生成済み HTML を render するだけです。fenced code と built-in `<CodeBlock>` のどちらも使えます。
 
@@ -156,13 +156,13 @@ SNS や X のような script-based embed は `@[x](url)` または built-in `<S
   author="@honojs"
   label="Open on X"
 >
-Script-based SNS embeds stay link-first by default.
+Low-level fallback embeds stay link-first when you do not want third-party scripts.
 </SocialEmbed>
 ```
 
-外部リンクの preview fallback は `@[card](url)` または built-in `<LinkCard>` を使います。package は OGP fetch を暗黙実行しません。必要なら build-time syntax config や `theme.components.LinkCard` の差し替えでアプリ側が制御します。
+外部リンクの preview は `@[card](url)` または built-in `<LinkCard>` を使います。`@[card](url)` は compile 時に OGP metadata を best-effort で解決し、取得できた `title`、`description`、`image`、`siteName` を生成済み slide module に埋め込みます。取得できない場合でも compile は失敗せず、従来通り URL ベースの link card fallback を render します。Worker runtime では OGP fetch を実行しません。
 
-`@hono/decks` は標準 viewer に Content-Security-Policy header を設定しません。アプリ側で CSP を設定する場合、iframe embed は `frame-src`、画像は `img-src`、client entry は `script-src` の対象になります。X widgets などの third-party script を使いたい場合は custom viewer route で明示的に script と CSP を足し、標準 deck content には `<SocialEmbed>` の fallback を残す構成を推奨します。
+`@hono/decks` は標準 viewer に Content-Security-Policy header を設定しません。アプリ側で CSP を設定する場合、iframe embed は `frame-src`、画像は `img-src`、client entry と X widgets は `script-src` の対象になります。X の third-party script を使いたくない場合は、低レベル built-in の `<SocialEmbed>` を直接使うと link-first fallback にできます。
 
 `style` は必要な deck だけ generated router に渡します。`style` は `/:slug/render` の presentation document に足すテーマ CSS です。`clientEntry` は独自の asset pipeline や CDN から browser bundle を配信したい場合だけ使う外部URL override です。静的な server-rendered deck ではどちらも不要です。
 
