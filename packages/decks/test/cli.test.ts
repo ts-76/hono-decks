@@ -102,6 +102,44 @@ describe("hono-decks CLI", () => {
     }
   });
 
+  it("reports MDX compile errors with deck file and slide context", async () => {
+    const cwd = await createFixture();
+    const stderr: string[] = [];
+
+    try {
+      await writeFile(
+        join(cwd, "decks", "intro", "deck.mdx"),
+        `---
+title: Intro
+---
+
+# Intro
+
+---
+title: Broken
+---
+
+<Badge`,
+        "utf8",
+      );
+
+      const result = await runHonoDecksCli({
+        argv: ["compile", "--root", "decks", "--out", "src/generated", "--mount", "/slides"],
+        cwd,
+        stderr: (line) => stderr.push(line),
+      });
+
+      const error = stderr.join("\n");
+      expect(result.exitCode).toBe(1);
+      expect(error).toContain("MDX compile failed");
+      expect(error).toContain("decks/intro/deck.mdx");
+      expect(error).toContain("slide 2");
+      await expect(readFile(join(cwd, "src", "generated", "decks.ts"), "utf8")).rejects.toThrow();
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("prints help", async () => {
     const stdout: string[] = [];
 

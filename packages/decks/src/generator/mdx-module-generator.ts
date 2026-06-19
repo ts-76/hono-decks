@@ -107,7 +107,10 @@ async function compileMdxModule(source: string, sourcePath: string, slideIndex: 
     return `// @ts-nocheck\n${compiled}`;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`${sourcePath} slide ${slideIndex + 1}: ${message}`);
+    throw new CompileError(
+      `MDX compile failed in ${sourcePath} slide ${slideIndex + 1}: ${message}`,
+      "mdx-compile-error",
+    );
   }
 }
 
