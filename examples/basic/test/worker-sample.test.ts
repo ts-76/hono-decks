@@ -154,8 +154,8 @@ describe("sample Worker app", () => {
     expect(html).toContain('href="https://x.com/honojs/status/1659577874821836801?s=20" target="_blank" rel="noreferrer"');
     expect(html).toContain('src="https://platform.twitter.com/widgets.js"');
     expect(html).toContain('class="hono-decks-link-card"');
-    expect(html).toContain('href="https://hono.dev/docs/"');
-    expect(html).toContain("https://hono.dev/docs/");
+    expect(html).toContain('href="https://zenn.dev/ashunar0/articles/1ba94a110d8622"');
+    expect(html).toContain("https://zenn.dev/ashunar0/articles/1ba94a110d8622");
   });
 
   it("renders code blocks with build-time Shiki highlighting and overflow styles", async () => {
