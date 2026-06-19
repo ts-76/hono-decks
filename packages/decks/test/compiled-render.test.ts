@@ -178,6 +178,7 @@ describe("compiled deck rendering", () => {
     expect(html).toContain(".hono-decks-stage{width:100vw;height:100vh");
     expect(html).toContain(".hono-decks-deck{display:grid;gap:1rem;width:var(--hono-decks-width);height:var(--hono-decks-height)");
     expect(html).toContain(".slide{box-sizing:border-box;aspect-ratio:16/9");
+    expect(html).not.toContain("border-radius:24px");
     expect(html).toContain("transform-origin:left top");
     expect(html).toContain("function fitDeck()");
     expect(html).toContain("Math.min(bounds.width / DESIGN_WIDTH, bounds.height / DESIGN_HEIGHT)");
