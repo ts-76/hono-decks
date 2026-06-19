@@ -200,6 +200,7 @@ describe("sample Worker app", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("image/svg+xml");
     expect(response.headers.get("cache-control")).toBe("public, max-age=300");
+    expect(response.headers.get("x-hono-decks-asset-source")).toBe("embedded");
     expect(await response.text()).toContain("#14b8a6");
   });
 
@@ -243,6 +244,7 @@ describe("sample Worker app", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("image/svg+xml");
     expect(response.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");
+    expect(response.headers.get("x-hono-decks-asset-source")).toBe("r2");
     expect(await response.text()).toContain("#0ea5e9");
   });
 
