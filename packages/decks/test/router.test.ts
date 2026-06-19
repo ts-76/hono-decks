@@ -211,6 +211,49 @@ describe("decksRouter", () => {
     expect(html).toContain('<script type="module" src="/assets/slides.client.js"></script>');
   });
 
+  it("passes trusted theme layouts, components, and styles to render routes", async () => {
+    const themeDeck = {
+      ...deck,
+      slides: [
+        {
+          ...deck.slides[0],
+          nodes: [
+            {
+              type: "component",
+              name: "ThemeBadge",
+              props: { tone: "accent" },
+              children: [{ type: "text", value: "Theme route" }],
+            },
+          ],
+        },
+      ],
+    } satisfies CompiledDeck;
+    const app = new Hono();
+    app.route(
+      "/slides",
+      decksRouter({
+        source: manifestDeckSource({ decks: [themeDeck] }),
+        theme: {
+          style: ".theme-cover{display:grid}",
+          components: {
+            ThemeBadge: (props) => jsx("strong", { class: `theme-badge-${String(props.tone)}`, children: props.children }),
+          },
+          layouts: {
+            cover: ({ children }) => jsx("div", { class: "theme-cover", children }),
+          },
+        },
+      }),
+    );
+
+    const html = await (await app.request("/slides/deck1/render")).text();
+
+    expect(html).toContain(".theme-cover{display:grid}");
+    expect(html).toContain('class="theme-cover"');
+    expect(html).toContain('class="theme-badge-accent"');
+    expect(html).toContain("Theme route");
+    expect(html).not.toContain("mdx-component");
+  });
+
   it("serves an embedded client entry asset from the mounted router", async () => {
     const app = new Hono();
     app.route(

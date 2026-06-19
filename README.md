@@ -146,6 +146,35 @@ app.route("/decks", decksRouter({
 }));
 ```
 
+deck-wide な theme を作りたい場合は `theme` を渡します。`theme.style` は presentation document に入り、アプリ側の `style` より先に適用されます。`theme.components` と `theme.layouts` は trusted app/package code として扱われ、MDX 文字列を runtime eval するための口ではありません。
+
+```tsx
+import type { DeckTheme } from "@hono/decks";
+
+const theme: DeckTheme = {
+  style: `
+    :root { --theme-accent: #8bd3ff; }
+    .theme-cover { color: var(--theme-accent); }
+  `,
+  components: {
+    ThemeBadge: ({ tone, children }) => (
+      <span class={`theme-badge theme-badge-${tone ?? "default"}`}>{children}</span>
+    ),
+  },
+  layouts: {
+    cover: ({ deck, children }) => (
+      <div class="theme-cover" data-theme-deck={deck.slug}>
+        {children}
+      </div>
+    ),
+  },
+};
+
+app.route("/decks", decksRouter({ theme }));
+```
+
+slide の `layout` frontmatter は `theme.layouts[layout]` がある場合だけ wrapper として解釈されます。該当 layout がない場合でも package 側の `layout-${layout}` class は残るため、CSS だけで段階的に始められます。`viewer.style` と `viewer.head` は slug viewer shell 用で、slide document の theme/style とは分離されています。
+
 `/:slug` の viewer shell は `viewer` で調整できます。`viewer.style` は iframe を包む slug page 用の簡易 raw CSS で、slide document には入りません。Hono JSX や `hono/css` を使いたい場合は `viewer.head` に head 要素を渡します。
 
 ```tsx

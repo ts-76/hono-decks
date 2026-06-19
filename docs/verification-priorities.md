@@ -102,11 +102,12 @@ Rationale: viewer quality depends on predictable scaling and navigation. These c
 
 ### 6. Layout And Theme
 
-Decide and demonstrate:
+Package-level API is now defined by `DeckTheme`:
 
-- Slide `layout` frontmatter behavior
-- Deck-level theme behavior
-- How theme tokens combine with `style`, `viewer.style`, and `viewer.head`
+- Slide `layout` frontmatter keeps the package `layout-*` class and can be wrapped by `theme.layouts[layout]`.
+- Deck-level theme behavior is trusted app/package code: `theme.components` and `theme.layouts` are not runtime MDX eval hooks.
+- `theme.style` is inserted into the presentation document before per-route `style`, so app overrides can still win.
+- `viewer.style` and `viewer.head` remain scoped to the slug viewer shell, not the iframe presentation document.
 
 Rationale: layout and theme are public authoring APIs. They should be designed before many official sample decks are added, otherwise samples will encode temporary conventions.
 

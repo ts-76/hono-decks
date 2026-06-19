@@ -296,12 +296,24 @@ function renderRegisteredComponent(
   });
 }
 
+export function renderJsxValueSync(value: DeckRenderable): string {
+  const resolved = value;
+  if (typeof resolved === "string") return resolved;
+  if (resolved === null || resolved === undefined || typeof resolved === "boolean") return "";
+  if (typeof resolved === "number") return String(resolved);
+  const html = resolveCallback(resolved as never, HtmlEscapedCallbackPhase.Stringify, false, {});
+  if (html instanceof Promise) {
+    throw new Error("Async Hono JSX callbacks are not supported in sync rendering.");
+  }
+  return html;
+}
+
 export async function renderJsxValue(value: MaybePromise<DeckRenderable>): Promise<string> {
   const resolved = value instanceof Promise ? await value : value;
   if (typeof resolved === "string") return resolved;
   if (resolved === null || resolved === undefined || typeof resolved === "boolean") return "";
   if (typeof resolved === "number") return String(resolved);
-  return resolveCallback(resolved as never, HtmlEscapedCallbackPhase.Stringify, false, {});
+  return await resolveCallback(resolved as never, HtmlEscapedCallbackPhase.Stringify, false, {});
 }
 
 function renderComponentPlaceholder(node: Extract<SlideNode, { type: "component" }>): DeckRenderable {

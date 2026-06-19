@@ -65,8 +65,8 @@ R2 official sample direction is still open. The current package API supports bin
 | Speaker view | Separate presenter route/window | design | Needs state sync with the main presentation and clear public/private route boundaries. |
 | Print view | Browser print stylesheet | sample | Verify each slide paginates predictably. |
 | PDF export | Print-to-PDF compatible output | smoke | Should be validated visually, not only via HTML assertions. |
-| Theme switching | Deck-level theme | design | Confirm where theme tokens live and how they combine with `style` / `viewer.head`. |
-| Layout switching | Slide `layout` frontmatter | sample | Verify named layouts with MDX content, components, images, and code blocks. |
+| Theme switching | Deck-level theme | done | `DeckTheme` now supports trusted `style`, `components`, and `layouts`; route `style` applies after `theme.style`, while `viewer.head` stays viewer-shell only. |
+| Layout switching | Slide `layout` frontmatter | done | `theme.layouts[layout]` can wrap compiled MDX output, with package `layout-*` classes preserved as fallback. |
 
 ## Pages And Distribution
 
