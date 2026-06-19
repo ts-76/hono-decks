@@ -27,10 +27,17 @@ export function manifestDeckSource(manifest: DeckManifest): DeckSource {
       if (!asset || asset.body == null) return null;
 
       return new Response(asset.body, {
-        headers: asset.contentType ? { "content-type": asset.contentType } : undefined,
+        headers: localAssetHeaders(asset),
       });
     },
   };
+}
+
+function localAssetHeaders(asset: AssetRef): HeadersInit {
+  const headers: Record<string, string> = {};
+  if (asset.contentType) headers["content-type"] = asset.contentType;
+  if (asset.cacheControl !== false) headers["cache-control"] = asset.cacheControl ?? "public, max-age=300";
+  return headers;
 }
 
 function findLocalAsset(assets: AssetRef[], slug: string, assetPath: string): AssetRef | undefined {

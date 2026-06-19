@@ -16,9 +16,9 @@ Status:
 | Area | Case | Status | Notes |
 | --- | --- | --- | --- |
 | Local image asset | Markdown image: `![Alt](./assets/image.png)` | done | Directory deck assets are generated into `/decks/:slug/assets/*`; regression coverage should keep public URL rewriting idempotent. |
-| Local image asset | JSX image: `<img src="./assets/image.png" />` | sample | Add an explicit sample slide because JSX props go through the MDX compile path and asset prop rewrite path. |
+| Local image asset | JSX image: `<img src="./assets/image.png" />` | done | `examples/basic/decks/media` and node adapter tests cover MDX JSX compile output and public URL rewriting. |
 | Local image asset | Bare `assets/image.png` without `./` | done | Covered by generator rewrite behavior; keep this idempotent. |
-| Remote image asset | `https://...` remains unchanged | sample | Should render as a normal remote URL and should not be fetched or embedded at compile time. |
+| Remote image asset | `https://...` remains unchanged | done | `examples/basic/decks/media` and node adapter tests verify remote URLs remain normal remote URLs and are not rewritten to local asset paths. |
 | R2 public URL | Custom domain or `r2.dev` URL used directly | design | Treat as remote URL unless an explicit R2 asset policy is introduced. Decide whether this belongs in the official sample. |
 | R2 binding delivery | Local asset path served from R2 with cache headers | done | `withR2Assets()` supports a pre-existing object using the generated `sourcePath` as the R2 key and falls back to embedded local assets when the binding is missing. |
 | Asset cache headers | Long-lived cache for R2-backed assets | done | Local tests assert `Cache-Control`; Cloudflare edge cache hit/miss needs deployed smoke verification. |
@@ -104,7 +104,7 @@ R2 official sample direction is still open. The current package API supports bin
 ## Suggested Next Sample Decks
 
 - `examples/basic/decks/sample`: keep this as the small happy-path deck for MDX, server components, client islands, local asset routing, viewer pages, and R2 binding fallback.
-- `examples/basic/decks/media`: add local/remote/R2 images, YouTube, iframe, and SNS fallback examples.
+- `examples/basic/decks/media`: local JSX and remote image examples exist; extend it with YouTube, iframe, and SNS fallback examples after the embed API is designed.
 - `examples/basic/decks/code`: add fenced code, MDX `CodeBlock`, and build-time syntax highlight fixtures.
 - `examples/basic/decks/motion`: add CSS animation, client island animation, transitions, and fragment/step behavior once the runtime supports it.
 

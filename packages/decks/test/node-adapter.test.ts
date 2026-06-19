@@ -3,7 +3,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { DeckFileChange } from "../src/deck/model";
-import { buildDeckManifestFromFileSystem, compileDecks, createLocalDeckIO, writeDeckManifestModule } from "../src/node/index";
+import {
+  buildDeckManifestFromFileSystem,
+  compileDecks,
+  createLocalDeckIO,
+  writeDeckManifestModule,
+} from "../src/node/index";
+import { manifestDeckSource } from "../src/source/manifest-source";
 
 describe("Node filesystem deck adapter", () => {
   it("discovers deck files, compiles decks, and maps local assets", async () => {
@@ -23,7 +29,8 @@ describe("Node filesystem deck adapter", () => {
         kind: "directory",
         meta: { title: "Deck One" },
       });
-      expect(manifest.decks[0].assets[0]).toMatchObject({
+      const encodedAsset = manifest.decks[0].assets.find((asset) => asset.sourcePath === "decks/deck1/assets/my image#1.svg");
+      expect(encodedAsset).toMatchObject({
         sourcePath: "decks/deck1/assets/my image#1.svg",
         publicPath: "/slides/deck1/assets/my%20image%231.svg",
         contentType: "image/svg+xml",
@@ -53,6 +60,23 @@ describe("Node filesystem deck adapter", () => {
       expect(output).toContain("export const deckManifest =");
       expect(output).toContain('"slug": "deck1"');
       expect(output).toContain('"body": new Uint8Array([1, 2, 3])');
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("serves embedded local assets with content type and short-lived cache headers", async () => {
+    const cwd = await createFixture();
+
+    try {
+      const manifest = await buildDeckManifestFromFileSystem({ cwd, root: "decks", mountPath: "/slides" });
+      const source = manifestDeckSource(manifest);
+      const response = await source.getAsset?.({} as never, "deck1", "jsx.svg");
+
+      expect(response?.status).toBe(200);
+      expect(response?.headers.get("content-type")).toContain("image/svg+xml");
+      expect(response?.headers.get("cache-control")).toBe("public, max-age=300");
+      expect(Array.from(new Uint8Array(await response!.arrayBuffer()))).toEqual([7, 8, 9]);
     } finally {
       await rm(cwd, { recursive: true, force: true });
     }
@@ -107,6 +131,9 @@ export function Counter() {
       expect(slideOutput).toContain('from "hono/jsx/jsx-runtime"');
       expect(slideOutput).toContain('src: "/slides/deck1/assets/my%20image%231.svg"');
       expect(slideOutput).toContain('src: "/slides/deck1/assets/plain.svg"');
+      expect(slideOutput).toContain('src: "/slides/deck1/assets/jsx.svg"');
+      expect(slideOutput).toContain('src: "https://example.com/hono-decks-remote.png"');
+      expect(slideOutput).not.toContain("./assets/jsx.svg");
       expect(slideOutput).not.toContain("/slides/deck1//slides/deck1/assets");
 
       const clientOutput = await readFile(join(cwd, "src", "generated", "client-entry.ts"), "utf8");
@@ -306,11 +333,16 @@ title: Deck One
 
 ![Diagram](./assets/my image#1.svg)
 
-![Plain](./assets/plain.svg)`,
+![Plain](./assets/plain.svg)
+
+<img src="./assets/jsx.svg" alt="Local JSX asset" />
+
+<img src="https://example.com/hono-decks-remote.png" alt="Remote asset" />`,
     "utf8",
   );
   await writeFile(join(cwd, "decks", "deck1", "assets", "my image#1.svg"), new Uint8Array([1, 2, 3]));
   await writeFile(join(cwd, "decks", "deck1", "assets", "plain.svg"), new Uint8Array([4, 5, 6]));
+  await writeFile(join(cwd, "decks", "deck1", "assets", "jsx.svg"), new Uint8Array([7, 8, 9]));
   await writeFile(
     join(cwd, "decks", "deck2.mdx"),
     `---

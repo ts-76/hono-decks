@@ -155,8 +155,8 @@ Rationale: PDF output should be validated visually, not only through HTML assert
 
 ## Recommended Next Steps
 
-1. Add `examples/basic/decks/media` for local JSX images, remote images, R2 public URL-as-remote, YouTube iframe, and generic embed fallback.
-2. Add `examples/basic/decks/code` for fenced code blocks and the first `CodeBlock` API decision.
+1. Add `examples/basic/decks/code` for fenced code blocks and the first `CodeBlock` API decision.
+2. Extend `examples/basic/decks/media` with YouTube iframe and generic embed fallback after the embed API is designed.
 3. Add package tests for compile diagnostics and client island prop serialization failures.
 4. Add browser/deployed smoke checks once viewer scaling, touch navigation, and R2 cache behavior need visual or edge confirmation.
 

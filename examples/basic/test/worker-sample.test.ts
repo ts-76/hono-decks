@@ -10,8 +10,12 @@ describe("sample Worker app", () => {
   it("uses a generated module-backed deck source", async () => {
     const entries = await decks.source.listDecks({} as never);
 
-    expect(entries).toHaveLength(1);
+    expect(entries).toHaveLength(2);
     expect(entries[0]).toMatchObject({
+      slug: "media",
+      sourcePath: "decks/media/deck.mdx",
+    });
+    expect(entries[1]).toMatchObject({
       slug: "sample",
       sourcePath: "decks/sample/deck.mdx",
     });
@@ -105,6 +109,30 @@ describe("sample Worker app", () => {
     expect(html).toContain('<script type="module" src="/decks/_assets/client.js"></script>');
     expect(html).not.toContain('MDX component "Hero" is rendered as a placeholder.');
     expect(html).not.toContain("mdx-component");
+  });
+
+  it("renders media asset examples with local JSX rewrite and remote URLs intact", async () => {
+    const app = await sampleApp();
+    const response = await app.request("/decks/media/render");
+
+    expect(response.status).toBe(200);
+    const html = await response.text();
+    expect(html).toContain("<h1>Media verification</h1>");
+    expect(html).toContain('src="/decks/media/assets/local-jsx.svg"');
+    expect(html).toContain('alt="Local JSX asset"');
+    expect(html).toContain('src="https://example.com/hono-decks-remote.png"');
+    expect(html).toContain('alt="Remote image asset"');
+    expect(html).not.toContain("./assets/local-jsx.svg");
+  });
+
+  it("serves generated local assets for the media deck", async () => {
+    const app = await sampleApp();
+    const response = await app.request("/decks/media/assets/local-jsx.svg");
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("image/svg+xml");
+    expect(response.headers.get("cache-control")).toBe("public, max-age=300");
+    expect(await response.text()).toContain("#14b8a6");
   });
 
   it("serves the sample client entry for interactive islands", async () => {
