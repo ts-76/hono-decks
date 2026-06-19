@@ -76,7 +76,48 @@ export const builtInSlideComponents = defineSlideComponents({
                 ...(lang ? { class: `language-${safeToken(lang)}`, "data-lang": lang } : {}),
                 children: code,
               }),
-            }),
+        }),
+      ],
+    });
+  },
+  EmbedFrame: (props) => {
+    const src = stringProp(props.src);
+    const title = stringProp(props.title) ?? "Embedded content";
+    const aspectRatio = stringProp(props.aspectRatio) ?? "16 / 9";
+    const loading = stringProp(props.loading) ?? "lazy";
+    const allow = stringProp(props.allow) ?? "fullscreen; picture-in-picture";
+    const sandbox =
+      props.sandbox === false
+        ? undefined
+        : (stringProp(props.sandbox) ?? "allow-scripts allow-same-origin allow-presentation allow-popups");
+    const referrerPolicy = stringProp(props.referrerPolicy ?? props.referrerpolicy) ?? "strict-origin-when-cross-origin";
+    const fallback = codeBlockText(props.children) || "Open embed";
+
+    return jsx("figure", {
+      class: "hono-decks-embed-frame",
+      "data-component": "EmbedFrame",
+      children: [
+        jsx("div", {
+          class: "hono-decks-embed-viewport",
+          style: `aspect-ratio:${safeAspectRatio(aspectRatio)}`,
+          children: src
+            ? jsx("iframe", {
+                src,
+                title,
+                loading,
+                referrerpolicy: referrerPolicy,
+                ...(sandbox ? { sandbox } : {}),
+                ...(allow ? { allow } : {}),
+                allowfullscreen: true,
+              })
+            : "",
+        }),
+        src
+          ? jsx("figcaption", {
+              class: "hono-decks-embed-fallback",
+              children: jsx("a", { href: src, rel: "noreferrer", children: fallback }),
+            })
+          : "",
       ],
     });
   },
@@ -125,6 +166,12 @@ function stringProp(value: unknown): string | undefined {
 
 function safeToken(value: string): string {
   return value.trim().replace(/[^A-Za-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "text";
+}
+
+function safeAspectRatio(value: string): string {
+  return /^\s*\d+(\.\d+)?\s*(\/|:)\s*\d+(\.\d+)?\s*$/.test(value)
+    ? value.replace(":", " / ")
+    : "16 / 9";
 }
 
 function codeBlockText(value: unknown): string {

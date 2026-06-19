@@ -28,3 +28,37 @@ layout: media
 />
 
 Remote URLs stay as normal remote URLs and are not fetched at compile time.
+
+---
+title: YouTube Embed
+layout: media
+---
+
+# YouTube embed
+
+<EmbedFrame
+  src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+  title="YouTube embed example"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+>
+Open YouTube embed
+</EmbedFrame>
+
+Iframe embeds use lazy loading, sandbox defaults, and a fallback link.
+
+---
+title: Generic Embed
+layout: media
+---
+
+# Generic iframe
+
+<EmbedFrame
+  src="https://example.com/embed/status"
+  title="Generic status embed"
+  aspectRatio="4 / 3"
+>
+Open status embed
+</EmbedFrame>
+
+Generic iframe embeds use the same package defaults.

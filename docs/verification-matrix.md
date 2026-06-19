@@ -30,12 +30,12 @@ R2 official sample direction is still open. The current package API supports bin
 
 | Area | Case | Status | Notes |
 | --- | --- | --- | --- |
-| YouTube | `<iframe src="https://www.youtube.com/embed/...">` | sample | Verify aspect ratio, `title`, `loading="lazy"`, fullscreen permissions, and responsive scaling inside the fixed 16:9 canvas. |
+| YouTube | `<iframe src="https://www.youtube.com/embed/...">` | done | `examples/basic/decks/media` uses built-in `EmbedFrame`; sample tests verify aspect ratio defaults, `title`, `loading="lazy"`, sandbox, fallback link, and fullscreen/media permissions. |
 | X / SNS embed | Script-based embed or blockquote fallback | design | Prefer a package-provided or sample component that degrades to a link because third-party scripts, CSP, and Worker SSR do not always compose cleanly. |
-| Generic iframe | `<EmbedFrame src title />` or similar component | design | Should centralize `sandbox`, `allow`, `referrerpolicy`, aspect ratio, and loading fallback defaults. |
+| Generic iframe | `<EmbedFrame src title />` or similar component | done | Built-in `EmbedFrame` centralizes `sandbox`, `allow`, `referrerpolicy`, aspect ratio, lazy loading, and fallback link defaults. |
 | CSP | Embed-safe policy for standard viewer | design | Document what the package sets, what the app must set, and how custom viewer pages can loosen or tighten policy. |
-| Sandbox | Safe defaults for embedded content | design | YouTube and generic embeds likely need different `sandbox` / `allow` presets. |
-| Fallback | Loading and blocked-content fallback UI | sample | Needed for offline, privacy extensions, strict CSP, or third-party failure. |
+| Sandbox | Safe defaults for embedded content | done | `EmbedFrame` defaults to `allow-scripts allow-same-origin allow-presentation allow-popups`; callers can override `sandbox` or disable it with `sandbox={false}`. |
+| Fallback | Loading and blocked-content fallback UI | done | `EmbedFrame` renders a visible fallback link below the iframe. |
 
 ## Code Blocks
 
@@ -104,7 +104,7 @@ R2 official sample direction is still open. The current package API supports bin
 ## Suggested Next Sample Decks
 
 - `examples/basic/decks/sample`: keep this as the small happy-path deck for MDX, server components, client islands, local asset routing, viewer pages, and R2 binding fallback.
-- `examples/basic/decks/media`: local JSX and remote image examples exist; extend it with YouTube, iframe, and SNS fallback examples after the embed API is designed.
+- `examples/basic/decks/media`: local JSX, remote image, YouTube `EmbedFrame`, and generic iframe examples exist; extend it with SNS fallback examples after script/embed policy is designed.
 - `examples/basic/decks/code`: fenced code, built-in `CodeBlock`, and build-time Shiki highlighting examples exist.
 - `examples/basic/decks/motion`: add CSS animation, client island animation, transitions, and fragment/step behavior once the runtime supports it.
 
