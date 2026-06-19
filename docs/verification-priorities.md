@@ -126,7 +126,9 @@ Rationale: this adds expressiveness without requiring a new slide state model. I
 
 ### 8. Slide Transitions And Fragments
 
-Design before implementing:
+Design is now documented in [Slide Dynamics](./slide-dynamics.md), with an implementation plan in `docs/superpowers/plans/2026-06-19-slide-transitions-fragments.md`.
+
+Implement next:
 
 - `transition` frontmatter interpretation
 - Fragment or step display for bullet lists and blocks
@@ -171,7 +173,7 @@ Rationale: PDF output should be validated visually, not only through HTML assert
 
 ## Recommended Next Steps
 
-1. Design slide transitions and fragment/step semantics before implementing navigation-affecting animation.
+1. Implement slide transitions and fragment/step navigation from `docs/superpowers/plans/2026-06-19-slide-transitions-fragments.md`.
 2. Add deployed R2/cache smoke checks once a deployed Worker target is available.
 
 Keep `examples/basic/decks/sample` small. It should remain the happy-path deck for MDX expressions, deck-local server components, client islands, viewer pages, and R2 binding fallback. Use `examples/basic/decks/motion` for animation, transition, and fragment experiments.
