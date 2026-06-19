@@ -1,3 +1,5 @@
+/** @jsxImportSource hono/jsx */
+
 import type { SlideComponentProps } from "@hono/decks";
 
 export const MotionMeter = {

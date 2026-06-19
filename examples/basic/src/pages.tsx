@@ -1,4 +1,5 @@
-import { css, Style } from "hono/css";
+/** @jsxImportSource hono/jsx */
+
 import type { CompiledDeck, DeckEntry, DeckPageMeta, DeckRenderable, DeckTocItem, DeckViewerParts } from "@hono/decks";
 
 export function renderHomePage(decks: DeckEntry[]) {
@@ -101,7 +102,7 @@ function SampleLayout(props: {
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>{props.title}</title>
-        <Style>{samplePageStyle}</Style>
+        <style id="hono-css">{samplePageStyle}</style>
       </head>
       <body>
         <main data-sample-layout={props.layout}>
@@ -119,7 +120,7 @@ function SampleLayout(props: {
   );
 }
 
-const samplePageStyle = css`
+const samplePageStyle = `
 :root { color-scheme: dark; background: #050816; color: #eef2ff; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
 body { margin: 0; min-height: 100vh; background: #050816; }
 a { color: inherit; }
@@ -144,7 +145,7 @@ a { color: inherit; }
 .sample-embed iframe { width: 1920px; height: 1080px; border: 0; background: #0b1020; }
 `;
 
-const sampleViewerStyle = css`
+const sampleViewerStyle = `
 [data-hono-decks-viewer] {
   background: radial-gradient(circle at top, #1e2b5c, #050816 62%);
   padding: 16px;
@@ -168,5 +169,5 @@ const sampleViewerStyle = css`
 `;
 
 export function renderSampleViewerHead() {
-  return <Style>{sampleViewerStyle}</Style>;
+  return <style id="hono-css">{sampleViewerStyle}</style>;
 }

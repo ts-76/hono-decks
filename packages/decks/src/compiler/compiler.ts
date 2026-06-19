@@ -288,7 +288,8 @@ function toSlideFrontmatter(
     className: takeString(meta, "class") ?? fallbackClassName,
     notes: takeString(meta, "notes"),
     background: takeString(meta, "background"),
-    transition: takeString(meta, "transition"),
+    transition: takeKnownString(meta, "transition", ["none", "fade", "slide", "zoom"]),
+    fragments: takeKnownString(meta, "fragments", ["none", "manual", "list"]),
     meta,
   };
 
@@ -409,6 +410,16 @@ function takeString(attrs: Record<string, unknown>, key: string): string | undef
   if (typeof value !== "string") return undefined;
   delete attrs[key];
   return value;
+}
+
+function takeKnownString<const T extends string>(
+  attrs: Record<string, unknown>,
+  key: string,
+  values: readonly T[],
+): T | undefined {
+  const value = attrs[key];
+  delete attrs[key];
+  return typeof value === "string" && values.includes(value as T) ? (value as T) : undefined;
 }
 
 function takeStringOrStringArray(attrs: Record<string, unknown>, key: string): string | string[] | undefined {

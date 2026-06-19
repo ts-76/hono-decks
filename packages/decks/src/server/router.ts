@@ -487,7 +487,13 @@ function renderViewerScript(): string {
   window.addEventListener("message", (event) => {
     const message = event.data;
     if (!message || message.type !== "hono-decks:state") return;
-    if (position) position.textContent = String(message.index + 1) + " / " + String(message.slideCount ?? "?");
+    if (position) {
+      const slideText = String(message.index + 1) + " / " + String(message.slideCount ?? "?");
+      const stepText = Number.isFinite(message.stepCount) && message.stepCount > 0
+        ? " · " + String(message.stepIndex) + " / " + String(message.stepCount)
+        : "";
+      position.textContent = slideText + stepText;
+    }
   });
   document.addEventListener("keydown", (event) => {
     if (event.key === "ArrowRight" || event.key === " ") sendCommand("next");

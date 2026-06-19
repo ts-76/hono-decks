@@ -51,12 +51,38 @@ describe("compiled deck rendering", () => {
       slides: [
         {
           ...deck.slides[0],
-          meta: { ...deck.slides[0].meta, transition: "fade fast" },
+          meta: { ...deck.slides[0].meta, transition: "fade" },
         },
       ],
     });
 
-    expect(html).toContain('data-transition="fade-fast"');
+    expect(html).toContain('data-transition="fade"');
+  });
+
+  it("renders explicit Fragment components with stable fragment attributes", async () => {
+    const html = await renderCompiledDeckPageAsync({
+      deck: {
+        ...deck,
+        slides: [
+          {
+            ...deck.slides[0],
+            nodes: [
+              {
+                type: "component",
+                name: "Fragment",
+                props: { order: 2 },
+                children: [{ type: "text", value: "Second reveal" }],
+              },
+            ],
+          },
+        ],
+      },
+      mountPath: "/slides",
+    });
+
+    expect(html).toContain("data-hono-decks-fragment");
+    expect(html).toContain('data-fragment-order="2"');
+    expect(html).toContain("Second reveal");
   });
 
   it("renders a full page as a clean presentation surface with warnings", () => {
@@ -74,6 +100,42 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("data-overview-mode");
     expect(html).toContain("Unsupported component");
     expect(html).not.toContain("/edit");
+  });
+
+  it("publishes step state and advances fragments before slides", async () => {
+    const html = await renderCompiledDeckPageAsync({
+      deck: {
+        ...deck,
+        slides: [
+          {
+            ...deck.slides[0],
+            nodes: [
+              {
+                type: "component",
+                name: "Fragment",
+                props: { order: 1 },
+                children: [{ type: "text", value: "First reveal" }],
+              },
+            ],
+          },
+          deck.slides[1],
+        ],
+      },
+      mountPath: "/slides",
+    });
+
+    expect(html).toContain("[data-hono-decks-fragment]");
+    expect(html).toContain("data-fragment-hidden");
+    expect(html).toContain("let stepIndex = 0");
+    expect(html).toContain("let stepCount = 0");
+    expect(html).toContain(
+      'window.parent.postMessage({ type: "hono-decks:state", index, stepIndex, stepCount, slideCount: slides.length }, "*")',
+    );
+    expect(html).toContain("function next()");
+    expect(html).toContain("function previous()");
+    expect(html).toContain("if (stepIndex < stepCount)");
+    expect(html).toContain("updateFragments(stepIndex + 1)");
+    expect(html).toContain("show(index + 1, 0)");
   });
 
   it("keeps a 1920x1080 deck canvas and scales it inside the iframe viewport", () => {

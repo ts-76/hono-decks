@@ -126,14 +126,20 @@ Rationale: this adds expressiveness without requiring a new slide state model. I
 
 ### 8. Slide Transitions And Fragments
 
-Design is now documented in [Slide Dynamics](./slide-dynamics.md), with an implementation plan in `docs/superpowers/plans/2026-06-19-slide-transitions-fragments.md`.
+Initial implementation is now covered by [Slide Dynamics](./slide-dynamics.md), package tests, and the motion sample.
 
-Implement next:
+Implemented:
 
-- `transition` frontmatter interpretation
-- Fragment or step display for bullet lists and blocks
-- Keyboard/touch behavior for step progression
-- State sync between viewer controls and render frame
+- `transition` frontmatter typing, validation, and `data-transition` output
+- Explicit `<Fragment />` reveal elements
+- `fragments: list` for top-level list items
+- Keyboard/touch/control progression through fragment steps before slide changes
+- State sync between viewer controls and render frame with optional step display
+
+Follow-up:
+
+- Richer visual transition direction hooks
+- Browser smoke that actively steps through fragments, beyond route screenshot coverage
 
 Rationale: fragments and transitions touch navigation semantics. They are valuable, but implementing them too early can lock the project into the wrong state model.
 
@@ -173,7 +179,7 @@ Rationale: PDF output should be validated visually, not only through HTML assert
 
 ## Recommended Next Steps
 
-1. Implement slide transitions and fragment/step navigation from `docs/superpowers/plans/2026-06-19-slide-transitions-fragments.md`.
-2. Add deployed R2/cache smoke checks once a deployed Worker target is available.
+1. Add deployed R2/cache smoke checks once a deployed Worker target is available.
+2. Add browser smoke that actively verifies fragment step progression and transition hooks.
 
 Keep `examples/basic/decks/sample` small. It should remain the happy-path deck for MDX expressions, deck-local server components, client islands, viewer pages, and R2 binding fallback. Use `examples/basic/decks/motion` for animation, transition, and fragment experiments.

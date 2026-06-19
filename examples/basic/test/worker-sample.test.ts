@@ -61,7 +61,7 @@ describe("sample Worker app", () => {
     expect(html).not.toContain("DESIGN_WIDTH");
     expect(html).not.toContain("stage.style.transform");
     expect(html).toContain('id="hono-css"');
-    expect(html).toContain("radial-gradient(circle at top,#1e2b5c,#050816 62%)");
+    expect(html).toContain("radial-gradient(circle at top, #1e2b5c, #050816 62%)");
     expect(html).toContain('data-action="previous"');
     expect(html).toContain('data-action="next"');
     expect(html).toContain('data-action="fullscreen"');
@@ -179,6 +179,14 @@ describe("sample Worker app", () => {
     expect(html).toContain("animation:hono-decks-motion-orbit");
     expect(html).toContain("@keyframes hono-decks-motion-orbit");
     expect(html).toContain("@media (prefers-reduced-motion: reduce)");
+    expect(html).toContain('data-transition="fade"');
+    expect(html).toContain("data-hono-decks-fragment");
+    expect(html).toContain('data-fragment-order="1"');
+    expect(html).toContain("The reveal state is owned by the presentation iframe.");
+    expect(html).toContain("CSS animation runs before hydration.");
+    expect(html).toContain("Client island animation keeps local state.");
+    expect(html).toContain("let stepIndex = 0");
+    expect(html).toContain("stepCount");
     expect(html).toMatch(/data-hono-decks-island="MotionMeter__motion_[a-z0-9]+"/);
     expect(html).toContain("data-motion-meter");
     expect(html).toContain("Animation island");

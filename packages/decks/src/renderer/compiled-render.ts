@@ -294,6 +294,12 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden}
 .mdx-hero h1{margin:0;font-size:clamp(2.2rem,5vw,5rem);line-height:1.02}
 .mdx-hero-subtitle{margin:1rem 0 0;font-size:clamp(1rem,1.8vw,1.5rem);line-height:1.45;color:#cbd5e1}
 .mdx-hero-image{width:100%;height:auto;max-height:70vh;object-fit:contain;border-radius:8px}
+[data-hono-decks-fragment]{transition:opacity .18s ease,transform .18s ease}
+[data-hono-decks-fragment][data-fragment-hidden]{visibility:hidden;opacity:0;transform:translateY(.35rem)}
+.slide[data-transition]{transition:opacity .2s ease,transform .2s ease}
+.slide[data-transition="fade"]{will-change:opacity}
+.slide[data-transition="slide"]{will-change:transform}
+.slide[data-transition="zoom"]{will-change:transform}
 body:not([data-overview-mode]) .slide[hidden]{display:none}
 body[data-overview-mode] .hono-decks-deck{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
 body[data-overview-mode] .slide{cursor:pointer}
@@ -311,6 +317,8 @@ function renderPresentationScript(): string {
   const DESIGN_WIDTH = 1920;
   const DESIGN_HEIGHT = 1080;
   let index = 0;
+  let stepIndex = 0;
+  let stepCount = 0;
 
   function fitDeck() {
     if (!(stage instanceof HTMLElement) || !(deck instanceof HTMLElement)) return;
@@ -320,20 +328,76 @@ function renderPresentationScript(): string {
   }
 
   function publishState() {
-    if (window.parent !== window) window.parent.postMessage({ type: "hono-decks:state", index, slideCount: slides.length }, "*");
+    if (window.parent !== window) window.parent.postMessage({ type: "hono-decks:state", index, stepIndex, stepCount, slideCount: slides.length }, "*");
   }
 
-  function show(nextIndex) {
+  function slideFragments(slide) {
+    return Array.from(slide?.querySelectorAll("[data-hono-decks-fragment]") ?? []).sort((a, b) => fragmentOrder(a, 0) - fragmentOrder(b, 0));
+  }
+
+  function fragmentOrder(fragment, fallback) {
+    const order = Number(fragment.getAttribute("data-fragment-order"));
+    return Number.isFinite(order) && order > 0 ? order : fallback;
+  }
+
+  function fragmentCountForSlide(slideIndex) {
+    return slideFragments(slides[slideIndex]).length;
+  }
+
+  function setFragmentsVisible(fragments, visible) {
+    fragments.forEach((fragment) => {
+      fragment.toggleAttribute("data-fragment-hidden", !visible);
+      fragment.setAttribute("aria-hidden", visible ? "false" : "true");
+    });
+  }
+
+  function updateFragments(nextStepIndex) {
+    const fragments = slideFragments(slides[index]);
+    stepCount = fragments.length;
+    stepIndex = Math.max(0, Math.min(stepCount, nextStepIndex));
+    fragments.forEach((fragment, fragmentIndex) => {
+      const visible = fragmentOrder(fragment, fragmentIndex + 1) <= stepIndex;
+      fragment.toggleAttribute("data-fragment-hidden", !visible);
+      fragment.setAttribute("aria-hidden", visible ? "false" : "true");
+    });
+  }
+
+  function show(nextIndex, nextStepIndex = 0) {
     index = Math.max(0, Math.min(slides.length - 1, nextIndex));
     if (!document.body.hasAttribute("data-overview-mode")) {
       slides.forEach((slide, slideIndex) => { slide.hidden = slideIndex !== index; });
     }
+    updateFragments(nextStepIndex);
     publishState();
+  }
+
+  function next() {
+    if (stepIndex < stepCount) {
+      updateFragments(stepIndex + 1);
+      publishState();
+      return;
+    }
+    show(index + 1, 0);
+  }
+
+  function previous() {
+    if (stepIndex > 0) {
+      updateFragments(stepIndex - 1);
+      publishState();
+      return;
+    }
+    if (index > 0) {
+      const previousIndex = index - 1;
+      show(previousIndex, fragmentCountForSlide(previousIndex));
+      return;
+    }
+    show(0, 0);
   }
 
   function toggleOverview() {
     const enabled = document.body.toggleAttribute("data-overview-mode");
     slides.forEach((slide) => { slide.hidden = false; });
+    setFragmentsVisible(Array.from(document.querySelectorAll("[data-hono-decks-fragment]")), enabled);
     if (!enabled) show(index);
   }
 
@@ -359,8 +423,8 @@ function renderPresentationScript(): string {
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "ArrowRight" || event.key === " ") show(index + 1);
-    if (event.key === "ArrowLeft") show(index - 1);
+    if (event.key === "ArrowRight" || event.key === " ") next();
+    if (event.key === "ArrowLeft") previous();
     if (event.key === "f") void toggleFullscreen();
     if (event.key === "p") togglePresenter();
     if (event.key === "o") toggleOverview();
@@ -369,9 +433,9 @@ function renderPresentationScript(): string {
   window.addEventListener("message", (event) => {
     const message = event.data;
     if (!message || message.type !== "hono-decks:command") return;
-    if (message.action === "previous") show(index - 1);
-    if (message.action === "next") show(index + 1);
-    if (message.action === "goTo" && Number.isInteger(message.index)) show(message.index);
+    if (message.action === "previous") previous();
+    if (message.action === "next") next();
+    if (message.action === "goTo" && Number.isInteger(message.index)) show(message.index, Number.isInteger(message.stepIndex) ? message.stepIndex : 0);
     if (message.action === "fullscreen") void toggleFullscreen();
     if (message.action === "presenter") togglePresenter();
     if (message.action === "overview") toggleOverview();

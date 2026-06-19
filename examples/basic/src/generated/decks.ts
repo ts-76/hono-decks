@@ -177,6 +177,7 @@ export const decks = defineDecks({
           meta: {
             "title": "CSS Animation",
             "layout": "motion",
+            "transition": "fade",
             "meta": {}
           },
           html: "",
@@ -189,6 +190,7 @@ export const decks = defineDecks({
           meta: {
             "title": "Client Island Animation",
             "layout": "motion",
+            "fragments": "list",
             "meta": {}
           },
           html: "",

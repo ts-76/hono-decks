@@ -1,6 +1,6 @@
 # Slide Dynamics Design
 
-This document defines the planned `@hono/decks` behavior for slide transitions and fragment or step display. It is intentionally a design contract before implementation because both features affect navigation semantics, viewer state, and client island behavior.
+This document defines the implemented `@hono/decks` behavior for slide transitions and fragment or step display. Both features affect navigation semantics, viewer state, and client island behavior, so this file also records the remaining follow-up decisions.
 
 ## Goals
 
@@ -30,16 +30,16 @@ transition: fade
 ---
 ```
 
-Supported values should be a small string union at runtime:
+Supported values are a small string union at runtime:
 
 - `none`
 - `fade`
 - `slide`
 - `zoom`
 
-Unknown values should produce a compile warning and fall back to `none`. The raw value should not be copied into CSS class names except through a sanitizer and a known-value check.
+Unknown values produce a compile warning and fall back to `none`. The raw value is not copied into CSS class names except through a sanitizer and a known-value check.
 
-Transition direction is derived from navigation direction. Moving forward sets `data-transition-direction="forward"` on `<body>`; moving backward sets `backward`.
+Transition direction is still a follow-up. The current implementation emits known `data-transition` values and conservative base CSS hooks; richer forward/backward effects can be layered on that contract.
 
 ### Fragments
 
@@ -64,13 +64,13 @@ fragments: list
 - Third point
 ```
 
-Planned slide frontmatter:
+Slide frontmatter:
 
 - `fragments: list` marks top-level list items as fragments in source order.
 - `fragments: manual` only uses explicit `<Fragment />` components.
 - omitted or `fragments: none` means no automatic fragments.
 
-Manual `<Fragment order={number}>` can override ordering. If `order` is omitted, the compiler assigns the next available order in document order.
+Manual `<Fragment order={number}>` can override ordering. If `order` is omitted, the runtime falls back to document order.
 
 ## Runtime State Model
 
@@ -129,7 +129,7 @@ Fragments are normal elements with stable data attributes:
 The presentation script controls visibility:
 
 - visible when `Number(fragment.dataset.fragmentOrder) <= stepIndex`
-- hidden via `hidden` and `data-fragment-hidden="true"`
+- hidden via `data-fragment-hidden` and `aria-hidden`
 - visible state must not remount client islands inside the fragment
 
 Client islands inside fragments should hydrate once. Reveal/hide changes must use DOM attributes or CSS, not remove/recreate island roots.
@@ -156,7 +156,7 @@ Theme CSS can override the visual style of known transition and fragment states,
 
 ## Compiler And Model Changes
 
-Planned model additions:
+Model additions:
 
 ```ts
 export type SlideTransition = "none" | "fade" | "slide" | "zoom";
@@ -169,7 +169,7 @@ export interface SlideFrontmatter {
 }
 ```
 
-The MDX module generator should:
+The MDX module generator:
 
 - validate `transition`
 - parse `fragments`
@@ -191,14 +191,15 @@ Custom viewers using `deckContext()` or `createDeckViewerParts()` can keep readi
 ## Test Strategy
 
 - Compiler tests for valid and invalid `transition`.
-- Generator tests for `fragments: list` producing fragment attributes in generated slide output.
-- Render tests for `<Fragment />` and fragment visibility attributes.
-- Router tests for state message shape and viewer position behavior.
-- Example tests for `examples/basic/decks/motion` once transition/fragment slides are added.
-- Browser smoke checks for keyboard, click, and swipe step progression.
+- Generator tests cover `fragments: list` producing fragment attributes in generated slide output.
+- Render tests cover `<Fragment />`, fragment visibility attributes, and step-aware state publishing.
+- Router tests cover state message shape and viewer position behavior.
+- Example tests cover `examples/basic/decks/motion` transition and fragment output.
+- Browser smoke checks cover the viewer route; deeper step interaction smoke can be added as the browser harness grows.
 
 ## Open Decisions
 
 - Whether nested list items participate in `fragments: list`; first implementation should restrict to top-level list items.
 - Whether `goTo` from TOC should always reset to step 0; this design says yes.
 - Whether fragment state should be reflected in URL hash; out of scope for the first implementation.
+- Whether transition direction should be reflected as a body attribute for richer animation themes.

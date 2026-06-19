@@ -150,6 +150,97 @@ export function Counter() {
     }
   });
 
+  it("warns and falls back for unknown slide dynamics frontmatter in generated decks", async () => {
+    const cwd = await createFixture();
+
+    try {
+      await writeFile(
+        join(cwd, "decks", "deck1", "deck.mdx"),
+        `---
+title: Deck One
+---
+
+---
+title: Invalid Dynamics
+transition: spin
+fragments: magic
+---
+
+# Invalid Dynamics
+`,
+        "utf8",
+      );
+
+      const manifest = await compileDecks({
+        cwd,
+        root: "decks",
+        out: "src/generated",
+        mountPath: "/slides",
+      });
+
+      expect(manifest.decks[0].slides[0].meta.transition).toBe("none");
+      expect(manifest.decks[0].slides[0].meta.fragments).toBe("none");
+      expect(manifest.decks[0].warnings).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            code: "unknown-transition",
+            slideIndex: 0,
+          }),
+          expect.objectContaining({
+            code: "unknown-fragments",
+            slideIndex: 0,
+          }),
+        ]),
+      );
+
+      const output = await readFile(join(cwd, "src", "generated", "decks.ts"), "utf8");
+      expect(output).toContain('"transition": "none"');
+      expect(output).toContain('"fragments": "none"');
+      expect(output).toContain('"code": "unknown-transition"');
+      expect(output).toContain('"code": "unknown-fragments"');
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("marks top-level list items as fragments when slide frontmatter uses fragments list", async () => {
+    const cwd = await createFixture();
+
+    try {
+      await writeFile(
+        join(cwd, "decks", "deck1", "deck.mdx"),
+        `---
+title: Deck One
+---
+
+---
+title: Reveal List
+fragments: list
+---
+
+- First reveal
+- Second reveal
+`,
+        "utf8",
+      );
+
+      await compileDecks({
+        cwd,
+        root: "decks",
+        out: "src/generated",
+        mountPath: "/slides",
+      });
+
+      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.ts"), "utf8");
+      expect(slideOutput).toContain("data-hono-decks-fragment");
+      expect(slideOutput).toContain("data-fragment-order");
+      expect(slideOutput).toContain("First reveal");
+      expect(slideOutput).toContain("Second reveal");
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("can import the node adapter through the package subpath", async () => {
     const mod = await import("@hono/decks/node");
 
