@@ -1,0 +1,21 @@
+---
+title: Code Verification
+description: Fenced code block rendering checks for @hono/decks
+---
+
+---
+title: Fenced Code
+layout: code
+---
+
+# Code verification
+
+```ts
+const view = <Slide title="Hello" />
+
+export function labels(items: Array<{ id: string }>) {
+  return items.map((item) => item.id).join(", ")
+}
+```
+
+Fenced code should preserve whitespace, escape HTML-like syntax, and scroll instead of breaking the fixed canvas.

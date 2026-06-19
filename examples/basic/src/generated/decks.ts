@@ -2,6 +2,7 @@
 import { defineDecks } from "@hono/decks";
 import type { DecksRouterOverrides } from "@hono/decks";
 import { decksClientEntry } from "./client-entry";
+import Slide_code_0 from "./decks/code/slide-0";
 import Slide_media_0 from "./decks/media/slide-0";
 import Slide_media_1 from "./decks/media/slide-1";
 import Slide_sample_0 from "./decks/sample/slide-0";
@@ -27,6 +28,33 @@ function withClientComponentIds(module, clientIds) {
 export const decks = defineDecks({
   clientEntryAsset: decksClientEntry,
   decks: [
+    {
+      slug: "code",
+      sourcePath: "decks/code/deck.mdx",
+      kind: "directory",
+      meta: {
+        "title": "Code Verification",
+        "description": "Fenced code block rendering checks for @hono/decks",
+        "meta": {}
+      },
+      assets: [],
+      componentRegistry: {},
+      warnings: [],
+      slides: [
+        {
+          index: 0,
+          meta: {
+            "title": "Fenced Code",
+            "layout": "code",
+            "meta": {}
+          },
+          html: "",
+          components: [],
+          notes: undefined,
+          render: Slide_code_0
+        }
+      ]
+    },
     {
       slug: "media",
       sourcePath: "decks/media/deck.mdx",
