@@ -77,7 +77,7 @@ R2 official sample direction is still open. The current package API supports bin
 | Share image route | OGP image generation route | design | Out of scope for the current package, but `deckContext()` should provide enough metadata. |
 | Draft deck | Production hides draft deck | done | Router tests cover production vs dev behavior. |
 | Draft slide | Per-slide draft behavior | design | Needs a clear rule: remove from deck, hide in viewer, or show only in dev. |
-| Compile errors | File/slide context in CLI output | sample | Add fixtures for MDX compile failures and expected diagnostics. |
+| Compile errors | File/slide context in CLI output | done | CLI tests cover MDX compile failures with `MDX compile failed`, deck source path, and slide index in stderr. |
 | Runtime render errors | Clear 500 or slide error UI | design | Decide whether the package catches render errors per slide or lets Hono handle them. |
 
 ## Component Contracts

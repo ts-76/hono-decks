@@ -49,7 +49,7 @@ Rationale: code-heavy decks are a likely use case, and code block rendering affe
 
 Stabilize authoring errors and client island boundaries:
 
-- MDX compile error output with file and slide context
+- MDX compile error output with file and slide context: covered by CLI package tests
 - Runtime render error behavior
 - Client island prop serialization constraints: JSON values are supported and non-JSON values fail with component/prop context
 - Invalid props such as functions, JSX elements, dates, and class instances: covered by package tests
@@ -155,7 +155,7 @@ Rationale: PDF output should be validated visually, not only through HTML assert
 
 ## Recommended Next Steps
 
-1. Add package tests for compile diagnostics and runtime render error behavior.
+1. Add package tests for runtime render error behavior.
 2. Implement the package-provided `CodeBlock` component and build-time syntax highlighting path.
 3. Extend `examples/basic/decks/media` with YouTube iframe and generic embed fallback after the embed API is designed.
 4. Add browser/deployed smoke checks once viewer scaling, touch navigation, and R2 cache behavior need visual or edge confirmation.
