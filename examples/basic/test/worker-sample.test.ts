@@ -139,6 +139,10 @@ describe("sample Worker app", () => {
     expect(html).toContain("<pre><code class=\"language-ts\"");
     expect(html).toContain("const view = &lt;Slide title=&quot;Hello&quot; /&gt;");
     expect(html).toContain("return items.map((item) =&gt; item.id).join(&quot;, &quot;)");
+    expect(html).toContain('class="hono-decks-code-block"');
+    expect(html).toContain('data-filename="worker.ts"');
+    expect(html).toContain('<figcaption class="hono-decks-code-caption">worker.ts</figcaption>');
+    expect(html).toContain('app.get(&quot;/&quot;, (c) =&gt; c.text(&quot;ok&quot;))');
     expect(html).toContain(".slide pre{max-width:100%;overflow:auto");
     expect(html).toContain(".slide code{font-family:");
   });

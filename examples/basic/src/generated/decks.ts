@@ -3,6 +3,7 @@ import { defineDecks } from "@hono/decks";
 import type { DecksRouterOverrides } from "@hono/decks";
 import { decksClientEntry } from "./client-entry";
 import Slide_code_0 from "./decks/code/slide-0";
+import Slide_code_1 from "./decks/code/slide-1";
 import Slide_media_0 from "./decks/media/slide-0";
 import Slide_media_1 from "./decks/media/slide-1";
 import Slide_sample_0 from "./decks/sample/slide-0";
@@ -52,6 +53,18 @@ export const decks = defineDecks({
           components: [],
           notes: undefined,
           render: Slide_code_0
+        },
+        {
+          index: 1,
+          meta: {
+            "title": "CodeBlock Component",
+            "layout": "code",
+            "meta": {}
+          },
+          html: "",
+          components: [],
+          notes: undefined,
+          render: Slide_code_1
         }
       ]
     },

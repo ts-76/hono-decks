@@ -52,6 +52,28 @@ export const builtInSlideComponents = defineSlideComponents({
         }),
       ],
     }),
+  CodeBlock: (props) => {
+    const lang = stringProp(props.lang);
+    const filename = stringProp(props.filename ?? props.title);
+    const highlight = stringProp(props.highlight);
+    const code = codeBlockText(props.children);
+
+    return jsx("figure", {
+      class: "hono-decks-code-block",
+      ...(lang ? { "data-lang": lang } : {}),
+      ...(filename ? { "data-filename": filename } : {}),
+      ...(highlight ? { "data-highlight": highlight } : {}),
+      children: [
+        filename ? jsx("figcaption", { class: "hono-decks-code-caption", children: filename }) : "",
+        jsx("pre", {
+          children: jsx("code", {
+            ...(lang ? { class: `language-${safeToken(lang)}`, "data-lang": lang } : {}),
+            children: code,
+          }),
+        }),
+      ],
+    });
+  },
 });
 
 export function defineSlideComponents(input: Record<string, SlideComponentInput>): SlideComponentRegistry {
@@ -87,6 +109,24 @@ function heroImage(props: SlideComponentProps): DeckRenderable {
   const alt =
     typeof props.alt === "string" && props.alt ? props.alt : typeof props.title === "string" ? props.title : "Hero image";
   return jsx("img", { class: "mdx-hero-image", src: image, alt });
+}
+
+function stringProp(value: unknown): string | undefined {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  return undefined;
+}
+
+function safeToken(value: string): string {
+  return value.trim().replace(/[^A-Za-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "text";
+}
+
+function codeBlockText(value: unknown): string {
+  if (Array.isArray(value)) return value.map(codeBlockText).join("");
+  if (value === null || value === undefined || typeof value === "boolean") return "";
+  if (typeof value === "string" || typeof value === "number") return String(value);
+  if (isJsxValue(value)) return codeBlockText((value as { props?: { children?: unknown } }).props?.children);
+  return String(value);
 }
 
 export function renderSlideNodes(
