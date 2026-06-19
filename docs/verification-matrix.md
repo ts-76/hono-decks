@@ -22,7 +22,7 @@ Status:
 | R2 public URL | Custom domain or `r2.dev` URL used directly | design | Treat as remote URL unless an explicit R2 asset policy is introduced. Decide whether this belongs in the official sample. |
 | R2 binding delivery | Local asset path served from R2 with cache headers | done | `withR2Assets()` supports a pre-existing object using the generated `sourcePath` as the R2 key and falls back to embedded local assets when the binding is missing. `examples/basic/decks/media` includes an R2-backed image sample. |
 | Asset cache headers | Long-lived cache for R2-backed assets | done | Local tests assert `Cache-Control`; Cloudflare edge cache hit/miss needs deployed smoke verification. |
-| Asset cache headers | `cf-cache-status` / `age` on deployed Worker | smoke | Requires deployment. Local Miniflare-style tests can only check route behavior and headers. |
+| Asset cache headers | `cf-cache-status` / `age` on deployed Worker | smoke | Requires deployment. `examples/basic` includes `smoke:r2-cache` for the deployed URL; local Miniflare-style tests can only check route behavior and headers. |
 
 R2 official sample direction is still open. The current package API supports binding-backed delivery because it proves the Worker integration and cache headers without requiring an upload command. A public URL example is simpler for users, but it does not exercise `DeckSource.getAsset()` or Worker cache behavior.
 
@@ -56,7 +56,7 @@ R2 official sample direction is still open. The current package API supports bin
 | In-slide CSS animation | CSS animation in slide content | done | `examples/basic/decks/motion` covers CSS animation, `prefers-reduced-motion`, and viewport smoke coverage. |
 | In-slide client animation | `hono/jsx/dom` island animation | done | `examples/basic/decks/motion` covers a deck-local client island animation component and generated client registry wiring. |
 | Slide transition | `transition` frontmatter | done | Known transition values are typed, validated during module generation, emitted as `data-transition`, and covered by package/sample tests. |
-| Fragment / step display | Progressive reveal for bullets or blocks | done | Explicit `<Fragment />`, `fragments: list`, `:::fire`, `$fire`, iframe-owned step state, and viewer step display are covered by package/sample tests. |
+| Fragment / step display | Progressive reveal for bullets or blocks | done | Explicit `<Fragment />`, `fragments: list`, `:::fire`, `$fire`, iframe-owned step state, slide-only default controls, and fragment progression smoke are covered by package/sample tests. |
 | Fire effects | `effect="fade-up"` / `effect="scale"` | done | Fire authoring props are stripped from rendered components and emitted as `data-fire-effect` on fragment wrappers with reduced-motion-safe CSS hooks. |
 | Keyboard navigation | Arrow keys, space, fullscreen | done | Current viewer/render scripts cover the core path; keep route tests and add browser smoke later. |
 | Touch navigation | Tap/swipe on mobile | done | Package tests cover pointer swipe command wiring; `bun run smoke:viewport` verifies browser-side pointer swipe dispatch. Real device touch can still be manually checked before release. |
@@ -126,6 +126,6 @@ Use the sample gate when only sample decks or sample routes change:
 bun run --cwd examples/basic check
 ```
 
-Deployed cache and browser behavior need separate smoke checks after `wrangler deploy`, especially for R2 cache headers, `cf-cache-status`, mobile/touch navigation, and PDF/print output.
+Deployed cache and browser behavior need separate smoke checks after `wrangler deploy`, especially for R2 cache headers, `cf-cache-status`, mobile/touch navigation, and PDF/print output. For deployed R2 checks, see [Deployed R2 Cache Smoke](./deployed-r2-cache-smoke.md).
 
 Local browser viewport smoke checks are documented in [Browser Smoke Checks](./browser-smoke.md).

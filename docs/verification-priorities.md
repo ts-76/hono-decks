@@ -134,7 +134,7 @@ Implemented:
 - Explicit `<Fragment />` reveal elements
 - `fragments: list` for top-level list items
 - Keyboard/touch/control progression through fragment steps before slide changes
-- State sync between viewer controls and render frame with optional step display
+- State sync between viewer controls and render frame while keeping the default controller slide-only
 
 Follow-up:
 
@@ -179,7 +179,7 @@ Rationale: PDF output should be validated visually, not only through HTML assert
 
 ## Recommended Next Steps
 
-1. Add deployed R2/cache smoke checks once a deployed Worker target is available.
-2. Add browser smoke that actively verifies fragment step progression and transition hooks.
+1. Run the deployed R2/cache smoke check against the Worker target once a `tslab.app` URL and R2 bucket binding are available.
+2. Add richer transition direction hooks when the presentation animation contract needs forward/backward-specific styling.
 
 Keep `examples/basic/decks/sample` small. It should remain the happy-path deck for MDX expressions, deck-local server components, client islands, viewer pages, and R2 binding fallback. Use `examples/basic/decks/motion` for animation, transition, and fragment experiments.

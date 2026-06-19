@@ -58,7 +58,9 @@ describe("decksRouter", () => {
     expect(html).toContain('data-action="next"');
     expect(html).toContain('data-action="fullscreen"');
     expect(html).toContain("message.stepCount");
-    expect(html).toContain('String(message.stepIndex) + " / " + String(message.stepCount)');
+    expect(html).toContain("root?.setAttribute(\"data-step-index\", String(message.stepIndex ?? 0))");
+    expect(html).toContain("root?.setAttribute(\"data-step-count\", String(message.stepCount ?? 0))");
+    expect(html).not.toContain('String(message.stepIndex) + " / " + String(message.stepCount)');
     expect(html).toContain("pointerdown");
     expect(html).toContain("pointerup");
     expect(html).toContain("touch-action:pan-y");

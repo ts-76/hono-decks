@@ -127,7 +127,7 @@ app.route("/decks", decksRouter({ source }));
 
 `examples/basic/src/deck-source.ts` では、この `withR2Assets()` をさらに custom `DeckSource` として包み、asset response に `x-hono-decks-asset-source: r2 | embedded` を付けています。これは package が compile-time Node I/O で R2 を読まず、Worker runtime の `DeckSource.getAsset()` 境界で存在確認・cache header・fallback を扱う例です。`examples/basic/decks/media` には R2-backed image の表示サンプルがあります。
 
-この package は R2 upload までは行いません。`withR2Assets()` は `decks/media/assets/r2-remote.svg` のような generated asset の `sourcePath` を R2 key として読むため、deploy 前に同じ key で object を置いてください。ローカル test では `Cache-Control` header と R2 binding 経由の response を検証できますが、Cloudflare edge cache の hit/miss は deploy 後に `cf-cache-status` や `age` を見る smoke check で確認します。
+この package は R2 upload までは行いません。`withR2Assets()` は `decks/media/assets/r2-remote.svg` のような generated asset の `sourcePath` を R2 key として読むため、deploy 前に同じ key で object を置いてください。ローカル test では `Cache-Control` header と R2 binding 経由の response を検証できますが、Cloudflare edge cache の hit/miss は deploy 後に `cf-cache-status` や `age` を見る smoke check で確認します。手順は [Deployed R2 Cache Smoke](docs/deployed-r2-cache-smoke.md) にまとめています。
 
 iframe embed は Zenn 風 shorthand または built-in `<EmbedFrame>` を使えます。`sandbox`、`allow`、`referrerpolicy`、`loading="lazy"`、fallback link、aspect ratio の既定値を package 側で揃えます。YouTube など特定サービスで必要な permission は `allow` で上書きしてください。
 

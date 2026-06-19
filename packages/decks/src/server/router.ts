@@ -487,12 +487,11 @@ function renderViewerScript(): string {
   window.addEventListener("message", (event) => {
     const message = event.data;
     if (!message || message.type !== "hono-decks:state") return;
+    root?.setAttribute("data-step-index", String(message.stepIndex ?? 0));
+    root?.setAttribute("data-step-count", String(message.stepCount ?? 0));
     if (position) {
       const slideText = String(message.index + 1) + " / " + String(message.slideCount ?? "?");
-      const stepText = Number.isFinite(message.stepCount) && message.stepCount > 0
-        ? " · " + String(message.stepIndex) + " / " + String(message.stepCount)
-        : "";
-      position.textContent = slideText + stepText;
+      position.textContent = slideText;
     }
   });
   document.addEventListener("keydown", (event) => {

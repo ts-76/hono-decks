@@ -86,7 +86,40 @@ async function runViewportCheck(check, slug, verifyNavigation) {
     }
   }
 
+  if (slug === "motion") {
+    await verifyMotionFragmentSteps(check.name);
+  }
+
   await agent(["--session", session, "screenshot", path.join(artifactDir, `${check.name}-${slug}-viewer.png`)]);
+}
+
+async function verifyMotionFragmentSteps(label) {
+  const initial = await waitForMotionState(
+    (state) => state.position === "1 / 2" && state.stepIndex === "0" && state.stepCount === "1" && state.hiddenFragments === 1,
+    `${label} motion initial fragment state`,
+  );
+  assertSlideOnlyPosition(initial.position, `${label} motion initial position`);
+
+  await evalJson(clickNextControlScript());
+  const firstReveal = await waitForMotionState(
+    (state) => state.position === "1 / 2" && state.stepIndex === "1" && state.stepCount === "1" && state.visibleFragments === 1,
+    `${label} motion first fragment reveal`,
+  );
+  assertSlideOnlyPosition(firstReveal.position, `${label} motion first reveal position`);
+
+  await evalJson(clickNextControlScript());
+  const secondSlide = await waitForMotionState(
+    (state) => state.position === "2 / 2" && state.stepIndex === "0" && Number(state.stepCount) > 0,
+    `${label} motion second slide fragment state`,
+  );
+  assertSlideOnlyPosition(secondSlide.position, `${label} motion second slide position`);
+
+  await evalJson(clickNextControlScript());
+  const secondReveal = await waitForMotionState(
+    (state) => state.position === "2 / 2" && state.stepIndex === "1" && state.visibleFragments >= 1,
+    `${label} motion second slide fragment reveal`,
+  );
+  assertSlideOnlyPosition(secondReveal.position, `${label} motion second reveal position`);
 }
 
 function viewportMetricsScript() {
@@ -196,8 +229,38 @@ function dispatchSwipeScript(bounds) {
 
 function positionScript() {
   return `(() => {
-    const position = document.querySelector("[data-slide-position]");
+    const doc = window.top?.document ?? document;
+    const position = doc.querySelector("[data-slide-position]");
     return { position: position?.textContent ?? "" };
+  })()`;
+}
+
+function motionStateScript() {
+  return `(() => {
+    const doc = window.top?.document ?? document;
+    const root = doc.querySelector("[data-hono-decks-viewer]");
+    const position = doc.querySelector("[data-slide-position]");
+    const iframe = doc.querySelector("iframe");
+    const frameDoc = iframe?.contentDocument;
+    const activeSlide = frameDoc?.querySelector(".slide:not([hidden])");
+    const fragments = Array.from(activeSlide?.querySelectorAll("[data-hono-decks-fragment]") ?? []);
+    return {
+      position: position?.textContent ?? "",
+      stepIndex: root?.getAttribute("data-step-index") ?? "",
+      stepCount: root?.getAttribute("data-step-count") ?? "",
+      visibleFragments: fragments.filter((fragment) => !fragment.hasAttribute("data-fragment-hidden")).length,
+      hiddenFragments: fragments.filter((fragment) => fragment.hasAttribute("data-fragment-hidden")).length
+    };
+  })()`;
+}
+
+function clickNextControlScript() {
+  return `(() => {
+    const doc = window.top?.document ?? document;
+    const next = doc.querySelector("[data-action='next']");
+    if (!(next instanceof HTMLButtonElement)) throw new Error("missing next control");
+    next.click();
+    return { ok: true };
   })()`;
 }
 
@@ -217,6 +280,23 @@ async function waitForPosition(prefix) {
     await sleep(200);
   }
   return result;
+}
+
+async function waitForMotionState(predicate, label) {
+  const startedAt = Date.now();
+  let result;
+  while (Date.now() - startedAt < 5000) {
+    result = await evalJson(motionStateScript());
+    if (predicate(result)) return result;
+    await sleep(200);
+  }
+  throw new Error(`${label} failed: ${JSON.stringify(result)}`);
+}
+
+function assertSlideOnlyPosition(position, label) {
+  if (position.includes("·")) {
+    throw new Error(`${label} should not include fragment step text: ${position}`);
+  }
 }
 
 async function ensureAgentBrowser() {

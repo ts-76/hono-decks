@@ -4,3 +4,11 @@ account_id = "d8c5d2da42e8c9f7c416d5d34fc7530c"
 compatibility_date = "2026-06-01"
 compatibility_flags = ["nodejs_compat"]
 worker_loaders = [{ binding = "LOADER" }]
+
+[[r2_buckets]]
+binding = "DECK_ASSETS"
+bucket_name = "hono-decks-basic-assets"
+
+[[routes]]
+pattern = "hono-decks-basic.tslab.app"
+custom_domain = true
