@@ -2,6 +2,7 @@
 import {Fragment as _Fragment, jsx as _jsx, jsxs as _jsxs} from "hono/jsx/jsx-runtime";
 function _createMdxContent(props) {
   const _components = {
+    a: "a",
     code: "code",
     h1: "h1",
     p: "p",
@@ -11,6 +12,11 @@ function _createMdxContent(props) {
   return _jsxs(_Fragment, {
     children: [_jsx(_components.h1, {
       children: "Link card"
+    }), "\n", _jsx(_components.p, {
+      children: _jsx(_components.a, {
+        href: "https://hono.dev/docs/",
+        children: "https://hono.dev/docs/"
+      })
     }), "\n", _jsx(LinkCard, {
       href: "https://hono.dev/docs/"
     }), "\n", _jsxs(_components.p, {

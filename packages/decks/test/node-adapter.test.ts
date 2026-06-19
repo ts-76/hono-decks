@@ -271,6 +271,12 @@ title: Syntax
 
 @[card](https://hono.dev/docs/)
 
+@[embed](https://example.com/embed/status)
+
+@[iframe](https://example.com/embed/dashboard)
+
+https://example.com/plain-link
+
 :::fire
 Markdown reveal
 :::
@@ -298,6 +304,11 @@ The slide stays 16:9.
       expect(slideOutput).toContain('href: "https://x.com/honojs/status/123"');
       expect(slideOutput).toContain("LinkCard");
       expect(slideOutput).toContain('href: "https://hono.dev/docs/"');
+      expect(slideOutput).toContain('src: "https://example.com/embed/status"');
+      expect(slideOutput).toContain('title: "Embedded content"');
+      expect(slideOutput).toContain('src: "https://example.com/embed/dashboard"');
+      expect(slideOutput).toContain('href: "https://example.com/plain-link"');
+      expect(slideOutput).toContain('children: "https://example.com/plain-link"');
       expect(slideOutput).toContain("Fragment");
       expect(slideOutput).toContain("Markdown reveal");
       expect(slideOutput).toContain("JSX reveal");
@@ -307,6 +318,7 @@ The slide stays 16:9.
       expect(slideOutput).toContain('effect: "fade-up"');
       expect(slideOutput).not.toContain("$fire");
       expect(slideOutput).not.toContain("_components.div");
+      expect(slideOutput.match(/_jsx\(LinkCard/g)?.length).toBe(1);
     } finally {
       await rm(cwd, { recursive: true, force: true });
     }

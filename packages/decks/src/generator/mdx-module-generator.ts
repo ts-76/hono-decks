@@ -149,7 +149,14 @@ function transformDeckSyntaxChildren(node: MarkdownNode): void {
 
   node.children = node.children.map((child) => {
     transformDeckSyntaxChildren(child);
-    return zennEmbedNode(child) ?? fireDirectiveNode(child) ?? firePropNode(child) ?? unknownDirectiveFallback(child) ?? child;
+    return (
+      zennEmbedNode(child) ??
+      plainUrlLinkNode(child) ??
+      fireDirectiveNode(child) ??
+      firePropNode(child) ??
+      unknownDirectiveFallback(child) ??
+      child
+    );
   });
 }
 
@@ -182,7 +189,44 @@ function zennEmbedNode(node: MarkdownNode): MarkdownNode | undefined {
   if (name === "card") {
     return mdxElement("LinkCard", [mdxAttribute("href", link.url)], []);
   }
+  if (name === "embed" || name === "iframe") {
+    return mdxElement(
+      "EmbedFrame",
+      [mdxAttribute("src", link.url), mdxAttribute("title", "Embedded content")],
+      [{ type: "text", value: "Open embed" }],
+    );
+  }
   return undefined;
+}
+
+function plainUrlLinkNode(node: MarkdownNode): MarkdownNode | undefined {
+  if (node.type !== "paragraph" || !Array.isArray(node.children) || node.children.length !== 1) return undefined;
+
+  const [child] = node.children;
+  if (child?.type !== "text" || typeof child.value !== "string") return undefined;
+
+  const value = child.value.trim();
+  if (!isHttpUrl(value)) return undefined;
+
+  return {
+    type: "paragraph",
+    children: [
+      {
+        type: "link",
+        url: value,
+        children: [{ type: "text", value }],
+      },
+    ],
+  };
+}
+
+function isHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
 }
 
 function fireDirectiveNode(node: MarkdownNode): MarkdownNode | undefined {

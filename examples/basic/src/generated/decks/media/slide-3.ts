@@ -2,6 +2,7 @@
 import {Fragment as _Fragment, jsx as _jsx, jsxs as _jsxs} from "hono/jsx/jsx-runtime";
 function _createMdxContent(props) {
   const _components = {
+    a: "a",
     h1: "h1",
     p: "p",
     ...props.components
@@ -12,13 +13,15 @@ function _createMdxContent(props) {
       children: "Generic iframe"
     }), "\n", _jsx(EmbedFrame, {
       src: "https://example.com/embed/status",
-      title: "Generic status embed",
-      aspectRatio: "4 / 3",
-      children: _jsx(_components.p, {
-        children: "Open status embed"
-      })
+      title: "Embedded content",
+      children: "Open embed"
     }), "\n", _jsx(_components.p, {
       children: "Generic iframe embeds use the same package defaults."
+    }), "\n", _jsx(_components.p, {
+      children: _jsx(_components.a, {
+        href: "https://example.com/plain-link",
+        children: "https://example.com/plain-link"
+      })
     })]
   });
 }
