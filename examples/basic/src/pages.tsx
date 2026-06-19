@@ -143,7 +143,26 @@ a { color: inherit; }
 .sample-embed .hono-decks-viewer-stage { display: block; width: min(100%, 960px); }
 .sample-embed .hono-decks-viewport { width: 100%; aspect-ratio: 16 / 9; overflow: hidden; }
 .sample-embed .hono-decks-frame-stage { width: 1920px; height: 1080px; transform: scale(.5); transform-origin: top left; }
-.sample-embed iframe { width: 1920px; height: 1080px; border: 0; background: #0b1020; }
+.sample-embed iframe { width: 1920px; height: 1080px; border: 0; }
+`;
+
+export const sampleDeckStyle = `
+.layout-cover, .layout-default, .layout-statement, .layout-code, .layout-motion {
+  background: #0b1020;
+  color: #eef2ff;
+}
+
+.layout-media {
+  background: #07111f;
+  color: #eef2ff;
+}
+
+.layout-media .media-image {
+  display: block;
+  width: min(100%, 56rem);
+  max-height: 36rem;
+  object-fit: contain;
+}
 `;
 
 const sampleViewerStyle = `

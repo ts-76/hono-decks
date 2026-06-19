@@ -178,6 +178,9 @@ describe("compiled deck rendering", () => {
     expect(html).toContain(".hono-decks-stage{width:100vw;height:100vh");
     expect(html).toContain(".hono-decks-deck{display:grid;gap:1rem;width:var(--hono-decks-width);height:var(--hono-decks-height)");
     expect(html).toContain(".slide{box-sizing:border-box;aspect-ratio:16/9");
+    expect(html).not.toContain(".hono-decks-stage{width:100vw;height:100vh;overflow:hidden;background:");
+    expect(html).not.toContain(".slide{box-sizing:border-box;aspect-ratio:16/9;border:");
+    expect(html).not.toContain("background:linear-gradient(145deg");
     expect(html).not.toContain("border-radius:24px");
     expect(html).toContain("transform-origin:left top");
     expect(html).toContain("function fitDeck()");
@@ -481,6 +484,8 @@ describe("compiled deck rendering", () => {
 
     expect(html).toContain('class="hono-decks-embed-frame"');
     expect(html).toContain('data-component="EmbedFrame"');
+    expect(html).toContain(".hono-decks-embed-viewport{width:min(100%,72rem);overflow:hidden}");
+    expect(html).not.toContain(".hono-decks-embed-viewport{width:min(100%,72rem);overflow:hidden;border:");
     expect(html).toContain('style="aspect-ratio:16 / 9"');
     expect(html).toContain('src="https://www.youtube.com/embed/dQw4w9WgXcQ"');
     expect(html).toContain('title="Demo video"');

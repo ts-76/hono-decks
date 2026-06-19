@@ -48,6 +48,7 @@ describe("decksRouter", () => {
     expect(html).toContain(".hono-decks-viewport:focus-visible");
     expect(html).toContain(".hono-decks-frame-stage{width:100%;height:100%");
     expect(html).toContain(".hono-decks-frame-stage iframe{width:100%;height:100%");
+    expect(html).not.toContain(".hono-decks-frame-stage iframe{width:100%;height:100%;border:0;display:block;background:");
     expect(html).toContain("@media (prefers-reduced-motion: reduce)");
     expect(html).not.toContain('width="1920"');
     expect(html).not.toContain('height="1080"');

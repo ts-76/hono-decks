@@ -126,6 +126,10 @@ describe("sample Worker app", () => {
     expect(response.status).toBe(200);
     const html = await response.text();
     expect(html).toContain("<h1>Media verification</h1>");
+    expect(html).toContain(".layout-media {");
+    expect(html).toContain("background: #07111f;");
+    expect(html).not.toContain(".slide{box-sizing:border-box;aspect-ratio:16/9;border:");
+    expect(html).not.toContain(".hono-decks-stage{width:100vw;height:100vh;overflow:hidden;background:");
     expect(html).toContain('src="/decks/media/assets/local-jsx.svg"');
     expect(html).toContain('alt="Local JSX asset"');
     expect(html).toContain('src="/decks/media/assets/r2-remote.svg"');
