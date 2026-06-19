@@ -6,6 +6,8 @@ import Slide_code_0 from "./decks/code/slide-0";
 import Slide_code_1 from "./decks/code/slide-1";
 import Slide_media_0 from "./decks/media/slide-0";
 import Slide_media_1 from "./decks/media/slide-1";
+import Slide_media_2 from "./decks/media/slide-2";
+import Slide_media_3 from "./decks/media/slide-3";
 import Slide_sample_0 from "./decks/sample/slide-0";
 import Slide_sample_1 from "./decks/sample/slide-1";
 import Slide_sample_2 from "./decks/sample/slide-2";
@@ -112,6 +114,30 @@ export const decks = defineDecks({
           components: [],
           notes: undefined,
           render: Slide_media_1
+        },
+        {
+          index: 2,
+          meta: {
+            "title": "YouTube Embed",
+            "layout": "media",
+            "meta": {}
+          },
+          html: "",
+          components: [],
+          notes: undefined,
+          render: Slide_media_2
+        },
+        {
+          index: 3,
+          meta: {
+            "title": "Generic Embed",
+            "layout": "media",
+            "meta": {}
+          },
+          html: "",
+          components: [],
+          notes: undefined,
+          render: Slide_media_3
         }
       ]
     },

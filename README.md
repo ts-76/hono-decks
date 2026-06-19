@@ -108,6 +108,18 @@ app.route("/decks", decksRouter({ source }));
 
 この package は R2 upload までは行いません。`withR2Assets()` は `decks/sample/assets/image.png` のような generated asset の `sourcePath` を R2 key として読むため、deploy 前に同じ key で object を置いてください。ローカル test では `Cache-Control` header と R2 binding 経由の response を検証できますが、Cloudflare edge cache の hit/miss は deploy 後に `cf-cache-status` や `age` を見る smoke check で確認します。
 
+iframe embed は built-in `<EmbedFrame>` を使えます。`sandbox`、`allow`、`referrerpolicy`、`loading="lazy"`、fallback link、aspect ratio の既定値を package 側で揃えます。YouTube など特定サービスで必要な permission は `allow` で上書きしてください。
+
+```mdx
+<EmbedFrame
+  src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+  title="YouTube embed example"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+>
+Open YouTube embed
+</EmbedFrame>
+```
+
 `style` は必要な deck だけ generated router に渡します。`style` は `/:slug/render` の presentation document に足すテーマ CSS です。`clientEntry` は独自の asset pipeline や CDN から browser bundle を配信したい場合だけ使う外部URL override です。静的な server-rendered deck ではどちらも不要です。
 
 ```ts

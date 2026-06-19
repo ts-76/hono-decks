@@ -127,6 +127,15 @@ describe("sample Worker app", () => {
     expect(html).toContain('src="https://example.com/hono-decks-remote.png"');
     expect(html).toContain('alt="Remote image asset"');
     expect(html).not.toContain("./assets/local-jsx.svg");
+    expect(html).toContain('class="hono-decks-embed-frame"');
+    expect(html).toContain('src="https://www.youtube.com/embed/dQw4w9WgXcQ"');
+    expect(html).toContain('title="YouTube embed example"');
+    expect(html).toContain('loading="lazy"');
+    expect(html).toContain('sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"');
+    expect(html).toContain('allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"');
+    expect(html).toContain('href="https://www.youtube.com/embed/dQw4w9WgXcQ"');
+    expect(html).toContain('src="https://example.com/embed/status"');
+    expect(html).toContain('Open status embed');
   });
 
   it("renders code blocks with build-time Shiki highlighting and overflow styles", async () => {

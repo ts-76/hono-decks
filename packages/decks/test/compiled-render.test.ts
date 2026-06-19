@@ -281,6 +281,46 @@ describe("compiled deck rendering", () => {
     expect(html).not.toContain("&lt;pre class=&quot;shiki");
   });
 
+  it("renders the built-in EmbedFrame component with safe iframe defaults and fallback content", () => {
+    const html = renderCompiledDeckPage({
+      deck: {
+        ...deck,
+        slides: [
+          {
+            ...deck.slides[0],
+            nodes: [
+              {
+                type: "component",
+                name: "EmbedFrame",
+                props: {
+                  src: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+                  title: "Demo video",
+                  aspectRatio: "16 / 9",
+                  allow: "fullscreen; picture-in-picture",
+                },
+                children: [{ type: "text", value: "Open video" }],
+              },
+            ],
+          },
+        ],
+      },
+      mountPath: "/slides",
+    });
+
+    expect(html).toContain('class="hono-decks-embed-frame"');
+    expect(html).toContain('data-component="EmbedFrame"');
+    expect(html).toContain('style="aspect-ratio:16 / 9"');
+    expect(html).toContain('src="https://www.youtube.com/embed/dQw4w9WgXcQ"');
+    expect(html).toContain('title="Demo video"');
+    expect(html).toContain('loading="lazy"');
+    expect(html).toContain('referrerpolicy="strict-origin-when-cross-origin"');
+    expect(html).toContain('sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"');
+    expect(html).toContain('allow="fullscreen; picture-in-picture"');
+    expect(html).toContain("allowfullscreen");
+    expect(html).toContain('<a href="https://www.youtube.com/embed/dQw4w9WgXcQ" rel="noreferrer">Open video</a>');
+    expect(html).not.toContain("mdx-component");
+  });
+
   it("marks client slide components as islands and loads the configured client entry", () => {
     const html = renderCompiledDeckPage({
       deck: {

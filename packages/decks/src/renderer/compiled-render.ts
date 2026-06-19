@@ -213,6 +213,11 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden}
 .slide pre code{display:block;min-width:max-content;background:transparent;padding:0}
 .hono-decks-code-block{margin:1rem 0;max-width:100%}
 .hono-decks-code-caption{display:inline-flex;margin:0 0 .4rem;border:1px solid rgba(148,163,184,.24);border-radius:6px;padding:.2rem .5rem;background:rgba(15,23,42,.72);color:#cbd5e1;font-size:.82rem}
+.hono-decks-embed-frame{margin:1rem 0;max-width:100%}
+.hono-decks-embed-viewport{width:min(100%,72rem);overflow:hidden;border:1px solid rgba(148,163,184,.24);border-radius:8px;background:rgba(15,23,42,.78)}
+.hono-decks-embed-viewport iframe{display:block;width:100%;height:100%;border:0}
+.hono-decks-embed-fallback{margin:.45rem 0 0;color:#cbd5e1;font-size:.84rem}
+.hono-decks-embed-fallback a{color:inherit}
 .mdx-hero{height:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,42%);gap:clamp(1rem,3vw,3rem);align-items:center}
 .mdx-hero:not(.has-image){grid-template-columns:1fr}
 .mdx-hero-copy{min-width:0}
