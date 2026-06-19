@@ -22,6 +22,7 @@ export type {
   DecksRouterOverrides,
   DeckMiddlewareOptions,
   DeckRenderable,
+  DeckTheme,
   MaybePromise,
   R2AssetKeyInput,
   R2AssetSourceOptions,
@@ -30,4 +31,6 @@ export type {
   R2ObjectBodyLike,
   R2ObjectHttpMetadataLike,
   ServeDecksClientEntryOptions,
+  SlideLayout,
+  SlideLayoutInput,
 } from "./mod";

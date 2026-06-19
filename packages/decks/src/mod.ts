@@ -14,7 +14,10 @@ export {
 } from "./renderer/compiled-render";
 export type {
   DeckRenderable,
+  DeckTheme,
   MaybePromise,
+  SlideLayout,
+  SlideLayoutInput,
   SlideComponent,
   SlideComponentDefinition,
   SlideComponentInput,

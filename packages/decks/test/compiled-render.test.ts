@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { jsx } from "hono/jsx/jsx-runtime";
-import { defineSlideComponents, renderCompiledDeck, renderCompiledDeckPage } from "../src/renderer/compiled-render";
+import {
+  defineSlideComponents,
+  renderCompiledDeck,
+  renderCompiledDeckPage,
+  renderCompiledDeckPageAsync,
+} from "../src/renderer/compiled-render";
 import type { CompiledDeck } from "../src/deck/model";
 
 const deck = {
@@ -210,6 +215,58 @@ describe("compiled deck rendering", () => {
     expect(html).toContain('class="columns columns-wide"');
     expect(html).toContain("<div>Left</div>");
     expect(html).toContain("<div>Right</div>");
+    expect(html).not.toContain("mdx-component");
+  });
+
+  it("applies trusted theme layouts, components, and styles to compiled slides", async () => {
+    const html = await renderCompiledDeckPageAsync({
+      deck: {
+        ...deck,
+        slides: [
+          {
+            ...deck.slides[0],
+            nodes: [
+              {
+                type: "component",
+                name: "ThemeBadge",
+                props: { tone: "accent" },
+                children: [{ type: "text", value: "Trusted theme component" }],
+              },
+            ],
+          },
+        ],
+      },
+      mountPath: "/slides",
+      theme: {
+        name: "sample-theme",
+        style: ".theme-cover{color:var(--theme-accent)}",
+        components: {
+          ThemeBadge: (props) =>
+            jsx("strong", {
+              class: `theme-badge theme-badge-${String(props.tone)}`,
+              children: props.children,
+            }),
+        },
+        layouts: {
+          cover: ({ children, slide, deck }) =>
+            jsx("div", {
+              class: "theme-cover",
+              "data-theme-layout": slide.meta.layout,
+              "data-theme-deck": deck.slug,
+              children,
+            }),
+        },
+      },
+      style: ".slide{--theme-accent:#8bd3ff}",
+    });
+
+    expect(html).toContain(".theme-cover{color:var(--theme-accent)}.slide{--theme-accent:#8bd3ff}");
+    expect(html).toContain('class="slide layout-cover hero"');
+    expect(html).toContain('class="theme-cover"');
+    expect(html).toContain('data-theme-layout="cover"');
+    expect(html).toContain('data-theme-deck="deck1"');
+    expect(html).toContain('class="theme-badge theme-badge-accent"');
+    expect(html).toContain("Trusted theme component");
     expect(html).not.toContain("mdx-component");
   });
 
