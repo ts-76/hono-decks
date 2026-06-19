@@ -202,6 +202,8 @@ export const builtInSlideComponents = defineSlideComponents({
     const href = stringProp(props.href ?? props.url);
     const title = stringProp(props.title) ?? href ?? "Link";
     const description = stringProp(props.description);
+    const image = stringProp(props.image ?? props.imageUrl);
+    const siteName = stringProp(props.siteName ?? props.site);
     const label = codeBlockText(props.children) || "Open link";
 
     return jsx("figure", {
@@ -214,12 +216,21 @@ export const builtInSlideComponents = defineSlideComponents({
             target: "_blank",
             rel: "noreferrer",
             children: [
-              jsx("span", { class: "hono-decks-link-card-title", children: title }),
-              description ? jsx("span", { class: "hono-decks-link-card-description", children: description }) : "",
-              jsx("span", { class: "hono-decks-link-card-label", children: label }),
+              image ? jsx("img", { class: "hono-decks-link-card-image", src: image, alt: title }) : "",
+              jsx("span", {
+                class: "hono-decks-link-card-body",
+                children: [
+                  siteName ? jsx("span", { class: "hono-decks-link-card-site", children: siteName }) : "",
+                  jsx("span", { class: "hono-decks-link-card-title", children: title }),
+                  description ? jsx("span", { class: "hono-decks-link-card-description", children: description }) : "",
+                  jsx("span", { class: "hono-decks-link-card-label", children: label }),
+                ],
+              }),
             ],
           })
         : [
+            image ? jsx("img", { class: "hono-decks-link-card-image", src: image, alt: title }) : "",
+            siteName ? jsx("span", { class: "hono-decks-link-card-site", children: siteName }) : "",
             jsx("span", { class: "hono-decks-link-card-title", children: title }),
             description ? jsx("span", { class: "hono-decks-link-card-description", children: description }) : "",
           ],

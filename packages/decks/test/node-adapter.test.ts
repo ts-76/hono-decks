@@ -293,6 +293,15 @@ The slide stays 16:9.
         root: "decks",
         out: "src/generated",
         mountPath: "/slides",
+        resolveOgp: async (url) =>
+          url === "https://hono.dev/docs/"
+            ? {
+                title: "Hono Documentation",
+                description: "Fast, lightweight web framework docs.",
+                image: "https://hono.dev/og.png",
+                siteName: "Hono",
+              }
+            : undefined,
       });
 
       const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.ts"), "utf8");
@@ -305,6 +314,10 @@ The slide stays 16:9.
       expect(slideOutput).not.toContain("SocialEmbed");
       expect(slideOutput).toContain("LinkCard");
       expect(slideOutput).toContain('href: "https://hono.dev/docs/"');
+      expect(slideOutput).toContain('title: "Hono Documentation"');
+      expect(slideOutput).toContain('description: "Fast, lightweight web framework docs."');
+      expect(slideOutput).toContain('image: "https://hono.dev/og.png"');
+      expect(slideOutput).toContain('siteName: "Hono"');
       expect(slideOutput).toContain('src: "https://example.com/embed/status"');
       expect(slideOutput).toContain('title: "Embedded content"');
       expect(slideOutput).toContain('src: "https://example.com/embed/dashboard"');

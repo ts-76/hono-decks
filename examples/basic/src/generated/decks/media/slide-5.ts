@@ -3,7 +3,6 @@ import {Fragment as _Fragment, jsx as _jsx, jsxs as _jsxs} from "hono/jsx/jsx-ru
 function _createMdxContent(props) {
   const _components = {
     a: "a",
-    code: "code",
     h1: "h1",
     p: "p",
     ...props.components
@@ -19,10 +18,8 @@ function _createMdxContent(props) {
       })
     }), "\n", _jsx(LinkCard, {
       href: "https://hono.dev/docs/"
-    }), "\n", _jsxs(_components.p, {
-      children: ["Link cards stay script-free by default and can be replaced through ", _jsx(_components.code, {
-        children: "theme.components"
-      }), "."]
+    }), "\n", _jsx(_components.p, {
+      children: "Link cards resolve OGP metadata at compile time when available and stay script-free at runtime."
     })]
   });
 }

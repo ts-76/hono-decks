@@ -31,8 +31,8 @@ R2 official sample direction is still open. The current package API supports bin
 | Area | Case | Status | Notes |
 | --- | --- | --- | --- |
 | YouTube | `@[youtube](https://...)` shorthand | done | Build-time syntax transform compiles the Zenn-style shorthand to built-in `EmbedFrame`; sample tests verify `title`, `loading="lazy"`, sandbox, fallback link, and default permissions. |
-| X / SNS embed | `@[x](https://...)` shorthand | done | Build-time syntax transform compiles the shorthand to built-in `SocialEmbed`, which renders a script-free link fallback without auto-loading third-party scripts. |
-| Link card | `@[card](https://...)` shorthand | done | Build-time syntax transform compiles the shorthand to built-in `LinkCard`; the default implementation is a script-free link preview fallback and does not fetch OGP data. |
+| X / SNS embed | `@[x](https://...)` shorthand | done | Build-time syntax transform compiles the shorthand to built-in `TweetEmbed`, which emits official `twitter-tweet` markup and the X widgets script. Low-level `SocialEmbed` remains available for script-free fallback use. |
+| Link card | `@[card](https://...)` shorthand | done | Build-time syntax transform compiles the shorthand to built-in `LinkCard`; OGP metadata is resolved at compile time on a best-effort basis and falls back to a URL card when unavailable. |
 | Plain URL | Single-line `https://...` | done | Single-line URLs become normal text links and do not auto-card. Authors opt into card/embed presentation with explicit shorthand. |
 | Generic embed shorthand | `@[embed](https://...)` / `@[iframe](https://...)` | done | Build-time syntax transform compiles generic embed shorthand to built-in `EmbedFrame`; low-level `<EmbedFrame>` remains available for custom aspect ratio and permissions. |
 | Generic iframe | `<EmbedFrame src title />` or similar component | done | Built-in `EmbedFrame` centralizes `sandbox`, `allow`, `referrerpolicy`, aspect ratio, lazy loading, and fallback link defaults. |

@@ -563,6 +563,8 @@ describe("compiled deck rendering", () => {
                   href: "https://hono.dev/docs/",
                   title: "Hono Docs",
                   description: "Read the Hono documentation.",
+                  image: "https://hono.dev/og.png",
+                  siteName: "Hono",
                 },
                 children: [{ type: "text", value: "Open Hono docs" }],
               },
@@ -580,6 +582,10 @@ describe("compiled deck rendering", () => {
     expect(html).toContain('rel="noreferrer"');
     expect(html).toContain("Hono Docs");
     expect(html).toContain("Read the Hono documentation.");
+    expect(html).toContain('src="https://hono.dev/og.png"');
+    expect(html).toContain('alt="Hono Docs"');
+    expect(html).toContain('class="hono-decks-link-card-site"');
+    expect(html).toContain("Hono");
     expect(html).toContain("Open Hono docs");
     expect(html).not.toContain("mdx-component");
   });
