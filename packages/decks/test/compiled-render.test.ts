@@ -321,6 +321,46 @@ describe("compiled deck rendering", () => {
     expect(html).not.toContain("mdx-component");
   });
 
+  it("renders the built-in SocialEmbed component as a script-free link fallback", () => {
+    const html = renderCompiledDeckPage({
+      deck: {
+        ...deck,
+        slides: [
+          {
+            ...deck.slides[0],
+            nodes: [
+              {
+                type: "component",
+                name: "SocialEmbed",
+                props: {
+                  href: "https://x.com/honojs/status/123",
+                  provider: "x",
+                  author: "@honojs",
+                  label: "Open on X",
+                },
+                children: [{ type: "text", value: "Hono decks can keep SNS content link-first." }],
+              },
+            ],
+          },
+        ],
+      },
+      mountPath: "/slides",
+    });
+
+    expect(html).toContain('class="hono-decks-social-embed"');
+    expect(html).toContain('data-component="SocialEmbed"');
+    expect(html).toContain('data-provider="x"');
+    expect(html).toContain('cite="https://x.com/honojs/status/123"');
+    expect(html).toContain("Hono decks can keep SNS content link-first.");
+    expect(html).toContain("@honojs");
+    expect(html).toContain(
+      '<a href="https://x.com/honojs/status/123" target="_blank" rel="noreferrer">Open on X</a>',
+    );
+    expect(html).not.toContain("platform.twitter.com/widgets.js");
+    expect(html).not.toContain("twitter-tweet");
+    expect(html).not.toContain("mdx-component");
+  });
+
   it("marks client slide components as islands and loads the configured client entry", () => {
     const html = renderCompiledDeckPage({
       deck: {

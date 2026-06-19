@@ -121,6 +121,39 @@ export const builtInSlideComponents = defineSlideComponents({
       ],
     });
   },
+  SocialEmbed: (props) => {
+    const href = stringProp(props.href ?? props.url);
+    const provider = stringProp(props.provider ?? props.service);
+    const author = stringProp(props.author);
+    const label = stringProp(props.label) ?? (provider ? `Open on ${provider}` : "Open social post");
+    const quote = codeBlockText(props.children);
+
+    return jsx("figure", {
+      class: "hono-decks-social-embed",
+      "data-component": "SocialEmbed",
+      ...(provider ? { "data-provider": safeToken(provider).toLowerCase() } : {}),
+      children: jsx("blockquote", {
+        class: "hono-decks-social-card",
+        ...(href ? { cite: href } : {}),
+        children: [
+          quote ? jsx("p", { children: quote }) : "",
+          jsx("footer", {
+            children: [
+              author ? jsx("span", { class: "hono-decks-social-author", children: author }) : "",
+              href
+                ? jsx("a", {
+                    href,
+                    target: "_blank",
+                    rel: "noreferrer",
+                    children: label,
+                  })
+                : "",
+            ],
+          }),
+        ],
+      }),
+    });
+  },
 });
 
 export function defineSlideComponents(input: Record<string, SlideComponentInput>): SlideComponentRegistry {

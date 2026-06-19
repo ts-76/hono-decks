@@ -136,6 +136,14 @@ describe("sample Worker app", () => {
     expect(html).toContain('href="https://www.youtube.com/embed/dQw4w9WgXcQ"');
     expect(html).toContain('src="https://example.com/embed/status"');
     expect(html).toContain('Open status embed');
+    expect(html).toContain('class="hono-decks-social-embed"');
+    expect(html).toContain('data-provider="x"');
+    expect(html).toContain('cite="https://x.com/honojs/status/123"');
+    expect(html).toContain("Script-based SNS embeds stay link-first by default.");
+    expect(html).toContain('href="https://x.com/honojs/status/123"');
+    expect(html).toContain("Open on X");
+    expect(html).not.toContain("platform.twitter.com/widgets.js");
+    expect(html).not.toContain("twitter-tweet");
   });
 
   it("renders code blocks with build-time Shiki highlighting and overflow styles", async () => {

@@ -218,6 +218,11 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden}
 .hono-decks-embed-viewport iframe{display:block;width:100%;height:100%;border:0}
 .hono-decks-embed-fallback{margin:.45rem 0 0;color:#cbd5e1;font-size:.84rem}
 .hono-decks-embed-fallback a{color:inherit}
+.hono-decks-social-embed{margin:1rem 0;max-width:min(100%,42rem)}
+.hono-decks-social-card{margin:0;border:1px solid rgba(148,163,184,.24);border-radius:8px;background:rgba(15,23,42,.78);padding:1rem}
+.hono-decks-social-card p{margin:0 0 .75rem;line-height:1.55}
+.hono-decks-social-card footer{display:flex;flex-wrap:wrap;gap:.65rem;align-items:center;color:#cbd5e1;font-size:.9rem}
+.hono-decks-social-card a{color:inherit}
 .mdx-hero{height:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,42%);gap:clamp(1rem,3vw,3rem);align-items:center}
 .mdx-hero:not(.has-image){grid-template-columns:1fr}
 .mdx-hero-copy{min-width:0}

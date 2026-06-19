@@ -31,9 +31,9 @@ R2 official sample direction is still open. The current package API supports bin
 | Area | Case | Status | Notes |
 | --- | --- | --- | --- |
 | YouTube | `<iframe src="https://www.youtube.com/embed/...">` | done | `examples/basic/decks/media` uses built-in `EmbedFrame`; sample tests verify aspect ratio defaults, `title`, `loading="lazy"`, sandbox, fallback link, and fullscreen/media permissions. |
-| X / SNS embed | Script-based embed or blockquote fallback | design | Prefer a package-provided or sample component that degrades to a link because third-party scripts, CSP, and Worker SSR do not always compose cleanly. |
+| X / SNS embed | Script-based embed or blockquote fallback | done | Built-in `SocialEmbed` renders a script-free quote/link fallback; `examples/basic/decks/media` covers X-style SNS content without auto-loading third-party scripts. |
 | Generic iframe | `<EmbedFrame src title />` or similar component | done | Built-in `EmbedFrame` centralizes `sandbox`, `allow`, `referrerpolicy`, aspect ratio, lazy loading, and fallback link defaults. |
-| CSP | Embed-safe policy for standard viewer | design | Document what the package sets, what the app must set, and how custom viewer pages can loosen or tighten policy. |
+| CSP | Embed-safe policy for standard viewer | done | README documents that the package does not set CSP headers; apps own `frame-src`, `img-src`, and `script-src`, especially when opting into third-party SNS scripts. |
 | Sandbox | Safe defaults for embedded content | done | `EmbedFrame` defaults to `allow-scripts allow-same-origin allow-presentation allow-popups`; callers can override `sandbox` or disable it with `sandbox={false}`. |
 | Fallback | Loading and blocked-content fallback UI | done | `EmbedFrame` renders a visible fallback link below the iframe. |
 
@@ -104,7 +104,7 @@ R2 official sample direction is still open. The current package API supports bin
 ## Suggested Next Sample Decks
 
 - `examples/basic/decks/sample`: keep this as the small happy-path deck for MDX, server components, client islands, local asset routing, viewer pages, and R2 binding fallback.
-- `examples/basic/decks/media`: local JSX, remote image, YouTube `EmbedFrame`, and generic iframe examples exist; extend it with SNS fallback examples after script/embed policy is designed.
+- `examples/basic/decks/media`: local JSX, remote image, YouTube `EmbedFrame`, generic iframe, and SNS `SocialEmbed` fallback examples exist.
 - `examples/basic/decks/code`: fenced code, built-in `CodeBlock`, and build-time Shiki highlighting examples exist.
 - `examples/basic/decks/motion`: add CSS animation, client island animation, transitions, and fragment/step behavior once the runtime supports it.
 

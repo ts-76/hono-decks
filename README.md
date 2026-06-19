@@ -120,6 +120,21 @@ Open YouTube embed
 </EmbedFrame>
 ```
 
+SNS や X のような script-based embed は built-in `<SocialEmbed>` で link-first にできます。package は third-party script を自動挿入しないため、Worker SSR と CSP を壊さずに引用テキストと外部リンクを表示できます。
+
+```mdx
+<SocialEmbed
+  href="https://x.com/honojs/status/123"
+  provider="x"
+  author="@honojs"
+  label="Open on X"
+>
+Script-based SNS embeds stay link-first by default.
+</SocialEmbed>
+```
+
+`@hono/decks` は標準 viewer に Content-Security-Policy header を設定しません。アプリ側で CSP を設定する場合、iframe embed は `frame-src`、画像は `img-src`、client entry は `script-src` の対象になります。X widgets などの third-party script を使いたい場合は custom viewer route で明示的に script と CSP を足し、標準 deck content には `<SocialEmbed>` の fallback を残す構成を推奨します。
+
 `style` は必要な deck だけ generated router に渡します。`style` は `/:slug/render` の presentation document に足すテーマ CSS です。`clientEntry` は独自の asset pipeline や CDN から browser bundle を配信したい場合だけ使う外部URL override です。静的な server-rendered deck ではどちらも不要です。
 
 ```ts
