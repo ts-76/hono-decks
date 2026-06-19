@@ -52,8 +52,8 @@ R2 official sample direction is still open. The current package API supports bin
 | --- | --- | --- | --- |
 | In-slide CSS animation | CSS animation in slide content | done | `examples/basic/decks/motion` covers CSS animation, `prefers-reduced-motion`, and viewport smoke coverage. |
 | In-slide client animation | `hono/jsx/dom` island animation | done | `examples/basic/decks/motion` covers a deck-local client island animation component and generated client registry wiring. |
-| Slide transition | `transition` frontmatter | design | Package should parse and apply known transitions rather than leaving the value unused. |
-| Fragment / step display | Progressive reveal for bullets or blocks | design | Needs data model and keyboard/touch interaction semantics. |
+| Slide transition | `transition` frontmatter | design | Design contract is documented in [Slide Dynamics](./slide-dynamics.md); implementation plan is in `docs/superpowers/plans/2026-06-19-slide-transitions-fragments.md`. |
+| Fragment / step display | Progressive reveal for bullets or blocks | design | Design contract covers explicit `<Fragment />`, `fragments: list`, iframe-owned step state, and viewer state updates. |
 | Keyboard navigation | Arrow keys, space, fullscreen | done | Current viewer/render scripts cover the core path; keep route tests and add browser smoke later. |
 | Touch navigation | Tap/swipe on mobile | done | Package tests cover pointer swipe command wiring; `bun run smoke:viewport` verifies browser-side pointer swipe dispatch. Real device touch can still be manually checked before release. |
 

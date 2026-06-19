@@ -1,0 +1,204 @@
+# Slide Dynamics Design
+
+This document defines the planned `@hono/decks` behavior for slide transitions and fragment or step display. It is intentionally a design contract before implementation because both features affect navigation semantics, viewer state, and client island behavior.
+
+## Goals
+
+- Keep slide content as trusted, build-time compiled MDX/Hono JSX modules.
+- Keep transition and fragment behavior inside the presentation iframe.
+- Keep the viewer shell as a controller: it sends commands and renders state, but does not inspect slide DOM.
+- Preserve existing `next`, `previous`, `goTo`, keyboard, touch, and TOC behavior.
+- Respect `prefers-reduced-motion` for transitions and fragment reveal effects.
+
+## Non-Goals
+
+- No runtime evaluation of raw MDX or user-provided scripts.
+- No React-specific provider or animation library requirement.
+- No per-fragment deep linking in the first implementation.
+- No synchronized multi-window presenter state in this step.
+
+## Public Authoring API
+
+### Slide Transitions
+
+`transition` remains slide frontmatter:
+
+```mdx
+---
+title: Product Shape
+transition: fade
+---
+```
+
+Supported values should be a small string union at runtime:
+
+- `none`
+- `fade`
+- `slide`
+- `zoom`
+
+Unknown values should produce a compile warning and fall back to `none`. The raw value should not be copied into CSS class names except through a sanitizer and a known-value check.
+
+Transition direction is derived from navigation direction. Moving forward sets `data-transition-direction="forward"` on `<body>`; moving backward sets `backward`.
+
+### Fragments
+
+Fragments are slide-local reveal steps. The first implementation should support both explicit and list-based authoring.
+
+Explicit fragments:
+
+```mdx
+<Fragment>First point</Fragment>
+<Fragment order={2}>Second point</Fragment>
+```
+
+List shorthand:
+
+```mdx
+---
+fragments: list
+---
+
+- First point
+- Second point
+- Third point
+```
+
+Planned slide frontmatter:
+
+- `fragments: list` marks top-level list items as fragments in source order.
+- `fragments: manual` only uses explicit `<Fragment />` components.
+- omitted or `fragments: none` means no automatic fragments.
+
+Manual `<Fragment order={number}>` can override ordering. If `order` is omitted, the compiler assigns the next available order in document order.
+
+## Runtime State Model
+
+The presentation iframe owns the canonical cursor:
+
+```ts
+interface DeckCursor {
+  slideIndex: number;
+  stepIndex: number;
+  stepCount: number;
+  slideCount: number;
+}
+```
+
+Navigation rules:
+
+- `next`: reveal the next fragment if `stepIndex < stepCount`; otherwise move to the next slide at `stepIndex = 0`.
+- `previous`: hide the current fragment if `stepIndex > 0`; otherwise move to the previous slide at that slide's final step.
+- `goTo(index)`: move to the target slide at `stepIndex = 0`.
+- `goTo(index, stepIndex)`: optional future command for presenter tools; clamp both values.
+
+The iframe publishes state after every cursor change:
+
+```ts
+window.parent.postMessage({
+  type: "hono-decks:state",
+  index: slideIndex,
+  stepIndex,
+  stepCount,
+  slideCount,
+}, "*");
+```
+
+The viewer should keep the existing `index` field for backward compatibility and add step-aware text only when `stepCount > 0`.
+
+## Render Contract
+
+Rendered slide sections keep the current attributes and add only known transition data:
+
+```html
+<section
+  class="slide layout-cover"
+  data-slide-index="0"
+  data-transition="fade"
+>
+  ...
+</section>
+```
+
+Fragments are normal elements with stable data attributes:
+
+```html
+<span data-hono-decks-fragment data-fragment-order="1">First point</span>
+```
+
+The presentation script controls visibility:
+
+- visible when `Number(fragment.dataset.fragmentOrder) <= stepIndex`
+- hidden via `hidden` and `data-fragment-hidden="true"`
+- visible state must not remount client islands inside the fragment
+
+Client islands inside fragments should hydrate once. Reveal/hide changes must use DOM attributes or CSS, not remove/recreate island roots.
+
+## CSS Contract
+
+Base CSS should include conservative defaults:
+
+```css
+.slide[data-transition="fade"] { transition: opacity .24s ease; }
+[data-hono-decks-fragment][data-fragment-hidden="true"] {
+  visibility: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .slide,
+  [data-hono-decks-fragment] {
+    transition-duration: .001ms !important;
+    animation-duration: .001ms !important;
+  }
+}
+```
+
+Theme CSS can override the visual style of known transition and fragment states, but not the navigation algorithm.
+
+## Compiler And Model Changes
+
+Planned model additions:
+
+```ts
+export type SlideTransition = "none" | "fade" | "slide" | "zoom";
+export type SlideFragmentsMode = "none" | "manual" | "list";
+
+export interface SlideFrontmatter {
+  transition?: SlideTransition;
+  fragments?: SlideFragmentsMode;
+  meta: Record<string, unknown>;
+}
+```
+
+The MDX module generator should:
+
+- validate `transition`
+- parse `fragments`
+- inject or expose a built-in `Fragment` component
+- add a remark transform that marks top-level list items when `fragments: list`
+- emit compile warnings with deck source path and slide index for unknown values
+
+## Viewer Contract
+
+The viewer script remains generic. It sends commands and displays state:
+
+- `previous`, `next`, `goTo`, `fullscreen` commands stay unchanged.
+- The state listener accepts optional `stepIndex` and `stepCount`.
+- Position text becomes `2 / 5` when no fragments are active.
+- Position text becomes `2 / 5 · 1 / 3` when the current slide has fragments.
+
+Custom viewers using `deckContext()` or `createDeckViewerParts()` can keep reading `deckViewer.controls`, `deckViewer.toc`, and `deckViewer.frame`. Future APIs can expose richer slide step metadata, but the first implementation does not require it.
+
+## Test Strategy
+
+- Compiler tests for valid and invalid `transition`.
+- Generator tests for `fragments: list` producing fragment attributes in generated slide output.
+- Render tests for `<Fragment />` and fragment visibility attributes.
+- Router tests for state message shape and viewer position behavior.
+- Example tests for `examples/basic/decks/motion` once transition/fragment slides are added.
+- Browser smoke checks for keyboard, click, and swipe step progression.
+
+## Open Decisions
+
+- Whether nested list items participate in `fragments: list`; first implementation should restrict to top-level list items.
+- Whether `goTo` from TOC should always reset to step 0; this design says yes.
+- Whether fragment state should be reflected in URL hash; out of scope for the first implementation.
