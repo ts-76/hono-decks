@@ -14,6 +14,7 @@ function _createMdxContent(props) {
     }), "\n", _jsx(EmbedFrame, {
       provider: "youtube",
       src: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+      fallbackHref: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
       title: "YouTube embed example",
       children: "Open YouTube embed"
     }), "\n", _jsxs(_components.p, {

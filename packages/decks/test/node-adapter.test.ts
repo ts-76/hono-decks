@@ -299,6 +299,7 @@ The slide stays 16:9.
       expect(slideOutput).toContain("EmbedFrame");
       expect(slideOutput).toContain('provider: "youtube"');
       expect(slideOutput).toContain('src: "https://www.youtube.com/embed/dQw4w9WgXcQ"');
+      expect(slideOutput).toContain('fallbackHref: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"');
       expect(slideOutput).toContain("SocialEmbed");
       expect(slideOutput).toContain('provider: "x"');
       expect(slideOutput).toContain('href: "https://x.com/honojs/status/123"');

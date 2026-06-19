@@ -174,6 +174,7 @@ function zennEmbedNode(node: MarkdownNode): MarkdownNode | undefined {
       [
         mdxAttribute("provider", "youtube"),
         mdxAttribute("src", toYoutubeEmbedUrl(link.url)),
+        mdxAttribute("fallbackHref", link.url),
         mdxAttribute("title", "YouTube embed example"),
       ],
       [{ type: "text", value: "Open YouTube embed" }],
