@@ -128,8 +128,8 @@ describe("sample Worker app", () => {
     expect(html).toContain("<h1>Media verification</h1>");
     expect(html).toContain('src="/decks/media/assets/local-jsx.svg"');
     expect(html).toContain('alt="Local JSX asset"');
-    expect(html).toContain('src="https://example.com/hono-decks-remote.png"');
-    expect(html).toContain('alt="Remote image asset"');
+    expect(html).toContain('src="/decks/media/assets/r2-remote.svg"');
+    expect(html).toContain('alt="R2-backed media asset"');
     expect(html).not.toContain("./assets/local-jsx.svg");
     expect(html).toContain('class="hono-decks-embed-frame"');
     expect(html).toContain('src="https://www.youtube.com/embed/dQw4w9WgXcQ"');
@@ -141,7 +141,7 @@ describe("sample Worker app", () => {
     expect(html).toContain('src="https://example.com/embed/status"');
     expect(html).toContain('title="Embedded content"');
     expect(html).toContain('Open embed');
-    expect(html).toContain('href="https://example.com/embed/status"');
+    expect(html).toContain('href="https://example.com/embed/status" target="_blank" rel="noreferrer"');
     expect(html).toContain('href="https://example.com/plain-link"');
     expect(html).toContain(">https://example.com/plain-link</a>");
     expect(html).toContain('class="hono-decks-social-embed"');
@@ -212,6 +212,31 @@ describe("sample Worker app", () => {
     expect(response.headers.get("cache-control")).toBe("public, max-age=300");
     expect(response.headers.get("x-hono-decks-asset-source")).toBe("embedded");
     expect(await response.text()).toContain("#14b8a6");
+  });
+
+  it("serves media deck R2-backed image URLs through the R2 binding", async () => {
+    const app = await sampleApp();
+    const response = await app.request(
+      "/decks/media/assets/r2-remote.svg",
+      {},
+      {
+        DECK_ASSETS: {
+          async get(key: string) {
+            if (key !== "decks/media/assets/r2-remote.svg") return null;
+            return {
+              body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 90"><rect width="160" height="90" fill="#7c3aed"/></svg>',
+              httpMetadata: { contentType: "image/svg+xml" },
+            };
+          },
+        },
+      },
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("image/svg+xml");
+    expect(response.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");
+    expect(response.headers.get("x-hono-decks-asset-source")).toBe("r2");
+    expect(await response.text()).toContain("#7c3aed");
   });
 
   it("serves the sample client entry for interactive islands", async () => {

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" role="img" aria-labelledby="title desc">
+  <title id="title">R2-backed media asset</title>
+  <desc id="desc">A media deck image that can be served from an R2 binding.</desc>
+  <rect width="320" height="180" rx="18" fill="#1e1b4b" />
+  <path d="M36 132L103 66l48 45 32-29 101 92H36z" fill="#8b5cf6" opacity=".92" />
+  <circle cx="236" cy="54" r="24" fill="#f8fafc" opacity=".95" />
+  <rect x="32" y="24" width="116" height="28" rx="14" fill="#312e81" />
+  <text x="90" y="43" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#c4b5fd">R2 ASSET</text>
+</svg>

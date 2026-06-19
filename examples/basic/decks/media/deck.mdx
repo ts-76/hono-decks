@@ -15,19 +15,19 @@ layout: media
 Local JSX image paths are rewritten to generated public asset URLs.
 
 ---
-title: Remote Image
+title: R2-backed Image
 layout: media
 ---
 
-# Remote image
+# R2-backed image
 
 <img
   class="media-image"
-  src="https://example.com/hono-decks-remote.png"
-  alt="Remote image asset"
+  src="./assets/r2-remote.svg"
+  alt="R2-backed media asset"
 />
 
-Remote URLs stay as normal remote URLs and are not fetched at compile time.
+The generated asset URL renders locally and can be served from an R2 binding with long-lived cache headers.
 
 ---
 title: YouTube Embed
