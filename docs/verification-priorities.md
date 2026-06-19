@@ -64,13 +64,15 @@ Iframe-based embeds now have a built-in component and sample coverage:
 
 - YouTube iframe: covered by `examples/basic/decks/media`
 - Generic `<EmbedFrame />` component: covered by package and sample tests
+- X/SNS link-first `<SocialEmbed />` component: covered by package and sample tests
 - Aspect ratio: covered by `EmbedFrame` defaults and override sample
 - `title`
 - `loading="lazy"`
 - Fallback UI
 - `sandbox`, `allow`, and `referrerpolicy`
+- CSP guidance: README documents that app routes own CSP headers and any third-party SNS scripts
 
-Rationale: iframe embeds are common and can be supported without third-party script execution. X and other SNS embeds should come next because script-based embeds raise CSP, sandbox, and SSR concerns.
+Rationale: iframe embeds are common and can be supported without third-party script execution. X and other SNS embeds are link-first by default because third-party scripts, CSP, and Worker SSR do not always compose cleanly.
 
 ### 5. Accessibility And Viewport Behavior
 
@@ -155,7 +157,7 @@ Rationale: PDF output should be validated visually, not only through HTML assert
 
 ## Recommended Next Steps
 
-1. Design SNS embed fallback and CSP guidance for X or other script-based embeds.
-2. Add browser/deployed smoke checks once viewer scaling, touch navigation, and R2 cache behavior need visual or edge confirmation.
+1. Add browser/deployed smoke checks once viewer scaling, touch navigation, and R2 cache behavior need visual or edge confirmation.
+2. Start layout/theme API design before adding more official sample decks.
 
 Keep `examples/basic/decks/sample` small. It should remain the happy-path deck for MDX expressions, deck-local server components, client islands, viewer pages, and R2 binding fallback.
