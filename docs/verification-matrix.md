@@ -55,7 +55,7 @@ R2 official sample direction is still open. The current package API supports bin
 | Slide transition | `transition` frontmatter | design | Package should parse and apply known transitions rather than leaving the value unused. |
 | Fragment / step display | Progressive reveal for bullets or blocks | design | Needs data model and keyboard/touch interaction semantics. |
 | Keyboard navigation | Arrow keys, space, fullscreen | done | Current viewer/render scripts cover the core path; keep route tests and add browser smoke later. |
-| Touch navigation | Tap/swipe on mobile | smoke | Package tests cover pointer swipe command wiring; browser/device viewport verification is still needed for real touch behavior. |
+| Touch navigation | Tap/swipe on mobile | done | Package tests cover pointer swipe command wiring; `bun run smoke:viewport` verifies browser-side pointer swipe dispatch. Real device touch can still be manually checked before release. |
 
 ## Presentation And Export
 
@@ -97,9 +97,9 @@ R2 official sample direction is still open. The current package API supports bin
 | Heading order | Deck index, viewer, render document, details pages | done | Package tests cover the deck index heading, standard viewer heading, and slide labels; sample layout checks keep details/embed pages rendered through app-owned layouts. |
 | Iframe title | Viewer frame and custom embed frame | done | Current viewer frame and `EmbedFrame` include titles; keep this in custom components. |
 | Reduced motion | Viewer transitions and in-slide animation | done | Standard viewer and presentation documents include `prefers-reduced-motion` CSS guards; feature-specific animation samples should keep using the same media query. |
-| Fixed 16:9 scaling | Desktop and mobile viewports | smoke | Package tests cover parent-sized iframe viewer and internal 1920x1080 scaling; browser screenshot checks are still needed for mobile clipping and overlap. |
-| Responsive content | Long text, images, code blocks | sample | Add sample slides that stress wrapping, overflow, and viewport bounds. |
-| Color contrast | Default viewer controls and sample theme | smoke | Can be partly automated later, but visual review is still useful. |
+| Fixed 16:9 scaling | Desktop and mobile viewports | done | Package tests cover parent-sized iframe viewer and internal 1920x1080 scaling; `bun run smoke:viewport` captures desktop/mobile screenshots for sample, code, and media decks. |
+| Responsive content | Long text, images, code blocks | smoke | `bun run smoke:viewport` captures sample, code, and media deck screenshots; add more stress content when layout/theme APIs settle. |
+| Color contrast | Default viewer controls and sample theme | done | `bun run smoke:viewport` checks default viewer control contrast against the page background. |
 
 ## Suggested Next Sample Decks
 
@@ -123,3 +123,5 @@ bun run --cwd examples/basic check
 ```
 
 Deployed cache and browser behavior need separate smoke checks after `wrangler deploy`, especially for R2 cache headers, `cf-cache-status`, mobile/touch navigation, and PDF/print output.
+
+Local browser viewport smoke checks are documented in [Browser Smoke Checks](./browser-smoke.md).
