@@ -267,9 +267,7 @@ title: Syntax
 
 @[youtube](https://www.youtube.com/watch?v=dQw4w9WgXcQ)
 
-@[x](https://x.com/honojs/status/123)
-
-@[x-post](https://x.com/honojs/status/1659577874821836801?s=20)
+@[x](https://x.com/honojs/status/1659577874821836801?s=20)
 
 @[card](https://hono.dev/docs/)
 
@@ -302,11 +300,9 @@ The slide stays 16:9.
       expect(slideOutput).toContain('provider: "youtube"');
       expect(slideOutput).toContain('src: "https://www.youtube.com/embed/dQw4w9WgXcQ"');
       expect(slideOutput).toContain('fallbackHref: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"');
-      expect(slideOutput).toContain("SocialEmbed");
-      expect(slideOutput).toContain('provider: "x"');
-      expect(slideOutput).toContain('href: "https://x.com/honojs/status/123"');
       expect(slideOutput).toContain("TweetEmbed");
       expect(slideOutput).toContain('href: "https://x.com/honojs/status/1659577874821836801?s=20"');
+      expect(slideOutput).not.toContain("SocialEmbed");
       expect(slideOutput).toContain("LinkCard");
       expect(slideOutput).toContain('href: "https://hono.dev/docs/"');
       expect(slideOutput).toContain('src: "https://example.com/embed/status"');

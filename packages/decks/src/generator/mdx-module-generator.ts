@@ -181,13 +181,6 @@ function zennEmbedNode(node: MarkdownNode): MarkdownNode | undefined {
     );
   }
   if (name === "x") {
-    return mdxElement(
-      "SocialEmbed",
-      [mdxAttribute("provider", "x"), mdxAttribute("href", link.url), mdxAttribute("label", "Open on X")],
-      [],
-    );
-  }
-  if (name === "x-post") {
     return mdxElement("TweetEmbed", [mdxAttribute("href", link.url), mdxAttribute("label", "Open post on X")], []);
   }
   if (name === "card") {
