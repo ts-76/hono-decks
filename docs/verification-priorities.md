@@ -37,11 +37,11 @@ Recommended R2 stance: the official package sample should favor binding-backed d
 
 Add code block coverage next:
 
-- Markdown fenced code block
-- Escaping and overflow behavior
-- Font sizing inside fixed 16:9 slides
-- MDX `<CodeBlock lang="ts">...</CodeBlock>` API decision
-- Build-time syntax highlighting direction
+- Markdown fenced code block: covered by `examples/basic/decks/code`
+- Escaping and overflow behavior: covered by `examples/basic/decks/code` and default presentation CSS
+- Font sizing inside fixed 16:9 slides: covered by default presentation CSS
+- MDX `<CodeBlock lang="ts">...</CodeBlock>` API decision: prefer plain text children with explicit props such as `lang`, `filename`, and `highlight`
+- Build-time syntax highlighting direction: prefer generated HTML/classes, likely via Shiki, so Worker runtime does not load a highlighter
 
 Rationale: code-heavy decks are a likely use case, and code block rendering affects layout, theme, and export. Syntax highlighting should be decided early. The preferred direction is build-time highlighting, likely with Shiki or a similar library, so Worker runtime remains small and deterministic.
 
@@ -155,9 +155,9 @@ Rationale: PDF output should be validated visually, not only through HTML assert
 
 ## Recommended Next Steps
 
-1. Add `examples/basic/decks/code` for fenced code blocks and the first `CodeBlock` API decision.
-2. Extend `examples/basic/decks/media` with YouTube iframe and generic embed fallback after the embed API is designed.
-3. Add package tests for compile diagnostics and client island prop serialization failures.
+1. Add package tests for compile diagnostics and client island prop serialization failures.
+2. Implement the package-provided `CodeBlock` component and build-time syntax highlighting path.
+3. Extend `examples/basic/decks/media` with YouTube iframe and generic embed fallback after the embed API is designed.
 4. Add browser/deployed smoke checks once viewer scaling, touch navigation, and R2 cache behavior need visual or edge confirmation.
 
 Keep `examples/basic/decks/sample` small. It should remain the happy-path deck for MDX expressions, deck-local server components, client islands, viewer pages, and R2 binding fallback.

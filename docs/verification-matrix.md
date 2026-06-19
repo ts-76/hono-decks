@@ -41,9 +41,9 @@ R2 official sample direction is still open. The current package API supports bin
 
 | Area | Case | Status | Notes |
 | --- | --- | --- | --- |
-| Markdown fenced code | Triple-backtick code block | sample | Verify basic rendering, escaping, overflow, and font sizing inside a slide. |
-| MDX component code block | `<CodeBlock lang="ts">...</CodeBlock>` | design | Decide whether children are plain text, JSX children, or a tagged template-style API. |
-| Syntax highlighting | Build-time Shiki or equivalent | design | Preferred direction is build-time highlighting so Worker runtime stays small and deterministic. |
+| Markdown fenced code | Triple-backtick code block | done | `examples/basic/decks/code` verifies language classes, HTML escaping, and overflow-oriented default presentation styles. |
+| MDX component code block | `<CodeBlock lang="ts">...</CodeBlock>` | design | Prefer a package-provided component with plain text children and explicit props such as `lang`, `filename`, and `highlight`; avoid JSX-child semantics for source text. |
+| Syntax highlighting | Build-time Shiki or equivalent | design | Preferred direction is build-time highlighting so Worker runtime stays small and deterministic; runtime should render generated HTML/classes rather than load a highlighter. |
 | Copy UI | Copy button or line highlight controls | design | Optional; should not be required for the core renderer. |
 
 ## Animation And Navigation
@@ -105,7 +105,7 @@ R2 official sample direction is still open. The current package API supports bin
 
 - `examples/basic/decks/sample`: keep this as the small happy-path deck for MDX, server components, client islands, local asset routing, viewer pages, and R2 binding fallback.
 - `examples/basic/decks/media`: local JSX and remote image examples exist; extend it with YouTube, iframe, and SNS fallback examples after the embed API is designed.
-- `examples/basic/decks/code`: add fenced code, MDX `CodeBlock`, and build-time syntax highlight fixtures.
+- `examples/basic/decks/code`: fenced code exists; extend with MDX `CodeBlock` and build-time syntax highlight fixtures after the component API is implemented.
 - `examples/basic/decks/motion`: add CSS animation, client island animation, transitions, and fragment/step behavior once the runtime supports it.
 
 ## Verification Commands

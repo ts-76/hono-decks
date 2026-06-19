@@ -10,12 +10,16 @@ describe("sample Worker app", () => {
   it("uses a generated module-backed deck source", async () => {
     const entries = await decks.source.listDecks({} as never);
 
-    expect(entries).toHaveLength(2);
+    expect(entries).toHaveLength(3);
     expect(entries[0]).toMatchObject({
+      slug: "code",
+      sourcePath: "decks/code/deck.mdx",
+    });
+    expect(entries[1]).toMatchObject({
       slug: "media",
       sourcePath: "decks/media/deck.mdx",
     });
-    expect(entries[1]).toMatchObject({
+    expect(entries[2]).toMatchObject({
       slug: "sample",
       sourcePath: "decks/sample/deck.mdx",
     });
@@ -123,6 +127,20 @@ describe("sample Worker app", () => {
     expect(html).toContain('src="https://example.com/hono-decks-remote.png"');
     expect(html).toContain('alt="Remote image asset"');
     expect(html).not.toContain("./assets/local-jsx.svg");
+  });
+
+  it("renders fenced code blocks with language class, escaping, and overflow styles", async () => {
+    const app = await sampleApp();
+    const response = await app.request("/decks/code/render");
+
+    expect(response.status).toBe(200);
+    const html = await response.text();
+    expect(html).toContain("<h1>Code verification</h1>");
+    expect(html).toContain("<pre><code class=\"language-ts\"");
+    expect(html).toContain("const view = &lt;Slide title=&quot;Hello&quot; /&gt;");
+    expect(html).toContain("return items.map((item) =&gt; item.id).join(&quot;, &quot;)");
+    expect(html).toContain(".slide pre{max-width:100%;overflow:auto");
+    expect(html).toContain(".slide code{font-family:");
   });
 
   it("serves generated local assets for the media deck", async () => {
