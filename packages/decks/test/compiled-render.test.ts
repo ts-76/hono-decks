@@ -212,6 +212,43 @@ describe("compiled deck rendering", () => {
     expect(html).not.toContain("mdx-component");
   });
 
+  it("renders the built-in CodeBlock component with stable code metadata", () => {
+    const html = renderCompiledDeckPage({
+      deck: {
+        ...deck,
+        slides: [
+          {
+            ...deck.slides[0],
+            nodes: [
+              {
+                type: "component",
+                name: "CodeBlock",
+                props: { lang: "ts", filename: "worker.ts", highlight: "2" },
+                children: [
+                  {
+                    type: "text",
+                    value: "const app = new Hono()\napp.get('/', (c) => c.text('<ok>'))",
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      mountPath: "/slides",
+    });
+
+    expect(html).toContain('class="hono-decks-code-block"');
+    expect(html).toContain('data-lang="ts"');
+    expect(html).toContain('data-filename="worker.ts"');
+    expect(html).toContain('data-highlight="2"');
+    expect(html).toContain('<figcaption class="hono-decks-code-caption">worker.ts</figcaption>');
+    expect(html).toContain('<code class="language-ts" data-lang="ts">');
+    expect(html).toContain("const app = new Hono()");
+    expect(html).toContain("app.get(&#39;/&#39;, (c) =&gt; c.text(&#39;&lt;ok&gt;&#39;))");
+    expect(html).not.toContain("mdx-component");
+  });
+
   it("marks client slide components as islands and loads the configured client entry", () => {
     const html = renderCompiledDeckPage({
       deck: {

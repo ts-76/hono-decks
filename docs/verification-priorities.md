@@ -40,8 +40,8 @@ Add code block coverage next:
 - Markdown fenced code block: covered by `examples/basic/decks/code`
 - Escaping and overflow behavior: covered by `examples/basic/decks/code` and default presentation CSS
 - Font sizing inside fixed 16:9 slides: covered by default presentation CSS
-- MDX `<CodeBlock lang="ts">...</CodeBlock>` API decision: prefer plain text children with explicit props such as `lang`, `filename`, and `highlight`
-- Build-time syntax highlighting direction: prefer generated HTML/classes, likely via Shiki, so Worker runtime does not load a highlighter
+- MDX `<CodeBlock lang="ts">...</CodeBlock>` API: covered by package tests and `examples/basic/decks/code`; accepts text children plus `lang`, `filename`, and `highlight`
+- Build-time syntax highlighting direction: the renderer now exposes stable language/highlight metadata; actual generated highlighted HTML/classes, likely via Shiki, remains the next implementation step
 
 Rationale: code-heavy decks are a likely use case, and code block rendering affects layout, theme, and export. Syntax highlighting should be decided early. The preferred direction is build-time highlighting, likely with Shiki or a similar library, so Worker runtime remains small and deterministic.
 
@@ -155,7 +155,7 @@ Rationale: PDF output should be validated visually, not only through HTML assert
 
 ## Recommended Next Steps
 
-1. Implement the package-provided `CodeBlock` component and build-time syntax highlighting path.
+1. Implement build-time syntax highlighting with generated HTML/classes, likely via Shiki.
 2. Extend `examples/basic/decks/media` with YouTube iframe and generic embed fallback after the embed API is designed.
 3. Add browser/deployed smoke checks once viewer scaling, touch navigation, and R2 cache behavior need visual or edge confirmation.
 
