@@ -249,6 +249,38 @@ describe("compiled deck rendering", () => {
     expect(html).not.toContain("mdx-component");
   });
 
+  it("renders build-time highlighted CodeBlock HTML without escaping it", () => {
+    const html = renderCompiledDeckPage({
+      deck: {
+        ...deck,
+        slides: [
+          {
+            ...deck.slides[0],
+            nodes: [
+              {
+                type: "component",
+                name: "CodeBlock",
+                props: {
+                  lang: "ts",
+                  filename: "worker.ts",
+                  highlightedHtml:
+                    '<pre class="shiki github-dark" tabindex="0"><code><span class="line"><span style="color:#79C0FF">const</span> app</span></code></pre>',
+                },
+                children: [{ type: "text", value: "const app = new Hono()" }],
+              },
+            ],
+          },
+        ],
+      },
+      mountPath: "/slides",
+    });
+
+    expect(html).toContain('class="hono-decks-code-highlight"');
+    expect(html).toContain('<pre class="shiki github-dark" tabindex="0">');
+    expect(html).toContain('<span style="color:#79C0FF">const</span>');
+    expect(html).not.toContain("&lt;pre class=&quot;shiki");
+  });
+
   it("marks client slide components as islands and loads the configured client entry", () => {
     const html = renderCompiledDeckPage({
       deck: {

@@ -133,6 +133,10 @@ export function Counter() {
       expect(slideOutput).toContain('src: "/slides/deck1/assets/plain.svg"');
       expect(slideOutput).toContain('src: "/slides/deck1/assets/jsx.svg"');
       expect(slideOutput).toContain('src: "https://example.com/hono-decks-remote.png"');
+      expect(slideOutput).toContain("highlightedHtml");
+      expect(slideOutput).toContain("shiki");
+      expect(slideOutput).toContain("github-dark");
+      expect(slideOutput).not.toContain('from "shiki"');
       expect(slideOutput).not.toContain("./assets/jsx.svg");
       expect(slideOutput).not.toContain("/slides/deck1//slides/deck1/assets");
 
@@ -337,7 +341,11 @@ title: Deck One
 
 <img src="./assets/jsx.svg" alt="Local JSX asset" />
 
-<img src="https://example.com/hono-decks-remote.png" alt="Remote asset" />`,
+<img src="https://example.com/hono-decks-remote.png" alt="Remote asset" />
+
+\`\`\`ts
+const answer = 42
+\`\`\``,
     "utf8",
   );
   await writeFile(join(cwd, "decks", "deck1", "assets", "my image#1.svg"), new Uint8Array([1, 2, 3]));

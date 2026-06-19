@@ -57,6 +57,7 @@ export const builtInSlideComponents = defineSlideComponents({
     const filename = stringProp(props.filename ?? props.title);
     const highlight = stringProp(props.highlight);
     const code = codeBlockText(props.children);
+    const highlightedHtml = typeof props.highlightedHtml === "string" ? props.highlightedHtml : undefined;
 
     return jsx("figure", {
       class: "hono-decks-code-block",
@@ -65,12 +66,17 @@ export const builtInSlideComponents = defineSlideComponents({
       ...(highlight ? { "data-highlight": highlight } : {}),
       children: [
         filename ? jsx("figcaption", { class: "hono-decks-code-caption", children: filename }) : "",
-        jsx("pre", {
-          children: jsx("code", {
-            ...(lang ? { class: `language-${safeToken(lang)}`, "data-lang": lang } : {}),
-            children: code,
-          }),
-        }),
+        highlightedHtml
+          ? jsx("div", {
+              class: "hono-decks-code-highlight",
+              dangerouslySetInnerHTML: { __html: highlightedHtml },
+            })
+          : jsx("pre", {
+              children: jsx("code", {
+                ...(lang ? { class: `language-${safeToken(lang)}`, "data-lang": lang } : {}),
+                children: code,
+              }),
+            }),
       ],
     });
   },

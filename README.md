@@ -61,6 +61,19 @@ export const label = 'Rendered ' + 'by Hono JSX'
 <Badge label={label} />
 ```
 
+コードブロックは compile 時に Shiki で highlight され、生成済み slide module に HTML として埋め込まれます。Worker runtime は highlighter を読み込まず、生成済み HTML を render するだけです。fenced code と built-in `<CodeBlock>` のどちらも使えます。
+
+````mdx
+```ts
+const app = new Hono()
+```
+
+<CodeBlock lang="ts" filename="worker.ts" highlight="2">
+const app = new Hono()
+app.get("/", (c) => c.text("ok"))
+</CodeBlock>
+````
+
 client side interactivity が必要な component は island として出力します。`decks/*/components/client/index.tsx` の named export は compile 時に browser bundle へ取り込まれ、`hydrateSlideIslands()` の registry は自動生成されます。同名 component が複数 deck にあっても、生成時に stable hash 付き id を割り当てるため client hydration 側でも衝突しません。生成された `decksRouter()` は browser bundle を mount 配下の `/_assets/client.js` で自動配信するため、通常はアプリ側で client entry の route を手で書く必要はありません。
 
 ```tsx
