@@ -269,7 +269,7 @@ function mergeComponentInputs(
 
 function basePresentationStyle(): string {
   return `
-:root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#eef2ff;--hono-decks-width:1920px;--hono-decks-height:1080px}
+:root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:32px;color:#eef2ff;--hono-decks-width:1920px;--hono-decks-height:1080px}
 html,body{margin:0;width:100%;height:100%;overflow:hidden}
 .hono-decks-stage{width:100vw;height:100vh;overflow:hidden;position:relative;display:grid;place-items:center}
 .hono-decks-deck{display:grid;gap:1rem;width:var(--hono-decks-width);height:var(--hono-decks-height);box-sizing:border-box;transform-origin:left top}

@@ -174,6 +174,7 @@ describe("compiled deck rendering", () => {
     expect(html).toContain('data-hono-decks-deck');
     expect(html).toContain("--hono-decks-width:1920px");
     expect(html).toContain("--hono-decks-height:1080px");
+    expect(html).toContain("font-size:32px");
     expect(html).toContain("html,body{margin:0;width:100%;height:100%;overflow:hidden}");
     expect(html).toContain(".hono-decks-stage{width:100vw;height:100vh");
     expect(html).toContain(".hono-decks-deck{display:grid;gap:1rem;width:var(--hono-decks-width);height:var(--hono-decks-height)");
