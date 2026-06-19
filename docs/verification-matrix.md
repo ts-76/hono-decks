@@ -33,6 +33,8 @@ R2 official sample direction is still open. The current package API supports bin
 | YouTube | `@[youtube](https://...)` shorthand | done | Build-time syntax transform compiles the Zenn-style shorthand to built-in `EmbedFrame`; sample tests verify `title`, `loading="lazy"`, sandbox, fallback link, and default permissions. |
 | X / SNS embed | `@[x](https://...)` shorthand | done | Build-time syntax transform compiles the shorthand to built-in `SocialEmbed`, which renders a script-free link fallback without auto-loading third-party scripts. |
 | Link card | `@[card](https://...)` shorthand | done | Build-time syntax transform compiles the shorthand to built-in `LinkCard`; the default implementation is a script-free link preview fallback and does not fetch OGP data. |
+| Plain URL | Single-line `https://...` | done | Single-line URLs become normal text links and do not auto-card. Authors opt into card/embed presentation with explicit shorthand. |
+| Generic embed shorthand | `@[embed](https://...)` / `@[iframe](https://...)` | done | Build-time syntax transform compiles generic embed shorthand to built-in `EmbedFrame`; low-level `<EmbedFrame>` remains available for custom aspect ratio and permissions. |
 | Generic iframe | `<EmbedFrame src title />` or similar component | done | Built-in `EmbedFrame` centralizes `sandbox`, `allow`, `referrerpolicy`, aspect ratio, lazy loading, and fallback link defaults. |
 | CSP | Embed-safe policy for standard viewer | done | README documents that the package does not set CSP headers; apps own `frame-src`, `img-src`, and `script-src`, especially when opting into third-party SNS scripts. |
 | Sandbox | Safe defaults for embedded content | done | `EmbedFrame` defaults to `allow-scripts allow-same-origin allow-presentation allow-popups`; callers can override `sandbox` or disable it with `sandbox={false}`. |
@@ -106,7 +108,7 @@ R2 official sample direction is still open. The current package API supports bin
 ## Suggested Next Sample Decks
 
 - `examples/basic/decks/sample`: keep this as the small happy-path deck for MDX, server components, client islands, local asset routing, viewer pages, and R2 binding fallback.
-- `examples/basic/decks/media`: local JSX, remote image, Zenn-style YouTube/X/card shorthand, generic `EmbedFrame`, and fallback examples exist.
+- `examples/basic/decks/media`: local JSX, remote image, Zenn-style YouTube/X/card/embed shorthand, single-line URL links, and fallback examples exist.
 - `examples/basic/decks/code`: fenced code, built-in `CodeBlock`, and build-time Shiki highlighting examples exist.
 - `examples/basic/decks/motion`: CSS animation, client island animation, slide transition, `:::fire`, `$fire`, and list fragment examples exist.
 

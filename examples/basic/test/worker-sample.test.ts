@@ -139,7 +139,11 @@ describe("sample Worker app", () => {
     expect(html).toContain('allow="fullscreen; picture-in-picture"');
     expect(html).toContain('href="https://www.youtube.com/embed/dQw4w9WgXcQ"');
     expect(html).toContain('src="https://example.com/embed/status"');
-    expect(html).toContain('Open status embed');
+    expect(html).toContain('title="Embedded content"');
+    expect(html).toContain('Open embed');
+    expect(html).toContain('href="https://example.com/embed/status"');
+    expect(html).toContain('href="https://example.com/plain-link"');
+    expect(html).toContain(">https://example.com/plain-link</a>");
     expect(html).toContain('class="hono-decks-social-embed"');
     expect(html).toContain('data-provider="x"');
     expect(html).toContain('cite="https://x.com/honojs/status/123"');
