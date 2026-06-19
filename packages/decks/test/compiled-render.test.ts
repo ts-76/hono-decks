@@ -442,6 +442,7 @@ describe("compiled deck rendering", () => {
                 name: "EmbedFrame",
                 props: {
                   src: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+                  fallbackHref: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
                   title: "Demo video",
                   aspectRatio: "16 / 9",
                   allow: "fullscreen; picture-in-picture",
@@ -466,7 +467,7 @@ describe("compiled deck rendering", () => {
     expect(html).toContain('allow="fullscreen; picture-in-picture"');
     expect(html).toContain("allowfullscreen");
     expect(html).toContain(
-      '<a href="https://www.youtube.com/embed/dQw4w9WgXcQ" target="_blank" rel="noreferrer">Open video</a>',
+      '<a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank" rel="noreferrer">Open video</a>',
     );
     expect(html).not.toContain("mdx-component");
   });

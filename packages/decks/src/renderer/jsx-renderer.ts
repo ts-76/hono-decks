@@ -104,6 +104,7 @@ export const builtInSlideComponents = defineSlideComponents({
         ? undefined
         : (stringProp(props.sandbox) ?? "allow-scripts allow-same-origin allow-presentation allow-popups");
     const referrerPolicy = stringProp(props.referrerPolicy ?? props.referrerpolicy) ?? "strict-origin-when-cross-origin";
+    const fallbackHref = stringProp(props.fallbackHref ?? props.fallbackUrl ?? props.href) ?? src;
     const fallback = codeBlockText(props.children) || "Open embed";
 
     return jsx("figure", {
@@ -128,7 +129,7 @@ export const builtInSlideComponents = defineSlideComponents({
         src
           ? jsx("figcaption", {
               class: "hono-decks-embed-fallback",
-              children: jsx("a", { href: src, target: "_blank", rel: "noreferrer", children: fallback }),
+              children: jsx("a", { href: fallbackHref, target: "_blank", rel: "noreferrer", children: fallback }),
             })
           : "",
       ],

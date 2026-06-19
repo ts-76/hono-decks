@@ -137,7 +137,8 @@ describe("sample Worker app", () => {
     expect(html).toContain('loading="lazy"');
     expect(html).toContain('sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"');
     expect(html).toContain('allow="fullscreen; picture-in-picture"');
-    expect(html).toContain('href="https://www.youtube.com/embed/dQw4w9WgXcQ"');
+    expect(html).toContain('href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank" rel="noreferrer"');
+    expect(html).not.toContain('href="https://www.youtube.com/embed/dQw4w9WgXcQ"');
     expect(html).toContain('src="https://example.com/embed/status"');
     expect(html).toContain('title="Embedded content"');
     expect(html).toContain('Open embed');
