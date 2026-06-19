@@ -6,25 +6,18 @@ function _createMdxContent(props) {
     h1: "h1",
     p: "p",
     ...props.components
-  }, {SocialEmbed, TweetEmbed} = _components;
-  if (!SocialEmbed) _missingMdxReference("SocialEmbed", true);
+  }, {TweetEmbed} = _components;
   if (!TweetEmbed) _missingMdxReference("TweetEmbed", true);
   return _jsxs(_Fragment, {
     children: [_jsx(_components.h1, {
       children: "X post embed"
-    }), "\n", _jsx(SocialEmbed, {
-      provider: "x",
-      href: "https://x.com/honojs/status/123",
-      label: "Open on X"
     }), "\n", _jsx(TweetEmbed, {
       href: "https://x.com/honojs/status/1659577874821836801?s=20",
       label: "Open post on X"
     }), "\n", _jsxs(_components.p, {
       children: [_jsx(_components.code, {
         children: "@[x]"
-      }), " renders a script-free fallback. ", _jsx(_components.code, {
-        children: "@[x-post]"
-      }), " opts into the official post embed markup."]
+      }), " renders the official post embed markup by default."]
     })]
   });
 }

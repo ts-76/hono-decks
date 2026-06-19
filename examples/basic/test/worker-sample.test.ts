@@ -145,11 +145,9 @@ describe("sample Worker app", () => {
     expect(html).toContain('href="https://example.com/embed/status" target="_blank" rel="noreferrer"');
     expect(html).toContain('href="https://example.com/plain-link"');
     expect(html).toContain(">https://example.com/plain-link</a>");
-    expect(html).toContain('class="hono-decks-social-embed"');
-    expect(html).toContain('data-provider="x"');
-    expect(html).toContain('cite="https://x.com/honojs/status/123"');
-    expect(html).toContain('href="https://x.com/honojs/status/123"');
-    expect(html).toContain("Open on X");
+    expect(html).not.toContain('class="hono-decks-social-embed"');
+    expect(html).not.toContain('data-provider="x"');
+    expect(html).not.toContain('href="https://x.com/honojs/status/123"');
     expect(html).toContain('class="hono-decks-tweet-embed"');
     expect(html).toContain('data-component="TweetEmbed"');
     expect(html).toContain('class="twitter-tweet"');
