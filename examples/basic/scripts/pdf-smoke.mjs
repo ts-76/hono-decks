@@ -14,8 +14,8 @@ const session = `hono-decks-pdf-${process.pid}`;
 const artifactDir = process.env.HONO_DECKS_PDF_SMOKE_ARTIFACTS ?? path.join(tmpdir(), "hono-decks-pdf-smoke");
 
 const decks = [
-  { slug: "sample", minPages: 3 },
-  { slug: "motion", minPages: 2 },
+  { slug: "sample", pages: 1 },
+  { slug: "motion", pages: 1 },
 ];
 
 let server;
@@ -69,8 +69,8 @@ async function runPdfCheck(deck) {
 
   const content = await readFile(pdfPath, "latin1");
   const pageCount = (content.match(/\/Type\s*\/Page\b/g) ?? []).length;
-  if (pageCount < deck.minPages) {
-    throw new Error(`${deck.slug} PDF has ${pageCount} pages; expected at least ${deck.minPages}`);
+  if (pageCount !== deck.pages) {
+    throw new Error(`${deck.slug} PDF has ${pageCount} pages; expected ${deck.pages}`);
   }
 
   console.log(`${deck.slug} PDF: ok (${pageCount} pages, ${file.size} bytes)`);

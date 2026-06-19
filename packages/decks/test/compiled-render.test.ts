@@ -188,15 +188,20 @@ describe("compiled deck rendering", () => {
     expect(html).not.toContain("html,body{margin:0;width:var(--hono-decks-width);height:var(--hono-decks-height)");
   });
 
-  it("prints every slide as a 16:9 page with all fragments visible", () => {
+  it("prints slides as an A4 portrait handout with all fragments visible", () => {
     const html = renderCompiledDeckPage({ deck, mountPath: "/decks" });
 
-    expect(html).toContain("@page{size:16in 9in;margin:0}");
+    expect(html).toContain("@page{size:A4 portrait;margin:12mm}");
     expect(html).toContain("@media print{");
     expect(html).toContain("html,body{width:auto;height:auto;overflow:visible;background:#fff}");
     expect(html).toContain(".hono-decks-stage{display:block;width:auto;height:auto;overflow:visible;background:transparent}");
-    expect(html).toContain(".hono-decks-deck{display:block;width:auto;height:auto;gap:0;transform:none!important}");
-    expect(html).toContain(".slide{width:16in;height:9in;page-break-after:always;break-after:page;box-shadow:none}");
+    expect(html).toContain(
+      ".hono-decks-deck{display:grid;grid-template-columns:1fr;grid-auto-rows:var(--hono-decks-print-slot-height);gap:var(--hono-decks-print-gap);width:auto;height:auto;transform:none!important}",
+    );
+    expect(html).toContain(
+      ".slide{width:calc(var(--hono-decks-print-slot-height) * 16 / 9);max-width:100%;height:auto;aspect-ratio:16/9;justify-self:center;align-self:center;page-break-after:auto;break-after:auto;break-inside:avoid;box-shadow:none}",
+    );
+    expect(html).toContain(".slide:nth-of-type(3n):not(:last-child){page-break-after:always;break-after:page}");
     expect(html).toContain("body:not([data-overview-mode]) .slide[hidden]{display:block!important}");
     expect(html).toContain(
       "[data-hono-decks-fragment]{visibility:visible!important;opacity:1!important;transform:none!important}",

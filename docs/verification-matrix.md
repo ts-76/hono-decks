@@ -67,8 +67,8 @@ R2 official sample direction is still open. The current package API supports bin
 | --- | --- | --- | --- |
 | Presenter notes | `notes` frontmatter or slide notes block | design | Model exists partially; speaker-view behavior still needs an API and route. |
 | Speaker view | Separate presenter route/window | design | Needs state sync with the main presentation and clear public/private route boundaries. |
-| Print view | Browser print stylesheet | done | Package tests assert a print stylesheet that renders all slides as 16:9 pages and forces all fragments visible. |
-| PDF export | Print-to-PDF compatible output | smoke | `examples/basic` includes `smoke:pdf`, which starts `wrangler dev`, saves sample/motion render pages to PDF, and checks page counts. Visual PDF inspection remains a release checklist item. |
+| Print view | Browser print stylesheet | done | Package tests assert an A4 portrait handout stylesheet with margins, 3-up slide grouping, and all fragments visible. |
+| PDF export | Print-to-PDF compatible output | smoke | `examples/basic` includes `smoke:pdf`, which starts `wrangler dev`, saves sample/motion render pages to PDF, and checks A4 handout page counts. Visual PDF inspection remains a release checklist item. |
 | Theme switching | Deck-level theme | done | `DeckTheme` now supports trusted `style`, `components`, and `layouts`; route `style` applies after `theme.style`, while `viewer.head` stays viewer-shell only. |
 | Layout switching | Slide `layout` frontmatter | done | `theme.layouts[layout]` can wrap compiled MDX output, with package `layout-*` classes preserved as fallback. |
 

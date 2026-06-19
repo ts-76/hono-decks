@@ -171,7 +171,7 @@ Rationale: speaker view is important for real presentations but is a larger work
 Implemented:
 
 - Print stylesheet
-- One slide per page
+- A4 portrait handout layout with up to 3 slides per page
 - PDF generation smoke for the sample and motion render pages
 
 Follow-up:
