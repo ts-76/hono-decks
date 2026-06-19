@@ -8,13 +8,13 @@ function _createMdxContent(props) {
   };
   return _jsxs(_Fragment, {
     children: [_jsx(_components.h1, {
-      children: "Remote image"
+      children: "R2-backed image"
     }), "\n", _jsx("img", {
       class: "media-image",
-      src: "https://example.com/hono-decks-remote.png",
-      alt: "Remote image asset"
+      src: "/decks/media/assets/r2-remote.svg",
+      alt: "R2-backed media asset"
     }), "\n", _jsx(_components.p, {
-      children: "Remote URLs stay as normal remote URLs and are not fetched at compile time."
+      children: "The generated asset URL renders locally and can be served from an R2 binding with long-lived cache headers."
     })]
   });
 }

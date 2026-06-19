@@ -465,7 +465,9 @@ describe("compiled deck rendering", () => {
     expect(html).toContain('sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"');
     expect(html).toContain('allow="fullscreen; picture-in-picture"');
     expect(html).toContain("allowfullscreen");
-    expect(html).toContain('<a href="https://www.youtube.com/embed/dQw4w9WgXcQ" rel="noreferrer">Open video</a>');
+    expect(html).toContain(
+      '<a href="https://www.youtube.com/embed/dQw4w9WgXcQ" target="_blank" rel="noreferrer">Open video</a>',
+    );
     expect(html).not.toContain("mdx-component");
   });
 

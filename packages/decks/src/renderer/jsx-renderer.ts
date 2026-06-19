@@ -128,7 +128,7 @@ export const builtInSlideComponents = defineSlideComponents({
         src
           ? jsx("figcaption", {
               class: "hono-decks-embed-fallback",
-              children: jsx("a", { href: src, rel: "noreferrer", children: fallback }),
+              children: jsx("a", { href: src, target: "_blank", rel: "noreferrer", children: fallback }),
             })
           : "",
       ],
