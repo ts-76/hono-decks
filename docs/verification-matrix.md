@@ -20,7 +20,7 @@ Status:
 | Local image asset | Bare `assets/image.png` without `./` | done | Covered by generator rewrite behavior; keep this idempotent. |
 | Remote image asset | `https://...` remains unchanged | done | `examples/basic/decks/media` and node adapter tests verify remote URLs remain normal remote URLs and are not rewritten to local asset paths. |
 | R2 public URL | Custom domain or `r2.dev` URL used directly | design | Treat as remote URL unless an explicit R2 asset policy is introduced. Decide whether this belongs in the official sample. |
-| R2 binding delivery | Local asset path served from R2 with cache headers | done | `withR2Assets()` supports a pre-existing object using the generated `sourcePath` as the R2 key and falls back to embedded local assets when the binding is missing. |
+| R2 binding delivery | Local asset path served from R2 with cache headers | done | `withR2Assets()` supports a pre-existing object using the generated `sourcePath` as the R2 key and falls back to embedded local assets when the binding is missing. `examples/basic/src/deck-source.ts` shows this as a custom `DeckSource` decorator. |
 | Asset cache headers | Long-lived cache for R2-backed assets | done | Local tests assert `Cache-Control`; Cloudflare edge cache hit/miss needs deployed smoke verification. |
 | Asset cache headers | `cf-cache-status` / `age` on deployed Worker | smoke | Requires deployment. Local Miniflare-style tests can only check route behavior and headers. |
 
