@@ -104,7 +104,7 @@ window.parent.postMessage({
 }, "*");
 ```
 
-The viewer should keep the existing `index` field for backward compatibility and add step-aware text only when `stepCount > 0`.
+The viewer should keep the existing `index` field for backward compatibility. The default controls show slide progress only; richer step-aware custom controls can read `stepIndex` and `stepCount` from viewer state or root data attributes.
 
 ## Render Contract
 
@@ -179,12 +179,12 @@ The MDX module generator:
 
 ## Viewer Contract
 
-The viewer script remains generic. It sends commands and displays state:
+The viewer script remains generic. It sends commands and keeps step state, but the default controller displays only slide progress:
 
 - `previous`, `next`, `goTo`, `fullscreen` commands stay unchanged.
 - The state listener accepts optional `stepIndex` and `stepCount`.
-- Position text becomes `2 / 5` when no fragments are active.
-- Position text becomes `2 / 5 · 1 / 3` when the current slide has fragments.
+- Position text stays slide-only, for example `2 / 5`.
+- The viewer root receives `data-step-index` and `data-step-count` for custom controllers or analytics.
 
 Custom viewers using `deckContext()` or `createDeckViewerParts()` can keep reading `deckViewer.controls`, `deckViewer.toc`, and `deckViewer.frame`. Future APIs can expose richer slide step metadata, but the first implementation does not require it.
 
@@ -195,7 +195,7 @@ Custom viewers using `deckContext()` or `createDeckViewerParts()` can keep readi
 - Render tests cover `<Fragment />`, fragment visibility attributes, and step-aware state publishing.
 - Router tests cover state message shape and viewer position behavior.
 - Example tests cover `examples/basic/decks/motion` transition and fragment output.
-- Browser smoke checks cover the viewer route; deeper step interaction smoke can be added as the browser harness grows.
+- Browser smoke checks cover the viewer route and actively verify fragment progression without adding fragment step text to the default controller.
 
 ## Open Decisions
 
