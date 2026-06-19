@@ -246,4 +246,87 @@ describe("compiled deck rendering", () => {
     expect(html).toContain('<script type="module" src="/assets/slides.client.js"></script>');
     expect(html).toContain("<button type=\"button\">Clicks</button>");
   });
+
+  it("serializes JSON client island props without dropping nested values", () => {
+    const html = renderCompiledDeckPage({
+      deck: {
+        ...deck,
+        slides: [
+          {
+            ...deck.slides[0],
+            nodes: [
+              {
+                type: "component",
+                name: "Counter",
+                props: {
+                  label: "Clicks",
+                  client: true,
+                  values: [1, "two", true, null],
+                  options: { step: 2, nested: { mode: "demo" } },
+                  empty: null,
+                },
+                children: [],
+              },
+            ],
+          },
+        ],
+      },
+      mountPath: "/slides",
+      components: defineSlideComponents({
+        Counter: {
+          client: true,
+          clientId: "Counter__deck1_abcd1234",
+          component: (props) => jsx("button", { type: "button", children: String(props.label) }),
+        },
+      }),
+    });
+
+    expect(html).toContain(
+      'data-hono-decks-props="{&quot;label&quot;:&quot;Clicks&quot;,&quot;values&quot;:[1,&quot;two&quot;,true,null],&quot;options&quot;:{&quot;step&quot;:2,&quot;nested&quot;:{&quot;mode&quot;:&quot;demo&quot;}},&quot;empty&quot;:null}"',
+    );
+  });
+
+  it("rejects non-JSON client island props with a clear component path", () => {
+    class FancyValue {
+      label = "fancy";
+    }
+
+    const invalidProps = [
+      { prop: "onClick", value: () => "clicked", message: 'Client island prop "Counter.onClick" must be JSON-serializable; functions cannot be passed to the client.' },
+      { prop: "icon", value: jsx("span", { children: "!" }), message: 'Client island prop "Counter.icon" must be JSON-serializable; JSX values cannot be passed to the client.' },
+      { prop: "createdAt", value: new Date("2026-06-19T00:00:00.000Z"), message: 'Client island prop "Counter.createdAt" must be JSON-serializable; Date values must be converted to strings.' },
+      { prop: "state", value: new FancyValue(), message: 'Client island prop "Counter.state" must be JSON-serializable; class instances are not supported.' },
+    ];
+
+    for (const { prop, value, message } of invalidProps) {
+      expect(() =>
+        renderCompiledDeckPage({
+          deck: {
+            ...deck,
+            slides: [
+              {
+                ...deck.slides[0],
+                nodes: [
+                  {
+                    type: "component",
+                    name: "Counter",
+                    props: { label: "Clicks", client: true, [prop]: value },
+                    children: [],
+                  },
+                ],
+              },
+            ],
+          },
+          mountPath: "/slides",
+          components: defineSlideComponents({
+            Counter: {
+              client: true,
+              clientId: "Counter__deck1_abcd1234",
+              component: (props) => jsx("button", { type: "button", children: String(props.label) }),
+            },
+          }),
+        }),
+      ).toThrow(message);
+    }
+  });
 });

@@ -1,9 +1,15 @@
 import { render } from "hono/jsx/dom";
 import { jsx } from "hono/jsx/dom/jsx-runtime";
 import type { SlideComponent, SlideComponentProps } from "../renderer/jsx-renderer";
-import type { SlidePropValue } from "../shared/types";
 
 export type ClientSlideComponentRegistry = Record<string, SlideComponent>;
+type ClientIslandPropValue =
+  | string
+  | number
+  | boolean
+  | null
+  | ClientIslandPropValue[]
+  | { [key: string]: ClientIslandPropValue };
 
 export interface HydrateSlideIslandsInput {
   root?: ParentNode;
@@ -20,19 +26,12 @@ export function hydrateSlideIslands(input: HydrateSlideIslandsInput): void {
     const component = input.components[name];
     if (!component) continue;
 
-    const props: Record<string, SlidePropValue> = parseIslandProps(island.dataset.honoDecksProps);
+    const props: Record<string, ClientIslandPropValue> = parseIslandProps(island.dataset.honoDecksProps);
     render(jsx(component, props satisfies SlideComponentProps), island);
   }
 }
 
-function parseIslandProps(value: string | undefined): Record<string, SlidePropValue> {
+function parseIslandProps(value: string | undefined): Record<string, ClientIslandPropValue> {
   if (!value) return {};
-  const parsed = JSON.parse(value) as Record<string, unknown>;
-  const props: Record<string, SlidePropValue> = {};
-
-  for (const [key, prop] of Object.entries(parsed)) {
-    if (typeof prop === "string" || typeof prop === "number" || typeof prop === "boolean") props[key] = prop;
-  }
-
-  return props;
+  return JSON.parse(value) as Record<string, ClientIslandPropValue>;
 }

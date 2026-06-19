@@ -2,10 +2,17 @@ import { jsx } from "hono/jsx/jsx-runtime";
 import { HtmlEscapedCallbackPhase, resolveCallback } from "hono/utils/html";
 import type { Child } from "hono/jsx";
 import type { HtmlEscapedString } from "hono/utils/html";
-import type { SlideNode, SlidePropValue } from "../shared/types";
+import type { SlideNode } from "../shared/types";
 
 export type MaybePromise<T> = T | Promise<T>;
 export type DeckRenderable = Child | HtmlEscapedString;
+type ClientIslandPropValue =
+  | string
+  | number
+  | boolean
+  | null
+  | ClientIslandPropValue[]
+  | { [key: string]: ClientIslandPropValue };
 
 export type SlideComponentProps = Record<string, unknown> & {
   children?: DeckRenderable;
@@ -158,7 +165,7 @@ function renderRegisteredComponent(
 
   return jsx("div", {
     "data-hono-decks-island": definition.clientId ?? name,
-    "data-hono-decks-props": JSON.stringify(serializableProps(componentProps)),
+    "data-hono-decks-props": JSON.stringify(serializableProps(name, componentProps)),
     children: element,
   });
 }
@@ -213,12 +220,61 @@ function rewriteAssetProps(
   return rewritten;
 }
 
-function serializableProps(props: Record<string, unknown>): Record<string, SlidePropValue> {
-  const result: Record<string, SlidePropValue> = {};
+function serializableProps(componentName: string, props: Record<string, unknown>): Record<string, ClientIslandPropValue> {
+  const result: Record<string, ClientIslandPropValue> = {};
   for (const [key, value] of Object.entries(props)) {
-    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") result[key] = value;
+    result[key] = serializeClientIslandProp(value, `${componentName}.${key}`);
   }
   return result;
+}
+
+function serializeClientIslandProp(value: unknown, path: string): ClientIslandPropValue {
+  if (value === null) return null;
+  if (typeof value === "string" || typeof value === "boolean") return value;
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) {
+      throw new Error(`Client island prop "${path}" must be JSON-serializable; non-finite numbers are not supported.`);
+    }
+    return value;
+  }
+  if (typeof value === "function") {
+    throw new Error(`Client island prop "${path}" must be JSON-serializable; functions cannot be passed to the client.`);
+  }
+  if (value === undefined || typeof value === "symbol" || typeof value === "bigint") {
+    throw new Error(`Client island prop "${path}" must be JSON-serializable; ${typeof value} values are not supported.`);
+  }
+  if (isJsxValue(value)) {
+    throw new Error(`Client island prop "${path}" must be JSON-serializable; JSX values cannot be passed to the client.`);
+  }
+  if (value instanceof Date) {
+    throw new Error(`Client island prop "${path}" must be JSON-serializable; Date values must be converted to strings.`);
+  }
+  if (Array.isArray(value)) return value.map((item, index) => serializeClientIslandProp(item, `${path}[${index}]`));
+  if (!isPlainObject(value)) {
+    throw new Error(`Client island prop "${path}" must be JSON-serializable; class instances are not supported.`);
+  }
+
+  const result: { [key: string]: ClientIslandPropValue } = {};
+  for (const [key, item] of Object.entries(value)) {
+    result[key] = serializeClientIslandProp(item, `${path}.${key}`);
+  }
+  return result;
+}
+
+function isJsxValue(value: unknown): boolean {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "tag" in value &&
+    "props" in value &&
+    "type" in value
+  );
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== "object" || value === null) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
 }
 
 function findAssetForHtmlUrl(
