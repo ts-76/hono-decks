@@ -17,7 +17,7 @@ const checks = [
   { name: "desktop", width: 1280, height: 800 },
   { name: "mobile", width: 390, height: 844 },
 ];
-const deckSlugs = ["sample", "code", "media"];
+const deckSlugs = ["sample", "code", "media", "motion"];
 
 let server;
 let serverExit;

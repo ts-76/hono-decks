@@ -223,8 +223,20 @@ app.get("/decks/:slug/embed", deckContext({ source: decks.source }), (c) => {
 ```txt
 examples/basic/
   decks/
+    code/
+      deck.mdx
+    media/
+      deck.mdx
+      assets/
+    motion/
+      deck.mdx
+      components/
+        index.tsx
+        client/
+          index.tsx
     sample/
       deck.mdx
+      assets/
       components/
         index.tsx
         client/
@@ -234,11 +246,17 @@ examples/basic/
       client-entry.ts
       decks.ts
       decks/
+        code/
+          slide-0.ts
+        media/
+          slide-0.ts
+        motion/
+          slide-0.ts
         sample/
           slide-0.ts
 ```
 
-`dev`、`typecheck`、`test`、`deploy` は事前に `bun run decks:compile` を実行し、`decks/sample/deck.mdx` から `src/generated/decks.ts` と slide module 群を更新します。sample ではさらに deck-local な `decks/sample/components/client/index.tsx` を browser bundle 化して `src/generated/client-entry.ts` に埋め込み、`client: true` component を `hono/jsx/dom` で hydrate します。Worker runtime は生成済み router/client asset を import するだけで、file system の読み取りは build-time CLI に閉じています。
+`dev`、`typecheck`、`test`、`deploy` は事前に `bun run decks:compile` を実行し、`decks/*/deck.mdx` から `src/generated/decks.ts` と slide module 群を更新します。sample や motion のように deck-local な `components/client/index.tsx` を持つ deck は browser bundle 化されて `src/generated/client-entry.ts` に埋め込まれ、`client: true` component を `hono/jsx/dom` で hydrate します。Worker runtime は生成済み router/client asset を import するだけで、file system の読み取りは build-time CLI に閉じています。
 
 今後 sample で検証する media、embed、code block、animation、accessibility、export などの項目は [Verification Matrix](docs/verification-matrix.md) にまとめています。desktop/mobile の viewer framing は `agent-browser` を使う [Browser Smoke Checks](docs/browser-smoke.md) でも確認できます。
 

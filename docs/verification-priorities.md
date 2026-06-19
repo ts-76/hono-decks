@@ -89,7 +89,7 @@ Browser smoke coverage now exists for:
 
 - Desktop and mobile screenshot checks for clipping or overlap
 - Browser-side pointer swipe behavior
-- Sample, code, and media deck viewport screenshots
+- Sample, code, media, and motion deck viewport screenshots
 - Default viewer control contrast
 
 Smoke coverage that still needs deployed or manual evidence:
@@ -115,11 +115,12 @@ Rationale: layout and theme are public authoring APIs. They should be designed b
 
 ### 7. In-Slide Animation
 
-Verify:
+Sample coverage now exists:
 
-- CSS animation
+- CSS animation in `examples/basic/decks/motion`
 - Client island animation through `hono/jsx/dom`
-- `prefers-reduced-motion`
+- `prefers-reduced-motion` override in the motion deck
+- Browser viewport smoke coverage for the motion viewer page
 
 Rationale: this adds expressiveness without requiring a new slide state model. It should still wait until accessibility and viewport behavior are stable.
 
@@ -170,7 +171,7 @@ Rationale: PDF output should be validated visually, not only through HTML assert
 
 ## Recommended Next Steps
 
-1. Start layout/theme API design before adding more official sample decks.
+1. Design slide transitions and fragment/step semantics before implementing navigation-affecting animation.
 2. Add deployed R2/cache smoke checks once a deployed Worker target is available.
 
-Keep `examples/basic/decks/sample` small. It should remain the happy-path deck for MDX expressions, deck-local server components, client islands, viewer pages, and R2 binding fallback.
+Keep `examples/basic/decks/sample` small. It should remain the happy-path deck for MDX expressions, deck-local server components, client islands, viewer pages, and R2 binding fallback. Use `examples/basic/decks/motion` for animation, transition, and fragment experiments.

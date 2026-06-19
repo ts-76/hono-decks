@@ -17,7 +17,7 @@ bun run --cwd examples/basic smoke:viewport
 The script checks:
 
 - desktop `1280x800` and mobile `390x844` viewports
-- `sample`, `code`, and `media` deck viewer pages
+- `sample`, `code`, `media`, and `motion` deck viewer pages
 - generated render routes contain the internal fixed `1920x1080` deck surface and fit script
 - parent iframe follows the 16:9 viewport without fixed `width` / `height` attributes
 - keyboard navigation advances the sample deck
