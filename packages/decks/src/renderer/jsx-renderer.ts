@@ -34,10 +34,12 @@ export const builtInSlideComponents = defineSlideComponents({
     const order =
       typeof props.order === "number" || typeof props.order === "string" ? Number(props.order) : undefined;
     const fragmentOrder = order !== undefined && Number.isFinite(order) ? String(order) : undefined;
+    const effect = stringProp(props.effect);
 
     return jsx("span", {
       "data-hono-decks-fragment": true,
       ...(fragmentOrder ? { "data-fragment-order": fragmentOrder } : {}),
+      ...(effect ? { "data-fire-effect": safeToken(effect).toLowerCase() } : {}),
       children: props.children,
     });
   },
@@ -163,6 +165,33 @@ export const builtInSlideComponents = defineSlideComponents({
           }),
         ],
       }),
+    });
+  },
+  LinkCard: (props) => {
+    const href = stringProp(props.href ?? props.url);
+    const title = stringProp(props.title) ?? href ?? "Link";
+    const description = stringProp(props.description);
+    const label = codeBlockText(props.children) || "Open link";
+
+    return jsx("figure", {
+      class: "hono-decks-link-card",
+      "data-component": "LinkCard",
+      children: href
+        ? jsx("a", {
+            class: "hono-decks-link-card-anchor",
+            href,
+            target: "_blank",
+            rel: "noreferrer",
+            children: [
+              jsx("span", { class: "hono-decks-link-card-title", children: title }),
+              description ? jsx("span", { class: "hono-decks-link-card-description", children: description }) : "",
+              jsx("span", { class: "hono-decks-link-card-label", children: label }),
+            ],
+          })
+        : [
+            jsx("span", { class: "hono-decks-link-card-title", children: title }),
+            description ? jsx("span", { class: "hono-decks-link-card-description", children: description }) : "",
+          ],
     });
   },
 });

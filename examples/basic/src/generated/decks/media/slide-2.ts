@@ -2,6 +2,7 @@
 import {Fragment as _Fragment, jsx as _jsx, jsxs as _jsxs} from "hono/jsx/jsx-runtime";
 function _createMdxContent(props) {
   const _components = {
+    code: "code",
     h1: "h1",
     p: "p",
     ...props.components
@@ -11,14 +12,14 @@ function _createMdxContent(props) {
     children: [_jsx(_components.h1, {
       children: "YouTube embed"
     }), "\n", _jsx(EmbedFrame, {
+      provider: "youtube",
       src: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       title: "YouTube embed example",
-      allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share",
-      children: _jsx(_components.p, {
-        children: "Open YouTube embed"
-      })
-    }), "\n", _jsx(_components.p, {
-      children: "Iframe embeds use lazy loading, sandbox defaults, and a fallback link."
+      children: "Open YouTube embed"
+    }), "\n", _jsxs(_components.p, {
+      children: ["Zenn-style shorthand compiles to the built-in ", _jsx(_components.code, {
+        children: "EmbedFrame"
+      }), "."]
     })]
   });
 }

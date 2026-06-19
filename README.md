@@ -61,6 +61,22 @@ export const label = 'Rendered ' + 'by Hono JSX'
 <Badge label={label} />
 ```
 
+authoring は Zenn 風の明示記法も使えます。これらは build-time に built-in component 呼び出しへ変換され、Worker runtime では生成済み Hono JSX module として render されます。URL 単独行 auto embed は誤爆を避けるため標準では行いません。
+
+```mdx
+@[youtube](https://www.youtube.com/watch?v=dQw4w9WgXcQ)
+@[x](https://x.com/honojs/status/123)
+@[card](https://hono.dev/docs/)
+
+:::fire{effect="fade-up"}
+クリックで表示する Markdown block
+:::
+
+<Badge $fire={2} effect="scale">クリックで表示する JSX component</Badge>
+```
+
+上の記法はそれぞれ `<EmbedFrame />`、`<SocialEmbed />`、`<LinkCard />`、`<Fragment />` 相当へ正規化されます。細かく制御したい場合は built-in component を直接書けます。独自デザインにしたい場合は `decksRouter({ theme: { components } })` で同名 component を差し替えます。
+
 コードブロックは compile 時に Shiki で highlight され、生成済み slide module に HTML として埋め込まれます。Worker runtime は highlighter を読み込まず、生成済み HTML を render するだけです。fenced code と built-in `<CodeBlock>` のどちらも使えます。
 
 ````mdx
@@ -110,9 +126,11 @@ app.route("/decks", decksRouter({ source }));
 
 この package は R2 upload までは行いません。`withR2Assets()` は `decks/sample/assets/image.png` のような generated asset の `sourcePath` を R2 key として読むため、deploy 前に同じ key で object を置いてください。ローカル test では `Cache-Control` header と R2 binding 経由の response を検証できますが、Cloudflare edge cache の hit/miss は deploy 後に `cf-cache-status` や `age` を見る smoke check で確認します。
 
-iframe embed は built-in `<EmbedFrame>` を使えます。`sandbox`、`allow`、`referrerpolicy`、`loading="lazy"`、fallback link、aspect ratio の既定値を package 側で揃えます。YouTube など特定サービスで必要な permission は `allow` で上書きしてください。
+iframe embed は Zenn 風 shorthand または built-in `<EmbedFrame>` を使えます。`sandbox`、`allow`、`referrerpolicy`、`loading="lazy"`、fallback link、aspect ratio の既定値を package 側で揃えます。YouTube など特定サービスで必要な permission は `allow` で上書きしてください。
 
 ```mdx
+@[youtube](https://www.youtube.com/watch?v=dQw4w9WgXcQ)
+
 <EmbedFrame
   src="https://www.youtube.com/embed/dQw4w9WgXcQ"
   title="YouTube embed example"
@@ -122,9 +140,11 @@ Open YouTube embed
 </EmbedFrame>
 ```
 
-SNS や X のような script-based embed は built-in `<SocialEmbed>` で link-first にできます。package は third-party script を自動挿入しないため、Worker SSR と CSP を壊さずに引用テキストと外部リンクを表示できます。
+SNS や X のような script-based embed は `@[x](url)` または built-in `<SocialEmbed>` で link-first にできます。package は third-party script を自動挿入しないため、Worker SSR と CSP を壊さずに引用テキストと外部リンクを表示できます。
 
 ```mdx
+@[x](https://x.com/honojs/status/123)
+
 <SocialEmbed
   href="https://x.com/honojs/status/123"
   provider="x"
@@ -134,6 +154,8 @@ SNS や X のような script-based embed は built-in `<SocialEmbed>` で link-
 Script-based SNS embeds stay link-first by default.
 </SocialEmbed>
 ```
+
+外部リンクの preview fallback は `@[card](url)` または built-in `<LinkCard>` を使います。package は OGP fetch を暗黙実行しません。必要なら build-time syntax config や `theme.components.LinkCard` の差し替えでアプリ側が制御します。
 
 `@hono/decks` は標準 viewer に Content-Security-Policy header を設定しません。アプリ側で CSP を設定する場合、iframe embed は `frame-src`、画像は `img-src`、client entry は `script-src` の対象になります。X widgets などの third-party script を使いたい場合は custom viewer route で明示的に script と CSP を足し、標準 deck content には `<SocialEmbed>` の fallback を残す構成を推奨します。
 

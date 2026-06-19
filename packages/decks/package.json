@@ -43,6 +43,7 @@
     "@mdx-js/mdx": "^3.1.1",
     "esbuild": "^0.28.1",
     "hono": "^4.10.7",
+    "remark-directive": "^4.0.0",
     "remark-mdx": "^3.1.1",
     "remark-parse": "^11.0.0",
     "shiki": "^4.2.0",
