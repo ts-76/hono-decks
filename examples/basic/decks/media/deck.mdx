@@ -54,15 +54,17 @@ Generic iframe embeds use the same package defaults.
 https://example.com/plain-link
 
 ---
-title: SNS Fallback
+title: X Post Embed
 layout: media
 ---
 
-# SNS fallback
+# X post embed
 
 @[x](https://x.com/honojs/status/123)
 
-The package renders a script-free fallback. Apps can opt into third-party scripts and CSP rules in their own viewer routes.
+@[x-post](https://x.com/honojs/status/1659577874821836801?s=20)
+
+`@[x]` renders a script-free fallback. `@[x-post]` opts into the official post embed markup.
 
 ---
 title: Link Card

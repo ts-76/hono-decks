@@ -2,20 +2,29 @@
 import {Fragment as _Fragment, jsx as _jsx, jsxs as _jsxs} from "hono/jsx/jsx-runtime";
 function _createMdxContent(props) {
   const _components = {
+    code: "code",
     h1: "h1",
     p: "p",
     ...props.components
-  }, {SocialEmbed} = _components;
+  }, {SocialEmbed, TweetEmbed} = _components;
   if (!SocialEmbed) _missingMdxReference("SocialEmbed", true);
+  if (!TweetEmbed) _missingMdxReference("TweetEmbed", true);
   return _jsxs(_Fragment, {
     children: [_jsx(_components.h1, {
-      children: "SNS fallback"
+      children: "X post embed"
     }), "\n", _jsx(SocialEmbed, {
       provider: "x",
       href: "https://x.com/honojs/status/123",
       label: "Open on X"
-    }), "\n", _jsx(_components.p, {
-      children: "The package renders a script-free fallback. Apps can opt into third-party scripts and CSP rules in their own viewer routes."
+    }), "\n", _jsx(TweetEmbed, {
+      href: "https://x.com/honojs/status/1659577874821836801?s=20",
+      label: "Open post on X"
+    }), "\n", _jsxs(_components.p, {
+      children: [_jsx(_components.code, {
+        children: "@[x]"
+      }), " renders a script-free fallback. ", _jsx(_components.code, {
+        children: "@[x-post]"
+      }), " opts into the official post embed markup."]
     })]
   });
 }

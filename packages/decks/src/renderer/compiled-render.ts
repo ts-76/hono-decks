@@ -287,6 +287,9 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden}
 .hono-decks-social-card p{margin:0 0 .75rem;line-height:1.55}
 .hono-decks-social-card footer{display:flex;flex-wrap:wrap;gap:.65rem;align-items:center;color:#cbd5e1;font-size:.9rem}
 .hono-decks-social-card a{color:inherit}
+.hono-decks-tweet-embed{margin:1rem 0;max-width:min(100%,42rem)}
+.hono-decks-tweet-embed .twitter-tweet{margin:0;border:1px solid rgba(148,163,184,.24);border-radius:8px;background:rgba(15,23,42,.78);padding:1rem}
+.hono-decks-tweet-embed .twitter-tweet a{color:inherit}
 .hono-decks-link-card{margin:1rem 0;max-width:min(100%,42rem)}
 .hono-decks-link-card-anchor{display:grid;gap:.35rem;border:1px solid rgba(148,163,184,.24);border-radius:8px;background:rgba(15,23,42,.78);padding:1rem;color:inherit;text-decoration:none}
 .hono-decks-link-card-title{font-weight:700}

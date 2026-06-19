@@ -269,6 +269,8 @@ title: Syntax
 
 @[x](https://x.com/honojs/status/123)
 
+@[x-post](https://x.com/honojs/status/1659577874821836801?s=20)
+
 @[card](https://hono.dev/docs/)
 
 @[embed](https://example.com/embed/status)
@@ -303,6 +305,8 @@ The slide stays 16:9.
       expect(slideOutput).toContain("SocialEmbed");
       expect(slideOutput).toContain('provider: "x"');
       expect(slideOutput).toContain('href: "https://x.com/honojs/status/123"');
+      expect(slideOutput).toContain("TweetEmbed");
+      expect(slideOutput).toContain('href: "https://x.com/honojs/status/1659577874821836801?s=20"');
       expect(slideOutput).toContain("LinkCard");
       expect(slideOutput).toContain('href: "https://hono.dev/docs/"');
       expect(slideOutput).toContain('src: "https://example.com/embed/status"');

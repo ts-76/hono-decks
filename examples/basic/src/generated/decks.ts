@@ -154,7 +154,7 @@ export const decks = defineDecks({
         {
           index: 4,
           meta: {
-            "title": "SNS Fallback",
+            "title": "X Post Embed",
             "layout": "media",
             "meta": {}
           },
