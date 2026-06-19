@@ -153,11 +153,13 @@ export function renderCompiledDeckPage(input: {
   components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
   theme?: DeckTheme;
   clientEntry?: string;
+  printPreview?: boolean;
 }): string {
   const { deck } = input;
   const warnings = deck.warnings.length
     ? `<aside class="hono-decks-warnings">${deck.warnings.map((warning) => `<p>${escapeHtml(warning.message)}</p>`).join("")}</aside>`
     : "";
+  const bodyAttrs = input.printPreview ? ' data-hono-decks-print-preview="true"' : "";
 
   return `<!doctype html>
 <html lang="ja">
@@ -167,12 +169,12 @@ export function renderCompiledDeckPage(input: {
   <title>${escapeHtml(deck.meta.title ?? deck.slug)}</title>
   <style>${basePresentationStyle()}${input.theme?.style ?? ""}${input.style ?? ""}</style>
 </head>
-<body>
+<body${bodyAttrs}>
   ${warnings}
   ${renderCompiledDeck(deck, { components: mergeComponentInputs(deck.componentRegistry, input.components), theme: input.theme })}
-  ${renderPresentationScript()}
-  ${input.liveReloadPath ? renderLiveReloadScript(input.liveReloadPath) : ""}
-  ${input.clientEntry ? renderClientEntryScript(input.clientEntry) : ""}
+  ${input.printPreview ? "" : renderPresentationScript()}
+  ${!input.printPreview && input.liveReloadPath ? renderLiveReloadScript(input.liveReloadPath) : ""}
+  ${!input.printPreview && input.clientEntry ? renderClientEntryScript(input.clientEntry) : ""}
 </body>
 </html>`;
 }
@@ -185,11 +187,13 @@ export async function renderCompiledDeckPageAsync(input: {
   components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
   theme?: DeckTheme;
   clientEntry?: string;
+  printPreview?: boolean;
 }): Promise<string> {
   const { deck } = input;
   const warnings = deck.warnings.length
     ? `<aside class="hono-decks-warnings">${deck.warnings.map((warning) => `<p>${escapeHtml(warning.message)}</p>`).join("")}</aside>`
     : "";
+  const bodyAttrs = input.printPreview ? ' data-hono-decks-print-preview="true"' : "";
 
   return `<!doctype html>
 <html lang="ja">
@@ -199,12 +203,12 @@ export async function renderCompiledDeckPageAsync(input: {
   <title>${escapeHtml(deck.meta.title ?? deck.slug)}</title>
   <style>${basePresentationStyle()}${input.theme?.style ?? ""}${input.style ?? ""}</style>
 </head>
-<body>
+<body${bodyAttrs}>
   ${warnings}
   ${await renderCompiledDeckAsync(deck, { components: mergeComponentInputs(deck.componentRegistry, input.components), theme: input.theme })}
-  ${renderPresentationScript()}
-  ${input.liveReloadPath ? renderLiveReloadScript(input.liveReloadPath) : ""}
-  ${input.clientEntry ? renderClientEntryScript(input.clientEntry) : ""}
+  ${input.printPreview ? "" : renderPresentationScript()}
+  ${!input.printPreview && input.liveReloadPath ? renderLiveReloadScript(input.liveReloadPath) : ""}
+  ${!input.printPreview && input.clientEntry ? renderClientEntryScript(input.clientEntry) : ""}
 </body>
 </html>`;
 }
@@ -321,8 +325,14 @@ body[data-overview-mode] .hono-decks-deck{grid-template-columns:repeat(auto-fit,
 body[data-overview-mode] .slide{cursor:pointer}
 body[data-presenter-mode] .speaker-notes{display:block;margin-top:1rem;padding:.75rem;border-radius:8px;background:rgba(255,255,255,.08)}
 .hono-decks-warnings{margin:1rem;padding:.75rem;border-radius:14px;background:rgba(255,193,7,.12);color:#ffe59b}
+@media screen{body[data-hono-decks-print-preview]{min-height:100vh;overflow:auto;background:#e5e7eb;color:#000}
+body[data-hono-decks-print-preview] .hono-decks-stage{display:block;width:auto;height:auto;min-height:100vh;overflow:visible;background:#e5e7eb;padding:12mm 0;box-sizing:border-box}
+body[data-hono-decks-print-preview] .hono-decks-deck{display:grid;grid-template-columns:1fr;grid-auto-rows:var(--hono-decks-print-slot-height,80mm);gap:var(--hono-decks-print-gap,6mm);width:calc(210mm - 24mm);max-width:calc(100vw - 24px);height:auto;margin:0 auto;transform:none!important}
+body[data-hono-decks-print-preview] .slide{width:calc(var(--hono-decks-print-slot-height,80mm) * 16 / 9);max-width:100%;height:auto;aspect-ratio:16/9;justify-self:center;align-self:center;box-shadow:0 2px 10px rgba(15,23,42,.16)}
+body[data-hono-decks-print-preview]:not([data-overview-mode]) .slide[hidden]{display:block!important}
+body[data-hono-decks-print-preview] [data-hono-decks-fragment]{visibility:visible!important;opacity:1!important;transform:none!important}}
 @page{size:A4 portrait;margin:12mm}
-@media print{:root{background:#fff;color:#000;--hono-decks-print-gap:6mm;--hono-decks-print-slot-height:87mm}html,body{width:auto;height:auto;overflow:visible;background:#fff}.hono-decks-stage{display:block;width:auto;height:auto;overflow:visible;background:transparent}.hono-decks-deck{display:grid;grid-template-columns:1fr;grid-auto-rows:var(--hono-decks-print-slot-height);gap:var(--hono-decks-print-gap);width:auto;height:auto;transform:none!important}.slide{width:calc(var(--hono-decks-print-slot-height) * 16 / 9);max-width:100%;height:auto;aspect-ratio:16/9;justify-self:center;align-self:center;page-break-after:auto;break-after:auto;break-inside:avoid;box-shadow:none}.slide:nth-of-type(3n):not(:last-child){page-break-after:always;break-after:page}body:not([data-overview-mode]) .slide[hidden]{display:block!important}[data-hono-decks-fragment]{visibility:visible!important;opacity:1!important;transform:none!important}}
+@media print{:root{background:#fff;color:#000;--hono-decks-print-gap:6mm;--hono-decks-print-slot-height:80mm}html,body{width:auto;height:auto;overflow:visible;background:#fff}.hono-decks-stage{display:block;width:auto;height:auto;overflow:visible;background:transparent}.hono-decks-deck{display:grid;grid-template-columns:1fr;grid-auto-rows:var(--hono-decks-print-slot-height);gap:var(--hono-decks-print-gap);width:auto;height:auto;transform:none!important}.slide{width:calc(var(--hono-decks-print-slot-height) * 16 / 9);max-width:100%;height:auto;aspect-ratio:16/9;justify-self:center;align-self:center;page-break-after:auto;break-after:auto;break-inside:avoid;box-shadow:none}.slide:nth-of-type(3n):not(:last-child){page-break-after:always;break-after:page}body:not([data-overview-mode]) .slide[hidden]{display:block!important}[data-hono-decks-fragment]{visibility:visible!important;opacity:1!important;transform:none!important}}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}}`;
 }
 

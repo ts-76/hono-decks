@@ -1,6 +1,6 @@
 # PDF Smoke Checks
 
-The basic example includes a print-to-PDF smoke script for the generated render pages. It starts `wrangler dev`, opens render pages with `agent-browser`, saves PDFs, and checks that the generated PDF uses the A4 portrait handout layout.
+The basic example includes a print-to-PDF smoke script for the generated print pages. It starts `wrangler dev`, opens `/:slug/print` pages with `agent-browser`, saves PDFs, and checks that the generated PDF uses the A4 portrait handout layout.
 
 Run from the repository root:
 
@@ -16,7 +16,7 @@ bun run --cwd examples/basic smoke:pdf
 
 The script checks:
 
-- package print CSS is exercised through the real `/decks/:slug/render` document
+- package print CSS is exercised through the real `/decks/:slug/print` document
 - print output uses A4 portrait pages with margins
 - up to 3 slides are placed on each printed page
 - `sample` exports 1 handout page for 3 slides
