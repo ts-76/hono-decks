@@ -22,7 +22,11 @@ transition: fade
   <div>
     <h1>Motion verification</h1>
     <p>CSS animation stays inside the fixed 16:9 slide and respects reduced motion.</p>
-    <Fragment order={1}>The reveal state is owned by the presentation iframe.</Fragment>
+    :::fire{order="1" effect="fade-up"}
+    The reveal state is owned by the presentation iframe.
+
+    Markdown fire blocks use Zenn-style directive syntax.
+    :::
   </div>
   <div class="motion-orbit" aria-label="CSS orbit animation">
     <span class="motion-orbit-dot" />
@@ -42,4 +46,6 @@ fragments: list
 - CSS animation runs before hydration.
 - Client island animation keeps local state.
 
-<MotionMeter label="Animation island" initial={35} />
+<p>JSX fire props are stripped before rendering.</p>
+
+<MotionMeter $fire={2} effect="scale" label="Animation island" initial={35} />

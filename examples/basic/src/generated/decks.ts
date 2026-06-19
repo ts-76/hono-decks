@@ -9,6 +9,7 @@ import Slide_media_1 from "./decks/media/slide-1";
 import Slide_media_2 from "./decks/media/slide-2";
 import Slide_media_3 from "./decks/media/slide-3";
 import Slide_media_4 from "./decks/media/slide-4";
+import Slide_media_5 from "./decks/media/slide-5";
 import Slide_motion_0 from "./decks/motion/slide-0";
 import Slide_motion_1 from "./decks/motion/slide-1";
 import Slide_sample_0 from "./decks/sample/slide-0";
@@ -154,6 +155,18 @@ export const decks = defineDecks({
           components: [],
           notes: undefined,
           render: Slide_media_4
+        },
+        {
+          index: 5,
+          meta: {
+            "title": "Link Card",
+            "layout": "media",
+            "meta": {}
+          },
+          html: "",
+          components: [],
+          notes: undefined,
+          render: Slide_media_5
         }
       ]
     },

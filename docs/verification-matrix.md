@@ -30,8 +30,9 @@ R2 official sample direction is still open. The current package API supports bin
 
 | Area | Case | Status | Notes |
 | --- | --- | --- | --- |
-| YouTube | `<iframe src="https://www.youtube.com/embed/...">` | done | `examples/basic/decks/media` uses built-in `EmbedFrame`; sample tests verify aspect ratio defaults, `title`, `loading="lazy"`, sandbox, fallback link, and fullscreen/media permissions. |
-| X / SNS embed | Script-based embed or blockquote fallback | done | Built-in `SocialEmbed` renders a script-free quote/link fallback; `examples/basic/decks/media` covers X-style SNS content without auto-loading third-party scripts. |
+| YouTube | `@[youtube](https://...)` shorthand | done | Build-time syntax transform compiles the Zenn-style shorthand to built-in `EmbedFrame`; sample tests verify `title`, `loading="lazy"`, sandbox, fallback link, and default permissions. |
+| X / SNS embed | `@[x](https://...)` shorthand | done | Build-time syntax transform compiles the shorthand to built-in `SocialEmbed`, which renders a script-free link fallback without auto-loading third-party scripts. |
+| Link card | `@[card](https://...)` shorthand | done | Build-time syntax transform compiles the shorthand to built-in `LinkCard`; the default implementation is a script-free link preview fallback and does not fetch OGP data. |
 | Generic iframe | `<EmbedFrame src title />` or similar component | done | Built-in `EmbedFrame` centralizes `sandbox`, `allow`, `referrerpolicy`, aspect ratio, lazy loading, and fallback link defaults. |
 | CSP | Embed-safe policy for standard viewer | done | README documents that the package does not set CSP headers; apps own `frame-src`, `img-src`, and `script-src`, especially when opting into third-party SNS scripts. |
 | Sandbox | Safe defaults for embedded content | done | `EmbedFrame` defaults to `allow-scripts allow-same-origin allow-presentation allow-popups`; callers can override `sandbox` or disable it with `sandbox={false}`. |
@@ -53,7 +54,8 @@ R2 official sample direction is still open. The current package API supports bin
 | In-slide CSS animation | CSS animation in slide content | done | `examples/basic/decks/motion` covers CSS animation, `prefers-reduced-motion`, and viewport smoke coverage. |
 | In-slide client animation | `hono/jsx/dom` island animation | done | `examples/basic/decks/motion` covers a deck-local client island animation component and generated client registry wiring. |
 | Slide transition | `transition` frontmatter | done | Known transition values are typed, validated during module generation, emitted as `data-transition`, and covered by package/sample tests. |
-| Fragment / step display | Progressive reveal for bullets or blocks | done | Explicit `<Fragment />`, `fragments: list`, iframe-owned step state, and viewer step display are covered by package/sample tests. |
+| Fragment / step display | Progressive reveal for bullets or blocks | done | Explicit `<Fragment />`, `fragments: list`, `:::fire`, `$fire`, iframe-owned step state, and viewer step display are covered by package/sample tests. |
+| Fire effects | `effect="fade-up"` / `effect="scale"` | done | Fire authoring props are stripped from rendered components and emitted as `data-fire-effect` on fragment wrappers with reduced-motion-safe CSS hooks. |
 | Keyboard navigation | Arrow keys, space, fullscreen | done | Current viewer/render scripts cover the core path; keep route tests and add browser smoke later. |
 | Touch navigation | Tap/swipe on mobile | done | Package tests cover pointer swipe command wiring; `bun run smoke:viewport` verifies browser-side pointer swipe dispatch. Real device touch can still be manually checked before release. |
 
@@ -104,9 +106,9 @@ R2 official sample direction is still open. The current package API supports bin
 ## Suggested Next Sample Decks
 
 - `examples/basic/decks/sample`: keep this as the small happy-path deck for MDX, server components, client islands, local asset routing, viewer pages, and R2 binding fallback.
-- `examples/basic/decks/media`: local JSX, remote image, YouTube `EmbedFrame`, generic iframe, and SNS `SocialEmbed` fallback examples exist.
+- `examples/basic/decks/media`: local JSX, remote image, Zenn-style YouTube/X/card shorthand, generic `EmbedFrame`, and fallback examples exist.
 - `examples/basic/decks/code`: fenced code, built-in `CodeBlock`, and build-time Shiki highlighting examples exist.
-- `examples/basic/decks/motion`: CSS animation, client island animation, slide transition, explicit fragment, and list fragment examples exist.
+- `examples/basic/decks/motion`: CSS animation, client island animation, slide transition, `:::fire`, `$fire`, and list fragment examples exist.
 
 ## Verification Commands
 

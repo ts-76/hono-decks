@@ -2,20 +2,21 @@
 import {Fragment as _Fragment, jsx as _jsx, jsxs as _jsxs} from "hono/jsx/jsx-runtime";
 function _createMdxContent(props) {
   const _components = {
+    code: "code",
     h1: "h1",
     p: "p",
     ...props.components
-  }, {SocialEmbed} = _components;
-  if (!SocialEmbed) _missingMdxReference("SocialEmbed", true);
+  }, {LinkCard} = _components;
+  if (!LinkCard) _missingMdxReference("LinkCard", true);
   return _jsxs(_Fragment, {
     children: [_jsx(_components.h1, {
-      children: "SNS fallback"
-    }), "\n", _jsx(SocialEmbed, {
-      provider: "x",
-      href: "https://x.com/honojs/status/123",
-      label: "Open on X"
-    }), "\n", _jsx(_components.p, {
-      children: "The package renders a script-free fallback. Apps can opt into third-party scripts and CSP rules in their own viewer routes."
+      children: "Link card"
+    }), "\n", _jsx(LinkCard, {
+      href: "https://hono.dev/docs/"
+    }), "\n", _jsxs(_components.p, {
+      children: ["Link cards stay script-free by default and can be replaced through ", _jsx(_components.code, {
+        children: "theme.components"
+      }), "."]
     })]
   });
 }

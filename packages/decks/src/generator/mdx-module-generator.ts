@@ -1,4 +1,5 @@
 import { compile } from "@mdx-js/mdx";
+import remarkDirective from "remark-directive";
 import { codeToHtml } from "shiki";
 import { CompileError } from "../deck/model";
 import type { AssetRef, CompiledDeck, DeckFrontmatter, DeckKind, SlideFrontmatter } from "../deck/model";
@@ -36,10 +37,12 @@ export interface GeneratedMdxModuleDecks {
 interface MarkdownNode {
   type: string;
   name?: string;
-  value?: string;
+  value?: unknown;
   lang?: string;
   meta?: string;
-  attributes?: MarkdownNode[];
+  url?: string;
+  title?: string | null;
+  attributes?: MarkdownNode[] | Record<string, unknown>;
   children?: MarkdownNode[];
   data?: {
     hProperties?: Record<string, unknown>;
@@ -121,7 +124,7 @@ async function compileMdxModule(
           jsxImportSource: "hono/jsx",
           format: "mdx",
           elementAttributeNameCase: "html",
-          remarkPlugins: [remarkListFragments(fragments), remarkCodeHighlight],
+          remarkPlugins: [remarkDirective, remarkDeckSyntax(), remarkListFragments(fragments), remarkCodeHighlight],
         },
       ),
     );
@@ -132,6 +135,145 @@ async function compileMdxModule(
       `MDX compile failed in ${sourcePath} slide ${slideIndex + 1}: ${message}`,
       "mdx-compile-error",
     );
+  }
+}
+
+function remarkDeckSyntax() {
+  return () => (tree: MarkdownNode) => {
+    transformDeckSyntaxChildren(tree);
+  };
+}
+
+function transformDeckSyntaxChildren(node: MarkdownNode): void {
+  if (!Array.isArray(node.children)) return;
+
+  node.children = node.children.map((child) => {
+    transformDeckSyntaxChildren(child);
+    return zennEmbedNode(child) ?? fireDirectiveNode(child) ?? firePropNode(child) ?? unknownDirectiveFallback(child) ?? child;
+  });
+}
+
+function zennEmbedNode(node: MarkdownNode): MarkdownNode | undefined {
+  if (node.type !== "paragraph" || !Array.isArray(node.children) || node.children.length !== 2) return undefined;
+
+  const [prefix, link] = node.children;
+  if (prefix?.type !== "text" || String(prefix.value ?? "").trim() !== "@") return undefined;
+  if (link?.type !== "link" || typeof link.url !== "string") return undefined;
+
+  const name = collectMarkdownText(link).trim().toLowerCase();
+  if (name === "youtube") {
+    return mdxElement(
+      "EmbedFrame",
+      [
+        mdxAttribute("provider", "youtube"),
+        mdxAttribute("src", toYoutubeEmbedUrl(link.url)),
+        mdxAttribute("title", "YouTube embed example"),
+      ],
+      [{ type: "text", value: "Open YouTube embed" }],
+    );
+  }
+  if (name === "x") {
+    return mdxElement(
+      "SocialEmbed",
+      [mdxAttribute("provider", "x"), mdxAttribute("href", link.url), mdxAttribute("label", "Open on X")],
+      [],
+    );
+  }
+  if (name === "card") {
+    return mdxElement("LinkCard", [mdxAttribute("href", link.url)], []);
+  }
+  return undefined;
+}
+
+function fireDirectiveNode(node: MarkdownNode): MarkdownNode | undefined {
+  if (node.type !== "containerDirective" || node.name !== "fire") return undefined;
+  const attributes = directiveAttributes(node);
+  const fragmentAttributes = [
+    ...(typeof attributes.order === "string" ? [mdxAttribute("order", attributes.order)] : []),
+    ...(typeof attributes.effect === "string" ? [mdxAttribute("effect", attributes.effect)] : []),
+  ];
+  return mdxElement("Fragment", fragmentAttributes, node.children ?? []);
+}
+
+function firePropNode(node: MarkdownNode): MarkdownNode | undefined {
+  if (node.type !== "mdxJsxFlowElement" && node.type !== "mdxJsxTextElement") return undefined;
+  if (!Array.isArray(node.attributes)) return undefined;
+
+  const fireAttribute = node.attributes.find((attribute) => attribute.name === "$fire");
+  if (!fireAttribute) return undefined;
+
+  const effectAttribute = node.attributes.find((attribute) => attribute.name === "effect");
+  node.attributes = node.attributes.filter((attribute) => attribute.name !== "$fire" && attribute.name !== "effect");
+
+  const fragmentAttributes = [
+    ...fireOrderAttribute(fireAttribute),
+    ...(typeof effectAttribute?.value === "string" ? [mdxAttribute("effect", effectAttribute.value)] : []),
+  ];
+  return mdxElement("Fragment", fragmentAttributes, [node]);
+}
+
+function unknownDirectiveFallback(node: MarkdownNode): MarkdownNode | undefined {
+  if (node.type === "textDirective") return { type: "text", value: `:${node.name ?? ""}` };
+  if (node.type === "leafDirective") return { type: "text", value: `::${node.name ?? ""}` };
+  if (node.type === "containerDirective") {
+    return {
+      type: "paragraph",
+      children: [{ type: "text", value: `:::${node.name ?? ""}` }, ...(node.children ?? [])],
+    };
+  }
+  return undefined;
+}
+
+function fireOrderAttribute(attribute: MarkdownNode): MarkdownNode[] {
+  if (attribute.value === null || attribute.value === undefined || attribute.value === true) return [];
+  if (typeof attribute.value === "string" && attribute.value.trim()) return [mdxAttribute("order", attribute.value.trim())];
+  if (isMdxExpressionValue(attribute.value)) {
+    const value = String(attribute.value.value ?? "").trim();
+    if (/^\d+$/.test(value)) return [mdxAttribute("order", value)];
+  }
+  return [];
+}
+
+function isMdxExpressionValue(value: unknown): value is { value?: unknown } {
+  return typeof value === "object" && value !== null && "value" in value;
+}
+
+function directiveAttributes(node: MarkdownNode): Record<string, string> {
+  if (!node.attributes || Array.isArray(node.attributes)) return {};
+  const result: Record<string, string> = {};
+  for (const [key, value] of Object.entries(node.attributes)) {
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+      result[key] = String(value);
+    }
+  }
+  return result;
+}
+
+function mdxElement(name: string, attributes: MarkdownNode[], children: MarkdownNode[]): MarkdownNode {
+  return {
+    type: "mdxJsxFlowElement",
+    name,
+    attributes,
+    children,
+  };
+}
+
+function toYoutubeEmbedUrl(value: string): string {
+  try {
+    const url = new URL(value);
+    const host = url.hostname.replace(/^www\./, "");
+    if (host === "youtu.be") {
+      const id = url.pathname.split("/").filter(Boolean)[0];
+      return id ? `https://www.youtube.com/embed/${id}` : value;
+    }
+    if (host === "youtube.com" || host === "m.youtube.com") {
+      if (url.pathname.startsWith("/embed/")) return value;
+      const id = url.searchParams.get("v");
+      return id ? `https://www.youtube.com/embed/${id}` : value;
+    }
+    return value;
+  } catch {
+    return value;
   }
 }
 

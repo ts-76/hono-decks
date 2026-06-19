@@ -6,7 +6,8 @@ function _createMdxContent(props) {
     li: "li",
     ul: "ul",
     ...props.components
-  }, {MotionMeter} = _components;
+  }, {Fragment, MotionMeter} = _components;
+  if (!Fragment) _missingMdxReference("Fragment", true);
   if (!MotionMeter) _missingMdxReference("MotionMeter", true);
   return _jsxs(_Fragment, {
     children: [_jsx(_components.h2, {
@@ -23,9 +24,15 @@ function _createMdxContent(props) {
         "data-fragment-order": "2",
         children: "Client island animation keeps local state."
       }), "\n"]
-    }), "\n", _jsx(MotionMeter, {
-      label: "Animation island",
-      initial: 35
+    }), "\n", _jsx("p", {
+      children: "JSX fire props are stripped before rendering."
+    }), "\n", _jsx(Fragment, {
+      order: "2",
+      effect: "scale",
+      children: _jsx(MotionMeter, {
+        label: "Animation island",
+        initial: 35
+      })
     })]
   });
 }

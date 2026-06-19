@@ -241,6 +241,77 @@ fragments: list
     }
   });
 
+  it("compiles Zenn-style embeds and fire reveal authoring syntax", async () => {
+    const cwd = await createFixture();
+
+    try {
+      await mkdir(join(cwd, "decks", "deck1", "components"), { recursive: true });
+      await writeFile(
+        join(cwd, "decks", "deck1", "components", "index.tsx"),
+        `/** @jsxImportSource hono/jsx */
+export function Badge(props: { children?: unknown }) {
+  return <strong class="badge">{props.children}</strong>;
+}
+`,
+        "utf8",
+      );
+      await writeFile(
+        join(cwd, "decks", "deck1", "deck.mdx"),
+        `---
+title: Deck One
+---
+
+---
+title: Syntax
+---
+
+@[youtube](https://www.youtube.com/watch?v=dQw4w9WgXcQ)
+
+@[x](https://x.com/honojs/status/123)
+
+@[card](https://hono.dev/docs/)
+
+:::fire
+Markdown reveal
+:::
+
+<Badge $fire={2} effect="fade-up">JSX reveal</Badge>
+
+The slide stays 16:9.
+`,
+        "utf8",
+      );
+
+      await compileDecks({
+        cwd,
+        root: "decks",
+        out: "src/generated",
+        mountPath: "/slides",
+      });
+
+      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.ts"), "utf8");
+      expect(slideOutput).toContain("EmbedFrame");
+      expect(slideOutput).toContain('provider: "youtube"');
+      expect(slideOutput).toContain('src: "https://www.youtube.com/embed/dQw4w9WgXcQ"');
+      expect(slideOutput).toContain("SocialEmbed");
+      expect(slideOutput).toContain('provider: "x"');
+      expect(slideOutput).toContain('href: "https://x.com/honojs/status/123"');
+      expect(slideOutput).toContain("LinkCard");
+      expect(slideOutput).toContain('href: "https://hono.dev/docs/"');
+      expect(slideOutput).toContain("Fragment");
+      expect(slideOutput).toContain("Markdown reveal");
+      expect(slideOutput).toContain("JSX reveal");
+      expect(slideOutput).toContain("16");
+      expect(slideOutput).toContain(":9");
+      expect(slideOutput).toContain('order: "2"');
+      expect(slideOutput).toContain('effect: "fade-up"');
+      expect(slideOutput).not.toContain("$fire");
+      expect(slideOutput).not.toContain("_components.div");
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("can import the node adapter through the package subpath", async () => {
     const mod = await import("@hono/decks/node");
 

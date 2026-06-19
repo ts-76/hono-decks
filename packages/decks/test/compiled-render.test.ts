@@ -85,6 +85,34 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("Second reveal");
   });
 
+  it("renders Fragment effects as stable fire metadata", async () => {
+    const html = await renderCompiledDeckPageAsync({
+      deck: {
+        ...deck,
+        slides: [
+          {
+            ...deck.slides[0],
+            nodes: [
+              {
+                type: "component",
+                name: "Fragment",
+                props: { order: 2, effect: "fade-up" },
+                children: [{ type: "text", value: "Animated reveal" }],
+              },
+            ],
+          },
+        ],
+      },
+      mountPath: "/slides",
+    });
+
+    expect(html).toContain("data-hono-decks-fragment");
+    expect(html).toContain('data-fragment-order="2"');
+    expect(html).toContain('data-fire-effect="fade-up"');
+    expect(html).toContain("[data-fire-effect=fade-up][data-fragment-hidden]");
+    expect(html).toContain("@media (prefers-reduced-motion: reduce)");
+  });
+
   it("renders a full page as a clean presentation surface with warnings", () => {
     const html = renderCompiledDeckPage({ deck, mountPath: "/decks" });
 
@@ -478,6 +506,42 @@ describe("compiled deck rendering", () => {
     );
     expect(html).not.toContain("platform.twitter.com/widgets.js");
     expect(html).not.toContain("twitter-tweet");
+    expect(html).not.toContain("mdx-component");
+  });
+
+  it("renders the built-in LinkCard component as a script-free link preview fallback", () => {
+    const html = renderCompiledDeckPage({
+      deck: {
+        ...deck,
+        slides: [
+          {
+            ...deck.slides[0],
+            nodes: [
+              {
+                type: "component",
+                name: "LinkCard",
+                props: {
+                  href: "https://hono.dev/docs/",
+                  title: "Hono Docs",
+                  description: "Read the Hono documentation.",
+                },
+                children: [{ type: "text", value: "Open Hono docs" }],
+              },
+            ],
+          },
+        ],
+      },
+      mountPath: "/slides",
+    });
+
+    expect(html).toContain('class="hono-decks-link-card"');
+    expect(html).toContain('data-component="LinkCard"');
+    expect(html).toContain('href="https://hono.dev/docs/"');
+    expect(html).toContain('target="_blank"');
+    expect(html).toContain('rel="noreferrer"');
+    expect(html).toContain("Hono Docs");
+    expect(html).toContain("Read the Hono documentation.");
+    expect(html).toContain("Open Hono docs");
     expect(html).not.toContain("mdx-component");
   });
 

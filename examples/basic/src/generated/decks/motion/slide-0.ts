@@ -1,7 +1,10 @@
 // @ts-nocheck
 import {Fragment as _Fragment, jsx as _jsx, jsxs as _jsxs} from "hono/jsx/jsx-runtime";
 function _createMdxContent(props) {
-  const {Fragment} = props.components || ({});
+  const _components = {
+    p: "p",
+    ...props.components
+  }, {Fragment} = _components;
   if (!Fragment) _missingMdxReference("Fragment", true);
   return _jsxs(_Fragment, {
     children: [_jsx("style", {
@@ -18,11 +21,16 @@ function _createMdxContent(props) {
       children: [_jsxs("div", {
         children: [_jsx("h1", {
           children: "Motion verification"
-        }), _jsx("p", {
-          children: "CSS animation stays inside the fixed 16:9 slide and respects reduced motion."
-        }), _jsx(Fragment, {
-          order: 1,
-          children: "The reveal state is owned by the presentation iframe."
+        }), _jsxs("p", {
+          children: ["CSS animation stays inside the fixed 16", ":9", " slide and respects reduced motion."]
+        }), _jsxs(Fragment, {
+          order: "1",
+          effect: "fade-up",
+          children: [_jsx(_components.p, {
+            children: "The reveal state is owned by the presentation iframe."
+          }), _jsx(_components.p, {
+            children: "Markdown fire blocks use Zenn-style directive syntax."
+          })]
         })]
       }), _jsx("div", {
         class: "motion-orbit",

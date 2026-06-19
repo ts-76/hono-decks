@@ -36,15 +36,9 @@ layout: media
 
 # YouTube embed
 
-<EmbedFrame
-  src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-  title="YouTube embed example"
-  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
->
-Open YouTube embed
-</EmbedFrame>
+@[youtube](https://www.youtube.com/watch?v=dQw4w9WgXcQ)
 
-Iframe embeds use lazy loading, sandbox defaults, and a fallback link.
+Zenn-style shorthand compiles to the built-in `EmbedFrame`.
 
 ---
 title: Generic Embed
@@ -70,13 +64,17 @@ layout: media
 
 # SNS fallback
 
-<SocialEmbed
-  href="https://x.com/honojs/status/123"
-  provider="x"
-  author="@honojs"
-  label="Open on X"
->
-Script-based SNS embeds stay link-first by default.
-</SocialEmbed>
+@[x](https://x.com/honojs/status/123)
 
 The package renders a script-free fallback. Apps can opt into third-party scripts and CSP rules in their own viewer routes.
+
+---
+title: Link Card
+layout: media
+---
+
+# Link card
+
+@[card](https://hono.dev/docs/)
+
+Link cards stay script-free by default and can be replaced through `theme.components`.
