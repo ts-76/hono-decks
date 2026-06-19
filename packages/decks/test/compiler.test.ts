@@ -158,6 +158,30 @@ customSlideKey: kept
     ]);
   });
 
+  it("preserves known transition and fragment frontmatter", async () => {
+    const deck = await compileMarkdown({
+      slug: "motion",
+      sourcePath: "decks/motion/deck.mdx",
+      kind: "directory",
+      markdown: `---
+title: Motion
+---
+
+---
+title: Reveal
+transition: fade
+fragments: list
+---
+
+- First
+- Second
+`,
+    });
+
+    expect(deck.slides[0].meta.transition).toBe("fade");
+    expect(deck.slides[0].meta.fragments).toBe("list");
+  });
+
   it("rejects local relative assets in single-file decks", async () => {
     await expect(
       compileMarkdown({

@@ -3,6 +3,8 @@ import {Fragment as _Fragment, jsx as _jsx, jsxs as _jsxs} from "hono/jsx/jsx-ru
 function _createMdxContent(props) {
   const _components = {
     h2: "h2",
+    li: "li",
+    ul: "ul",
     ...props.components
   }, {MotionMeter} = _components;
   if (!MotionMeter) _missingMdxReference("MotionMeter", true);
@@ -11,6 +13,16 @@ function _createMdxContent(props) {
       children: "Animation island"
     }), "\n", _jsx("p", {
       children: "Client components can own small interactive animation state with hono/jsx/dom."
+    }), "\n", _jsxs(_components.ul, {
+      children: ["\n", _jsx(_components.li, {
+        "data-hono-decks-fragment": "true",
+        "data-fragment-order": "1",
+        children: "CSS animation runs before hydration."
+      }), "\n", _jsx(_components.li, {
+        "data-hono-decks-fragment": "true",
+        "data-fragment-order": "2",
+        children: "Client island animation keeps local state."
+      }), "\n"]
     }), "\n", _jsx(MotionMeter, {
       label: "Animation island",
       initial: 35

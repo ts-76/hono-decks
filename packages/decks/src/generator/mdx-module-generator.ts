@@ -41,6 +41,9 @@ interface MarkdownNode {
   meta?: string;
   attributes?: MarkdownNode[];
   children?: MarkdownNode[];
+  data?: {
+    hProperties?: Record<string, unknown>;
+  };
 }
 
 export async function compileMdxModuleDecks(input: CompileMdxModuleDecksInput): Promise<GeneratedMdxModuleDecks> {
@@ -63,14 +66,15 @@ async function compileMdxModuleDeck(
   const componentModulePath = componentImportPath(input.outDir, input.componentModulePaths?.[entry.slug]);
   const slideModules: GeneratedSlideModule[] = [];
   const slides: CompiledDeck["slides"] = [];
+  const warnings: CompiledDeck["warnings"] = [];
 
   for (let index = 0; index < slideSources.length; index += 1) {
     const { attrs: slideAttrs, body: slideBody } = readFrontmatter(slideSources[index]);
     const slideModulePath = `${input.outDir}/decks/${entry.slug}/slide-${index}.ts`;
+    const slideMeta = toSlideFrontmatter(slideAttrs, warnings, index);
     const moduleSource = [prelude, rewriteAssetUrls(slideBody, assets)].filter(Boolean).join("\n\n");
     const rewrittenSource = rewriteRelativeMdxImports(moduleSource, dirname(entry.sourcePath), dirname(slideModulePath));
-    const code = await compileMdxModule(rewrittenSource, entry.sourcePath, index);
-    const slideMeta = toSlideFrontmatter(slideAttrs);
+    const code = await compileMdxModule(rewrittenSource, entry.sourcePath, index, slideMeta.fragments);
 
     slideModules.push({
       path: slideModulePath,
@@ -96,13 +100,18 @@ async function compileMdxModuleDeck(
       meta: toDeckFrontmatter(attrs),
       slides,
       assets,
-      warnings: [],
+      warnings,
     },
     slideModules,
   };
 }
 
-async function compileMdxModule(source: string, sourcePath: string, slideIndex: number): Promise<string> {
+async function compileMdxModule(
+  source: string,
+  sourcePath: string,
+  slideIndex: number,
+  fragments: SlideFrontmatter["fragments"],
+): Promise<string> {
   try {
     const compiled = String(
       await compile(
@@ -112,7 +121,7 @@ async function compileMdxModule(source: string, sourcePath: string, slideIndex: 
           jsxImportSource: "hono/jsx",
           format: "mdx",
           elementAttributeNameCase: "html",
-          remarkPlugins: [remarkCodeHighlight],
+          remarkPlugins: [remarkListFragments(fragments), remarkCodeHighlight],
         },
       ),
     );
@@ -124,6 +133,39 @@ async function compileMdxModule(source: string, sourcePath: string, slideIndex: 
       "mdx-compile-error",
     );
   }
+}
+
+function remarkListFragments(fragments: SlideFrontmatter["fragments"]) {
+  return () => (tree: MarkdownNode) => {
+    if (fragments !== "list") return;
+    markTopLevelListFragments(tree);
+  };
+}
+
+function markTopLevelListFragments(root: MarkdownNode): void {
+  let order = 1;
+
+  function visit(node: MarkdownNode, listDepth: number): void {
+    const nextListDepth = node.type === "list" ? listDepth + 1 : listDepth;
+    if (!Array.isArray(node.children)) return;
+
+    for (const child of node.children) {
+      if (child.type === "listItem" && nextListDepth === 1) {
+        child.data = {
+          ...child.data,
+          hProperties: {
+            ...child.data?.hProperties,
+            "data-hono-decks-fragment": "true",
+            "data-fragment-order": String(order),
+          },
+        };
+        order += 1;
+      }
+      visit(child, nextListDepth);
+    }
+  }
+
+  visit(root, 0);
 }
 
 function remarkCodeHighlight() {
@@ -264,7 +306,7 @@ function emitDeckObject(deck: GeneratedModuleDeck): string {
           ? `withClientComponentIds(${componentImportName(deck.deck.slug)}, ${serializeValue(deck.clientComponentIds ?? {}, 3)})`
           : "{}"
       },
-      warnings: [],
+      warnings: ${serializeValue(deck.deck.warnings, 3)},
       slides: [
 ${deck.deck.slides
   .map(
@@ -480,7 +522,11 @@ function toDeckFrontmatter(attrs: Record<string, unknown>): DeckFrontmatter {
   };
 }
 
-function toSlideFrontmatter(attrs: Record<string, unknown>): SlideFrontmatter {
+function toSlideFrontmatter(
+  attrs: Record<string, unknown>,
+  warnings: CompiledDeck["warnings"],
+  slideIndex: number,
+): SlideFrontmatter {
   const meta = { ...attrs };
   return {
     title: takeString(meta, "title"),
@@ -488,7 +534,8 @@ function toSlideFrontmatter(attrs: Record<string, unknown>): SlideFrontmatter {
     className: takeString(meta, "class"),
     notes: takeString(meta, "notes"),
     background: takeString(meta, "background"),
-    transition: takeString(meta, "transition"),
+    transition: takeKnownFrontmatter(meta, "transition", ["none", "fade", "slide", "zoom"], "none", warnings, slideIndex, "unknown-transition"),
+    fragments: takeKnownFrontmatter(meta, "fragments", ["none", "manual", "list"], "none", warnings, slideIndex, "unknown-fragments"),
     meta,
   };
 }
@@ -503,6 +550,27 @@ function takeBoolean(source: Record<string, unknown>, key: string): boolean | un
   const value = source[key];
   delete source[key];
   return typeof value === "boolean" ? value : undefined;
+}
+
+function takeKnownFrontmatter<const T extends string>(
+  source: Record<string, unknown>,
+  key: string,
+  values: readonly T[],
+  fallback: T,
+  warnings: CompiledDeck["warnings"],
+  slideIndex: number,
+  code: string,
+): T | undefined {
+  const value = source[key];
+  delete source[key];
+  if (value === undefined) return undefined;
+  if (typeof value === "string" && values.includes(value as T)) return value as T;
+  warnings.push({
+    code,
+    message: `Unknown ${key} value "${String(value)}"; using ${fallback}.`,
+    slideIndex,
+  });
+  return fallback;
 }
 
 function serializeValue(value: unknown, depth: number): string {

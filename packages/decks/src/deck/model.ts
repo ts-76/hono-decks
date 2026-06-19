@@ -4,6 +4,9 @@ import type { SlideNode } from "../shared/types";
 
 export type DeckKind = "directory" | "single-file";
 
+export type SlideTransition = "none" | "fade" | "slide" | "zoom";
+export type SlideFragmentsMode = "none" | "manual" | "list";
+
 export interface DeckFrontmatter {
   title?: string;
   description?: string;
@@ -23,7 +26,8 @@ export interface SlideFrontmatter {
   className?: string;
   notes?: string;
   background?: string;
-  transition?: string;
+  transition?: SlideTransition;
+  fragments?: SlideFragmentsMode;
   meta: Record<string, unknown>;
 }
 

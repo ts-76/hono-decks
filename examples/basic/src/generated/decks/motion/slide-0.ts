@@ -1,6 +1,8 @@
 // @ts-nocheck
 import {Fragment as _Fragment, jsx as _jsx, jsxs as _jsxs} from "hono/jsx/jsx-runtime";
 function _createMdxContent(props) {
+  const {Fragment} = props.components || ({});
+  if (!Fragment) _missingMdxReference("Fragment", true);
   return _jsxs(_Fragment, {
     children: [_jsx("style", {
       children: `
@@ -18,6 +20,9 @@ function _createMdxContent(props) {
           children: "Motion verification"
         }), _jsx("p", {
           children: "CSS animation stays inside the fixed 16:9 slide and respects reduced motion."
+        }), _jsx(Fragment, {
+          order: 1,
+          children: "The reveal state is owned by the presentation iframe."
         })]
       }), _jsx("div", {
         class: "motion-orbit",
@@ -37,4 +42,7 @@ export default function MDXContent(props = {}) {
       ...props
     })
   }) : _createMdxContent(props);
+}
+function _missingMdxReference(id, component) {
+  throw new Error("Expected " + (component ? "component" : "object") + " `" + id + "` to be defined: you likely forgot to import, pass, or provide it.");
 }

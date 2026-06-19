@@ -52,8 +52,8 @@ R2 official sample direction is still open. The current package API supports bin
 | --- | --- | --- | --- |
 | In-slide CSS animation | CSS animation in slide content | done | `examples/basic/decks/motion` covers CSS animation, `prefers-reduced-motion`, and viewport smoke coverage. |
 | In-slide client animation | `hono/jsx/dom` island animation | done | `examples/basic/decks/motion` covers a deck-local client island animation component and generated client registry wiring. |
-| Slide transition | `transition` frontmatter | design | Design contract is documented in [Slide Dynamics](./slide-dynamics.md); implementation plan is in `docs/superpowers/plans/2026-06-19-slide-transitions-fragments.md`. |
-| Fragment / step display | Progressive reveal for bullets or blocks | design | Design contract covers explicit `<Fragment />`, `fragments: list`, iframe-owned step state, and viewer state updates. |
+| Slide transition | `transition` frontmatter | done | Known transition values are typed, validated during module generation, emitted as `data-transition`, and covered by package/sample tests. |
+| Fragment / step display | Progressive reveal for bullets or blocks | done | Explicit `<Fragment />`, `fragments: list`, iframe-owned step state, and viewer step display are covered by package/sample tests. |
 | Keyboard navigation | Arrow keys, space, fullscreen | done | Current viewer/render scripts cover the core path; keep route tests and add browser smoke later. |
 | Touch navigation | Tap/swipe on mobile | done | Package tests cover pointer swipe command wiring; `bun run smoke:viewport` verifies browser-side pointer swipe dispatch. Real device touch can still be manually checked before release. |
 
@@ -106,7 +106,7 @@ R2 official sample direction is still open. The current package API supports bin
 - `examples/basic/decks/sample`: keep this as the small happy-path deck for MDX, server components, client islands, local asset routing, viewer pages, and R2 binding fallback.
 - `examples/basic/decks/media`: local JSX, remote image, YouTube `EmbedFrame`, generic iframe, and SNS `SocialEmbed` fallback examples exist.
 - `examples/basic/decks/code`: fenced code, built-in `CodeBlock`, and build-time Shiki highlighting examples exist.
-- `examples/basic/decks/motion`: CSS animation and client island animation examples exist; use it for future transition and fragment/step behavior once the runtime supports them.
+- `examples/basic/decks/motion`: CSS animation, client island animation, slide transition, explicit fragment, and list fragment examples exist.
 
 ## Verification Commands
 

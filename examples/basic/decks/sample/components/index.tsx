@@ -1,13 +1,9 @@
-import { createCssContext } from "hono/css";
+/** @jsxImportSource hono/jsx */
+
 import type { SlideComponentProps } from "@hono/decks";
 
-const { css, Style } = createCssContext({
-  id: "sample-deck",
-  classNameSlug: (hash, label) => label || hash,
-});
-
-const badgeClass = css`
-  /* sample-badge */
+const componentStyle = `
+.sample-badge {
   display: inline-flex;
   margin-top: 1rem;
   padding: .35rem .6rem;
@@ -15,18 +11,9 @@ const badgeClass = css`
   background: #dff7ff;
   color: #062633;
   font-weight: 700;
-`;
-
-export function Badge(props: SlideComponentProps) {
-  return (
-    <>
-      <Style />
-      <p class={badgeClass}>{String(props.label)}</p>
-    </>
-  );
 }
 
-const counterClass = css`
+.sample-counter {
   display: inline-grid;
   grid-template-columns: auto auto;
   gap: .5rem;
@@ -36,7 +23,17 @@ const counterClass = css`
   border: 1px solid rgba(223, 247, 255, .48);
   border-radius: 8px;
   background: rgba(223, 247, 255, .12);
+}
 `;
+
+export function Badge(props: SlideComponentProps) {
+  return (
+    <>
+      <style id="sample-deck-components">{componentStyle}</style>
+      <p class="sample-badge">{String(props.label)}</p>
+    </>
+  );
+}
 
 export const Counter = {
   client: true,
@@ -45,8 +42,8 @@ export const Counter = {
     const initial = typeof props.initial === "number" ? props.initial : 0;
 
     return (
-      <div class={counterClass} data-sample-counter>
-        <Style />
+      <div class="sample-counter" data-sample-counter>
+        <style id="sample-deck-components">{componentStyle}</style>
         <span>{label}</span>
         <button type="button" data-sample-counter-button>
           {initial}
