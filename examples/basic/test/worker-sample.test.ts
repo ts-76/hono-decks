@@ -150,11 +150,14 @@ describe("sample Worker app", () => {
     expect(html).toContain('cite="https://x.com/honojs/status/123"');
     expect(html).toContain('href="https://x.com/honojs/status/123"');
     expect(html).toContain("Open on X");
+    expect(html).toContain('class="hono-decks-tweet-embed"');
+    expect(html).toContain('data-component="TweetEmbed"');
+    expect(html).toContain('class="twitter-tweet"');
+    expect(html).toContain('href="https://x.com/honojs/status/1659577874821836801?s=20" target="_blank" rel="noreferrer"');
+    expect(html).toContain('src="https://platform.twitter.com/widgets.js"');
     expect(html).toContain('class="hono-decks-link-card"');
     expect(html).toContain('href="https://hono.dev/docs/"');
     expect(html).toContain("https://hono.dev/docs/");
-    expect(html).not.toContain("platform.twitter.com/widgets.js");
-    expect(html).not.toContain("twitter-tweet");
   });
 
   it("renders code blocks with build-time Shiki highlighting and overflow styles", async () => {

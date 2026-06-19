@@ -187,6 +187,9 @@ function zennEmbedNode(node: MarkdownNode): MarkdownNode | undefined {
       [],
     );
   }
+  if (name === "x-post") {
+    return mdxElement("TweetEmbed", [mdxAttribute("href", link.url), mdxAttribute("label", "Open post on X")], []);
+  }
   if (name === "card") {
     return mdxElement("LinkCard", [mdxAttribute("href", link.url)], []);
   }

@@ -508,7 +508,43 @@ describe("compiled deck rendering", () => {
       '<a href="https://x.com/honojs/status/123" target="_blank" rel="noreferrer">Open on X</a>',
     );
     expect(html).not.toContain("platform.twitter.com/widgets.js");
-    expect(html).not.toContain("twitter-tweet");
+    expect(html).not.toContain('data-component="TweetEmbed"');
+    expect(html).not.toContain('<blockquote class="twitter-tweet"');
+    expect(html).not.toContain("mdx-component");
+  });
+
+  it("renders the built-in TweetEmbed component with official embed markup", () => {
+    const href = "https://x.com/honojs/status/1659577874821836801?s=20";
+    const html = renderCompiledDeckPage({
+      deck: {
+        ...deck,
+        slides: [
+          {
+            ...deck.slides[0],
+            nodes: [
+              {
+                type: "component",
+                name: "TweetEmbed",
+                props: {
+                  href,
+                  label: "Open post on X",
+                },
+                children: [],
+              },
+            ],
+          },
+        ],
+      },
+      mountPath: "/slides",
+    });
+
+    expect(html).toContain('class="hono-decks-tweet-embed"');
+    expect(html).toContain('data-component="TweetEmbed"');
+    expect(html).toContain('class="twitter-tweet"');
+    expect(html).toContain('data-dnt="true"');
+    expect(html).toContain(`<a href="${href}" target="_blank" rel="noreferrer">Open post on X</a>`);
+    expect(html).toContain('src="https://platform.twitter.com/widgets.js"');
+    expect(html).toContain("async");
     expect(html).not.toContain("mdx-component");
   });
 

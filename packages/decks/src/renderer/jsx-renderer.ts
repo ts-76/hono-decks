@@ -168,6 +168,36 @@ export const builtInSlideComponents = defineSlideComponents({
       }),
     });
   },
+  TweetEmbed: (props) => {
+    const href = stringProp(props.href ?? props.url);
+    const label = stringProp(props.label) ?? "Open post on X";
+
+    return jsx("figure", {
+      class: "hono-decks-tweet-embed",
+      "data-component": "TweetEmbed",
+      children: [
+        jsx("blockquote", {
+          class: "twitter-tweet",
+          "data-dnt": "true",
+          children: href
+            ? jsx("a", {
+                href,
+                target: "_blank",
+                rel: "noreferrer",
+                children: label,
+              })
+            : label,
+        }),
+        href
+          ? jsx("script", {
+              async: true,
+              src: "https://platform.twitter.com/widgets.js",
+              charset: "utf-8",
+            })
+          : "",
+      ],
+    });
+  },
   LinkCard: (props) => {
     const href = stringProp(props.href ?? props.url);
     const title = stringProp(props.title) ?? href ?? "Link";
