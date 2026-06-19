@@ -9,9 +9,12 @@ import Slide_media_1 from "./decks/media/slide-1";
 import Slide_media_2 from "./decks/media/slide-2";
 import Slide_media_3 from "./decks/media/slide-3";
 import Slide_media_4 from "./decks/media/slide-4";
+import Slide_motion_0 from "./decks/motion/slide-0";
+import Slide_motion_1 from "./decks/motion/slide-1";
 import Slide_sample_0 from "./decks/sample/slide-0";
 import Slide_sample_1 from "./decks/sample/slide-1";
 import Slide_sample_2 from "./decks/sample/slide-2";
+import * as Components_motion from "../../decks/motion/components";
 import * as Components_sample from "../../decks/sample/components";
 
 function withClientComponentIds(module, clientIds) {
@@ -151,6 +154,47 @@ export const decks = defineDecks({
           components: [],
           notes: undefined,
           render: Slide_media_4
+        }
+      ]
+    },
+    {
+      slug: "motion",
+      sourcePath: "decks/motion/deck.mdx",
+      kind: "directory",
+      meta: {
+        "title": "Motion Verification",
+        "description": "CSS and client island animation checks for @hono/decks",
+        "meta": {}
+      },
+      assets: [],
+      componentRegistry: withClientComponentIds(Components_motion, {
+        "MotionMeter": "MotionMeter__motion_11bl0b8"
+      }),
+      warnings: [],
+      slides: [
+        {
+          index: 0,
+          meta: {
+            "title": "CSS Animation",
+            "layout": "motion",
+            "meta": {}
+          },
+          html: "",
+          components: [],
+          notes: undefined,
+          render: Slide_motion_0
+        },
+        {
+          index: 1,
+          meta: {
+            "title": "Client Island Animation",
+            "layout": "motion",
+            "meta": {}
+          },
+          html: "",
+          components: [],
+          notes: undefined,
+          render: Slide_motion_1
         }
       ]
     },

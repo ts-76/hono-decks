@@ -50,8 +50,8 @@ R2 official sample direction is still open. The current package API supports bin
 
 | Area | Case | Status | Notes |
 | --- | --- | --- | --- |
-| In-slide CSS animation | CSS animation in slide content | sample | Verify `prefers-reduced-motion` and no layout shift in fixed viewport. |
-| In-slide client animation | `hono/jsx/dom` island animation | sample | Verify island hydration and state updates continue to work inside slides. |
+| In-slide CSS animation | CSS animation in slide content | done | `examples/basic/decks/motion` covers CSS animation, `prefers-reduced-motion`, and viewport smoke coverage. |
+| In-slide client animation | `hono/jsx/dom` island animation | done | `examples/basic/decks/motion` covers a deck-local client island animation component and generated client registry wiring. |
 | Slide transition | `transition` frontmatter | design | Package should parse and apply known transitions rather than leaving the value unused. |
 | Fragment / step display | Progressive reveal for bullets or blocks | design | Needs data model and keyboard/touch interaction semantics. |
 | Keyboard navigation | Arrow keys, space, fullscreen | done | Current viewer/render scripts cover the core path; keep route tests and add browser smoke later. |
@@ -97,8 +97,8 @@ R2 official sample direction is still open. The current package API supports bin
 | Heading order | Deck index, viewer, render document, details pages | done | Package tests cover the deck index heading, standard viewer heading, and slide labels; sample layout checks keep details/embed pages rendered through app-owned layouts. |
 | Iframe title | Viewer frame and custom embed frame | done | Current viewer frame and `EmbedFrame` include titles; keep this in custom components. |
 | Reduced motion | Viewer transitions and in-slide animation | done | Standard viewer and presentation documents include `prefers-reduced-motion` CSS guards; feature-specific animation samples should keep using the same media query. |
-| Fixed 16:9 scaling | Desktop and mobile viewports | done | Package tests cover parent-sized iframe viewer and internal 1920x1080 scaling; `bun run smoke:viewport` captures desktop/mobile screenshots for sample, code, and media decks. |
-| Responsive content | Long text, images, code blocks | smoke | `bun run smoke:viewport` captures sample, code, and media deck screenshots; add more stress content when layout/theme APIs settle. |
+| Fixed 16:9 scaling | Desktop and mobile viewports | done | Package tests cover parent-sized iframe viewer and internal 1920x1080 scaling; `bun run smoke:viewport` captures desktop/mobile screenshots for sample, code, media, and motion decks. |
+| Responsive content | Long text, images, code blocks, motion content | smoke | `bun run smoke:viewport` captures sample, code, media, and motion deck screenshots; add more stress content as official examples grow. |
 | Color contrast | Default viewer controls and sample theme | done | `bun run smoke:viewport` checks default viewer control contrast against the page background. |
 
 ## Suggested Next Sample Decks
@@ -106,7 +106,7 @@ R2 official sample direction is still open. The current package API supports bin
 - `examples/basic/decks/sample`: keep this as the small happy-path deck for MDX, server components, client islands, local asset routing, viewer pages, and R2 binding fallback.
 - `examples/basic/decks/media`: local JSX, remote image, YouTube `EmbedFrame`, generic iframe, and SNS `SocialEmbed` fallback examples exist.
 - `examples/basic/decks/code`: fenced code, built-in `CodeBlock`, and build-time Shiki highlighting examples exist.
-- `examples/basic/decks/motion`: add CSS animation, client island animation, transitions, and fragment/step behavior once the runtime supports it.
+- `examples/basic/decks/motion`: CSS animation and client island animation examples exist; use it for future transition and fragment/step behavior once the runtime supports them.
 
 ## Verification Commands
 

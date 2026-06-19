@@ -10,7 +10,7 @@ describe("sample Worker app", () => {
   it("uses a generated module-backed deck source", async () => {
     const entries = await decks.source.listDecks({} as never);
 
-    expect(entries).toHaveLength(3);
+    expect(entries).toHaveLength(4);
     expect(entries[0]).toMatchObject({
       slug: "code",
       sourcePath: "decks/code/deck.mdx",
@@ -20,6 +20,10 @@ describe("sample Worker app", () => {
       sourcePath: "decks/media/deck.mdx",
     });
     expect(entries[2]).toMatchObject({
+      slug: "motion",
+      sourcePath: "decks/motion/deck.mdx",
+    });
+    expect(entries[3]).toMatchObject({
       slug: "sample",
       sourcePath: "decks/sample/deck.mdx",
     });
@@ -164,6 +168,23 @@ describe("sample Worker app", () => {
     expect(html).toContain(".slide code{font-family:");
   });
 
+  it("renders motion examples with CSS animation and client island animation hooks", async () => {
+    const app = await sampleApp();
+    const response = await app.request("/decks/motion/render");
+
+    expect(response.status).toBe(200);
+    const html = await response.text();
+    expect(html).toContain("<h1>Motion verification</h1>");
+    expect(html).toContain('class="motion-orbit"');
+    expect(html).toContain("animation:hono-decks-motion-orbit");
+    expect(html).toContain("@keyframes hono-decks-motion-orbit");
+    expect(html).toContain("@media (prefers-reduced-motion: reduce)");
+    expect(html).toMatch(/data-hono-decks-island="MotionMeter__motion_[a-z0-9]+"/);
+    expect(html).toContain("data-motion-meter");
+    expect(html).toContain("Animation island");
+    expect(html).toContain('<script type="module" src="/decks/_assets/client.js"></script>');
+  });
+
   it("serves generated local assets for the media deck", async () => {
     const app = await sampleApp();
     const response = await app.request("/decks/media/assets/local-jsx.svg");
@@ -184,9 +205,12 @@ describe("sample Worker app", () => {
     const js = await response.text();
     expect(js).toContain('querySelectorAll("[data-hono-decks-island]")');
     expect(js).toContain("function Counter");
+    expect(js).toContain("function MotionMeter");
     expect(js).toMatch(/Counter__sample_[a-z0-9]+/);
+    expect(js).toMatch(/MotionMeter__motion_[a-z0-9]+/);
     expect(js).toContain("useState");
     expect(js).toContain("data-sample-counter-button");
+    expect(js).toContain("data-motion-meter-button");
     expect(js).toContain("onClick");
   });
 
