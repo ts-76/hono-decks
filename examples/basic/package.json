@@ -6,6 +6,7 @@
     "decks:compile": "bun run --cwd ../../packages/decks build && node ../../packages/decks/dist/bin.js compile --root decks --out src/generated --mount /decks",
     "dev": "bun run decks:compile && wrangler dev",
     "deploy": "bun run decks:compile && wrangler deploy",
+    "smoke:pdf": "node scripts/pdf-smoke.mjs",
     "smoke:r2-cache": "node scripts/deployed-r2-cache-smoke.mjs",
     "smoke:viewport": "node scripts/viewport-smoke.mjs",
     "typecheck": "bun run decks:compile && tsc --noEmit",

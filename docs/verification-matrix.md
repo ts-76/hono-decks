@@ -67,8 +67,8 @@ R2 official sample direction is still open. The current package API supports bin
 | --- | --- | --- | --- |
 | Presenter notes | `notes` frontmatter or slide notes block | design | Model exists partially; speaker-view behavior still needs an API and route. |
 | Speaker view | Separate presenter route/window | design | Needs state sync with the main presentation and clear public/private route boundaries. |
-| Print view | Browser print stylesheet | sample | Verify each slide paginates predictably. |
-| PDF export | Print-to-PDF compatible output | smoke | Should be validated visually, not only via HTML assertions. |
+| Print view | Browser print stylesheet | done | Package tests assert a print stylesheet that renders all slides as 16:9 pages and forces all fragments visible. |
+| PDF export | Print-to-PDF compatible output | smoke | `examples/basic` includes `smoke:pdf`, which starts `wrangler dev`, saves sample/motion render pages to PDF, and checks page counts. Visual PDF inspection remains a release checklist item. |
 | Theme switching | Deck-level theme | done | `DeckTheme` now supports trusted `style`, `components`, and `layouts`; route `style` applies after `theme.style`, while `viewer.head` stays viewer-shell only. |
 | Layout switching | Slide `layout` frontmatter | done | `theme.layouts[layout]` can wrap compiled MDX output, with package `layout-*` classes preserved as fallback. |
 
@@ -128,4 +128,4 @@ bun run --cwd examples/basic check
 
 Deployed cache and browser behavior need separate smoke checks after `wrangler deploy`, especially for R2 cache headers, `cf-cache-status`, mobile/touch navigation, and PDF/print output. For deployed R2 checks, see [Deployed R2 Cache Smoke](./deployed-r2-cache-smoke.md).
 
-Local browser viewport smoke checks are documented in [Browser Smoke Checks](./browser-smoke.md).
+Local browser viewport smoke checks are documented in [Browser Smoke Checks](./browser-smoke.md). Local print-to-PDF smoke checks are documented in [PDF Smoke Checks](./pdf-smoke.md).

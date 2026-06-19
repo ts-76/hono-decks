@@ -168,18 +168,23 @@ Rationale: speaker view is important for real presentations but is a larger work
 
 ### 11. Print And PDF Export
 
-Verify:
+Implemented:
 
 - Print stylesheet
 - One slide per page
-- PDF export visual output
-- Asset and code block rendering in print/PDF
+- PDF generation smoke for the sample and motion render pages
+
+Follow-up:
+
+- Visual PDF output inspection with rendered page images
+- Asset and code block rendering checks in print/PDF
+- Optional export command if the package should own PDF generation rather than documenting browser print
 
 Rationale: PDF output should be validated visually, not only through HTML assertions. It depends on stable layout, asset, and theme behavior.
 
 ## Recommended Next Steps
 
-1. Run the deployed R2/cache smoke check against the Worker target once a `tslab.app` URL and R2 bucket binding are available.
+1. Add visual PDF inspection using rendered page images when Poppler or an equivalent PDF renderer is available in CI.
 2. Add richer transition direction hooks when the presentation animation contract needs forward/backward-specific styling.
 
 Keep `examples/basic/decks/sample` small. It should remain the happy-path deck for MDX expressions, deck-local server components, client islands, viewer pages, and R2 binding fallback. Use `examples/basic/decks/motion` for animation, transition, and fragment experiments.

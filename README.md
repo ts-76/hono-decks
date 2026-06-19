@@ -287,7 +287,7 @@ examples/basic/
 
 `dev`、`typecheck`、`test`、`deploy` は事前に `bun run decks:compile` を実行し、`decks/*/deck.mdx` から `src/generated/decks.ts` と slide module 群を更新します。sample や motion のように deck-local な `components/client/index.tsx` を持つ deck は browser bundle 化されて `src/generated/client-entry.ts` に埋め込まれ、`client: true` component を `hono/jsx/dom` で hydrate します。Worker runtime は生成済み router/client asset を import するだけで、file system の読み取りは build-time CLI に閉じています。
 
-今後 sample で検証する media、embed、code block、animation、accessibility、export などの項目は [Verification Matrix](docs/verification-matrix.md) にまとめています。transition と fragment/step navigation の設計は [Slide Dynamics](docs/slide-dynamics.md) に切り出しています。desktop/mobile の viewer framing は `agent-browser` を使う [Browser Smoke Checks](docs/browser-smoke.md) でも確認できます。
+今後 sample で検証する media、embed、code block、animation、accessibility、export などの項目は [Verification Matrix](docs/verification-matrix.md) にまとめています。transition と fragment/step navigation の設計は [Slide Dynamics](docs/slide-dynamics.md) に切り出しています。desktop/mobile の viewer framing は `agent-browser` を使う [Browser Smoke Checks](docs/browser-smoke.md) で、print-to-PDF は [PDF Smoke Checks](docs/pdf-smoke.md) で確認できます。
 
 ```bash
 bun run --cwd examples/basic dev
@@ -295,6 +295,10 @@ bun run --cwd examples/basic dev
 
 ```bash
 bun run smoke:viewport
+```
+
+```bash
+bun run smoke:pdf
 ```
 
 起動後は次の route を確認できます。
