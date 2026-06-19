@@ -321,6 +321,8 @@ body[data-overview-mode] .hono-decks-deck{grid-template-columns:repeat(auto-fit,
 body[data-overview-mode] .slide{cursor:pointer}
 body[data-presenter-mode] .speaker-notes{display:block;margin-top:1rem;padding:.75rem;border-radius:8px;background:rgba(255,255,255,.08)}
 .hono-decks-warnings{margin:1rem;padding:.75rem;border-radius:14px;background:rgba(255,193,7,.12);color:#ffe59b}
+@page{size:16in 9in;margin:0}
+@media print{:root{background:#fff;color:#000}html,body{width:auto;height:auto;overflow:visible;background:#fff}.hono-decks-stage{display:block;width:auto;height:auto;overflow:visible;background:transparent}.hono-decks-deck{display:block;width:auto;height:auto;gap:0;transform:none!important}.slide{width:16in;height:9in;page-break-after:always;break-after:page;box-shadow:none}body:not([data-overview-mode]) .slide[hidden]{display:block!important}[data-hono-decks-fragment]{visibility:visible!important;opacity:1!important;transform:none!important}}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}}`;
 }
 

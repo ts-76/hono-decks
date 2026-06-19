@@ -188,6 +188,21 @@ describe("compiled deck rendering", () => {
     expect(html).not.toContain("html,body{margin:0;width:var(--hono-decks-width);height:var(--hono-decks-height)");
   });
 
+  it("prints every slide as a 16:9 page with all fragments visible", () => {
+    const html = renderCompiledDeckPage({ deck, mountPath: "/decks" });
+
+    expect(html).toContain("@page{size:16in 9in;margin:0}");
+    expect(html).toContain("@media print{");
+    expect(html).toContain("html,body{width:auto;height:auto;overflow:visible;background:#fff}");
+    expect(html).toContain(".hono-decks-stage{display:block;width:auto;height:auto;overflow:visible;background:transparent}");
+    expect(html).toContain(".hono-decks-deck{display:block;width:auto;height:auto;gap:0;transform:none!important}");
+    expect(html).toContain(".slide{width:16in;height:9in;page-break-after:always;break-after:page;box-shadow:none}");
+    expect(html).toContain("body:not([data-overview-mode]) .slide[hidden]{display:block!important}");
+    expect(html).toContain(
+      "[data-hono-decks-fragment]{visibility:visible!important;opacity:1!important;transform:none!important}",
+    );
+  });
+
   it("rewrites local relative asset image sources to manifest public paths", () => {
     const html = renderCompiledDeckPage({
       deck: {
