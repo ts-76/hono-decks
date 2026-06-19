@@ -63,7 +63,7 @@ export type {
 } from "./source/r2-assets";
 export { resolveDeckFiles } from "./routing/file-routing";
 export type { ResolvedDeckFile } from "./routing/file-routing";
-export { CompileError } from "./deck/model";
+export { CompileError, RenderError } from "./deck/model";
 export type {
   AssetRef,
   CompileDeckInput,

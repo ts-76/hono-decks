@@ -78,7 +78,7 @@ R2 official sample direction is still open. The current package API supports bin
 | Draft deck | Production hides draft deck | done | Router tests cover production vs dev behavior. |
 | Draft slide | Per-slide draft behavior | design | Needs a clear rule: remove from deck, hide in viewer, or show only in dev. |
 | Compile errors | File/slide context in CLI output | done | CLI tests cover MDX compile failures with `MDX compile failed`, deck source path, and slide index in stderr. |
-| Runtime render errors | Clear 500 or slide error UI | design | Decide whether the package catches render errors per slide or lets Hono handle them. |
+| Runtime render errors | Clear 500 or slide error UI | done | Router tests cover slide render failures returning a 500 text response with deck source path and slide index. |
 
 ## Component Contracts
 

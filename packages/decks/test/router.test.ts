@@ -144,6 +144,28 @@ describe("decksRouter", () => {
     expect(html).not.toContain('data-hono-decks-controls');
   });
 
+  it("returns a clear 500 response when a compiled slide render fails", async () => {
+    const failingDeck = {
+      ...deck,
+      slides: [
+        {
+          ...deck.slides[0],
+          render: () => {
+            throw new Error("badge exploded");
+          },
+        },
+      ],
+    } satisfies CompiledDeck;
+    const app = new Hono();
+    app.route("/slides", decksRouter({ source: manifestDeckSource({ decks: [failingDeck] }) }));
+
+    const response = await app.request("/slides/deck1/render");
+
+    expect(response.status).toBe(500);
+    expect(response.headers.get("content-type")).toContain("text/plain");
+    expect(await response.text()).toContain("Render failed in decks/deck1/deck.mdx slide 1: badge exploded");
+  });
+
   it("passes Hono JSX slide components and client entrypoint to render routes", async () => {
     const componentDeck = {
       ...deck,

@@ -3,6 +3,7 @@ import type { Context, MiddlewareHandler } from "hono";
 import { jsx } from "hono/jsx/jsx-runtime";
 import { renderCompiledDeckPageAsync } from "../renderer/compiled-render";
 import { renderJsxValue } from "../renderer/jsx-renderer";
+import { RenderError } from "../deck/model";
 import type { CompiledDeck, DeckSource } from "../deck/model";
 import type { DeckRenderable, MaybePromise } from "../renderer/compiled-render";
 import type { SlideComponentInput, SlideComponentRegistry } from "../renderer/compiled-render";
@@ -114,16 +115,22 @@ export function decksRouter(options: DecksRouterOptions): Hono {
     if (!deck || (!isDevEnabled(options) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
     const mountPath = stripPathSuffix(c.req.path, `/${slug}/render`);
     const clientEntry = options.clientEntry ?? resolveGeneratedClientEntryUrl(options, mountPath);
-    return c.html(
-      await renderCompiledDeckPageAsync({
-        deck,
-        mountPath,
-        style: options.style,
-        components: options.components,
-        clientEntry,
-        liveReloadPath: isDevEnabled(options) ? options.liveReloadPath?.(slug, mountPath) : undefined,
-      }),
-    );
+    try {
+      return c.html(
+        await renderCompiledDeckPageAsync({
+          deck,
+          mountPath,
+          style: options.style,
+          components: options.components,
+          clientEntry,
+          liveReloadPath: isDevEnabled(options) ? options.liveReloadPath?.(slug, mountPath) : undefined,
+        }),
+      );
+    } catch (error) {
+      const message =
+        error instanceof RenderError ? error.message : `Render failed in ${deck.sourcePath}: ${formatErrorMessage(error)}`;
+      return c.text(message, 500);
+    }
   });
 
   router.get("/:slug/presentation", async (c) => {
@@ -455,4 +462,9 @@ function renderViewerScript(): string {
 
 function escapeHtml(value: string): string {
   return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+}
+
+function formatErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
 }

@@ -494,5 +494,6 @@ const unclosed = true;`,
     const mod = await import("../src/mod");
     expect(typeof mod.compileMarkdown).toBe("function");
     expect(typeof mod.CompileError).toBe("function");
+    expect(typeof mod.RenderError).toBe("function");
   });
 });

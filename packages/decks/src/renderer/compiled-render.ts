@@ -1,3 +1,4 @@
+import { RenderError } from "../deck/model";
 import type { AssetRef, CompiledDeck, CompiledSlide } from "../deck/model";
 import {
   builtInSlideComponents,
@@ -42,7 +43,7 @@ export async function renderCompiledDeckAsync(
 ): Promise<string> {
   const components = normalizeComponents(input.components);
   const slides = await Promise.all(
-    deck.slides.map((slide) => renderCompiledSlideAsync(slide, deck.assets, { components })),
+    deck.slides.map((slide) => renderCompiledSlideAsync(slide, deck.assets, { components, deck })),
   );
   return `<main class="hono-decks-stage" data-hono-decks-stage data-deck-slug="${escapeHtml(deck.slug)}"><div class="hono-decks-deck" data-hono-decks-deck>${slides.join(
     "\n",
@@ -76,6 +77,7 @@ export async function renderCompiledSlideAsync(
   assets: AssetRef[] = [],
   input: {
     components?: SlideComponentRegistry;
+    deck?: Pick<CompiledDeck, "sourcePath">;
   } = {},
 ): Promise<string> {
   const layout = slide.meta.layout ?? "default";
@@ -84,15 +86,37 @@ export async function renderCompiledSlideAsync(
     .join(" ");
   const notes = slide.notes ?? slide.meta.notes;
   const notesHtml = notes ? `<aside class="speaker-notes" hidden>${escapeHtml(notes)}</aside>` : "";
-  const html = slide.render
-    ? await renderJsxValue(slide.render({ components: createMdxComponents(input.components ?? builtInSlideComponents, { assets }) }))
-    : slide.nodes?.length
-      ? await renderSlideNodesAsync(slide.nodes, { components: input.components, assets })
-      : rewriteLocalAssetUrls(slide.html, assets);
+  const html = await renderSlideBodyAsync(slide, assets, input);
   const style = slide.meta.background ? ` style="${escapeHtml(backgroundStyle(slide.meta.background, assets))}"` : "";
   const transition = slide.meta.transition ? ` data-transition="${escapeHtml(safeClass(slide.meta.transition))}"` : "";
 
   return `<section class="${classes}" data-slide-index="${slide.index}"${slide.meta.title ? ` aria-label="${escapeHtml(slide.meta.title)}"` : ""}${transition}${style}>${html}${notesHtml}</section>`;
+}
+
+async function renderSlideBodyAsync(
+  slide: CompiledSlide,
+  assets: AssetRef[],
+  input: {
+    components?: SlideComponentRegistry;
+    deck?: Pick<CompiledDeck, "sourcePath">;
+  },
+): Promise<string> {
+  try {
+    return slide.render
+      ? await renderJsxValue(
+          slide.render({ components: createMdxComponents(input.components ?? builtInSlideComponents, { assets }) }),
+        )
+      : slide.nodes?.length
+        ? await renderSlideNodesAsync(slide.nodes, { components: input.components, assets })
+        : rewriteLocalAssetUrls(slide.html, assets);
+  } catch (error) {
+    if (error instanceof RenderError) throw error;
+    throw new RenderError(
+      `Render failed in ${input.deck?.sourcePath ?? "unknown deck"} slide ${slide.index + 1}: ${formatErrorMessage(error)}`,
+      "slide-render-error",
+      error,
+    );
+  }
 }
 
 export function renderCompiledDeckPage(input: {
@@ -359,4 +383,9 @@ function decodeHtml(value: string): string {
     .replaceAll("&lt;", "<")
     .replaceAll("&gt;", ">")
     .replaceAll("&amp;", "&");
+}
+
+function formatErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
 }
