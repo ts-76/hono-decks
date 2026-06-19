@@ -584,6 +584,10 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("Read the Hono documentation.");
     expect(html).toContain('src="https://hono.dev/og.png"');
     expect(html).toContain('alt="Hono Docs"');
+    expect(html).toContain("grid-template-columns:minmax(9rem,32%) minmax(0,1fr)");
+    expect(html).toContain("aspect-ratio:16/9");
+    expect(html).toContain("@media (max-width: 640px)");
+    expect(html).toContain(".hono-decks-link-card-anchor{grid-template-columns:1fr}");
     expect(html).toContain('class="hono-decks-link-card-site"');
     expect(html).toContain("Hono");
     expect(html).toContain("Open Hono docs");
