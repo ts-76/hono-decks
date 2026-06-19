@@ -268,8 +268,8 @@ function basePresentationStyle(): string {
 :root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0b1020;color:#eef2ff;--hono-decks-width:1920px;--hono-decks-height:1080px}
 html,body{margin:0;width:100%;height:100%;overflow:hidden}
 .hono-decks-stage{width:100vw;height:100vh;overflow:hidden;background:#0b1020;position:relative;display:grid;place-items:center}
-.hono-decks-deck{display:grid;gap:1rem;padding:1rem;width:var(--hono-decks-width);height:var(--hono-decks-height);box-sizing:border-box;transform-origin:left top}
-.slide{aspect-ratio:16/9;border:1px solid rgba(255,255,255,.13);border-radius:24px;padding:clamp(1.2rem,3vw,3rem);background:linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.035));overflow:hidden}
+.hono-decks-deck{display:grid;gap:1rem;width:var(--hono-decks-width);height:var(--hono-decks-height);box-sizing:border-box;transform-origin:left top}
+.slide{box-sizing:border-box;aspect-ratio:16/9;border:1px solid rgba(255,255,255,.13);border-radius:24px;padding:clamp(1.2rem,3vw,3rem);background:linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.035));overflow:hidden}
 .slide.layout-cover,.slide.layout-statement{display:flex;flex-direction:column;justify-content:center}
 .slide code{font-family:"SFMono-Regular","Cascadia Code","Liberation Mono",Menlo,Consolas,monospace;font-size:.9em;line-height:1.45}
 .slide :not(pre)>code{border-radius:6px;background:rgba(15,23,42,.72);padding:.12em .34em}
