@@ -1,14 +1,25 @@
+import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import { Badge } from "../decks/sample/components";
-import { decks, decksRouter } from "../src/generated/decks";
+import { createDecksRouter, deckSource } from "../src/decks";
 
 async function sampleApp() {
   return (await import("../src/index")).default;
 }
 
 describe("sample Worker app", () => {
+  it("keeps generated deck imports behind a sample facade", async () => {
+    const entrySource = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
+    const facadeSource = await readFile(new URL("../src/decks.ts", import.meta.url), "utf8");
+
+    expect(entrySource).not.toContain("./generated/decks");
+    expect(facadeSource).toContain("./generated/decks");
+    expect(facadeSource).toContain("export const deckSource");
+    expect(facadeSource).toContain("export function createDecksRouter");
+  });
+
   it("uses a generated module-backed deck source", async () => {
-    const entries = await decks.source.listDecks({} as never);
+    const entries = await deckSource.listDecks({} as never);
 
     expect(entries).toHaveLength(4);
     expect(entries[0]).toMatchObject({
@@ -27,12 +38,12 @@ describe("sample Worker app", () => {
       slug: "sample",
       sourcePath: "decks/sample/deck.mdx",
     });
-    expect(typeof decks.router).toBe("function");
+    expect(typeof createDecksRouter).toBe("function");
   });
 
   it("exports slide components from the sample deck directory", () => {
     expect(typeof Badge).toBe("function");
-    expect(typeof decksRouter).toBe("function");
+    expect(typeof createDecksRouter).toBe("function");
   });
 
   it("serves a sample home page with the shared layout", async () => {

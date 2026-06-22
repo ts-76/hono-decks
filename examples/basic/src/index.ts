@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { deckContext, type DeckBrowserRunBinding, type DeckContextVariables } from "@hono/decks";
-import { createSampleDeckSource, type SampleDeckSourceBindings } from "./deck-source";
-import { decks, decksRouter } from "./generated/decks";
+import type { SampleDeckSourceBindings } from "./deck-source";
+import { createDecksRouter, deckSource } from "./decks";
 import {
   renderDeckDetailsPage,
   renderDeckEmbedPage,
@@ -17,15 +17,17 @@ interface Env {
 }
 
 const app = new Hono<Env>();
-const deckSource = createSampleDeckSource(decks.source);
 
 app.get("/", async (c) => c.html(renderHomePage(await deckSource.listDecks(c))));
-app.get("/decks/:slug/about", deckContext({ source: deckSource, mountPath: "/decks" }), (c) =>
-  c.html(renderDeckDetailsPage({
-    deck: c.var.deck,
-    meta: c.var.deckMeta,
-    toc: c.var.deckToc,
-  })),
+app.get(
+  "/decks/:slug/about",
+  deckContext({ source: deckSource, mountPath: "/decks" }),
+  (c) =>
+    c.html(renderDeckDetailsPage({
+      deck: c.var.deck,
+      meta: c.var.deckMeta,
+      toc: c.var.deckToc,
+    })),
 );
 app.get("/decks/:slug/embed", deckContext({ source: deckSource, mountPath: "/decks", viewer: { controls: false } }), (c) =>
   c.html(renderDeckEmbedPage({
@@ -35,8 +37,7 @@ app.get("/decks/:slug/embed", deckContext({ source: deckSource, mountPath: "/dec
 );
 app.route(
   "/decks",
-  decksRouter({
-    source: deckSource,
+  createDecksRouter({
     viewer: {
       head: renderSampleViewerHead(),
     },
