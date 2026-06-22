@@ -159,10 +159,11 @@ export function renderCompiledDeckPage(input: {
   const warnings = deck.warnings.length
     ? `<aside class="hono-decks-warnings">${deck.warnings.map((warning) => `<p>${escapeHtml(warning.message)}</p>`).join("")}</aside>`
     : "";
+  const htmlAttrs = input.printPreview ? ' data-hono-decks-print-preview="true"' : "";
   const bodyAttrs = input.printPreview ? ' data-hono-decks-print-preview="true"' : "";
 
   return `<!doctype html>
-<html lang="ja">
+<html lang="ja"${htmlAttrs}>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -193,10 +194,11 @@ export async function renderCompiledDeckPageAsync(input: {
   const warnings = deck.warnings.length
     ? `<aside class="hono-decks-warnings">${deck.warnings.map((warning) => `<p>${escapeHtml(warning.message)}</p>`).join("")}</aside>`
     : "";
+  const htmlAttrs = input.printPreview ? ' data-hono-decks-print-preview="true"' : "";
   const bodyAttrs = input.printPreview ? ' data-hono-decks-print-preview="true"' : "";
 
   return `<!doctype html>
-<html lang="ja">
+<html lang="ja"${htmlAttrs}>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -327,7 +329,8 @@ body[data-overview-mode] .hono-decks-deck{grid-template-columns:repeat(auto-fit,
 body[data-overview-mode] .slide{cursor:pointer}
 body[data-presenter-mode] .speaker-notes{display:block;margin-top:1rem;padding:.75rem;border-radius:8px;background:rgba(255,255,255,.08)}
 .hono-decks-warnings{margin:1rem;padding:.75rem;border-radius:14px;background:rgba(255,193,7,.12);color:#ffe59b}
-@media screen{body[data-hono-decks-print-preview]{min-height:100vh;overflow:auto;color-scheme:light;color:#000;--hono-decks-print-gap:6mm;--hono-decks-print-slot-height:80mm;--hono-decks-print-scale:.28}
+@media screen{html[data-hono-decks-print-preview]{width:auto;height:auto;min-height:100%;overflow:visible}
+body[data-hono-decks-print-preview]{min-height:100vh;overflow:auto;color-scheme:light;color:#000;--hono-decks-print-gap:6mm;--hono-decks-print-slot-height:80mm;--hono-decks-print-scale:.28}
 body[data-hono-decks-print-preview] .hono-decks-stage{display:block;width:auto;height:auto;min-height:100vh;overflow:visible;padding:12mm 0;box-sizing:border-box}
 body[data-hono-decks-print-preview] .hono-decks-deck{display:grid;grid-template-columns:1fr;grid-auto-rows:var(--hono-decks-print-slot-height);gap:var(--hono-decks-print-gap);width:calc(var(--hono-decks-print-slot-height) * 16 / 9);max-width:calc(100vw - 24px);height:auto;margin:0 auto;transform:none!important}
 body[data-hono-decks-print-preview] .slide{width:100%;max-width:100%;height:var(--hono-decks-print-slot-height);aspect-ratio:16/9;justify-self:center;align-self:center;padding:0;box-shadow:0 2px 10px rgba(15,23,42,.16)}
