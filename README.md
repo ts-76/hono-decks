@@ -126,6 +126,39 @@ export function Counter() {
 ローカル画像を R2 に置いて Worker 経由で配信したい場合は、生成済み `decks.source` を `withR2Assets()` で包みます。MDX 側は `./assets/image.png` のまま書けます。compile で生成される `/decks/:slug/assets/...` URL は維持し、R2 binding がある環境では R2 object を返し、無い環境では生成済み local asset にフォールバックします。
 
 ```tsx
+// src/decks.config.ts
+import { withR2Assets, type DeckSource, type R2BucketLike } from "@hono/decks";
+
+export interface DeckBindings {
+  DECK_ASSETS?: R2BucketLike;
+}
+
+export function createDeckSource(source: DeckSource): DeckSource {
+  return withR2Assets(source, {
+    bucket: (c) => c.env.DECK_ASSETS,
+    cacheControl: "public, max-age=31536000, immutable",
+  });
+}
+```
+
+```tsx
+// src/decks.ts
+import { createDeckSource } from "./decks.config";
+import { decks } from "./generated/decks";
+
+export const deckSource = createDeckSource(decks.source);
+
+export function createDecksRouter(options = {}) {
+  return decks.router({
+    source: deckSource,
+    ...options,
+  });
+}
+```
+
+直接 `decks.ts` に小さく書いても問題ありません。R2 や cache header のような任意設定が増える場合は、`decks.config.ts` に逃がすと `decks.ts` を stable facade として保てます。
+
+```tsx
 // src/decks.ts
 import { withR2Assets, type R2BucketLike } from "@hono/decks";
 import { decks } from "./generated/decks";
@@ -158,7 +191,7 @@ const app = new Hono<{ Bindings: DeckBindings }>();
 app.route("/decks", createDecksRouter());
 ```
 
-`examples/basic/src/decks.ts` は `hono-decks init` の雛形に R2 用の source adapter を足した例です。`examples/basic/src/deck-source.ts` では、この `withR2Assets()` をさらに custom `DeckSource` として包み、asset response に `x-hono-decks-asset-source: r2 | embedded` を付けています。これは package が compile-time Node I/O で R2 を読まず、Worker runtime の `DeckSource.getAsset()` 境界で存在確認・cache header・fallback を扱う例です。`examples/basic/decks/media` には R2-backed image の表示サンプルがあります。
+`examples/basic/src/decks.ts` は `hono-decks init` の雛形を stable app API として使い、任意設定を `examples/basic/src/decks.config.ts` に分けた例です。`decks.config.ts` では `withR2Assets()` をさらに custom `DeckSource` として包み、asset response に `x-hono-decks-asset-source: r2 | embedded` を付けています。これは package が compile-time Node I/O で R2 を読まず、Worker runtime の `DeckSource.getAsset()` 境界で存在確認・cache header・fallback を扱う例です。`examples/basic/decks/media` には R2-backed image の表示サンプルがあります。
 
 この package は R2 upload までは行いません。`withR2Assets()` は `decks/media/assets/r2-remote.svg` のような generated asset の `sourcePath` を R2 key として読むため、deploy 前に同じ key で object を置いてください。ローカル test では `Cache-Control` header と R2 binding 経由の response を検証できますが、Cloudflare edge cache の hit/miss は deploy 後に `cf-cache-status` や `age` を見る smoke check で確認します。手順は [Deployed R2 Cache Smoke](docs/deployed-r2-cache-smoke.md) にまとめています。
 
@@ -353,7 +386,7 @@ examples/basic/
   src/
     index.ts
     decks.ts          # app-owned facade, safe to edit
-    deck-source.ts    # optional DeckSource enhancer for R2/cache behavior
+    decks.config.ts   # optional developer-owned config
     pages.tsx
     generated/
       client-entry.ts
@@ -369,7 +402,7 @@ examples/basic/
           slide-0.ts
 ```
 
-`src/decks.ts` は `hono-decks init --out src/decks.ts` で作れる app-owned facade です。basic sample ではその雛形に `createSampleDeckSource()` を足して、R2/cache behavior を差し込んでいます。`dev`、`typecheck`、`test`、`deploy` は事前に `bun run decks:compile` を実行し、`decks/*/deck.mdx` から `src/generated/decks.ts` と slide module 群を更新します。sample や motion のように deck-local な `components/client/index.tsx` を持つ deck は browser bundle 化されて `src/generated/client-entry.ts` に埋め込まれ、`client: true` component を `hono/jsx/dom` で hydrate します。Worker runtime は生成済み router/client asset を import するだけで、file system の読み取りは build-time CLI に閉じています。
+`src/decks.ts` は `hono-decks init --out src/decks.ts` で作れる app-owned facade です。basic sample ではその facade から `decks.config.ts` の `createSampleDeckSource()` を呼び、R2/cache behavior を差し込んでいます。`decks.config.ts` は任意ファイルなので、拡張が不要な app では置かなくても構いません。`dev`、`typecheck`、`test`、`deploy` は事前に `bun run decks:compile` を実行し、`decks/*/deck.mdx` から `src/generated/decks.ts` と slide module 群を更新します。sample や motion のように deck-local な `components/client/index.tsx` を持つ deck は browser bundle 化されて `src/generated/client-entry.ts` に埋め込まれ、`client: true` component を `hono/jsx/dom` で hydrate します。Worker runtime は生成済み router/client asset を import するだけで、file system の読み取りは build-time CLI に閉じています。
 
 今後 sample で検証する media、embed、code block、animation、accessibility、export などの項目は [Verification Matrix](docs/verification-matrix.md) にまとめています。transition と fragment/step navigation の設計は [Slide Dynamics](docs/slide-dynamics.md) に切り出しています。desktop/mobile の viewer framing は `agent-browser` を使う [Browser Smoke Checks](docs/browser-smoke.md) で、print-to-PDF は [PDF Smoke Checks](docs/pdf-smoke.md) で確認できます。
 

@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { deckContext, type DeckBrowserRunBinding, type DeckContextVariables } from "@hono/decks";
-import type { SampleDeckSourceBindings } from "./deck-source";
+import type { DecksConfigBindings } from "./decks.config";
 import { createDecksRouter, deckSource } from "./decks";
 import {
   renderDeckDetailsPage,
@@ -10,7 +10,7 @@ import {
 } from "./pages";
 
 interface Env {
-  Bindings: SampleDeckSourceBindings & {
+  Bindings: DecksConfigBindings & {
     BROWSER?: DeckBrowserRunBinding;
   };
   Variables: DeckContextVariables;

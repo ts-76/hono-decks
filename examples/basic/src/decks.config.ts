@@ -1,6 +1,6 @@
 import { withR2Assets, type DeckSource, type R2BucketLike } from "@hono/decks";
 
-export interface SampleDeckSourceBindings {
+export interface DecksConfigBindings {
   DECK_ASSETS?: R2BucketLike;
 }
 
