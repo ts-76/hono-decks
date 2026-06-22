@@ -44,8 +44,12 @@ export { defineDecks } from "./server/define-decks";
 export type { DefinedDecks, DecksOptions, DecksRouterOverrides } from "./server/define-decks";
 export { createDeckViewerParts, deckContext, decksRouter } from "./server/router";
 export type {
+  DeckBrowserRunBinding,
+  DeckBrowserRunPdfOptions,
+  DeckBrowserRunPngOptions,
   DeckContextOptions,
   DeckContextVariables,
+  DeckExportOptions,
   DeckPageMeta,
   DeckTocItem,
   DeckViewerOptions,

@@ -8,8 +8,12 @@ export {
   withR2Assets,
 } from "./mod";
 export type {
+  DeckBrowserRunBinding,
+  DeckBrowserRunPdfOptions,
+  DeckBrowserRunPngOptions,
   DeckContextOptions,
   DeckContextVariables,
+  DeckExportOptions,
   DeckPageMeta,
   DeckTocItem,
   DeckViewerOptions,

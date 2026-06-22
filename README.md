@@ -228,6 +228,41 @@ app.route("/decks", decksRouter({
 }));
 ```
 
+Cloudflare Browser Run binding がある環境では、`/:slug/print` の handout layout をそのまま PDF/PNG export に使えます。これは opt-in です。`export.browser(c)` が binding を返す場合だけ `/:slug/export.pdf` と `/:slug/export.png` が有効になり、標準 viewer controls に `PDF` / `PNG` link が追加されます。
+
+```toml
+# wrangler.toml
+[browser]
+binding = "BROWSER"
+```
+
+```tsx
+import { Hono } from "hono";
+import { decksRouter, type DeckBrowserRunBinding } from "@hono/decks";
+import { decks } from "./generated/decks";
+
+const app = new Hono<{
+  Bindings: {
+    BROWSER?: DeckBrowserRunBinding;
+  };
+}>();
+
+app.route("/decks", decksRouter({
+  source: decks.source,
+  export: {
+    browser: (c) => c.env.BROWSER,
+    pdf: true,
+    png: {
+      request: {
+        viewport: { deviceScaleFactor: 2 },
+      },
+    },
+  },
+}));
+```
+
+PDF export は Browser Run の `quickAction("pdf")` に `/decks/:slug/print` URL を渡し、既定で `format: "a4"`、`preferCSSPageSize: true`、`printBackground: true` を使います。PNG export は `quickAction("screenshot")` で同じ `/print` URL を full-page capture します。Browser Run binding が無い環境で export route にアクセスした場合は 503 を返します。binding を設定していない場合、export routes は生成されません。
+
 標準 router ではなく deck-aware な独自ページやAPIを作る場合は `deckContext()` を使います。details、embed、analytics、OGP meta などに必要な deck 情報と viewer parts を `c.var` から参照できます。
 
 ```tsx

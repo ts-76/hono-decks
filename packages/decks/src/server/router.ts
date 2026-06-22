@@ -26,6 +26,7 @@ export interface DecksRouterOptions {
   clientEntryAsset?: string;
   clientEntryAssetPath?: string;
   viewer?: DeckViewerOptions;
+  export?: DeckExportOptions;
 }
 
 export interface DeckViewerOptions {
@@ -33,6 +34,26 @@ export interface DeckViewerOptions {
   style?: string;
   head?: MaybePromise<DeckRenderable>;
   render?(input: DeckViewerRenderInput): MaybePromise<DeckRenderable>;
+}
+
+export interface DeckBrowserRunBinding {
+  quickAction(action: "pdf" | "screenshot", input: Record<string, unknown>): MaybePromise<Response>;
+}
+
+export interface DeckBrowserRunPdfOptions {
+  filename?: string | ((deck: CompiledDeck) => string);
+  request?: Record<string, unknown>;
+}
+
+export interface DeckBrowserRunPngOptions {
+  filename?: string | ((deck: CompiledDeck) => string);
+  request?: Record<string, unknown>;
+}
+
+export interface DeckExportOptions {
+  browser(c: Context): MaybePromise<DeckBrowserRunBinding | null | undefined>;
+  pdf?: boolean | DeckBrowserRunPdfOptions;
+  png?: boolean | DeckBrowserRunPngOptions;
 }
 
 export interface DeckTocItem {
@@ -47,6 +68,8 @@ export interface DeckPageMeta {
   canonicalPath: string;
   renderPath: string;
   printPath: string;
+  exportPdfPath?: string;
+  exportPngPath?: string;
   imagePath?: string;
 }
 
@@ -159,6 +182,14 @@ export function decksRouter(options: DecksRouterOptions): Hono {
     }
   });
 
+  if (isPdfExportEnabled(options.export)) {
+    router.get("/:slug/export.pdf", async (c) => renderDeckBrowserExport(c, options, "pdf"));
+  }
+
+  if (isPngExportEnabled(options.export)) {
+    router.get("/:slug/export.png", async (c) => renderDeckBrowserExport(c, options, "png"));
+  }
+
   router.get("/:slug/presentation", async (c) => {
     const slug = c.req.param("slug");
     return c.redirect(`${stripPathSuffix(c.req.path, `/${slug}/presentation`)}/${encodeURIComponent(slug)}/render`, 302);
@@ -174,6 +205,7 @@ export function decksRouter(options: DecksRouterOptions): Hono {
         deck,
         mountPath,
         viewer: options.viewer,
+        exportOptions: options.export,
       }),
     );
   });
@@ -206,6 +238,7 @@ export function createDeckViewerParts(input: {
   deck: CompiledDeck;
   mountPath: string;
   controls?: boolean;
+  exportPaths?: DeckViewerExportPaths;
 }): DeckViewerParts {
   const slug = input.deck.slug;
   const title = input.deck.meta.title ?? slug;
@@ -213,6 +246,8 @@ export function createDeckViewerParts(input: {
   const canonicalPath = `${basePath}/${encodeURIComponent(slug)}`;
   const renderUrl = `${canonicalPath}/render`;
   const printPath = `${canonicalPath}/print`;
+  const exportPdfPath = input.exportPaths?.pdf ? `${canonicalPath}/export.pdf` : undefined;
+  const exportPngPath = input.exportPaths?.png ? `${canonicalPath}/export.png` : undefined;
   const slides = createDeckToc(input.deck);
   const meta: DeckPageMeta = {
     title,
@@ -220,6 +255,8 @@ export function createDeckViewerParts(input: {
     canonicalPath,
     renderPath: renderUrl,
     printPath,
+    exportPdfPath,
+    exportPngPath,
   };
 
   return {
@@ -228,13 +265,18 @@ export function createDeckViewerParts(input: {
     renderUrl,
     frame: renderViewerFrame({ title, renderUrl }),
     frameHtml: renderViewerFrameHtml({ title, renderUrl }),
-    controls: input.controls === false ? null : renderViewerControls(),
-    controlsHtml: input.controls === false ? null : renderViewerControlsHtml(),
+    controls: input.controls === false ? null : renderViewerControls(meta),
+    controlsHtml: input.controls === false ? null : renderViewerControlsHtml(meta),
     toc: renderViewerToc(slides),
     tocHtml: renderViewerTocHtml(slides),
     slides,
     meta,
   };
+}
+
+interface DeckViewerExportPaths {
+  pdf?: boolean;
+  png?: boolean;
 }
 
 function isDevEnabled(options: DecksRouterOptions): boolean {
@@ -270,6 +312,103 @@ function normalizeClientEntryAssetPath(path = "/_assets/client.js"): string {
   return normalized.replace(/\/{2,}/g, "/");
 }
 
+async function renderDeckBrowserExport(c: Context, options: DecksRouterOptions, format: "pdf" | "png"): Promise<Response> {
+  const slug = c.req.param("slug");
+  if (!slug) return c.json({ error: "Deck not found", slug: "" }, 404);
+  const deck = await options.source.getCompiledDeck(c, slug);
+  if (!deck || (!isDevEnabled(options) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
+
+  const exportOptions = options.export;
+  if (!exportOptions) return c.json({ error: "Browser export not configured", slug, format }, 503);
+  const browser = await exportOptions.browser(c);
+  if (!browser) return c.json({ error: "Browser export not configured", slug, format }, 503);
+
+  const mountPath = stripPathSuffix(c.req.path, `/${slug}/export.${format}`);
+  const printUrl = new URL(`${mountPath}/${encodeURIComponent(slug)}/print`, c.req.url).toString();
+  const action = format === "pdf" ? "pdf" : "screenshot";
+  const response = await browser.quickAction(action, createBrowserRunExportRequest(exportOptions, deck, printUrl, format));
+  const headers = new Headers(response.headers);
+  if (!headers.has("content-type")) headers.set("content-type", format === "pdf" ? "application/pdf" : "image/png");
+  headers.set("content-disposition", `attachment; filename="${exportFilename(exportOptions, deck, format)}"`);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
+function createBrowserRunExportRequest(
+  options: DeckExportOptions,
+  _deck: CompiledDeck,
+  printUrl: string,
+  format: "pdf" | "png",
+): Record<string, unknown> {
+  if (format === "pdf") {
+    const request = exportOptionObject(options.pdf).request ?? {};
+    return {
+      ...request,
+      url: printUrl,
+      gotoOptions: {
+        waitUntil: "networkidle2",
+        timeout: 45000,
+        ...recordValue(request.gotoOptions),
+      },
+      pdfOptions: {
+        format: "a4",
+        printBackground: true,
+        preferCSSPageSize: true,
+        ...recordValue(request.pdfOptions),
+      },
+    };
+  }
+
+  const request = exportOptionObject(options.png).request ?? {};
+  return {
+    ...request,
+    url: printUrl,
+    gotoOptions: {
+      waitUntil: "networkidle2",
+      timeout: 45000,
+      ...recordValue(request.gotoOptions),
+    },
+    viewport: {
+      width: 794,
+      height: 1123,
+      deviceScaleFactor: 2,
+      ...recordValue(request.viewport),
+    },
+    screenshotOptions: {
+      type: "png",
+      fullPage: true,
+      ...recordValue(request.screenshotOptions),
+    },
+  };
+}
+
+function isPdfExportEnabled(options: DeckExportOptions | undefined): boolean {
+  return options?.pdf !== undefined && options.pdf !== false;
+}
+
+function isPngExportEnabled(options: DeckExportOptions | undefined): boolean {
+  return options?.png !== undefined && options.png !== false;
+}
+
+function exportFilename(options: DeckExportOptions, deck: CompiledDeck, format: "pdf" | "png"): string {
+  const option = exportOptionObject(format === "pdf" ? options.pdf : options.png);
+  const name = typeof option.filename === "function" ? option.filename(deck) : option.filename;
+  return `${safeFilename(name ?? deck.meta.title ?? deck.slug)}.${format}`;
+}
+
+function exportOptionObject(
+  option: boolean | DeckBrowserRunPdfOptions | DeckBrowserRunPngOptions | undefined,
+): DeckBrowserRunPdfOptions | DeckBrowserRunPngOptions {
+  return typeof option === "object" && option ? option : {};
+}
+
+function recordValue(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+
 function renderDeckIndex(decks: Awaited<ReturnType<DeckSource["listDecks"]>>, mountPath: string): string {
   const basePath = mountPath.replace(/\/$/, "");
   const items = decks
@@ -301,11 +440,16 @@ async function renderDeckViewerPage(input: {
   deck: CompiledDeck;
   mountPath: string;
   viewer?: DeckViewerOptions;
+  exportOptions?: DeckExportOptions;
 }): Promise<string> {
   const parts = createDeckViewerParts({
     deck: input.deck,
     mountPath: input.mountPath,
     controls: input.viewer?.controls,
+    exportPaths: {
+      pdf: isPdfExportEnabled(input.exportOptions),
+      png: isPngExportEnabled(input.exportOptions),
+    },
   });
   const content =
     input.viewer?.render?.({
@@ -384,7 +528,26 @@ function renderViewerFrameHtml(input: { title: string; renderUrl: string }): str
   return `<div class="hono-decks-viewer-stage" data-hono-decks-frame><div class="hono-decks-viewport" data-viewer-viewport tabindex="0"><div class="hono-decks-frame-stage" data-viewer-stage><iframe title="${escapeHtml(input.title)}" src="${escapeHtml(input.renderUrl)}"></iframe></div></div></div>`;
 }
 
-function renderViewerControls(): DeckRenderable {
+function renderViewerControls(meta: DeckPageMeta): DeckRenderable {
+  const exportLinks = [
+    meta.exportPdfPath
+      ? jsx("a", {
+          href: meta.exportPdfPath,
+          download: `${safeFilename(meta.title)}.pdf`,
+          "data-hono-decks-export": "pdf",
+          children: "PDF",
+        })
+      : null,
+    meta.exportPngPath
+      ? jsx("a", {
+          href: meta.exportPngPath,
+          download: `${safeFilename(meta.title)}.png`,
+          "data-hono-decks-export": "png",
+          children: "PNG",
+        })
+      : null,
+  ].filter(Boolean);
+
   return jsx("nav", {
     class: "hono-decks-viewer-controls",
     "data-hono-decks-viewer-controls": true,
@@ -394,12 +557,21 @@ function renderViewerControls(): DeckRenderable {
       jsx("span", { "data-slide-position": true, children: "1 / ?" }),
       jsx("button", { type: "button", "data-action": "next", children: "Next" }),
       jsx("button", { type: "button", "data-action": "fullscreen", children: "Full" }),
+      ...exportLinks,
     ],
   });
 }
 
-function renderViewerControlsHtml(): string {
-  return `<nav class="hono-decks-viewer-controls" data-hono-decks-viewer-controls aria-label="Viewer controls"><button type="button" data-action="previous">Prev</button><span data-slide-position>1 / ?</span><button type="button" data-action="next">Next</button><button type="button" data-action="fullscreen">Full</button></nav>`;
+function renderViewerControlsHtml(meta: DeckPageMeta): string {
+  const exportLinks = [
+    meta.exportPdfPath
+      ? `<a href="${escapeHtml(meta.exportPdfPath)}" download="${escapeHtml(safeFilename(meta.title))}.pdf" data-hono-decks-export="pdf">PDF</a>`
+      : "",
+    meta.exportPngPath
+      ? `<a href="${escapeHtml(meta.exportPngPath)}" download="${escapeHtml(safeFilename(meta.title))}.png" data-hono-decks-export="png">PNG</a>`
+      : "",
+  ].join("");
+  return `<nav class="hono-decks-viewer-controls" data-hono-decks-viewer-controls aria-label="Viewer controls"><button type="button" data-action="previous">Prev</button><span data-slide-position>1 / ?</span><button type="button" data-action="next">Next</button><button type="button" data-action="fullscreen">Full</button>${exportLinks}</nav>`;
 }
 
 function renderViewerToc(slides: DeckTocItem[]): DeckRenderable {
@@ -448,7 +620,7 @@ body{overflow:hidden}
 .hono-decks-frame-stage{width:100%;height:100%}
 .hono-decks-frame-stage iframe{width:100%;height:100%;border:0;display:block}
 .hono-decks-viewer-controls{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:8px;align-items:center}
-.hono-decks-viewer-toc button,.hono-decks-viewer-controls button{font:inherit}
+.hono-decks-viewer-toc button,.hono-decks-viewer-controls button,.hono-decks-viewer-controls a{font:inherit}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}}`;
 }
 
@@ -531,6 +703,14 @@ function renderViewerScript(): string {
 
 function escapeHtml(value: string): string {
   return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+}
+
+function safeFilename(value: string): string {
+  const normalized = value
+    .trim()
+    .replaceAll(/[^a-zA-Z0-9._-]+/g, "-")
+    .replaceAll(/^-+|-+$/g, "");
+  return normalized || "deck";
 }
 
 function formatErrorMessage(error: unknown): string {
