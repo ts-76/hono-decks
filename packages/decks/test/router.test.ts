@@ -167,8 +167,12 @@ describe("decksRouter", () => {
     expect(response.headers.get("content-type")).toContain("text/html");
     const html = await response.text();
     expect(html).toContain("<h1>Intro</h1>");
+    expect(html).toContain('<html lang="ja" data-hono-decks-print-preview="true">');
     expect(html).toContain('data-hono-decks-print-preview="true"');
     expect(html).toContain("@page{size:A4 portrait;margin:12mm}");
+    expect(html).toContain(
+      "html[data-hono-decks-print-preview]{width:auto;height:auto;min-height:100%;overflow:visible}",
+    );
     expect(html).toContain(".slide:nth-of-type(3n):not(:last-child){page-break-after:always;break-after:page}");
     expect(html).not.toContain("function fitDeck()");
     expect(html).not.toContain('window.addEventListener("message"');
