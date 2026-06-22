@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { jsx } from "hono/jsx/jsx-runtime";
 import {
+  defineDeckTheme,
+  defineDeckThemes,
   defineSlideComponents,
   renderCompiledDeck,
   renderCompiledDeckPage,
@@ -396,6 +398,83 @@ describe("compiled deck rendering", () => {
     expect(html).toContain('class="theme-badge theme-badge-accent"');
     expect(html).toContain("Trusted theme component");
     expect(html).not.toContain("mdx-component");
+  });
+
+  it("uses CSS variables for built-in component colors while preserving card structure", () => {
+    const html = renderCompiledDeckPage({
+      deck: {
+        ...deck,
+        slides: [
+          {
+            ...deck.slides[0],
+            nodes: [
+              {
+                type: "component",
+                name: "LinkCard",
+                props: { href: "https://example.com", title: "Example" },
+                children: [],
+              },
+            ],
+          },
+        ],
+      },
+      mountPath: "/slides",
+    });
+
+    expect(html).toContain("--hono-decks-card-background:rgba(15,23,42,.78)");
+    expect(html).toContain("--hono-decks-border-color:rgba(148,163,184,.24)");
+    expect(html).toContain(
+      ".hono-decks-link-card-anchor{display:grid;grid-template-columns:minmax(9rem,32%) minmax(0,1fr);gap:.75rem;align-items:stretch;border:1px solid var(--hono-decks-border-color);border-radius:8px;background:var(--hono-decks-card-background);padding:1rem;color:inherit;text-decoration:none}",
+    );
+    expect(html).toContain('class="hono-decks-link-card"');
+  });
+
+  it("resolves reusable deck themes from deck metadata", async () => {
+    const html = await renderCompiledDeckPageAsync({
+      deck: {
+        ...deck,
+        meta: { ...deck.meta, theme: "bright" },
+        slides: [
+          {
+            ...deck.slides[0],
+            nodes: [
+              {
+                type: "component",
+                name: "ThemeBadge",
+                props: {},
+                children: [{ type: "text", value: "Registry theme component" }],
+              },
+            ],
+          },
+        ],
+      },
+      mountPath: "/slides",
+      theme: defineDeckTheme({
+        name: "base",
+        style: ":root{--base-theme:1}",
+        components: {
+          ThemeBadge: (props) => jsx("em", { class: "base-badge", children: props.children }),
+        },
+      }),
+      themes: defineDeckThemes({
+        bright: {
+          name: "bright",
+          style: ":root{--bright-theme:1}",
+          components: {
+            ThemeBadge: (props) => jsx("strong", { class: "bright-badge", children: props.children }),
+          },
+          layouts: {
+            cover: ({ children }) => jsx("div", { class: "bright-layout", children }),
+          },
+        },
+      }),
+    });
+
+    expect(html).toContain(":root{--base-theme:1}:root{--bright-theme:1}");
+    expect(html).toContain('class="bright-layout"');
+    expect(html).toContain('class="bright-badge"');
+    expect(html).toContain("Registry theme component");
+    expect(html).not.toContain('class="base-badge"');
   });
 
   it("renders the built-in CodeBlock component with stable code metadata", () => {

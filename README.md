@@ -164,7 +164,7 @@ Low-level fallback embeds stay link-first when you do not want third-party scrip
 
 `@hono/decks` は標準 viewer に Content-Security-Policy header を設定しません。アプリ側で CSP を設定する場合、iframe embed は `frame-src`、画像は `img-src`、client entry と X widgets は `script-src` の対象になります。X の third-party script を使いたくない場合は、低レベル built-in の `<SocialEmbed>` を直接使うと link-first fallback にできます。
 
-`style` は必要な deck だけ generated router に渡します。`style` は `/:slug/render` の presentation document に足すテーマ CSS です。`clientEntry` は独自の asset pipeline や CDN から browser bundle を配信したい場合だけ使う外部URL override です。静的な server-rendered deck ではどちらも不要です。
+`style` は generated router に渡せる最後の微調整用 CSS です。`style` は `/:slug/render` の presentation document に入り、theme より後に適用されます。`clientEntry` は独自の asset pipeline や CDN から browser bundle を配信したい場合だけ使う外部URL override です。静的な server-rendered deck ではどちらも不要です。
 
 ```ts
 app.route("/decks", decksRouter({
@@ -175,15 +175,20 @@ app.route("/decks", decksRouter({
 }));
 ```
 
-deck-wide な theme を作りたい場合は `theme` を渡します。`theme.style` は presentation document に入り、アプリ側の `style` より先に適用されます。`theme.components` と `theme.layouts` は trusted app/package code として扱われ、MDX 文字列を runtime eval するための口ではありません。
+deck-wide な theme を作りたい場合は `theme` を渡します。再利用したい theme は `defineDeckTheme()` で定義し、deck frontmatter の `theme:` から選ばせたい theme 群は `defineDeckThemes()` で registry として渡します。`theme.style` は presentation document に入り、router の `style` より先に適用されます。deck が `theme: media` のように指定して `themes.media` が存在する場合、default の `theme` に registry theme を重ねます。
+
+package 側の built-in component は最低限のカード構造を持ちますが、色は CSS variables で上書きできます。代表的な変数は `--hono-decks-color`、`--hono-decks-muted-color`、`--hono-decks-accent-color`、`--hono-decks-border-color`、`--hono-decks-card-background`、`--hono-decks-code-background` です。
 
 ```tsx
-import type { DeckTheme } from "@hono/decks";
+import { defineDeckTheme, defineDeckThemes } from "@hono/decks";
 
-const theme: DeckTheme = {
+const theme = defineDeckTheme({
   style: `
-    :root { --theme-accent: #8bd3ff; }
-    .theme-cover { color: var(--theme-accent); }
+    :root {
+      --hono-decks-accent-color: #8bd3ff;
+      --hono-decks-card-background: rgba(15, 23, 42, .78);
+    }
+    .theme-cover { color: var(--hono-decks-accent-color); }
   `,
   components: {
     ThemeBadge: ({ tone, children }) => (
@@ -197,9 +202,25 @@ const theme: DeckTheme = {
       </div>
     ),
   },
-};
+});
 
-app.route("/decks", decksRouter({ theme }));
+const themes = defineDeckThemes({
+  media: defineDeckTheme({
+    style: `
+      :root { --hono-decks-accent-color: #2dd4bf; }
+      .layout-media { background: #07111f; color: #eef2ff; }
+    `,
+  }),
+});
+
+app.route("/decks", decksRouter({ theme, themes }));
+```
+
+```mdx
+---
+title: Media Verification
+theme: media
+---
 ```
 
 slide の `layout` frontmatter は `theme.layouts[layout]` がある場合だけ wrapper として解釈されます。該当 layout がない場合でも package 側の `layout-${layout}` class は残るため、CSS だけで段階的に始められます。`viewer.style` と `viewer.head` は slug viewer shell 用で、slide document の theme/style とは分離されています。
