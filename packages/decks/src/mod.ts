@@ -37,8 +37,8 @@ export { createPreviewEventHub } from "./runtime/preview-events";
 export type { PreviewEvent, PreviewEventHub, PreviewEventType } from "./runtime/preview-events";
 export { serveDecksClientEntry } from "./server/client-entry";
 export type { ServeDecksClientEntryOptions } from "./server/client-entry";
-export { defineDecks } from "./server/define-decks";
-export type { DefinedDecks, DecksOptions, DecksRouterOverrides } from "./server/define-decks";
+export { defineDecks, defineDecksConfig } from "./server/define-decks";
+export type { DecksConfig, DefinedDecks, DecksOptions, DecksRouterOverrides } from "./server/define-decks";
 export { createDeckViewerParts, deckContext, decksRouter } from "./server/router";
 export type {
   DeckBrowserRunBinding,

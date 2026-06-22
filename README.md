@@ -127,71 +127,69 @@ export function Counter() {
 
 ```tsx
 // src/decks.config.ts
-import { withR2Assets, type DeckSource, type R2BucketLike } from "@hono/decks";
+import {
+  defineDecksConfig,
+  withR2Assets,
+  type DeckBrowserRunBinding,
+  type DeckSource,
+  type R2BucketLike,
+} from "@hono/decks";
 
-export interface DeckBindings {
+export interface DecksConfigBindings {
   DECK_ASSETS?: R2BucketLike;
+  BROWSER?: DeckBrowserRunBinding;
 }
 
-export function createDeckSource(source: DeckSource): DeckSource {
-  return withR2Assets(source, {
-    bucket: (c) => c.env.DECK_ASSETS,
-    cacheControl: "public, max-age=31536000, immutable",
-  });
-}
-```
-
-```tsx
-// src/decks.ts
-import { createDeckSource } from "./decks.config";
-import { decks } from "./generated/decks";
-
-export const deckSource = createDeckSource(decks.source);
-
-export function createDecksRouter(options = {}) {
-  return decks.router({
-    source: deckSource,
-    ...options,
-  });
-}
-```
-
-直接 `decks.ts` に小さく書いても問題ありません。R2 や cache header のような任意設定が増える場合は、`decks.config.ts` に逃がすと `decks.ts` を stable facade として保てます。
-
-```tsx
-// src/decks.ts
-import { withR2Assets, type R2BucketLike } from "@hono/decks";
-import { decks } from "./generated/decks";
-
-export interface DeckBindings {
-  DECK_ASSETS?: R2BucketLike;
-}
-
-export const deckSource = withR2Assets(decks.source, {
-  bucket: (c) => c.env.DECK_ASSETS,
-  cacheControl: "public, max-age=31536000, immutable",
+export default defineDecksConfig({
+  mountPath: "/decks",
+  source(source: DeckSource): DeckSource {
+    return withR2Assets(source, {
+      bucket: (c) => (c.env as DecksConfigBindings).DECK_ASSETS,
+      cacheControl: "public, max-age=31536000, immutable",
+    });
+  },
+  router: {
+    export: {
+      browser: (c) => (c.env as DecksConfigBindings).BROWSER,
+      pdf: true,
+      png: true,
+    },
+  },
 });
+```
 
-export function createDecksRouter(options = {}) {
+```tsx
+// src/decks.ts
+import type { DecksRouterOverrides } from "@hono/decks";
+import decksConfig from "./decks.config";
+import { decks } from "./generated/decks";
+
+export const deckMountPath = decksConfig.mountPath ?? "/decks";
+export const deckSource = decksConfig.source?.(decks.source) ?? decks.source;
+
+export function createDecksRouter(options: DecksRouterOverrides = {}) {
   return decks.router({
-    source: deckSource,
+    ...decksConfig.router,
     ...options,
+    source: options.source ?? deckSource,
   });
 }
 ```
+
+R2、cache header、Browser Run export、mount path のような任意設定がある場合は `decks.config.ts` に集約します。拡張が不要な app では `hono-decks init` が作る `decks.ts` だけで構いません。
 
 ```tsx
 // src/index.ts
 import { Hono } from "hono";
-import { createDecksRouter } from "./decks";
-import type { DeckBindings } from "./decks";
+import type { DecksConfigBindings } from "./decks.config";
+import { createDecksRouter, deckMountPath } from "./decks";
 
-const app = new Hono<{ Bindings: DeckBindings }>();
+const app = new Hono<{ Bindings: DecksConfigBindings }>();
 
-app.route("/decks", createDecksRouter());
+app.route(deckMountPath, createDecksRouter());
 ```
 
-`examples/basic/src/decks.ts` は `hono-decks init` の雛形を stable app API として使い、任意設定を `examples/basic/src/decks.config.ts` に分けた例です。`decks.config.ts` では `withR2Assets()` をさらに custom `DeckSource` として包み、asset response に `x-hono-decks-asset-source: r2 | embedded` を付けています。これは package が compile-time Node I/O で R2 を読まず、Worker runtime の `DeckSource.getAsset()` 境界で存在確認・cache header・fallback を扱う例です。`examples/basic/decks/media` には R2-backed image の表示サンプルがあります。
+`examples/basic/src/decks.ts` は `hono-decks init` の雛形を stable app API として使い、任意設定を `examples/basic/src/decks.config.ts` の default config object に分けた例です。`decks.config.ts` では `withR2Assets()` をさらに custom `DeckSource` として包み、asset response に `x-hono-decks-asset-source: r2 | embedded` を付けています。これは package が compile-time Node I/O で R2 を読まず、Worker runtime の `DeckSource.getAsset()` 境界で存在確認・cache header・fallback を扱う例です。`examples/basic/decks/media` には R2-backed image の表示サンプルがあります。
 
 この package は R2 upload までは行いません。`withR2Assets()` は `decks/media/assets/r2-remote.svg` のような generated asset の `sourcePath` を R2 key として読むため、deploy 前に同じ key で object を置いてください。ローカル test では `Cache-Control` header と R2 binding 経由の response を検証できますが、Cloudflare edge cache の hit/miss は deploy 後に `cf-cache-status` や `age` を見る smoke check で確認します。手順は [Deployed R2 Cache Smoke](docs/deployed-r2-cache-smoke.md) にまとめています。
 
@@ -314,27 +312,26 @@ binding = "BROWSER"
 ```
 
 ```tsx
-import { Hono } from "hono";
-import type { DeckBrowserRunBinding } from "@hono/decks";
-import { createDecksRouter } from "./decks";
+// src/decks.config.ts
+import { defineDecksConfig, type DeckBrowserRunBinding } from "@hono/decks";
 
-const app = new Hono<{
-  Bindings: {
-    BROWSER?: DeckBrowserRunBinding;
-  };
-}>();
+export interface DecksConfigBindings {
+  BROWSER?: DeckBrowserRunBinding;
+}
 
-app.route("/decks", createDecksRouter({
-  export: {
-    browser: (c) => c.env.BROWSER,
-    pdf: true,
-    png: {
-      request: {
-        viewport: { deviceScaleFactor: 2 },
+export default defineDecksConfig({
+  router: {
+    export: {
+      browser: (c) => (c.env as DecksConfigBindings).BROWSER,
+      pdf: true,
+      png: {
+        request: {
+          viewport: { deviceScaleFactor: 2 },
+        },
       },
     },
   },
-}));
+});
 ```
 
 PDF export は Browser Run の `quickAction("pdf")` に `/decks/:slug/print` URL を渡し、既定で `format: "a4"`、`preferCSSPageSize: true`、`printBackground: true` を使います。PNG export は `quickAction("screenshot")` で同じ `/print` URL を full-page capture します。Browser Run binding が無い環境で export route にアクセスした場合は 503 を返します。binding を設定していない場合、export routes は生成されません。
@@ -402,7 +399,7 @@ examples/basic/
           slide-0.ts
 ```
 
-`src/decks.ts` は `hono-decks init --out src/decks.ts` で作れる app-owned facade です。basic sample ではその facade から `decks.config.ts` の `createSampleDeckSource()` を呼び、R2/cache behavior を差し込んでいます。`decks.config.ts` は任意ファイルなので、拡張が不要な app では置かなくても構いません。`dev`、`typecheck`、`test`、`deploy` は事前に `bun run decks:compile` を実行し、`decks/*/deck.mdx` から `src/generated/decks.ts` と slide module 群を更新します。sample や motion のように deck-local な `components/client/index.tsx` を持つ deck は browser bundle 化されて `src/generated/client-entry.ts` に埋め込まれ、`client: true` component を `hono/jsx/dom` で hydrate します。Worker runtime は生成済み router/client asset を import するだけで、file system の読み取りは build-time CLI に閉じています。
+`src/decks.ts` は `hono-decks init --out src/decks.ts` で作れる app-owned facade です。basic sample ではその facade から `decks.config.ts` の default config object を読み、R2/cache behavior や export 設定を差し込んでいます。`decks.config.ts` は任意ファイルなので、拡張が不要な app では置かなくても構いません。`dev`、`typecheck`、`test`、`deploy` は事前に `bun run decks:compile` を実行し、`decks/*/deck.mdx` から `src/generated/decks.ts` と slide module 群を更新します。sample や motion のように deck-local な `components/client/index.tsx` を持つ deck は browser bundle 化されて `src/generated/client-entry.ts` に埋め込まれ、`client: true` component を `hono/jsx/dom` で hydrate します。Worker runtime は生成済み router/client asset を import するだけで、file system の読み取りは build-time CLI に閉じています。
 
 今後 sample で検証する media、embed、code block、animation、accessibility、export などの項目は [Verification Matrix](docs/verification-matrix.md) にまとめています。transition と fragment/step navigation の設計は [Slide Dynamics](docs/slide-dynamics.md) に切り出しています。desktop/mobile の viewer framing は `agent-browser` を使う [Browser Smoke Checks](docs/browser-smoke.md) で、print-to-PDF は [PDF Smoke Checks](docs/pdf-smoke.md) で確認できます。
 

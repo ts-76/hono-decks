@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { jsx } from "hono/jsx/jsx-runtime";
 import { describe, expect, it } from "vitest";
 import type { CompiledDeck } from "../src/deck/model";
-import { defineDecks } from "../src/server/define-decks";
+import { defineDecks, defineDecksConfig } from "../src/server/define-decks";
 import { manifestDeckSource } from "../src/source/manifest-source";
 import { withR2Assets } from "../src/source/r2-assets";
 import { deckContext, decksRouter } from "../src/server/router";
@@ -141,6 +141,22 @@ describe("decksRouter", () => {
     const response = await app.request("/decks/deck1/render");
     expect(response.status).toBe(200);
     expect(await response.text()).toContain("<h1>Intro</h1>");
+  });
+
+  it("defines typed deck runtime config without changing the object", () => {
+    const config = defineDecksConfig({
+      mountPath: "/slides",
+      source: (source) => source,
+      router: {
+        dev: true,
+      },
+    });
+
+    const source = manifestDeckSource({ decks: [deck] });
+
+    expect(config.mountPath).toBe("/slides");
+    expect(config.source?.(source)).toBe(source);
+    expect(config.router?.dev).toBe(true);
   });
 
   it("serves the compiled deck on a fixed 1920x1080 render route", async () => {

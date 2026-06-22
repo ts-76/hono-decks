@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import { deckContext, type DeckBrowserRunBinding, type DeckContextVariables } from "@hono/decks";
+import { deckContext, type DeckContextVariables } from "@hono/decks";
 import type { DecksConfigBindings } from "./decks.config";
-import { createDecksRouter, deckSource } from "./decks";
+import { createDecksRouter, deckMountPath, deckSource } from "./decks";
 import {
   renderDeckDetailsPage,
   renderDeckEmbedPage,
@@ -10,9 +10,7 @@ import {
 } from "./pages";
 
 interface Env {
-  Bindings: DecksConfigBindings & {
-    BROWSER?: DeckBrowserRunBinding;
-  };
+  Bindings: DecksConfigBindings;
   Variables: DeckContextVariables;
 }
 
@@ -20,8 +18,8 @@ const app = new Hono<Env>();
 
 app.get("/", async (c) => c.html(renderHomePage(await deckSource.listDecks(c))));
 app.get(
-  "/decks/:slug/about",
-  deckContext({ source: deckSource, mountPath: "/decks" }),
+  `${deckMountPath}/:slug/about`,
+  deckContext({ source: deckSource, mountPath: deckMountPath }),
   (c) =>
     c.html(renderDeckDetailsPage({
       deck: c.var.deck,
@@ -29,22 +27,20 @@ app.get(
       toc: c.var.deckToc,
     })),
 );
-app.get("/decks/:slug/embed", deckContext({ source: deckSource, mountPath: "/decks", viewer: { controls: false } }), (c) =>
-  c.html(renderDeckEmbedPage({
-    meta: c.var.deckMeta,
-    viewer: c.var.deckViewer,
-  })),
+app.get(
+  `${deckMountPath}/:slug/embed`,
+  deckContext({ source: deckSource, mountPath: deckMountPath, viewer: { controls: false } }),
+  (c) =>
+    c.html(renderDeckEmbedPage({
+      meta: c.var.deckMeta,
+      viewer: c.var.deckViewer,
+    })),
 );
 app.route(
-  "/decks",
+  deckMountPath,
   createDecksRouter({
     viewer: {
       head: renderSampleViewerHead(),
-    },
-    export: {
-      browser: (c) => c.env.BROWSER,
-      pdf: true,
-      png: true,
     },
   }),
 );
