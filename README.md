@@ -343,6 +343,8 @@ bun run smoke:pdf
 - `GET /decks/sample` は viewer
 - `GET /decks/sample/render` は固定キャンバスの render page
 - `GET /decks/sample/print` は A4 handout の print/PDF 用 render page
+- `GET /decks/sample/export.pdf` は Browser Run binding 経由の PDF download
+- `GET /decks/sample/export.png` は Browser Run binding 経由の PNG download
 
 ## Architecture
 

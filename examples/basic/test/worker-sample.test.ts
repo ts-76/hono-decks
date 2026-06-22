@@ -65,9 +65,57 @@ describe("sample Worker app", () => {
     expect(html).toContain('data-action="previous"');
     expect(html).toContain('data-action="next"');
     expect(html).toContain('data-action="fullscreen"');
+    expect(html).toContain('href="/decks/sample/export.pdf"');
+    expect(html).toContain('data-hono-decks-export="pdf"');
+    expect(html).toContain('href="/decks/sample/export.png"');
+    expect(html).toContain('data-hono-decks-export="png"');
     expect(html).not.toContain("/decks/sample/edit");
     expect(html).not.toContain("/agent/chat");
     expect(html).not.toContain("/apply");
+  });
+
+  it("serves Browser Run export routes when the sample binding is available", async () => {
+    const app = await sampleApp();
+    const calls: Array<{ action: "pdf" | "screenshot"; input: Record<string, unknown> }> = [];
+    const env = {
+      BROWSER: {
+        async quickAction(action: "pdf" | "screenshot", input: Record<string, unknown>) {
+          calls.push({ action, input });
+          return new Response(`${action}:${String(input.url)}`, {
+            headers: { "content-type": action === "pdf" ? "application/pdf" : "image/png" },
+          });
+        },
+      },
+    };
+
+    const pdf = await app.request("https://example.com/decks/sample/export.pdf", {}, env);
+    const png = await app.request("https://example.com/decks/sample/export.png", {}, env);
+
+    expect(pdf.status).toBe(200);
+    expect(pdf.headers.get("content-type")).toContain("application/pdf");
+    expect(pdf.headers.get("content-disposition")).toBe('attachment; filename="Hono-Slides.pdf"');
+    expect(await pdf.text()).toBe("pdf:https://example.com/decks/sample/print");
+
+    expect(png.status).toBe(200);
+    expect(png.headers.get("content-type")).toContain("image/png");
+    expect(png.headers.get("content-disposition")).toBe('attachment; filename="Hono-Slides.png"');
+    expect(await png.text()).toBe("screenshot:https://example.com/decks/sample/print");
+
+    expect(calls).toHaveLength(2);
+    expect(calls[0]).toMatchObject({
+      action: "pdf",
+      input: {
+        url: "https://example.com/decks/sample/print",
+        pdfOptions: { format: "a4", printBackground: true, preferCSSPageSize: true },
+      },
+    });
+    expect(calls[1]).toMatchObject({
+      action: "screenshot",
+      input: {
+        url: "https://example.com/decks/sample/print",
+        screenshotOptions: { type: "png", fullPage: true },
+      },
+    });
   });
 
   it("serves a deck details page through deckContext and the sample layout", async () => {
