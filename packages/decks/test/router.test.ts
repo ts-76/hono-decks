@@ -174,6 +174,81 @@ describe("decksRouter", () => {
     expect(html).not.toContain('window.addEventListener("message"');
   });
 
+  it("exports print pages through an opt-in Browser Run binding", async () => {
+    const calls: Array<{ action: "pdf" | "screenshot"; input: Record<string, unknown> }> = [];
+    const browser = {
+      async quickAction(action: "pdf" | "screenshot", input: Record<string, unknown>) {
+        calls.push({ action, input });
+        return new Response(`${action}:${String(input.url)}`, {
+          headers: { "content-type": action === "pdf" ? "application/pdf" : "image/png" },
+        });
+      },
+    };
+    const app = new Hono();
+    app.route(
+      "/slides",
+      decksRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        export: {
+          browser: () => browser,
+          pdf: true,
+          png: {
+            filename: "deck-preview",
+            request: {
+              viewport: { deviceScaleFactor: 3 },
+            },
+          },
+        },
+      }),
+    );
+
+    const viewerHtml = await (await app.request("/slides/deck1")).text();
+    const pdf = await app.request("http://localhost/slides/deck1/export.pdf");
+    const png = await app.request("http://localhost/slides/deck1/export.png");
+
+    expect(viewerHtml).toContain('href="/slides/deck1/export.pdf"');
+    expect(viewerHtml).toContain('data-hono-decks-export="pdf"');
+    expect(viewerHtml).toContain('href="/slides/deck1/export.png"');
+    expect(viewerHtml).toContain('data-hono-decks-export="png"');
+
+    expect(pdf.status).toBe(200);
+    expect(pdf.headers.get("content-type")).toContain("application/pdf");
+    expect(pdf.headers.get("content-disposition")).toBe('attachment; filename="Deck-One.pdf"');
+    expect(await pdf.text()).toBe("pdf:http://localhost/slides/deck1/print");
+
+    expect(png.status).toBe(200);
+    expect(png.headers.get("content-type")).toContain("image/png");
+    expect(png.headers.get("content-disposition")).toBe('attachment; filename="deck-preview.png"');
+    expect(await png.text()).toBe("screenshot:http://localhost/slides/deck1/print");
+
+    expect(calls).toHaveLength(2);
+    expect(calls[0]).toMatchObject({
+      action: "pdf",
+      input: {
+        url: "http://localhost/slides/deck1/print",
+        gotoOptions: { waitUntil: "networkidle2", timeout: 45000 },
+        pdfOptions: { format: "a4", printBackground: true, preferCSSPageSize: true },
+      },
+    });
+    expect(calls[1]).toMatchObject({
+      action: "screenshot",
+      input: {
+        url: "http://localhost/slides/deck1/print",
+        gotoOptions: { waitUntil: "networkidle2", timeout: 45000 },
+        viewport: { width: 794, height: 1123, deviceScaleFactor: 3 },
+        screenshotOptions: { type: "png", fullPage: true },
+      },
+    });
+  });
+
+  it("keeps Browser Run export routes disabled by default", async () => {
+    const app = new Hono();
+    app.route("/slides", decksRouter({ source: manifestDeckSource({ decks: [deck] }) }));
+
+    expect((await app.request("/slides/deck1/export.pdf")).status).toBe(404);
+    expect((await app.request("/slides/deck1/export.png")).status).toBe(404);
+  });
+
   it("returns a clear 500 response when a compiled slide render fails", async () => {
     const failingDeck = {
       ...deck,
