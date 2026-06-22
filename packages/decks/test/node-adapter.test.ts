@@ -150,6 +150,88 @@ export function Counter() {
     }
   });
 
+  it("embeds deck-local theme.css into generated directory decks", async () => {
+    const cwd = await createFixture();
+
+    try {
+      await writeFile(
+        join(cwd, "decks", "deck1", "theme.css"),
+        `.layout-cover { background: #101827; }\n:root { --hono-decks-accent-color: #38bdf8; }\n`,
+        "utf8",
+      );
+
+      const manifest = await compileDecks({
+        cwd,
+        root: "decks",
+        out: "src/generated",
+        mountPath: "/slides",
+      });
+
+      expect(manifest.decks[0].themeSourcePath).toBe("decks/deck1/theme.css");
+      expect(manifest.decks[0].themeStyle).toContain(".layout-cover { background: #101827; }");
+      expect(manifest.decks[1].themeStyle).toBeUndefined();
+
+      const output = await readFile(join(cwd, "src", "generated", "decks.ts"), "utf8");
+      expect(output).toContain('"themeSourcePath": "decks/deck1/theme.css"');
+      expect(output).toContain(".layout-cover { background: #101827; }");
+      expect(output).toContain("--hono-decks-accent-color: #38bdf8");
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("embeds deck-local styles/index.css into generated directory decks", async () => {
+    const cwd = await createFixture();
+
+    try {
+      await mkdir(join(cwd, "decks", "deck1", "styles"), { recursive: true });
+      await writeFile(
+        join(cwd, "decks", "deck1", "styles", "index.css"),
+        `.layout-default { background: white; color: black; }\n`,
+        "utf8",
+      );
+
+      const manifest = await compileDecks({
+        cwd,
+        root: "decks",
+        out: "src/generated",
+        mountPath: "/slides",
+      });
+
+      expect(manifest.decks[0].themeSourcePath).toBe("decks/deck1/styles/index.css");
+      expect(manifest.decks[0].themeStyle).toContain(".layout-default { background: white; color: black; }");
+
+      const output = await readFile(join(cwd, "src", "generated", "decks.ts"), "utf8");
+      expect(output).toContain('"themeSourcePath": "decks/deck1/styles/index.css"');
+      expect(output).toContain(".layout-default { background: white; color: black; }");
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects directory decks with both theme.css and styles/index.css", async () => {
+    const cwd = await createFixture();
+
+    try {
+      await mkdir(join(cwd, "decks", "deck1", "styles"), { recursive: true });
+      await writeFile(join(cwd, "decks", "deck1", "theme.css"), ".slide { color: red; }\n", "utf8");
+      await writeFile(join(cwd, "decks", "deck1", "styles", "index.css"), ".slide { color: blue; }\n", "utf8");
+
+      await expect(
+        compileDecks({
+          cwd,
+          root: "decks",
+          out: "src/generated",
+          mountPath: "/slides",
+        }),
+      ).rejects.toThrow(
+        "Deck deck1 has both decks/deck1/theme.css and decks/deck1/styles/index.css. Use only one theme CSS entry.",
+      );
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("warns and falls back for unknown slide dynamics frontmatter in generated decks", async () => {
     const cwd = await createFixture();
 

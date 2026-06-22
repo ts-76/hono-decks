@@ -12,9 +12,15 @@ export interface CompileMdxModuleDecksInput {
   decks: ResolvedDeckFile[];
   componentModulePaths?: Record<string, string>;
   clientComponentIds?: Record<string, Record<string, string>>;
+  themeStyles?: Record<string, DeckThemeStyleEntry>;
   resolveOgp?(url: string): Promise<LinkCardOgpMetadata | undefined>;
   readText(path: string): Promise<string>;
   readBinary?(path: string): Promise<Uint8Array>;
+}
+
+export interface DeckThemeStyleEntry {
+  sourcePath: string;
+  style: string;
 }
 
 export interface LinkCardOgpMetadata {
@@ -75,6 +81,7 @@ async function compileMdxModuleDeck(
   const slideSources = splitSlideSources(contentBody);
   const assets = await buildAssetRefs(entry.slug, entry.assetPaths, input);
   const componentModulePath = componentImportPath(input.outDir, input.componentModulePaths?.[entry.slug]);
+  const themeStyle = entry.kind === "directory" ? input.themeStyles?.[entry.slug] : undefined;
   const slideModules: GeneratedSlideModule[] = [];
   const slides: CompiledDeck["slides"] = [];
   const warnings: CompiledDeck["warnings"] = [];
@@ -109,6 +116,8 @@ async function compileMdxModuleDeck(
       sourcePath: entry.sourcePath,
       kind: entry.kind,
       meta: toDeckFrontmatter(attrs),
+      themeStyle: themeStyle?.style,
+      themeSourcePath: themeStyle?.sourcePath,
       slides,
       assets,
       warnings,
@@ -551,6 +560,7 @@ function emitDeckObject(deck: GeneratedModuleDeck): string {
       sourcePath: ${JSON.stringify(deck.deck.sourcePath)},
       kind: ${JSON.stringify(deck.deck.kind)},
       meta: ${serializeValue(deck.deck.meta, 3)},
+${deck.deck.themeStyle ? `      "themeStyle": ${serializeValue(deck.deck.themeStyle, 3)},\n` : ""}${deck.deck.themeSourcePath ? `      "themeSourcePath": ${JSON.stringify(deck.deck.themeSourcePath)},\n` : ""}
       assets: ${serializeValue(deck.deck.assets, 3)},
       componentRegistry: ${
         deck.componentModulePath

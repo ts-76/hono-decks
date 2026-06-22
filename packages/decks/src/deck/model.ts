@@ -69,6 +69,8 @@ export interface CompiledDeck {
   sourcePath: string;
   kind: DeckKind;
   meta: DeckFrontmatter;
+  themeStyle?: string;
+  themeSourcePath?: string;
   slides: CompiledSlide[];
   assets: AssetRef[];
   componentRegistry?: Record<string, SlideComponentInput>;

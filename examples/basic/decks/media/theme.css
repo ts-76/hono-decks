@@ -1,0 +1,21 @@
+:root {
+  --hono-decks-color: #eef2ff;
+  --hono-decks-muted-color: #cbd5e1;
+  --hono-decks-accent-color: #2dd4bf;
+  --hono-decks-border-color: rgba(148, 163, 184, .24);
+  --hono-decks-card-background: rgba(8, 18, 34, .82);
+  --hono-decks-inline-code-background: rgba(15, 23, 42, .72);
+  --hono-decks-code-background: rgba(15, 23, 42, .78);
+}
+
+.layout-media {
+  background: #07111f;
+  color: #eef2ff;
+}
+
+.layout-media .media-image {
+  display: block;
+  width: min(100%, 56rem);
+  max-height: 36rem;
+  object-fit: contain;
+}

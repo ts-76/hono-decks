@@ -9,7 +9,7 @@ import { createDevDeckRuntime } from "../runtime/dev-runtime";
 import { resolveDeckFiles } from "../routing/file-routing";
 import { buildDeckManifest, emitDeckManifestModule } from "../generator/manifest-generator";
 import { compileMdxModuleDecks } from "../generator/mdx-module-generator";
-import type { LinkCardOgpMetadata } from "../generator/mdx-module-generator";
+import type { DeckThemeStyleEntry, LinkCardOgpMetadata } from "../generator/mdx-module-generator";
 import {
   applyDeckComponentRegistry,
   emitDeckComponentRegistryModule,
@@ -107,6 +107,7 @@ export async function compileDecks(input: CompileDecksInput): Promise<DeckManife
     const path = deck.kind === "directory" ? findClientEntryModule(paths, root, deck.slug) : undefined;
     return path ? [{ slug: deck.slug, sourcePath: path }] : [];
   });
+  const themeStyles = await discoverDeckThemeStyles({ cwd: input.cwd, root, paths, decks: resolved });
   const clientComponentIds = await discoverClientComponentIds({
     cwd: input.cwd,
     clientEntries: clientEntryPaths,
@@ -118,6 +119,7 @@ export async function compileDecks(input: CompileDecksInput): Promise<DeckManife
     decks: resolved,
     componentModulePaths,
     clientComponentIds,
+    themeStyles,
     resolveOgp: input.resolveOgp ?? resolveOgpMetadata,
     readText: (path) => readFile(join(input.cwd, path), "utf8"),
     readBinary: (path) => readFile(join(input.cwd, path)),
@@ -360,6 +362,41 @@ function findClientEntryModule(paths: string[], root: string, slug: string): str
     const normalized = normalizePath(path);
     return normalized === `${base}.tsx` || normalized === `${base}.ts` || normalized === `${base}.jsx` || normalized === `${base}.js`;
   });
+}
+
+async function discoverDeckThemeStyles(input: {
+  cwd: string;
+  root: string;
+  paths: string[];
+  decks: DeckFileEntry[];
+}): Promise<Record<string, DeckThemeStyleEntry>> {
+  const result: Record<string, DeckThemeStyleEntry> = {};
+
+  for (const deck of input.decks) {
+    if (deck.kind !== "directory") continue;
+    const sourcePath = findDeckThemeStyle(input.paths, input.root, deck.slug);
+    if (!sourcePath) continue;
+    result[deck.slug] = {
+      sourcePath,
+      style: await readFile(join(input.cwd, sourcePath), "utf8"),
+    };
+  }
+
+  return result;
+}
+
+function findDeckThemeStyle(paths: string[], root: string, slug: string): string | undefined {
+  const base = `${normalizePath(root).replace(/\/$/, "")}/${slug}`;
+  const themePath = `${base}/theme.css`;
+  const stylesEntryPath = `${base}/styles/index.css`;
+  const hasTheme = paths.includes(themePath);
+  const hasStylesEntry = paths.includes(stylesEntryPath);
+
+  if (hasTheme && hasStylesEntry) {
+    throw new Error(`Deck ${slug} has both ${themePath} and ${stylesEntryPath}. Use only one theme CSS entry.`);
+  }
+
+  return hasTheme ? themePath : hasStylesEntry ? stylesEntryPath : undefined;
 }
 
 interface ClientEntryModule {
