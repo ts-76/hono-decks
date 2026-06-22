@@ -11,12 +11,23 @@ describe("sample Worker app", () => {
   it("keeps generated deck imports behind a sample facade", async () => {
     const entrySource = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
     const facadeSource = await readFile(new URL("../src/decks.ts", import.meta.url), "utf8");
+    const configSource = await readFile(new URL("../src/decks.config.ts", import.meta.url), "utf8");
 
     expect(entrySource).not.toContain("./generated/decks");
+    expect(entrySource).not.toContain("DeckBrowserRunBinding");
+    expect(entrySource).not.toContain("pdf: true");
+    expect(entrySource).toContain("deckMountPath");
     expect(facadeSource).toContain("This file is safe to edit.");
     expect(facadeSource).toContain("./generated/decks");
+    expect(facadeSource).toContain("decksConfig.router");
+    expect(facadeSource).toContain("source: options.source ?? deckSource");
     expect(facadeSource).toContain("export const deckSource");
+    expect(facadeSource).toContain("export const deckMountPath");
     expect(facadeSource).toContain("export function createDecksRouter");
+    expect(configSource).toContain("defineDecksConfig");
+    expect(configSource).toContain('mountPath: "/decks"');
+    expect(configSource).toContain("DeckBrowserRunBinding");
+    expect(configSource).toContain("pdf: true");
   });
 
   it("uses a generated module-backed deck source", async () => {

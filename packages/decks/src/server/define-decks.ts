@@ -26,6 +26,12 @@ export interface DefinedDecks {
   router(overrides?: DecksRouterOverrides): Hono;
 }
 
+export interface DecksConfig {
+  mountPath?: string;
+  source?(source: DeckSource): DeckSource;
+  router?: DecksRouterOverrides;
+}
+
 export function defineDecks(options: DecksOptions): DefinedDecks {
   const manifest = Array.isArray(options.decks) ? { decks: options.decks } : options.manifest;
   if (!manifest) throw new Error("defineDecks requires either decks or manifest.");
@@ -46,4 +52,8 @@ export function defineDecks(options: DecksOptions): DefinedDecks {
       });
     },
   };
+}
+
+export function defineDecksConfig<T extends DecksConfig>(config: T): T {
+  return config;
 }
