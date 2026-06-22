@@ -13,6 +13,7 @@ describe("sample Worker app", () => {
     const facadeSource = await readFile(new URL("../src/decks.ts", import.meta.url), "utf8");
 
     expect(entrySource).not.toContain("./generated/decks");
+    expect(facadeSource).toContain("This file is safe to edit.");
     expect(facadeSource).toContain("./generated/decks");
     expect(facadeSource).toContain("export const deckSource");
     expect(facadeSource).toContain("export function createDecksRouter");
