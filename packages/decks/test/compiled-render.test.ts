@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { jsx } from "hono/jsx/jsx-runtime";
 import {
-  defineDeckTheme,
-  defineDeckThemes,
   defineSlideComponents,
   renderCompiledDeck,
   renderCompiledDeckPage,
@@ -130,6 +128,41 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("data-overview-mode");
     expect(html).toContain("Unsupported component");
     expect(html).not.toContain("/edit");
+  });
+
+  it("injects deck-local theme CSS between package base CSS and router style", () => {
+    const html = renderCompiledDeckPage({
+      deck: {
+        ...deck,
+        themeStyle: ".deck-local-theme{color:cyan}",
+        themeSourcePath: "decks/deck1/theme.css",
+      },
+      mountPath: "/decks",
+      style: ".router-escape-hatch{color:magenta}",
+    } as Parameters<typeof renderCompiledDeckPage>[0]);
+
+    const baseIndex = html.indexOf(":root{color-scheme:dark");
+    const deckThemeIndex = html.indexOf(".deck-local-theme{color:cyan}");
+    const routerStyleIndex = html.indexOf(".router-escape-hatch{color:magenta}");
+
+    expect(baseIndex).toBeGreaterThanOrEqual(0);
+    expect(deckThemeIndex).toBeGreaterThan(baseIndex);
+    expect(routerStyleIndex).toBeGreaterThan(deckThemeIndex);
+  });
+
+  it("injects deck-local theme CSS into print preview pages", () => {
+    const html = renderCompiledDeckPage({
+      deck: {
+        ...deck,
+        themeStyle: ".print-theme{background:white}",
+        themeSourcePath: "decks/deck1/theme.css",
+      },
+      mountPath: "/decks",
+      printPreview: true,
+    } as Parameters<typeof renderCompiledDeckPage>[0]);
+
+    expect(html).toContain('<html lang="ja" data-hono-decks-print-preview="true">');
+    expect(html).toContain(".print-theme{background:white}");
   });
 
   it("publishes step state and advances fragments before slides", async () => {
@@ -348,58 +381,6 @@ describe("compiled deck rendering", () => {
     expect(html).not.toContain("mdx-component");
   });
 
-  it("applies trusted theme layouts, components, and styles to compiled slides", async () => {
-    const html = await renderCompiledDeckPageAsync({
-      deck: {
-        ...deck,
-        slides: [
-          {
-            ...deck.slides[0],
-            nodes: [
-              {
-                type: "component",
-                name: "ThemeBadge",
-                props: { tone: "accent" },
-                children: [{ type: "text", value: "Trusted theme component" }],
-              },
-            ],
-          },
-        ],
-      },
-      mountPath: "/slides",
-      theme: {
-        name: "sample-theme",
-        style: ".theme-cover{color:var(--theme-accent)}",
-        components: {
-          ThemeBadge: (props) =>
-            jsx("strong", {
-              class: `theme-badge theme-badge-${String(props.tone)}`,
-              children: props.children,
-            }),
-        },
-        layouts: {
-          cover: ({ children, slide, deck }) =>
-            jsx("div", {
-              class: "theme-cover",
-              "data-theme-layout": slide.meta.layout,
-              "data-theme-deck": deck.slug,
-              children,
-            }),
-        },
-      },
-      style: ".slide{--theme-accent:#8bd3ff}",
-    });
-
-    expect(html).toContain(".theme-cover{color:var(--theme-accent)}.slide{--theme-accent:#8bd3ff}");
-    expect(html).toContain('class="slide layout-cover hero"');
-    expect(html).toContain('class="theme-cover"');
-    expect(html).toContain('data-theme-layout="cover"');
-    expect(html).toContain('data-theme-deck="deck1"');
-    expect(html).toContain('class="theme-badge theme-badge-accent"');
-    expect(html).toContain("Trusted theme component");
-    expect(html).not.toContain("mdx-component");
-  });
-
   it("uses CSS variables for built-in component colors while preserving card structure", () => {
     const html = renderCompiledDeckPage({
       deck: {
@@ -427,54 +408,6 @@ describe("compiled deck rendering", () => {
       ".hono-decks-link-card-anchor{display:grid;grid-template-columns:minmax(9rem,32%) minmax(0,1fr);gap:.75rem;align-items:stretch;border:1px solid var(--hono-decks-border-color);border-radius:8px;background:var(--hono-decks-card-background);padding:1rem;color:inherit;text-decoration:none}",
     );
     expect(html).toContain('class="hono-decks-link-card"');
-  });
-
-  it("resolves reusable deck themes from deck metadata", async () => {
-    const html = await renderCompiledDeckPageAsync({
-      deck: {
-        ...deck,
-        meta: { ...deck.meta, theme: "bright" },
-        slides: [
-          {
-            ...deck.slides[0],
-            nodes: [
-              {
-                type: "component",
-                name: "ThemeBadge",
-                props: {},
-                children: [{ type: "text", value: "Registry theme component" }],
-              },
-            ],
-          },
-        ],
-      },
-      mountPath: "/slides",
-      theme: defineDeckTheme({
-        name: "base",
-        style: ":root{--base-theme:1}",
-        components: {
-          ThemeBadge: (props) => jsx("em", { class: "base-badge", children: props.children }),
-        },
-      }),
-      themes: defineDeckThemes({
-        bright: {
-          name: "bright",
-          style: ":root{--bright-theme:1}",
-          components: {
-            ThemeBadge: (props) => jsx("strong", { class: "bright-badge", children: props.children }),
-          },
-          layouts: {
-            cover: ({ children }) => jsx("div", { class: "bright-layout", children }),
-          },
-        },
-      }),
-    });
-
-    expect(html).toContain(":root{--base-theme:1}:root{--bright-theme:1}");
-    expect(html).toContain('class="bright-layout"');
-    expect(html).toContain('class="bright-badge"');
-    expect(html).toContain("Registry theme component");
-    expect(html).not.toContain('class="base-badge"');
   });
 
   it("renders the built-in CodeBlock component with stable code metadata", () => {

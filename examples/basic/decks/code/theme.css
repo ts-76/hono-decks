@@ -1,0 +1,14 @@
+:root {
+  --hono-decks-color: #eef2ff;
+  --hono-decks-muted-color: #cbd5e1;
+  --hono-decks-accent-color: #8bd3ff;
+  --hono-decks-border-color: rgba(148, 163, 184, .24);
+  --hono-decks-card-background: rgba(15, 23, 42, .78);
+  --hono-decks-inline-code-background: rgba(15, 23, 42, .72);
+  --hono-decks-code-background: rgba(15, 23, 42, .78);
+}
+
+.layout-code {
+  background: #0b1020;
+  color: #eef2ff;
+}

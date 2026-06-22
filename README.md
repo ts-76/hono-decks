@@ -78,7 +78,7 @@ https://example.com/plain-link
 <Badge $fire={2} effect="scale">クリックで表示する JSX component</Badge>
 ```
 
-上の記法はそれぞれ `<EmbedFrame />`、`<TweetEmbed />`、`<LinkCard />`、`<Fragment />` 相当へ正規化されます。単独行 URL は通常リンクとして扱い、勝手にカード化しません。細かく制御したい場合は built-in component を直接書けます。独自デザインにしたい場合は `decksRouter({ theme: { components } })` で同名 component を差し替えます。
+上の記法はそれぞれ `<EmbedFrame />`、`<TweetEmbed />`、`<LinkCard />`、`<Fragment />` 相当へ正規化されます。単独行 URL は通常リンクとして扱い、勝手にカード化しません。細かく制御したい場合は built-in component を直接書けます。独自デザインにしたい場合は deck-local `components/` か `decksRouter({ components })` で同名 component を差し替えます。
 
 コードブロックは compile 時に Shiki で highlight され、生成済み slide module に HTML として埋め込まれます。Worker runtime は highlighter を読み込まず、生成済み HTML を render するだけです。fenced code と built-in `<CodeBlock>` のどちらも使えます。
 
@@ -164,66 +164,55 @@ Low-level fallback embeds stay link-first when you do not want third-party scrip
 
 `@hono/decks` は標準 viewer に Content-Security-Policy header を設定しません。アプリ側で CSP を設定する場合、iframe embed は `frame-src`、画像は `img-src`、client entry と X widgets は `script-src` の対象になります。X の third-party script を使いたくない場合は、低レベル built-in の `<SocialEmbed>` を直接使うと link-first fallback にできます。
 
-`style` は generated router に渡せる最後の微調整用 CSS です。`style` は `/:slug/render` の presentation document に入り、theme より後に適用されます。`clientEntry` は独自の asset pipeline や CDN から browser bundle を配信したい場合だけ使う外部URL override です。静的な server-rendered deck ではどちらも不要です。
+deck-wide な見た目は deck directory に CSS を置きます。`@hono/decks` は `decks/*` をそれぞれ独立した deck project として扱うため、theme の境界も router 全体ではなく deck directory 単位です。
+
+```txt
+decks/
+  sample/
+    deck.mdx
+    theme.css
+  media/
+    deck.mdx
+    styles/
+      index.css
+```
+
+`decks/<slug>/theme.css` または `decks/<slug>/styles/index.css` のどちらか一方を置くと、compile 時に generated deck へ埋め込まれ、その deck の `/:slug/render` と `/:slug/print` だけに挿入されます。両方ある場合は compile error です。single-file deck ではこの convention は使いません。
+
+render order は固定です。
+
+```txt
+package base CSS
+deck-local theme.css
+decksRouter({ style }) escape hatch
+```
+
+package 側の built-in component は最低限のカード構造を持ちますが、色は CSS variables で上書きできます。代表的な変数は `--hono-decks-color`、`--hono-decks-muted-color`、`--hono-decks-accent-color`、`--hono-decks-border-color`、`--hono-decks-card-background`、`--hono-decks-code-background` です。
+
+```css
+/* decks/media/theme.css */
+:root {
+  --hono-decks-accent-color: #2dd4bf;
+  --hono-decks-card-background: rgba(8, 18, 34, .82);
+}
+
+.layout-media {
+  background: #07111f;
+  color: #eef2ff;
+}
+```
+
+`style` は generated router に渡せる最後の微調整用 CSS です。通常は deck-local CSS を使い、全 deck に一時的な override を足したい場合だけ `decksRouter({ style })` を使います。`clientEntry` は独自の asset pipeline や CDN から browser bundle を配信したい場合だけ使う外部URL override です。静的な server-rendered deck ではどちらも不要です。
 
 ```ts
 app.route("/decks", decksRouter({
   style: `
-    :root { --accent: #00e0ff; }
-    .slide h1 { color: var(--accent); }
+    .slide h1 { text-wrap: balance; }
   `,
 }));
 ```
 
-deck-wide な theme を作りたい場合は `theme` を渡します。再利用したい theme は `defineDeckTheme()` で定義し、deck frontmatter の `theme:` から選ばせたい theme 群は `defineDeckThemes()` で registry として渡します。`theme.style` は presentation document に入り、router の `style` より先に適用されます。deck が `theme: media` のように指定して `themes.media` が存在する場合、default の `theme` に registry theme を重ねます。
-
-package 側の built-in component は最低限のカード構造を持ちますが、色は CSS variables で上書きできます。代表的な変数は `--hono-decks-color`、`--hono-decks-muted-color`、`--hono-decks-accent-color`、`--hono-decks-border-color`、`--hono-decks-card-background`、`--hono-decks-code-background` です。
-
-```tsx
-import { defineDeckTheme, defineDeckThemes } from "@hono/decks";
-
-const theme = defineDeckTheme({
-  style: `
-    :root {
-      --hono-decks-accent-color: #8bd3ff;
-      --hono-decks-card-background: rgba(15, 23, 42, .78);
-    }
-    .theme-cover { color: var(--hono-decks-accent-color); }
-  `,
-  components: {
-    ThemeBadge: ({ tone, children }) => (
-      <span class={`theme-badge theme-badge-${tone ?? "default"}`}>{children}</span>
-    ),
-  },
-  layouts: {
-    cover: ({ deck, children }) => (
-      <div class="theme-cover" data-theme-deck={deck.slug}>
-        {children}
-      </div>
-    ),
-  },
-});
-
-const themes = defineDeckThemes({
-  media: defineDeckTheme({
-    style: `
-      :root { --hono-decks-accent-color: #2dd4bf; }
-      .layout-media { background: #07111f; color: #eef2ff; }
-    `,
-  }),
-});
-
-app.route("/decks", decksRouter({ theme, themes }));
-```
-
-```mdx
----
-title: Media Verification
-theme: media
----
-```
-
-slide の `layout` frontmatter は `theme.layouts[layout]` がある場合だけ wrapper として解釈されます。該当 layout がない場合でも package 側の `layout-${layout}` class は残るため、CSS だけで段階的に始められます。`viewer.style` と `viewer.head` は slug viewer shell 用で、slide document の theme/style とは分離されています。
+slide の `layout` frontmatter は package 側で `layout-${layout}` class として残します。v1 では layouts は CSS-first に扱い、必要になったら `decks/*/layouts/index.tsx` のような component convention を別途追加します。`viewer.style` と `viewer.head` は slug viewer shell 用で、slide document の deck-local CSS / router `style` とは分離されています。
 
 `/:slug` の viewer shell は `viewer` で調整できます。`viewer.style` は iframe を包む slug page 用の簡易 raw CSS で、slide document には入りません。Hono JSX や `hono/css` を使いたい場合は `viewer.head` に head 要素を渡します。
 

@@ -311,47 +311,22 @@ describe("decksRouter", () => {
     expect(html).toContain('<script type="module" src="/assets/slides.client.js"></script>');
   });
 
-  it("passes trusted theme layouts, components, and styles to render routes", async () => {
-    const themeDeck = {
+  it("renders deck-local theme CSS only in deck render and print routes", async () => {
+    const themedDeck = {
       ...deck,
-      slides: [
-        {
-          ...deck.slides[0],
-          nodes: [
-            {
-              type: "component",
-              name: "ThemeBadge",
-              props: { tone: "accent" },
-              children: [{ type: "text", value: "Theme route" }],
-            },
-          ],
-        },
-      ],
+      themeStyle: ".deck-local-theme{color:cyan}",
+      themeSourcePath: "decks/deck1/theme.css",
     } satisfies CompiledDeck;
     const app = new Hono();
-    app.route(
-      "/slides",
-      decksRouter({
-        source: manifestDeckSource({ decks: [themeDeck] }),
-        theme: {
-          style: ".theme-cover{display:grid}",
-          components: {
-            ThemeBadge: (props) => jsx("strong", { class: `theme-badge-${String(props.tone)}`, children: props.children }),
-          },
-          layouts: {
-            cover: ({ children }) => jsx("div", { class: "theme-cover", children }),
-          },
-        },
-      }),
-    );
+    app.route("/slides", decksRouter({ source: manifestDeckSource({ decks: [themedDeck] }) }));
 
-    const html = await (await app.request("/slides/deck1/render")).text();
+    const viewerHtml = await (await app.request("/slides/deck1")).text();
+    const renderHtml = await (await app.request("/slides/deck1/render")).text();
+    const printHtml = await (await app.request("/slides/deck1/print")).text();
 
-    expect(html).toContain(".theme-cover{display:grid}");
-    expect(html).toContain('class="theme-cover"');
-    expect(html).toContain('class="theme-badge-accent"');
-    expect(html).toContain("Theme route");
-    expect(html).not.toContain("mdx-component");
+    expect(viewerHtml).not.toContain(".deck-local-theme{color:cyan}");
+    expect(renderHtml).toContain(".deck-local-theme{color:cyan}");
+    expect(printHtml).toContain(".deck-local-theme{color:cyan}");
   });
 
   it("serves an embedded client entry asset from the mounted router", async () => {

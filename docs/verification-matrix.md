@@ -70,8 +70,8 @@ R2 official sample direction is still open. The current package API supports bin
 | Print view | Browser print stylesheet | done | Package tests assert a dedicated `/:slug/print` page with an A4 portrait handout stylesheet, margins, 3-up slide grouping, and all fragments visible. |
 | PDF export | Print-to-PDF compatible output | smoke | `examples/basic` includes `smoke:pdf`, which starts `wrangler dev`, saves sample/media/motion print pages to PDF, checks A4 handout page counts, and renders first-page PNG previews with Poppler or Quick Look. Final visual approval remains a release checklist item. |
 | Browser Run export | Opt-in Worker PDF/PNG routes | done | `decksRouter({ export })` can expose `/:slug/export.pdf` and `/:slug/export.png` using Cloudflare Browser Run `quickAction()` against the existing `/:slug/print` layout. Package tests cover payloads, download headers, viewer links, and disabled-by-default behavior. |
-| Theme switching | Deck-level theme | done | `DeckTheme` now supports trusted `style`, `components`, and `layouts`; route `style` applies after `theme.style`, while `viewer.head` stays viewer-shell only. |
-| Layout switching | Slide `layout` frontmatter | done | `theme.layouts[layout]` can wrap compiled MDX output, with package `layout-*` classes preserved as fallback. |
+| Deck-local theme CSS | `decks/<slug>/theme.css` / `styles/index.css` | done | Compile embeds one deck-local CSS entry into generated deck data; render/print pages apply package base CSS, deck-local CSS, then route `style`, while the viewer shell stays separate. |
+| Layout switching | Slide `layout` frontmatter | done | Package preserves `layout-*` classes, and deck-local CSS owns layout styling. TS/TSX layout modules are deferred until a separate component convention is needed. |
 
 ## Pages And Distribution
 

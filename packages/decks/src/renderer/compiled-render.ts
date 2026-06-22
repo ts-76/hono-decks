@@ -1,4 +1,3 @@
-import { raw } from "hono/html";
 import { RenderError } from "../deck/model";
 import type { AssetRef, CompiledDeck, CompiledSlide } from "../deck/model";
 import {
@@ -6,7 +5,6 @@ import {
   createMdxComponents,
   defineSlideComponents,
   renderJsxValue,
-  renderJsxValueSync,
   renderSlideNodes,
   renderSlideNodesAsync,
 } from "./jsx-renderer";
@@ -26,44 +24,15 @@ export type {
   SlideComponentRegistry,
 } from "./jsx-renderer";
 
-export interface SlideLayoutInput {
-  deck: CompiledDeck;
-  slide: CompiledSlide;
-  layout: string;
-  children: DeckRenderable;
-}
-
-export type SlideLayout = (input: SlideLayoutInput) => MaybePromise<DeckRenderable>;
-
-export interface DeckTheme {
-  name?: string;
-  style?: string;
-  components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
-  layouts?: Record<string, SlideLayout>;
-}
-
-export type DeckThemeRegistry = Record<string, DeckTheme>;
-
-export function defineDeckTheme(theme: DeckTheme): DeckTheme {
-  return theme;
-}
-
-export function defineDeckThemes(themes: DeckThemeRegistry): DeckThemeRegistry {
-  return themes;
-}
-
 export function renderCompiledDeck(
   deck: CompiledDeck,
   input: {
     components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
-    theme?: DeckTheme;
-    themes?: DeckThemeRegistry;
   } = {},
 ): string {
-  const theme = resolveDeckTheme(deck, input.theme, input.themes);
-  const components = normalizeComponents(input.components, theme);
+  const components = normalizeComponents(input.components);
   return `<main class="hono-decks-stage" data-hono-decks-stage data-deck-slug="${escapeHtml(deck.slug)}"><div class="hono-decks-deck" data-hono-decks-deck>${deck.slides
-    .map((slide) => renderCompiledSlide(slide, deck.assets, { components, deck, theme }))
+    .map((slide) => renderCompiledSlide(slide, deck.assets, { components, deck }))
     .join("\n")}</div></main>`;
 }
 
@@ -71,14 +40,11 @@ export async function renderCompiledDeckAsync(
   deck: CompiledDeck,
   input: {
     components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
-    theme?: DeckTheme;
-    themes?: DeckThemeRegistry;
   } = {},
 ): Promise<string> {
-  const theme = resolveDeckTheme(deck, input.theme, input.themes);
-  const components = normalizeComponents(input.components, theme);
+  const components = normalizeComponents(input.components);
   const slides = await Promise.all(
-    deck.slides.map((slide) => renderCompiledSlideAsync(slide, deck.assets, { components, deck, theme })),
+    deck.slides.map((slide) => renderCompiledSlideAsync(slide, deck.assets, { components, deck })),
   );
   return `<main class="hono-decks-stage" data-hono-decks-stage data-deck-slug="${escapeHtml(deck.slug)}"><div class="hono-decks-deck" data-hono-decks-deck>${slides.join(
     "\n",
@@ -91,7 +57,6 @@ export function renderCompiledSlide(
   input: {
     components?: SlideComponentRegistry;
     deck?: CompiledDeck;
-    theme?: DeckTheme;
   } = {},
 ): string {
   const layout = slide.meta.layout ?? "default";
@@ -103,11 +68,10 @@ export function renderCompiledSlide(
   const html = slide.nodes?.length
     ? renderSlideNodes(slide.nodes, { components: input.components, assets })
     : rewriteLocalAssetUrls(slide.html, assets);
-  const body = renderSlideLayoutSync(html, slide, input);
   const style = slide.meta.background ? ` style="${escapeHtml(backgroundStyle(slide.meta.background, assets))}"` : "";
   const transition = slide.meta.transition ? ` data-transition="${escapeHtml(safeClass(slide.meta.transition))}"` : "";
 
-  return `<section class="${classes}" data-slide-index="${slide.index}"${slide.meta.title ? ` aria-label="${escapeHtml(slide.meta.title)}"` : ""}${transition}${style}><div class="hono-decks-slide-content">${body}</div>${notesHtml}</section>`;
+  return `<section class="${classes}" data-slide-index="${slide.index}"${slide.meta.title ? ` aria-label="${escapeHtml(slide.meta.title)}"` : ""}${transition}${style}><div class="hono-decks-slide-content">${html}</div>${notesHtml}</section>`;
 }
 
 export async function renderCompiledSlideAsync(
@@ -116,7 +80,6 @@ export async function renderCompiledSlideAsync(
   input: {
     components?: SlideComponentRegistry;
     deck?: CompiledDeck;
-    theme?: DeckTheme;
   } = {},
 ): Promise<string> {
   const layout = slide.meta.layout ?? "default";
@@ -126,11 +89,10 @@ export async function renderCompiledSlideAsync(
   const notes = slide.notes ?? slide.meta.notes;
   const notesHtml = notes ? `<aside class="speaker-notes" hidden>${escapeHtml(notes)}</aside>` : "";
   const html = await renderSlideBodyAsync(slide, assets, input);
-  const body = await renderSlideLayoutAsync(html, slide, input);
   const style = slide.meta.background ? ` style="${escapeHtml(backgroundStyle(slide.meta.background, assets))}"` : "";
   const transition = slide.meta.transition ? ` data-transition="${escapeHtml(safeClass(slide.meta.transition))}"` : "";
 
-  return `<section class="${classes}" data-slide-index="${slide.index}"${slide.meta.title ? ` aria-label="${escapeHtml(slide.meta.title)}"` : ""}${transition}${style}><div class="hono-decks-slide-content">${body}</div>${notesHtml}</section>`;
+  return `<section class="${classes}" data-slide-index="${slide.index}"${slide.meta.title ? ` aria-label="${escapeHtml(slide.meta.title)}"` : ""}${transition}${style}><div class="hono-decks-slide-content">${html}</div>${notesHtml}</section>`;
 }
 
 async function renderSlideBodyAsync(
@@ -165,13 +127,10 @@ export function renderCompiledDeckPage(input: {
   style?: string;
   liveReloadPath?: string;
   components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
-  theme?: DeckTheme;
-  themes?: DeckThemeRegistry;
   clientEntry?: string;
   printPreview?: boolean;
 }): string {
   const { deck } = input;
-  const theme = resolveDeckTheme(deck, input.theme, input.themes);
   const warnings = deck.warnings.length
     ? `<aside class="hono-decks-warnings">${deck.warnings.map((warning) => `<p>${escapeHtml(warning.message)}</p>`).join("")}</aside>`
     : "";
@@ -184,11 +143,11 @@ export function renderCompiledDeckPage(input: {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapeHtml(deck.meta.title ?? deck.slug)}</title>
-  <style>${basePresentationStyle()}${theme?.style ?? ""}${input.style ?? ""}</style>
+  <style>${basePresentationStyle()}${deck.themeStyle ?? ""}${input.style ?? ""}</style>
 </head>
 <body${bodyAttrs}>
   ${warnings}
-  ${renderCompiledDeck(deck, { components: mergeComponentInputs(deck.componentRegistry, input.components), theme })}
+  ${renderCompiledDeck(deck, { components: mergeComponentInputs(deck.componentRegistry, input.components) })}
   ${input.printPreview ? "" : renderPresentationScript()}
   ${!input.printPreview && input.liveReloadPath ? renderLiveReloadScript(input.liveReloadPath) : ""}
   ${!input.printPreview && input.clientEntry ? renderClientEntryScript(input.clientEntry) : ""}
@@ -202,13 +161,10 @@ export async function renderCompiledDeckPageAsync(input: {
   style?: string;
   liveReloadPath?: string;
   components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
-  theme?: DeckTheme;
-  themes?: DeckThemeRegistry;
   clientEntry?: string;
   printPreview?: boolean;
 }): Promise<string> {
   const { deck } = input;
-  const theme = resolveDeckTheme(deck, input.theme, input.themes);
   const warnings = deck.warnings.length
     ? `<aside class="hono-decks-warnings">${deck.warnings.map((warning) => `<p>${escapeHtml(warning.message)}</p>`).join("")}</aside>`
     : "";
@@ -221,11 +177,11 @@ export async function renderCompiledDeckPageAsync(input: {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapeHtml(deck.meta.title ?? deck.slug)}</title>
-  <style>${basePresentationStyle()}${theme?.style ?? ""}${input.style ?? ""}</style>
+  <style>${basePresentationStyle()}${deck.themeStyle ?? ""}${input.style ?? ""}</style>
 </head>
 <body${bodyAttrs}>
   ${warnings}
-  ${await renderCompiledDeckAsync(deck, { components: mergeComponentInputs(deck.componentRegistry, input.components), theme })}
+  ${await renderCompiledDeckAsync(deck, { components: mergeComponentInputs(deck.componentRegistry, input.components) })}
   ${input.printPreview ? "" : renderPresentationScript()}
   ${!input.printPreview && input.liveReloadPath ? renderLiveReloadScript(input.liveReloadPath) : ""}
   ${!input.printPreview && input.clientEntry ? renderClientEntryScript(input.clientEntry) : ""}
@@ -235,71 +191,11 @@ export async function renderCompiledDeckPageAsync(input: {
 
 function normalizeComponents(
   components: SlideComponentRegistry | Record<string, SlideComponentInput> | undefined,
-  theme: DeckTheme | undefined,
 ): SlideComponentRegistry | undefined {
   return {
     ...builtInSlideComponents,
-    ...(theme?.components ? defineSlideComponents(theme.components) : {}),
     ...(components ? defineSlideComponents(components) : {}),
   };
-}
-
-function resolveDeckTheme(
-  deck: CompiledDeck,
-  defaultTheme: DeckTheme | undefined,
-  themes: DeckThemeRegistry | undefined,
-): DeckTheme | undefined {
-  const themeName = deck.meta.theme;
-  const selectedTheme = themeName ? themes?.[themeName] : undefined;
-  return mergeDeckThemes(defaultTheme, selectedTheme);
-}
-
-function mergeDeckThemes(base: DeckTheme | undefined, override: DeckTheme | undefined): DeckTheme | undefined {
-  if (!base) return override;
-  if (!override) return base;
-  return {
-    name: override.name ?? base.name,
-    style: `${base.style ?? ""}${override.style ?? ""}`,
-    components: mergeComponentInputs(base.components, override.components),
-    layouts: {
-      ...(base.layouts ?? {}),
-      ...(override.layouts ?? {}),
-    },
-  };
-}
-
-function renderSlideLayoutSync(
-  children: DeckRenderable,
-  slide: CompiledSlide,
-  input: {
-    deck?: CompiledDeck;
-    theme?: DeckTheme;
-  },
-): string {
-  const deck = input.deck;
-  const layout = slide.meta.layout ?? "default";
-  const renderer = input.theme?.layouts?.[layout];
-  if (!renderer || !deck) return String(children);
-  const rendered = renderer({ deck, slide, layout, children: raw(String(children)) });
-  if (rendered instanceof Promise) {
-    throw new RenderError(`Theme layout "${layout}" returned a Promise in sync render. Use renderCompiledDeckPageAsync().`, "theme-layout-async");
-  }
-  return renderJsxValueSync(rendered);
-}
-
-async function renderSlideLayoutAsync(
-  children: DeckRenderable,
-  slide: CompiledSlide,
-  input: {
-    deck?: CompiledDeck;
-    theme?: DeckTheme;
-  },
-): Promise<string> {
-  const deck = input.deck;
-  const layout = slide.meta.layout ?? "default";
-  const renderer = input.theme?.layouts?.[layout];
-  if (!renderer || !deck) return String(children);
-  return await renderJsxValue(renderer({ deck, slide, layout, children: raw(String(children)) }));
 }
 
 function mergeComponentInputs(

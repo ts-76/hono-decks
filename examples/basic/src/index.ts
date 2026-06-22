@@ -7,8 +7,6 @@ import {
   renderDeckEmbedPage,
   renderHomePage,
   renderSampleViewerHead,
-  sampleDeckTheme,
-  sampleDeckThemes,
 } from "./pages";
 
 interface Env {
@@ -39,8 +37,6 @@ app.route(
   "/decks",
   decksRouter({
     source: deckSource,
-    theme: sampleDeckTheme,
-    themes: sampleDeckThemes,
     viewer: {
       head: renderSampleViewerHead(),
     },

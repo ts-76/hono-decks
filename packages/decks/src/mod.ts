@@ -4,8 +4,6 @@ export { parseDeck } from "./parser/parser";
 export { renderDeck, renderSlide } from "./renderer/render";
 export {
   builtInSlideComponents,
-  defineDeckTheme,
-  defineDeckThemes,
   defineSlideComponents,
   renderCompiledDeck,
   renderCompiledDeckAsync,
@@ -16,11 +14,7 @@ export {
 } from "./renderer/compiled-render";
 export type {
   DeckRenderable,
-  DeckTheme,
-  DeckThemeRegistry,
   MaybePromise,
-  SlideLayout,
-  SlideLayoutInput,
   SlideComponent,
   SlideComponentDefinition,
   SlideComponentInput,
