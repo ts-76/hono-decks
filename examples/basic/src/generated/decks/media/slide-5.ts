@@ -17,10 +17,7 @@ function _createMdxContent(props) {
         children: "https://yusukebe.com/"
       })
     }), "\n", _jsx(LinkCard, {
-      href: "https://yusukebe.com/",
-      title: "ゆーすけべー日記",
-      description: "ゆーすけべーの名前で活動しています。天然パーマです。",
-      image: "https://yusukebe.com/icons/myicon.png"
+      href: "https://yusukebe.com/"
     }), "\n", _jsx(_components.p, {
       children: "Link cards resolve OGP metadata at compile time when available and stay script-free at runtime."
     })]
