@@ -16,6 +16,7 @@ const artifactDir = process.env.HONO_DECKS_PDF_SMOKE_ARTIFACTS ?? path.join(tmpd
 
 const decks = [
   { slug: "sample", pages: 1 },
+  { slug: "media", pages: 2 },
   { slug: "motion", pages: 1 },
 ];
 

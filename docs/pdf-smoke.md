@@ -20,6 +20,7 @@ The script checks:
 - print output uses A4 portrait pages with margins
 - up to 3 slides are placed on each printed page
 - `sample` exports 1 handout page for 3 slides
+- `media` exports 2 handout pages for 6 slides
 - `motion` exports 1 handout page for 2 slides
 - the generated PDF files are non-empty and large enough to catch blank output
 - the first PDF page can be rendered to a portrait PNG preview
