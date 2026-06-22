@@ -88,16 +88,37 @@ describe("sample Worker app", () => {
     expect(html).toContain('data-action="previous"');
     expect(html).toContain('data-action="next"');
     expect(html).toContain('data-action="fullscreen"');
-    expect(html).toContain('href="/decks/sample/export.pdf"');
-    expect(html).toContain('data-hono-decks-export="pdf"');
-    expect(html).toContain('href="/decks/sample/export.png"');
-    expect(html).toContain('data-hono-decks-export="png"');
+    expect(html).not.toContain('href="/decks/sample/export.pdf"');
+    expect(html).not.toContain('data-hono-decks-export="pdf"');
+    expect(html).not.toContain('href="/decks/sample/export.png"');
+    expect(html).not.toContain('data-hono-decks-export="png"');
     expect(html).not.toContain("/decks/sample/edit");
     expect(html).not.toContain("/agent/chat");
     expect(html).not.toContain("/apply");
   });
 
-  it("serves Browser Run export routes when the sample binding is available", async () => {
+  it("rejects Browser Run export routes without the sample export token", async () => {
+    const app = await sampleApp();
+    const calls: Array<{ action: "pdf" | "screenshot"; input: Record<string, unknown> }> = [];
+    const env = {
+      BROWSER: {
+        async quickAction(action: "pdf" | "screenshot", input: Record<string, unknown>) {
+          calls.push({ action, input });
+          return new Response(`${action}:${String(input.url)}`);
+        },
+      },
+      DECK_EXPORT_TOKEN: "sample-secret",
+    };
+
+    const pdf = await app.request("https://example.com/decks/sample/export.pdf", {}, env);
+    const png = await app.request("https://example.com/decks/sample/export.png", {}, env);
+
+    expect(pdf.status).toBe(403);
+    expect(png.status).toBe(403);
+    expect(calls).toHaveLength(0);
+  });
+
+  it("serves Browser Run export routes when the sample binding and export token are available", async () => {
     const app = await sampleApp();
     const calls: Array<{ action: "pdf" | "screenshot"; input: Record<string, unknown> }> = [];
     const env = {
@@ -109,10 +130,12 @@ describe("sample Worker app", () => {
           });
         },
       },
+      DECK_EXPORT_TOKEN: "sample-secret",
     };
 
-    const pdf = await app.request("https://example.com/decks/sample/export.pdf", {}, env);
-    const png = await app.request("https://example.com/decks/sample/export.png", {}, env);
+    const headers = { authorization: "Bearer sample-secret" };
+    const pdf = await app.request("https://example.com/decks/sample/export.pdf", { headers }, env);
+    const png = await app.request("https://example.com/decks/sample/export.png", { headers }, env);
 
     expect(pdf.status).toBe(200);
     expect(pdf.headers.get("content-type")).toContain("application/pdf");
