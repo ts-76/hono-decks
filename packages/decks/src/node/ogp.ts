@@ -36,6 +36,8 @@ async function fetchPublicHttpUrl(url: string): Promise<Response | undefined> {
 
     if (!isRedirect(response.status)) return response;
 
+    await response.body?.cancel();
+
     const location = response.headers.get("location");
     if (!location) return undefined;
     current = new URL(location, current).toString();
@@ -94,13 +96,30 @@ function isPrivateIpv6(address: string): boolean {
     normalized === "::" ||
     normalized === "::1" ||
     normalized.startsWith("fe80:") ||
+    normalized.startsWith("fec0:") ||
     normalized.startsWith("fc") ||
-    normalized.startsWith("fd")
+    normalized.startsWith("fd") ||
+    normalized.startsWith("ff")
   ) {
     return true;
   }
-  const ipv4Mapped = normalized.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
-  return ipv4Mapped ? isPrivateIpv4(ipv4Mapped[1]) : false;
+
+  if (normalized.startsWith("::ffff:")) {
+    const tail = normalized.slice("::ffff:".length);
+    const dotted = tail.match(/^(?:0:)?(\d+\.\d+\.\d+\.\d+)$/);
+    if (dotted) return isPrivateIpv4(dotted[1]);
+
+    const hex = tail.match(/^(?:0:)?([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+    if (hex) {
+      const hi = Number.parseInt(hex[1], 16);
+      const lo = Number.parseInt(hex[2], 16);
+      const value32 = (hi << 16) | lo;
+      const ipv4 = [(value32 >>> 24) & 255, (value32 >>> 16) & 255, (value32 >>> 8) & 255, value32 & 255].join(".");
+      return isPrivateIpv4(ipv4);
+    }
+  }
+
+  return false;
 }
 
 function isRedirect(status: number): boolean {
