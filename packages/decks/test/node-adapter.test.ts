@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DeckFileChange } from "../src/deck/model";
 import {
   buildDeckManifestFromFileSystem,
@@ -9,9 +9,13 @@ import {
   createLocalDeckIO,
   writeDeckManifestModule,
 } from "../src/node/index";
+import { resolveOgpMetadata } from "../src/node/ogp";
 import { manifestDeckSource } from "../src/source/manifest-source";
 
 describe("Node filesystem deck adapter", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
   it("discovers deck files, compiles decks, and maps local assets", async () => {
     const cwd = await createFixture();
 
@@ -44,6 +48,31 @@ describe("Node filesystem deck adapter", () => {
     } finally {
       await rm(cwd, { recursive: true, force: true });
     }
+  });
+
+  it("does not fetch OGP metadata from localhost link cards", async () => {
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+
+    const metadata = await resolveOgpMetadata("http://127.0.0.1/internal");
+
+    expect(metadata).toBeUndefined();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("does not follow OGP redirects to private network hosts", async () => {
+    const fetch = vi.fn().mockResolvedValue(
+      new Response(null, {
+        status: 302,
+        headers: { location: "http://169.254.169.254/latest/meta-data/" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetch);
+
+    const metadata = await resolveOgpMetadata("http://93.184.216.34/card");
+
+    expect(metadata).toBeUndefined();
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 
   it("writes a generated manifest module", async () => {
