@@ -334,6 +334,22 @@ export default defineDecksConfig({
 });
 ```
 
+サイトオーナーだけに export を許可したい場合は `export.authorize` を使います。未許可の viewer では `PDF` / `PNG` link が表示されず、直接 `/:slug/export.pdf` や `/:slug/export.png` にアクセスした場合は 403 を返します。
+
+```tsx
+export default defineDecksConfig({
+  router: {
+    export: {
+      authorize: (c) =>
+        c.req.header("cf-access-authenticated-user-email") === "owner@example.com",
+      browser: (c) => (c.env as DecksConfigBindings).BROWSER,
+      pdf: true,
+      png: true,
+    },
+  },
+});
+```
+
 PDF export は Browser Run の `quickAction("pdf")` に `/decks/:slug/print` URL を渡し、既定で `format: "a4"`、`preferCSSPageSize: true`、`printBackground: true` を使います。PNG export は `quickAction("screenshot")` で同じ `/print` URL を full-page capture します。Browser Run binding が無い環境で export route にアクセスした場合は 503 を返します。binding を設定していない場合、export routes は生成されません。
 
 標準 router ではなく deck-aware な独自ページやAPIを作る場合は `deckContext()` を使います。details、embed、analytics、OGP meta などに必要な deck 情報と viewer parts を `c.var` から参照できます。

@@ -261,6 +261,81 @@ describe("decksRouter", () => {
     });
   });
 
+  it("authorizes Browser Run export links and direct export routes per request", async () => {
+    const calls: Array<{ action: "pdf" | "screenshot"; input: Record<string, unknown> }> = [];
+    const authorizeCalls: Array<{ format: "pdf" | "png"; slug: string }> = [];
+    const browser = {
+      async quickAction(action: "pdf" | "screenshot", input: Record<string, unknown>) {
+        calls.push({ action, input });
+        return new Response(`${action}:${String(input.url)}`, {
+          headers: { "content-type": action === "pdf" ? "application/pdf" : "image/png" },
+        });
+      },
+    };
+    const app = new Hono();
+    app.route(
+      "/slides",
+      decksRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        export: {
+          authorize: (c, { deck, format }) => {
+            authorizeCalls.push({ format, slug: deck.slug });
+            return c.req.header("x-owner") === "yes";
+          },
+          browser: () => browser,
+          pdf: true,
+          png: true,
+        },
+      }),
+    );
+
+    const unauthorizedViewer = await (await app.request("/slides/deck1")).text();
+    const unauthorizedPdf = await app.request("http://localhost/slides/deck1/export.pdf");
+    const unauthorizedPng = await app.request("http://localhost/slides/deck1/export.png");
+
+    expect(unauthorizedViewer).not.toContain('href="/slides/deck1/export.pdf"');
+    expect(unauthorizedViewer).not.toContain('href="/slides/deck1/export.png"');
+    expect(unauthorizedPdf.status).toBe(403);
+    expect(unauthorizedPng.status).toBe(403);
+    expect(await unauthorizedPdf.json()).toEqual({
+      error: "Browser export not authorized",
+      slug: "deck1",
+      format: "pdf",
+    });
+    expect(await unauthorizedPng.json()).toEqual({
+      error: "Browser export not authorized",
+      slug: "deck1",
+      format: "png",
+    });
+    expect(calls).toHaveLength(0);
+
+    const authorizedViewer = await (await app.request("/slides/deck1", { headers: { "x-owner": "yes" } })).text();
+    const authorizedPdf = await app.request("http://localhost/slides/deck1/export.pdf", {
+      headers: { "x-owner": "yes" },
+    });
+    const authorizedPng = await app.request("http://localhost/slides/deck1/export.png", {
+      headers: { "x-owner": "yes" },
+    });
+
+    expect(authorizedViewer).toContain('href="/slides/deck1/export.pdf"');
+    expect(authorizedViewer).toContain('href="/slides/deck1/export.png"');
+    expect(authorizedPdf.status).toBe(200);
+    expect(authorizedPng.status).toBe(200);
+    expect(await authorizedPdf.text()).toBe("pdf:http://localhost/slides/deck1/print");
+    expect(await authorizedPng.text()).toBe("screenshot:http://localhost/slides/deck1/print");
+    expect(calls).toHaveLength(2);
+    expect(authorizeCalls).toEqual([
+      { format: "pdf", slug: "deck1" },
+      { format: "png", slug: "deck1" },
+      { format: "pdf", slug: "deck1" },
+      { format: "png", slug: "deck1" },
+      { format: "pdf", slug: "deck1" },
+      { format: "png", slug: "deck1" },
+      { format: "pdf", slug: "deck1" },
+      { format: "png", slug: "deck1" },
+    ]);
+  });
+
   it("keeps Browser Run export routes disabled by default", async () => {
     const app = new Hono();
     app.route("/slides", decksRouter({ source: manifestDeckSource({ decks: [deck] }) }));
