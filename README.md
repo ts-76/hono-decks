@@ -57,13 +57,16 @@ app.route("/decks", createDecksRouter());
 local deck files から generated router と slide module を生成する CLI も package 側にあります。ファイル読み取りと MDX compile は build-time に閉じ、Worker runtime は生成済み module を import します。
 
 ```bash
+hono-decks init \
+  --out src/decks.ts
+
 hono-decks compile \
   --root decks \
   --out src/generated \
   --mount /slides
 ```
 
-生成される `src/generated/decks.ts` は Worker bundle に deck module を含めるための generated entry です。app の主 entry では直接 import せず、`src/decks.ts` のような app-owned facade に閉じ込めると、開発中の route code と generated code の距離を保てます。`src/decks.ts` は編集してよいファイルで、compile/watch が上書きする対象は `src/generated/decks.ts` です。custom page や `deckContext()` も同じ facade から export した `deckSource` を共有できます。
+`hono-decks init` は `src/decks.ts` の雛形を初回だけ作ります。既存ファイルは上書きしません。生成される `src/generated/decks.ts` は Worker bundle に deck module を含めるための generated entry です。app の主 entry では直接 import せず、`src/decks.ts` のような app-owned facade に閉じ込めると、開発中の route code と generated code の距離を保てます。`src/decks.ts` は編集してよいファイルで、compile/watch が上書きする対象は `src/generated/decks.ts` です。custom page や `deckContext()` も同じ facade から export した `deckSource` を共有できます。
 
 `decks/*/components/index.tsx` または `index.ts` の named export は deck-local component として取り込まれます。deck ごとに `MDXContent` へ component map を渡すため、複数 deck に同名の `<Badge />` があっても server render 側では衝突しません。
 
@@ -155,7 +158,7 @@ const app = new Hono<{ Bindings: DeckBindings }>();
 app.route("/decks", createDecksRouter());
 ```
 
-`examples/basic/src/deck-source.ts` では、この `withR2Assets()` をさらに custom `DeckSource` として包み、asset response に `x-hono-decks-asset-source: r2 | embedded` を付けています。これは package が compile-time Node I/O で R2 を読まず、Worker runtime の `DeckSource.getAsset()` 境界で存在確認・cache header・fallback を扱う例です。`examples/basic/decks/media` には R2-backed image の表示サンプルがあります。
+`examples/basic/src/decks.ts` は `hono-decks init` の雛形に R2 用の source adapter を足した例です。`examples/basic/src/deck-source.ts` では、この `withR2Assets()` をさらに custom `DeckSource` として包み、asset response に `x-hono-decks-asset-source: r2 | embedded` を付けています。これは package が compile-time Node I/O で R2 を読まず、Worker runtime の `DeckSource.getAsset()` 境界で存在確認・cache header・fallback を扱う例です。`examples/basic/decks/media` には R2-backed image の表示サンプルがあります。
 
 この package は R2 upload までは行いません。`withR2Assets()` は `decks/media/assets/r2-remote.svg` のような generated asset の `sourcePath` を R2 key として読むため、deploy 前に同じ key で object を置いてください。ローカル test では `Cache-Control` header と R2 binding 経由の response を検証できますが、Cloudflare edge cache の hit/miss は deploy 後に `cf-cache-status` や `age` を見る smoke check で確認します。手順は [Deployed R2 Cache Smoke](docs/deployed-r2-cache-smoke.md) にまとめています。
 
@@ -348,9 +351,13 @@ examples/basic/
         client/
           index.tsx
   src/
+    index.ts
+    decks.ts          # app-owned facade, safe to edit
+    deck-source.ts    # optional DeckSource enhancer for R2/cache behavior
+    pages.tsx
     generated/
       client-entry.ts
-      decks.ts
+      decks.ts        # generated internal module, overwritten by compile
       decks/
         code/
           slide-0.ts
@@ -362,7 +369,7 @@ examples/basic/
           slide-0.ts
 ```
 
-`dev`、`typecheck`、`test`、`deploy` は事前に `bun run decks:compile` を実行し、`decks/*/deck.mdx` から `src/generated/decks.ts` と slide module 群を更新します。sample や motion のように deck-local な `components/client/index.tsx` を持つ deck は browser bundle 化されて `src/generated/client-entry.ts` に埋め込まれ、`client: true` component を `hono/jsx/dom` で hydrate します。Worker runtime は生成済み router/client asset を import するだけで、file system の読み取りは build-time CLI に閉じています。
+`src/decks.ts` は `hono-decks init --out src/decks.ts` で作れる app-owned facade です。basic sample ではその雛形に `createSampleDeckSource()` を足して、R2/cache behavior を差し込んでいます。`dev`、`typecheck`、`test`、`deploy` は事前に `bun run decks:compile` を実行し、`decks/*/deck.mdx` から `src/generated/decks.ts` と slide module 群を更新します。sample や motion のように deck-local な `components/client/index.tsx` を持つ deck は browser bundle 化されて `src/generated/client-entry.ts` に埋め込まれ、`client: true` component を `hono/jsx/dom` で hydrate します。Worker runtime は生成済み router/client asset を import するだけで、file system の読み取りは build-time CLI に閉じています。
 
 今後 sample で検証する media、embed、code block、animation、accessibility、export などの項目は [Verification Matrix](docs/verification-matrix.md) にまとめています。transition と fragment/step navigation の設計は [Slide Dynamics](docs/slide-dynamics.md) に切り出しています。desktop/mobile の viewer framing は `agent-browser` を使う [Browser Smoke Checks](docs/browser-smoke.md) で、print-to-PDF は [PDF Smoke Checks](docs/pdf-smoke.md) で確認できます。
 

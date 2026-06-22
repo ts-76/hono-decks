@@ -102,6 +102,61 @@ describe("hono-decks CLI", () => {
     }
   });
 
+  it("initializes an app-owned decks facade without overwriting existing files", async () => {
+    const cwd = await createFixture();
+    const stdout: string[] = [];
+    const stderr: string[] = [];
+
+    try {
+      const result = await runHonoDecksCli({
+        argv: ["init", "--out", "src/decks.ts"],
+        cwd,
+        stdout: (line) => stdout.push(line),
+        stderr: (line) => stderr.push(line),
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(stdout.join("\n")).toContain("Initialized decks facade at src/decks.ts");
+
+      const facade = await readFile(join(cwd, "src", "decks.ts"), "utf8");
+      expect(facade).toContain("App-owned facade for @hono/decks.");
+      expect(facade).toContain("This file is safe to edit.");
+      expect(facade).toContain('import { decks } from "./generated/decks";');
+      expect(facade).toContain("export const deckSource = decks.source;");
+      expect(facade).toContain("export function createDecksRouter");
+
+      const second = await runHonoDecksCli({
+        argv: ["init", "--out", "src/decks.ts"],
+        cwd,
+        stdout: (line) => stdout.push(line),
+        stderr: (line) => stderr.push(line),
+      });
+
+      expect(second.exitCode).toBe(1);
+      expect(stderr.join("\n")).toContain("Refusing to overwrite existing file: src/decks.ts");
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("initializes a decks facade with a custom generated module path", async () => {
+    const cwd = await createFixture();
+
+    try {
+      const result = await runHonoDecksCli({
+        argv: ["init", "--out", "src/slides.ts", "--generated", "./generated/hono-decks"],
+        cwd,
+      });
+
+      expect(result.exitCode).toBe(0);
+
+      const facade = await readFile(join(cwd, "src", "slides.ts"), "utf8");
+      expect(facade).toContain('import { decks } from "./generated/hono-decks";');
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("reports MDX compile errors with deck file and slide context", async () => {
     const cwd = await createFixture();
     const stderr: string[] = [];
@@ -151,6 +206,7 @@ title: Broken
 
     expect(result.exitCode).toBe(0);
     expect(stdout.join("\n")).toContain("hono-decks compile --root decks --out src/generated");
+    expect(stdout.join("\n")).toContain("hono-decks init --out src/decks.ts");
     expect(stdout.join("\n")).toContain("Output directory for generated deck modules.");
   });
 });
