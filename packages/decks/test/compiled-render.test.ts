@@ -179,6 +179,7 @@ describe("compiled deck rendering", () => {
     expect(html).toContain(".hono-decks-stage{width:100vw;height:100vh");
     expect(html).toContain(".hono-decks-deck{display:grid;gap:1rem;width:var(--hono-decks-width);height:var(--hono-decks-height)");
     expect(html).toContain(".slide{box-sizing:border-box;aspect-ratio:16/9");
+    expect(html).toContain('<div class="hono-decks-slide-content">');
     expect(html).not.toContain(".hono-decks-stage{width:100vw;height:100vh;overflow:hidden;background:");
     expect(html).not.toContain(".slide{box-sizing:border-box;aspect-ratio:16/9;border:");
     expect(html).not.toContain("background:linear-gradient(145deg");
@@ -199,11 +200,15 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("@media print{");
     expect(html).toContain("html,body{width:auto;height:auto;overflow:visible;background:#fff}");
     expect(html).toContain(".hono-decks-stage{display:block;width:auto;height:auto;overflow:visible;background:transparent}");
+    expect(html).toContain("--hono-decks-print-scale:.28");
     expect(html).toContain(
-      ".hono-decks-deck{display:grid;grid-template-columns:1fr;grid-auto-rows:var(--hono-decks-print-slot-height);gap:var(--hono-decks-print-gap);width:auto;height:auto;transform:none!important}",
+      ".hono-decks-deck{display:grid;grid-template-columns:1fr;grid-auto-rows:var(--hono-decks-print-slot-height);gap:var(--hono-decks-print-gap);width:calc(var(--hono-decks-print-slot-height) * 16 / 9);height:auto;margin:0 auto;transform:none!important}",
     );
     expect(html).toContain(
-      ".slide{width:calc(var(--hono-decks-print-slot-height) * 16 / 9);max-width:100%;height:auto;aspect-ratio:16/9;justify-self:center;align-self:center;page-break-after:auto;break-after:auto;break-inside:avoid;box-shadow:none}",
+      ".slide{width:100%;max-width:100%;height:var(--hono-decks-print-slot-height);aspect-ratio:16/9;justify-self:center;align-self:center;padding:0;page-break-after:auto;break-after:auto;break-inside:avoid;box-shadow:none}",
+    );
+    expect(html).toContain(
+      ".hono-decks-slide-content{width:var(--hono-decks-width);height:var(--hono-decks-height);box-sizing:border-box;padding:clamp(1.2rem,3vw,3rem);transform:scale(var(--hono-decks-print-scale));transform-origin:left top;overflow:hidden}",
     );
     expect(html).toContain(".slide:nth-of-type(3n):not(:last-child){page-break-after:always;break-after:page}");
     expect(html).toContain("body:not([data-overview-mode]) .slide[hidden]{display:block!important}");
