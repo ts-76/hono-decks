@@ -5,6 +5,9 @@ compatibility_date = "2026-06-01"
 compatibility_flags = ["nodejs_compat"]
 worker_loaders = [{ binding = "LOADER" }]
 
+[browser]
+binding = "BROWSER"
+
 [[r2_buckets]]
 binding = "DECK_ASSETS"
 bucket_name = "hono-decks-basic-assets"

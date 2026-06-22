@@ -1,11 +1,13 @@
 import { Hono } from "hono";
-import { deckContext, type DeckContextVariables } from "@hono/decks";
+import { deckContext, type DeckBrowserRunBinding, type DeckContextVariables } from "@hono/decks";
 import { createSampleDeckSource, type SampleDeckSourceBindings } from "./deck-source";
 import { decks, decksRouter } from "./generated/decks";
 import { renderDeckDetailsPage, renderDeckEmbedPage, renderHomePage, renderSampleViewerHead, sampleDeckStyle } from "./pages";
 
 interface Env {
-  Bindings: SampleDeckSourceBindings;
+  Bindings: SampleDeckSourceBindings & {
+    BROWSER?: DeckBrowserRunBinding;
+  };
   Variables: DeckContextVariables;
 }
 
@@ -33,6 +35,11 @@ app.route(
     style: sampleDeckStyle,
     viewer: {
       head: renderSampleViewerHead(),
+    },
+    export: {
+      browser: (c) => c.env.BROWSER,
+      pdf: true,
+      png: true,
     },
   }),
 );
