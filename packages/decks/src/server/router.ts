@@ -49,8 +49,14 @@ export interface DeckBrowserRunPngOptions {
   request?: Record<string, unknown>;
 }
 
+export interface DeckExportAuthorizeInput {
+  deck: CompiledDeck;
+  format: "pdf" | "png";
+}
+
 export interface DeckExportOptions {
   browser(c: Context): MaybePromise<DeckBrowserRunBinding | null | undefined>;
+  authorize?(c: Context, input: DeckExportAuthorizeInput): MaybePromise<boolean>;
   pdf?: boolean | DeckBrowserRunPdfOptions;
   png?: boolean | DeckBrowserRunPngOptions;
 }
@@ -199,6 +205,7 @@ export function decksRouter(options: DecksRouterOptions): Hono {
     const mountPath = stripPathSuffix(c.req.path, `/${slug}`);
     return c.html(
       await renderDeckViewerPage({
+        c,
         deck,
         mountPath,
         viewer: options.viewer,
@@ -317,6 +324,9 @@ async function renderDeckBrowserExport(c: Context, options: DecksRouterOptions, 
 
   const exportOptions = options.export;
   if (!exportOptions) return c.json({ error: "Browser export not configured", slug, format }, 503);
+  if (!(await isBrowserExportAuthorized(c, exportOptions, deck, format))) {
+    return c.json({ error: "Browser export not authorized", slug, format }, 403);
+  }
   const browser = await exportOptions.browser(c);
   if (!browser) return c.json({ error: "Browser export not configured", slug, format }, 503);
 
@@ -390,6 +400,26 @@ function isPngExportEnabled(options: DeckExportOptions | undefined): boolean {
   return options?.png !== undefined && options.png !== false;
 }
 
+async function isBrowserExportAuthorized(
+  c: Context,
+  options: DeckExportOptions,
+  deck: CompiledDeck,
+  format: "pdf" | "png",
+): Promise<boolean> {
+  return options.authorize ? options.authorize(c, { deck, format }) : true;
+}
+
+async function resolveAuthorizedExportPaths(
+  c: Context,
+  deck: CompiledDeck,
+  options: DeckExportOptions | undefined,
+): Promise<DeckViewerExportPaths> {
+  if (!options) return {};
+  const pdf = isPdfExportEnabled(options) && (await isBrowserExportAuthorized(c, options, deck, "pdf"));
+  const png = isPngExportEnabled(options) && (await isBrowserExportAuthorized(c, options, deck, "png"));
+  return { pdf, png };
+}
+
 function exportFilename(options: DeckExportOptions, deck: CompiledDeck, format: "pdf" | "png"): string {
   const option = exportOptionObject(format === "pdf" ? options.pdf : options.png);
   const name = typeof option.filename === "function" ? option.filename(deck) : option.filename;
@@ -434,6 +464,7 @@ function renderDeckIndex(decks: Awaited<ReturnType<DeckSource["listDecks"]>>, mo
 }
 
 async function renderDeckViewerPage(input: {
+  c: Context;
   deck: CompiledDeck;
   mountPath: string;
   viewer?: DeckViewerOptions;
@@ -443,10 +474,7 @@ async function renderDeckViewerPage(input: {
     deck: input.deck,
     mountPath: input.mountPath,
     controls: input.viewer?.controls,
-    exportPaths: {
-      pdf: isPdfExportEnabled(input.exportOptions),
-      png: isPngExportEnabled(input.exportOptions),
-    },
+    exportPaths: await resolveAuthorizedExportPaths(input.c, input.deck, input.exportOptions),
   });
   const content =
     input.viewer?.render?.({

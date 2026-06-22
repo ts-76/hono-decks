@@ -46,6 +46,7 @@ export type {
   DeckBrowserRunPngOptions,
   DeckContextOptions,
   DeckContextVariables,
+  DeckExportAuthorizeInput,
   DeckExportOptions,
   DeckPageMeta,
   DeckTocItem,
