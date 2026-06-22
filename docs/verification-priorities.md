@@ -173,10 +173,10 @@ Implemented:
 - Print stylesheet
 - A4 portrait handout layout with up to 3 slides per page
 - PDF generation smoke for the sample and motion render pages
+- First-page PDF preview rendering with Poppler or macOS Quick Look
 
 Follow-up:
 
-- Visual PDF output inspection with rendered page images
 - Asset and code block rendering checks in print/PDF
 - Optional export command if the package should own PDF generation rather than documenting browser print
 
@@ -184,7 +184,7 @@ Rationale: PDF output should be validated visually, not only through HTML assert
 
 ## Recommended Next Steps
 
-1. Add visual PDF inspection using rendered page images when Poppler or an equivalent PDF renderer is available in CI.
+1. Add asset and code block assertions to the PDF smoke once the media/code decks are included in print export coverage.
 2. Add richer transition direction hooks when the presentation animation contract needs forward/backward-specific styling.
 
 Keep `examples/basic/decks/sample` small. It should remain the happy-path deck for MDX expressions, deck-local server components, client islands, viewer pages, and R2 binding fallback. Use `examples/basic/decks/motion` for animation, transition, and fragment experiments.
