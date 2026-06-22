@@ -42,16 +42,28 @@ export interface DeckTheme {
   layouts?: Record<string, SlideLayout>;
 }
 
+export type DeckThemeRegistry = Record<string, DeckTheme>;
+
+export function defineDeckTheme(theme: DeckTheme): DeckTheme {
+  return theme;
+}
+
+export function defineDeckThemes(themes: DeckThemeRegistry): DeckThemeRegistry {
+  return themes;
+}
+
 export function renderCompiledDeck(
   deck: CompiledDeck,
   input: {
     components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
     theme?: DeckTheme;
+    themes?: DeckThemeRegistry;
   } = {},
 ): string {
-  const components = normalizeComponents(input.components, input.theme);
+  const theme = resolveDeckTheme(deck, input.theme, input.themes);
+  const components = normalizeComponents(input.components, theme);
   return `<main class="hono-decks-stage" data-hono-decks-stage data-deck-slug="${escapeHtml(deck.slug)}"><div class="hono-decks-deck" data-hono-decks-deck>${deck.slides
-    .map((slide) => renderCompiledSlide(slide, deck.assets, { components, deck, theme: input.theme }))
+    .map((slide) => renderCompiledSlide(slide, deck.assets, { components, deck, theme }))
     .join("\n")}</div></main>`;
 }
 
@@ -60,11 +72,13 @@ export async function renderCompiledDeckAsync(
   input: {
     components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
     theme?: DeckTheme;
+    themes?: DeckThemeRegistry;
   } = {},
 ): Promise<string> {
-  const components = normalizeComponents(input.components, input.theme);
+  const theme = resolveDeckTheme(deck, input.theme, input.themes);
+  const components = normalizeComponents(input.components, theme);
   const slides = await Promise.all(
-    deck.slides.map((slide) => renderCompiledSlideAsync(slide, deck.assets, { components, deck, theme: input.theme })),
+    deck.slides.map((slide) => renderCompiledSlideAsync(slide, deck.assets, { components, deck, theme })),
   );
   return `<main class="hono-decks-stage" data-hono-decks-stage data-deck-slug="${escapeHtml(deck.slug)}"><div class="hono-decks-deck" data-hono-decks-deck>${slides.join(
     "\n",
@@ -152,10 +166,12 @@ export function renderCompiledDeckPage(input: {
   liveReloadPath?: string;
   components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
   theme?: DeckTheme;
+  themes?: DeckThemeRegistry;
   clientEntry?: string;
   printPreview?: boolean;
 }): string {
   const { deck } = input;
+  const theme = resolveDeckTheme(deck, input.theme, input.themes);
   const warnings = deck.warnings.length
     ? `<aside class="hono-decks-warnings">${deck.warnings.map((warning) => `<p>${escapeHtml(warning.message)}</p>`).join("")}</aside>`
     : "";
@@ -168,11 +184,11 @@ export function renderCompiledDeckPage(input: {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapeHtml(deck.meta.title ?? deck.slug)}</title>
-  <style>${basePresentationStyle()}${input.theme?.style ?? ""}${input.style ?? ""}</style>
+  <style>${basePresentationStyle()}${theme?.style ?? ""}${input.style ?? ""}</style>
 </head>
 <body${bodyAttrs}>
   ${warnings}
-  ${renderCompiledDeck(deck, { components: mergeComponentInputs(deck.componentRegistry, input.components), theme: input.theme })}
+  ${renderCompiledDeck(deck, { components: mergeComponentInputs(deck.componentRegistry, input.components), theme })}
   ${input.printPreview ? "" : renderPresentationScript()}
   ${!input.printPreview && input.liveReloadPath ? renderLiveReloadScript(input.liveReloadPath) : ""}
   ${!input.printPreview && input.clientEntry ? renderClientEntryScript(input.clientEntry) : ""}
@@ -187,10 +203,12 @@ export async function renderCompiledDeckPageAsync(input: {
   liveReloadPath?: string;
   components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
   theme?: DeckTheme;
+  themes?: DeckThemeRegistry;
   clientEntry?: string;
   printPreview?: boolean;
 }): Promise<string> {
   const { deck } = input;
+  const theme = resolveDeckTheme(deck, input.theme, input.themes);
   const warnings = deck.warnings.length
     ? `<aside class="hono-decks-warnings">${deck.warnings.map((warning) => `<p>${escapeHtml(warning.message)}</p>`).join("")}</aside>`
     : "";
@@ -203,11 +221,11 @@ export async function renderCompiledDeckPageAsync(input: {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapeHtml(deck.meta.title ?? deck.slug)}</title>
-  <style>${basePresentationStyle()}${input.theme?.style ?? ""}${input.style ?? ""}</style>
+  <style>${basePresentationStyle()}${theme?.style ?? ""}${input.style ?? ""}</style>
 </head>
 <body${bodyAttrs}>
   ${warnings}
-  ${await renderCompiledDeckAsync(deck, { components: mergeComponentInputs(deck.componentRegistry, input.components), theme: input.theme })}
+  ${await renderCompiledDeckAsync(deck, { components: mergeComponentInputs(deck.componentRegistry, input.components), theme })}
   ${input.printPreview ? "" : renderPresentationScript()}
   ${!input.printPreview && input.liveReloadPath ? renderLiveReloadScript(input.liveReloadPath) : ""}
   ${!input.printPreview && input.clientEntry ? renderClientEntryScript(input.clientEntry) : ""}
@@ -223,6 +241,30 @@ function normalizeComponents(
     ...builtInSlideComponents,
     ...(theme?.components ? defineSlideComponents(theme.components) : {}),
     ...(components ? defineSlideComponents(components) : {}),
+  };
+}
+
+function resolveDeckTheme(
+  deck: CompiledDeck,
+  defaultTheme: DeckTheme | undefined,
+  themes: DeckThemeRegistry | undefined,
+): DeckTheme | undefined {
+  const themeName = deck.meta.theme;
+  const selectedTheme = themeName ? themes?.[themeName] : undefined;
+  return mergeDeckThemes(defaultTheme, selectedTheme);
+}
+
+function mergeDeckThemes(base: DeckTheme | undefined, override: DeckTheme | undefined): DeckTheme | undefined {
+  if (!base) return override;
+  if (!override) return base;
+  return {
+    name: override.name ?? base.name,
+    style: `${base.style ?? ""}${override.style ?? ""}`,
+    components: mergeComponentInputs(base.components, override.components),
+    layouts: {
+      ...(base.layouts ?? {}),
+      ...(override.layouts ?? {}),
+    },
   };
 }
 
@@ -271,7 +313,7 @@ function mergeComponentInputs(
 
 function basePresentationStyle(): string {
   return `
-:root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:32px;color:#eef2ff;--hono-decks-width:1920px;--hono-decks-height:1080px}
+:root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:32px;--hono-decks-width:1920px;--hono-decks-height:1080px;--hono-decks-color:#eef2ff;--hono-decks-muted-color:#cbd5e1;--hono-decks-accent-color:#8bd3ff;--hono-decks-border-color:rgba(148,163,184,.24);--hono-decks-inline-code-background:rgba(15,23,42,.72);--hono-decks-code-background:rgba(15,23,42,.78);--hono-decks-card-background:rgba(15,23,42,.78);--hono-decks-card-image-background:rgba(255,255,255,.08);--hono-decks-warning-background:rgba(255,193,7,.12);--hono-decks-warning-color:#ffe59b;color:var(--hono-decks-color)}
 html,body{margin:0;width:100%;height:100%;overflow:hidden}
 .hono-decks-stage{width:100vw;height:100vh;overflow:hidden;position:relative;display:grid;place-items:center}
 .hono-decks-deck{display:grid;gap:1rem;width:var(--hono-decks-width);height:var(--hono-decks-height);box-sizing:border-box;transform-origin:left top}
@@ -280,39 +322,39 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden}
 .slide.layout-cover,.slide.layout-statement{display:flex;flex-direction:column;justify-content:center}
 .slide.layout-cover>.hono-decks-slide-content,.slide.layout-statement>.hono-decks-slide-content{display:flex;flex-direction:column;justify-content:center}
 .slide code{font-family:"SFMono-Regular","Cascadia Code","Liberation Mono",Menlo,Consolas,monospace;font-size:.9em;line-height:1.45}
-.slide :not(pre)>code{border-radius:6px;background:rgba(15,23,42,.72);padding:.12em .34em}
-.slide pre{max-width:100%;overflow:auto;box-sizing:border-box;border:1px solid rgba(148,163,184,.24);border-radius:8px;background:rgba(15,23,42,.78);padding:1rem;tab-size:2;white-space:pre}
+.slide :not(pre)>code{border-radius:6px;background:var(--hono-decks-inline-code-background);padding:.12em .34em}
+.slide pre{max-width:100%;overflow:auto;box-sizing:border-box;border:1px solid var(--hono-decks-border-color);border-radius:8px;background:var(--hono-decks-code-background);padding:1rem;tab-size:2;white-space:pre}
 .slide pre code{display:block;min-width:max-content;background:transparent;padding:0}
 .hono-decks-code-block{margin:1rem 0;max-width:100%}
-.hono-decks-code-caption{display:inline-flex;margin:0 0 .4rem;border:1px solid rgba(148,163,184,.24);border-radius:6px;padding:.2rem .5rem;background:rgba(15,23,42,.72);color:#cbd5e1;font-size:.82rem}
+.hono-decks-code-caption{display:inline-flex;margin:0 0 .4rem;border:1px solid var(--hono-decks-border-color);border-radius:6px;padding:.2rem .5rem;background:var(--hono-decks-inline-code-background);color:var(--hono-decks-muted-color);font-size:.82rem}
 .hono-decks-embed-frame{margin:1rem 0;max-width:100%}
 .hono-decks-embed-viewport{width:min(100%,72rem);overflow:hidden}
 .hono-decks-embed-viewport iframe{display:block;width:100%;height:100%;border:0}
-.hono-decks-embed-fallback{margin:.45rem 0 0;color:#cbd5e1;font-size:.84rem}
+.hono-decks-embed-fallback{margin:.45rem 0 0;color:var(--hono-decks-muted-color);font-size:.84rem}
 .hono-decks-embed-fallback a{color:inherit}
 .hono-decks-social-embed{margin:1rem 0;max-width:min(100%,42rem)}
-.hono-decks-social-card{margin:0;border:1px solid rgba(148,163,184,.24);border-radius:8px;background:rgba(15,23,42,.78);padding:1rem}
+.hono-decks-social-card{margin:0;border:1px solid var(--hono-decks-border-color);border-radius:8px;background:var(--hono-decks-card-background);padding:1rem}
 .hono-decks-social-card p{margin:0 0 .75rem;line-height:1.55}
-.hono-decks-social-card footer{display:flex;flex-wrap:wrap;gap:.65rem;align-items:center;color:#cbd5e1;font-size:.9rem}
+.hono-decks-social-card footer{display:flex;flex-wrap:wrap;gap:.65rem;align-items:center;color:var(--hono-decks-muted-color);font-size:.9rem}
 .hono-decks-social-card a{color:inherit}
 .hono-decks-tweet-embed{margin:1rem 0;max-width:min(100%,42rem)}
-.hono-decks-tweet-embed .twitter-tweet{margin:0;border:1px solid rgba(148,163,184,.24);border-radius:8px;background:rgba(15,23,42,.78);padding:1rem}
+.hono-decks-tweet-embed .twitter-tweet{margin:0;border:1px solid var(--hono-decks-border-color);border-radius:8px;background:var(--hono-decks-card-background);padding:1rem}
 .hono-decks-tweet-embed .twitter-tweet a{color:inherit}
 .hono-decks-link-card{margin:1rem 0;max-width:min(100%,42rem)}
-.hono-decks-link-card-anchor{display:grid;grid-template-columns:minmax(9rem,32%) minmax(0,1fr);gap:.75rem;align-items:stretch;border:1px solid rgba(148,163,184,.24);border-radius:8px;background:rgba(15,23,42,.78);padding:1rem;color:inherit;text-decoration:none}
+.hono-decks-link-card-anchor{display:grid;grid-template-columns:minmax(9rem,32%) minmax(0,1fr);gap:.75rem;align-items:stretch;border:1px solid var(--hono-decks-border-color);border-radius:8px;background:var(--hono-decks-card-background);padding:1rem;color:inherit;text-decoration:none}
 .hono-decks-link-card-body{display:grid;gap:.35rem;min-width:0}
-.hono-decks-link-card-image{width:100%;height:100%;max-height:10rem;aspect-ratio:16/9;object-fit:cover;border-radius:6px;background:rgba(255,255,255,.08)}
-.hono-decks-link-card-site{color:#8bd3ff;font-size:.8rem;text-transform:uppercase}
+.hono-decks-link-card-image{width:100%;height:100%;max-height:10rem;aspect-ratio:16/9;object-fit:cover;border-radius:6px;background:var(--hono-decks-card-image-background)}
+.hono-decks-link-card-site{color:var(--hono-decks-accent-color);font-size:.8rem;text-transform:uppercase}
 .hono-decks-link-card-title{font-weight:700}
-.hono-decks-link-card-description{color:#cbd5e1;line-height:1.45}
-.hono-decks-link-card-label{color:#8bd3ff;font-size:.88rem}
+.hono-decks-link-card-description{color:var(--hono-decks-muted-color);line-height:1.45}
+.hono-decks-link-card-label{color:var(--hono-decks-accent-color);font-size:.88rem}
 @media (max-width: 640px){.hono-decks-link-card-anchor{grid-template-columns:1fr}.hono-decks-link-card-image{height:auto;max-height:12rem}}
 .mdx-hero{height:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,42%);gap:clamp(1rem,3vw,3rem);align-items:center}
 .mdx-hero:not(.has-image){grid-template-columns:1fr}
 .mdx-hero-copy{min-width:0}
-.mdx-hero-eyebrow{margin:0 0 .75rem;color:#8bd3ff;text-transform:uppercase;font-size:.85rem;letter-spacing:0}
+.mdx-hero-eyebrow{margin:0 0 .75rem;color:var(--hono-decks-accent-color);text-transform:uppercase;font-size:.85rem;letter-spacing:0}
 .mdx-hero h1{margin:0;font-size:clamp(2.2rem,5vw,5rem);line-height:1.02}
-.mdx-hero-subtitle{margin:1rem 0 0;font-size:clamp(1rem,1.8vw,1.5rem);line-height:1.45;color:#cbd5e1}
+.mdx-hero-subtitle{margin:1rem 0 0;font-size:clamp(1rem,1.8vw,1.5rem);line-height:1.45;color:var(--hono-decks-muted-color)}
 .mdx-hero-image{width:100%;height:auto;max-height:70vh;object-fit:contain;border-radius:8px}
 [data-hono-decks-fragment]{transition:opacity .18s ease,transform .18s ease}
 [data-hono-decks-fragment][data-fragment-hidden]{visibility:hidden;opacity:0;transform:translateY(.35rem)}
@@ -327,8 +369,8 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden}
 body:not([data-overview-mode]) .slide[hidden]{display:none}
 body[data-overview-mode] .hono-decks-deck{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
 body[data-overview-mode] .slide{cursor:pointer}
-body[data-presenter-mode] .speaker-notes{display:block;margin-top:1rem;padding:.75rem;border-radius:8px;background:rgba(255,255,255,.08)}
-.hono-decks-warnings{margin:1rem;padding:.75rem;border-radius:14px;background:rgba(255,193,7,.12);color:#ffe59b}
+body[data-presenter-mode] .speaker-notes{display:block;margin-top:1rem;padding:.75rem;border-radius:8px;background:var(--hono-decks-card-image-background)}
+.hono-decks-warnings{margin:1rem;padding:.75rem;border-radius:14px;background:var(--hono-decks-warning-background);color:var(--hono-decks-warning-color)}
 @media screen{html[data-hono-decks-print-preview]{width:auto;height:auto;min-height:100%;overflow:visible}
 body[data-hono-decks-print-preview]{min-height:100vh;overflow:auto;color-scheme:light;color:#000;--hono-decks-print-gap:6mm;--hono-decks-print-slot-height:80mm;--hono-decks-print-scale:.28}
 body[data-hono-decks-print-preview] .hono-decks-stage{display:block;width:auto;height:auto;min-height:100vh;overflow:visible;padding:12mm 0;box-sizing:border-box}

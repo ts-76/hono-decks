@@ -82,6 +82,7 @@ export const decks = defineDecks({
       meta: {
         "title": "Media Verification",
         "description": "Local and remote image asset checks for @hono/decks",
+        "theme": "media",
         "meta": {}
       },
       assets: [

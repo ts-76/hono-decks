@@ -1,6 +1,15 @@
 /** @jsxImportSource hono/jsx */
 
-import type { CompiledDeck, DeckEntry, DeckPageMeta, DeckRenderable, DeckTocItem, DeckViewerParts } from "@hono/decks";
+import {
+  defineDeckTheme,
+  defineDeckThemes,
+  type CompiledDeck,
+  type DeckEntry,
+  type DeckPageMeta,
+  type DeckRenderable,
+  type DeckTocItem,
+  type DeckViewerParts,
+} from "@hono/decks";
 
 export function renderHomePage(decks: DeckEntry[]) {
   return (
@@ -146,7 +155,17 @@ a { color: inherit; }
 .sample-embed iframe { width: 1920px; height: 1080px; border: 0; }
 `;
 
-export const sampleDeckStyle = `
+const sampleDeckStyle = `
+:root {
+  --hono-decks-color: #eef2ff;
+  --hono-decks-muted-color: #cbd5e1;
+  --hono-decks-accent-color: #8bd3ff;
+  --hono-decks-border-color: rgba(148, 163, 184, .24);
+  --hono-decks-card-background: rgba(15, 23, 42, .78);
+  --hono-decks-inline-code-background: rgba(15, 23, 42, .72);
+  --hono-decks-code-background: rgba(15, 23, 42, .78);
+}
+
 .layout-cover, .layout-default, .layout-statement, .layout-code, .layout-motion {
   background: #0b1020;
   color: #eef2ff;
@@ -164,6 +183,28 @@ export const sampleDeckStyle = `
   object-fit: contain;
 }
 `;
+
+export const sampleDeckTheme = defineDeckTheme({
+  name: "sample-dark",
+  style: sampleDeckStyle,
+});
+
+export const sampleDeckThemes = defineDeckThemes({
+  media: defineDeckTheme({
+    name: "sample-media",
+    style: `
+:root {
+  --hono-decks-accent-color: #2dd4bf;
+  --hono-decks-card-background: rgba(8, 18, 34, .82);
+}
+
+.layout-media {
+  background: #07111f;
+  color: #eef2ff;
+}
+`,
+  }),
+});
 
 const sampleViewerStyle = `
 [data-hono-decks-viewer] {

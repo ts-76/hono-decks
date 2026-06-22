@@ -1,6 +1,8 @@
 export {
   createDeckViewerParts,
   deckContext,
+  defineDeckTheme,
+  defineDeckThemes,
   defineDecks,
   decksRouter,
   deckMiddleware,
@@ -27,6 +29,7 @@ export type {
   DeckMiddlewareOptions,
   DeckRenderable,
   DeckTheme,
+  DeckThemeRegistry,
   MaybePromise,
   R2AssetKeyInput,
   R2AssetSourceOptions,

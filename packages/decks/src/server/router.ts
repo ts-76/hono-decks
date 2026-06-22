@@ -5,7 +5,7 @@ import { renderCompiledDeckPageAsync } from "../renderer/compiled-render";
 import { renderJsxValue } from "../renderer/jsx-renderer";
 import { RenderError } from "../deck/model";
 import type { CompiledDeck, DeckSource } from "../deck/model";
-import type { DeckRenderable, DeckTheme, MaybePromise } from "../renderer/compiled-render";
+import type { DeckRenderable, DeckTheme, DeckThemeRegistry, MaybePromise } from "../renderer/compiled-render";
 import type { SlideComponentInput, SlideComponentRegistry } from "../renderer/compiled-render";
 import { serveDecksClientEntry } from "./client-entry";
 
@@ -21,6 +21,7 @@ export interface DecksRouterOptions {
   liveReloadPath?(slug: string, mountPath: string): string | undefined;
   style?: string;
   theme?: DeckTheme;
+  themes?: DeckThemeRegistry;
   components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
   clientEntry?: string;
   clientEntryAsset?: string;
@@ -147,6 +148,7 @@ export function decksRouter(options: DecksRouterOptions): Hono {
           mountPath,
           style: options.style,
           theme: options.theme,
+          themes: options.themes,
           components: options.components,
           clientEntry,
           liveReloadPath: isDevEnabled(options) ? options.liveReloadPath?.(slug, mountPath) : undefined,
@@ -171,6 +173,7 @@ export function decksRouter(options: DecksRouterOptions): Hono {
           mountPath,
           style: options.style,
           theme: options.theme,
+          themes: options.themes,
           components: options.components,
           printPreview: true,
         }),
