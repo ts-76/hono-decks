@@ -198,8 +198,14 @@ describe("compiled deck rendering", () => {
 
     expect(html).toContain("@page{size:A4 portrait;margin:12mm}");
     expect(html).toContain("@media print{");
-    expect(html).toContain("html,body{width:auto;height:auto;overflow:visible;background:#fff}");
-    expect(html).toContain(".hono-decks-stage{display:block;width:auto;height:auto;overflow:visible;background:transparent}");
+    expect(html).toContain(":root{color-scheme:light;color:#000");
+    expect(html).toContain("html,body{width:auto;height:auto;overflow:visible}");
+    expect(html).toContain(".hono-decks-stage{display:block;width:auto;height:auto;overflow:visible}");
+    expect(html).not.toContain("body[data-hono-decks-print-preview]{min-height:100vh;overflow:auto;background:");
+    expect(html).not.toContain(".hono-decks-stage{display:block;width:auto;height:auto;min-height:100vh;overflow:visible;background:");
+    expect(html).not.toContain("@media print{:root{background:");
+    expect(html).not.toContain("html,body{width:auto;height:auto;overflow:visible;background:");
+    expect(html).not.toContain(".hono-decks-stage{display:block;width:auto;height:auto;overflow:visible;background:");
     expect(html).toContain("--hono-decks-print-scale:.28");
     expect(html).toContain(
       ".hono-decks-deck{display:grid;grid-template-columns:1fr;grid-auto-rows:var(--hono-decks-print-slot-height);gap:var(--hono-decks-print-gap);width:calc(var(--hono-decks-print-slot-height) * 16 / 9);height:auto;margin:0 auto;transform:none!important}",
