@@ -9,6 +9,7 @@ import {
 export interface DecksConfigBindings {
   DECK_ASSETS?: R2BucketLike;
   BROWSER?: DeckBrowserRunBinding;
+  DECK_EXPORT_TOKEN?: string;
 }
 
 const R2_CACHE_CONTROL = "public, max-age=31536000, immutable";
@@ -52,6 +53,16 @@ const decksConfig = defineDecksConfig({
 
   router: {
     export: {
+authorize: (c) => {
+  const token = (c.env as DecksConfigBindings).DECK_EXPORT_TOKEN;
+  if (typeof token !== "string" || token.length === 0) return false;
+
+  const authorization = c.req.header("authorization");
+  if (!authorization) return false;
+
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  return match?.[1]?.trim() === token;
+},
       browser: (c) => (c.env as DecksConfigBindings).BROWSER,
       pdf: true,
       png: true,
