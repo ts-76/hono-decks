@@ -213,12 +213,22 @@ describe("compiled deck rendering", () => {
 
     expect(html).toContain("--hono-decks-transition-duration");
     expect(html).toContain("--hono-decks-transition-easing");
-    expect(html).toContain('.slide[data-transition="fade"][data-slide-state="entering"]');
-    expect(html).toContain('.slide[data-transition="fade-out"][data-slide-state="leaving"]');
-    expect(html).toContain('.slide[data-transition="slide-left"][data-slide-direction="forward"][data-slide-state="entering"]');
-    expect(html).toContain('.slide[data-transition="slide-right"][data-slide-direction="backward"][data-slide-state="leaving"]');
-    expect(html).toContain('.slide[data-transition="view-transition"]');
+    expect(html).toContain('.slide[data-active-transition="fade"][data-slide-state="entering"]');
+    expect(html).toContain('.slide[data-active-transition="fade-out"][data-slide-state="leaving"]');
+    expect(html).toContain('.slide[data-active-transition="slide-left"][data-slide-direction="forward"][data-slide-state="entering"]');
+    expect(html).toContain('.slide[data-active-transition="slide-right"][data-slide-direction="backward"][data-slide-state="leaving"]');
+    expect(html).toContain('.slide[data-active-transition="view-transition"]');
     expect(html).not.toContain('.slide[data-transition="zoom"]');
+  });
+
+  it("applies the incoming transition preset to the outgoing slide", () => {
+    const html = renderCompiledDeckPage({ deck, mountPath: "/decks" });
+
+    expect(html).toContain("data-active-transition");
+    expect(html).toContain('slide.setAttribute("data-active-transition", transition)');
+    expect(html).toContain('setSlideState(outgoing, "active", direction, transition)');
+    expect(html).toContain('setSlideState(outgoing, "leaving", direction, transition)');
+    expect(html).toContain('setSlideState(incoming, "entering", direction, transition)');
   });
 
   it("keeps a 1920x1080 deck canvas and scales it inside the iframe viewport", () => {

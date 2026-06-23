@@ -285,7 +285,9 @@ describe("sample Worker app", () => {
     expect(html).toContain("animation:hono-decks-motion-orbit");
     expect(html).toContain("@keyframes hono-decks-motion-orbit");
     expect(html).toContain("@media (prefers-reduced-motion: reduce)");
-    expect(html).toContain('data-transition="fade"');
+    expect(html).toContain('data-transition="fade-out"');
+    expect(html).toContain('data-transition="slide-left"');
+    expect(html).toContain("data-active-transition");
     expect(html).toContain("data-hono-decks-fragment");
     expect(html).toContain('data-fragment-order="1"');
     expect(html).toContain('data-fire-effect="fade-up"');
