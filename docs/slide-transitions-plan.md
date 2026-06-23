@@ -15,7 +15,7 @@ Reference: https://sli.dev/guide/animations#builtin-transitions
 - unknown values produce a compile warning and fall back to `none`.
 - base CSS implements the supported transition presets.
 - the presentation runtime owns active, entering, leaving, inactive, and direction state.
-- transition completion uses `transitionend` or `transitioncancel`, with a computed-duration timeout fallback.
+- transition completion uses `transitionend` or `transitioncancel`, with computed-duration gating and a timeout fallback.
 - transition timing can be set by deck or slide frontmatter and is emitted as CSS variables.
 - `prefers-reduced-motion` is respected.
 
@@ -63,6 +63,8 @@ The supported values are:
 Deck-level `transition` is the fallback for slides without their own `transition`. Slide frontmatter takes precedence over deck frontmatter.
 
 Deck-level `transitionDuration` and `transitionEasing` are also slide fallbacks. Slide frontmatter can override them. Timing compiles to CSS variables, so deck-local `theme.css` can still override the package defaults.
+
+Invalid `transitionDuration` or `transitionEasing` values produce compile warnings and are omitted from generated slide metadata.
 
 ## Runtime Contract
 
@@ -173,7 +175,7 @@ Reduced motion must disable movement:
 - During a transition, the incoming slide's timing is copied to both slides through:
   - `--hono-decks-active-transition-duration`
   - `--hono-decks-active-transition-easing`
-- `ms` and `s` computed CSS transition durations are supported. If no computed timing is available, the fallback timeout uses 240ms.
+- `ms` and `s` computed CSS transition durations are supported. The runtime waits until the computed max duration has effectively elapsed before accepting a `transitionend` as completion. If no computed timing is available, the fallback timeout uses 240ms.
 - Fragment step navigation does not trigger slide transitions.
 - Navigation commands received during a slide transition are folded into one pending navigation and drained after transition completion.
 - Overview, print preview, and print rendering disable transition movement.
@@ -183,7 +185,7 @@ Reduced motion must disable movement:
 - compiler tests for each supported transition value.
 - compiler warning test for unknown transition values.
 - renderer tests for `data-transition`, `data-slide-state`, and `data-slide-direction`.
-- runtime script tests for forward and backward navigation state, `transitionend` completion, pending navigation, and computed duration fallback.
+- runtime script tests for forward and backward navigation state, `transitionend` completion, pending navigation, invalid timing warnings, and computed duration fallback.
 - CSS tests for built-in `data-active-transition` hooks, timing variables, and reduced motion.
 - example integration test for the motion deck.
 - browser smoke test that verifies slide navigation still works with transitions enabled.

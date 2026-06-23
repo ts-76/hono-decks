@@ -477,6 +477,8 @@ function renderPresentationScript(): string {
   function waitForSlideTransition(outgoing, incoming, direction, token) {
     let finished = false;
     const watchedSlides = [outgoing, incoming].filter(Boolean);
+    const expectedDuration = Math.max(transitionDurationMs(outgoing), transitionDurationMs(incoming));
+    const startedAt = performance.now();
     function cleanup() {
       watchedSlides.forEach((slide) => {
         slide.removeEventListener("transitionend", onTransitionEnd);
@@ -491,13 +493,15 @@ function renderPresentationScript(): string {
       finishSlideTransition(outgoing, incoming, direction);
     }
     function onTransitionEnd(event) {
-      if (watchedSlides.some((slide) => isTransitionEndEvent(event, slide))) finish();
+      if (!watchedSlides.some((slide) => isTransitionEndEvent(event, slide))) return;
+      const elapsed = performance.now() - startedAt;
+      if (elapsed >= Math.max(expectedDuration - 20, 0)) finish();
     }
     watchedSlides.forEach((slide) => {
       slide.addEventListener("transitionend", onTransitionEnd);
       slide.addEventListener("transitioncancel", onTransitionEnd);
     });
-    const timeout = window.setTimeout(finish, Math.max(transitionDurationMs(outgoing), transitionDurationMs(incoming)) + 80);
+    const timeout = window.setTimeout(finish, expectedDuration + 80);
   }
 
   function show(nextIndex, nextStepIndex = 0) {

@@ -405,6 +405,61 @@ transitionEasing: linear
     }
   });
 
+  it("warns and omits invalid transition timing in generated decks", async () => {
+    const cwd = await createFixture();
+
+    try {
+      await writeFile(
+        join(cwd, "decks", "deck1", "deck.mdx"),
+        `---
+title: Deck One
+transitionDuration: instant
+transitionEasing: rubber
+---
+
+# Invalid deck timing
+
+---
+title: Invalid slide timing
+transitionDuration: 12px
+transitionEasing: bounce
+---
+
+## Invalid slide timing
+`,
+        "utf8",
+      );
+
+      const manifest = await compileDecks({
+        cwd,
+        root: "decks",
+        out: "src/generated",
+        mountPath: "/slides",
+      });
+
+      expect(manifest.decks[0].meta.transitionDuration).toBeUndefined();
+      expect(manifest.decks[0].meta.transitionEasing).toBeUndefined();
+      expect(manifest.decks[0].slides[0].meta.transitionDuration).toBeUndefined();
+      expect(manifest.decks[0].slides[0].meta.transitionEasing).toBeUndefined();
+      expect(manifest.decks[0].warnings).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ code: "invalid-transition-duration" }),
+          expect.objectContaining({ code: "invalid-transition-easing" }),
+          expect.objectContaining({ code: "invalid-transition-duration", slideIndex: 1 }),
+          expect.objectContaining({ code: "invalid-transition-easing", slideIndex: 1 }),
+        ]),
+      );
+
+      const output = await readFile(join(cwd, "src", "generated", "decks.ts"), "utf8");
+      expect(output).not.toContain('"transitionDuration": "instant"');
+      expect(output).not.toContain('"transitionEasing": "rubber"');
+      expect(output).toContain('"code": "invalid-transition-duration"');
+      expect(output).toContain('"code": "invalid-transition-easing"');
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("marks top-level list items as fragments when slide frontmatter uses fragments list", async () => {
     const cwd = await createFixture();
 

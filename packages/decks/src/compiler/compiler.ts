@@ -279,8 +279,8 @@ function toDeckFrontmatter(attrs: Record<string, unknown>, warnings: CompiledDec
   deck.date = takeString(meta, "date");
   deck.theme = takeString(meta, "theme");
   deck.transition = takeKnownStringWithWarning(meta, "transition", SLIDE_TRANSITIONS, "none", warnings, "unknown-transition");
-  deck.transitionDuration = takeString(meta, "transitionDuration");
-  deck.transitionEasing = takeString(meta, "transitionEasing");
+  deck.transitionDuration = takeTransitionDuration(meta, warnings);
+  deck.transitionEasing = takeTransitionEasing(meta, warnings);
   deck.assets = takeStringOrStringArray(meta, "assets");
   deck.draft = takeBoolean(meta, "draft");
   deck.presenter = takeBoolean(meta, "presenter");
@@ -315,8 +315,8 @@ function toSlideFrontmatter(
     transition:
       takeKnownStringWithWarning(meta, "transition", SLIDE_TRANSITIONS, "none", warnings, "unknown-transition", slideIndex) ??
       fallbackTransition,
-    transitionDuration: takeString(meta, "transitionDuration") ?? fallbackTransitionDuration,
-    transitionEasing: takeString(meta, "transitionEasing") ?? fallbackTransitionEasing,
+    transitionDuration: takeTransitionDuration(meta, warnings, slideIndex) ?? fallbackTransitionDuration,
+    transitionEasing: takeTransitionEasing(meta, warnings, slideIndex) ?? fallbackTransitionEasing,
     fragments: takeKnownString(meta, "fragments", ["none", "manual", "list"]),
     meta,
   };
@@ -469,6 +469,59 @@ function takeKnownStringWithWarning<const T extends string>(
     ...(slideIndex !== undefined ? { slideIndex } : {}),
   });
   return fallback;
+}
+
+function takeTransitionDuration(
+  attrs: Record<string, unknown>,
+  warnings: CompiledDeck["warnings"],
+  slideIndex?: number,
+): string | undefined {
+  const value = attrs.transitionDuration;
+  delete attrs.transitionDuration;
+  if (value === undefined) return undefined;
+  if (typeof value === "string" && isValidTransitionDuration(value)) return value;
+  warnings.push({
+    code: "invalid-transition-duration",
+    message: `Invalid transitionDuration value "${String(value)}"; ignoring it.`,
+    ...(slideIndex !== undefined ? { slideIndex } : {}),
+  });
+  return undefined;
+}
+
+function takeTransitionEasing(
+  attrs: Record<string, unknown>,
+  warnings: CompiledDeck["warnings"],
+  slideIndex?: number,
+): string | undefined {
+  const value = attrs.transitionEasing;
+  delete attrs.transitionEasing;
+  if (value === undefined) return undefined;
+  if (typeof value === "string" && isValidTransitionEasing(value)) return value;
+  warnings.push({
+    code: "invalid-transition-easing",
+    message: `Invalid transitionEasing value "${String(value)}"; ignoring it.`,
+    ...(slideIndex !== undefined ? { slideIndex } : {}),
+  });
+  return undefined;
+}
+
+function isValidTransitionDuration(value: string): boolean {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .every((item) => /^(?:\d+|\d*\.\d+)(?:ms|s)$/.test(item));
+}
+
+function isValidTransitionEasing(value: string): boolean {
+  const easing = value.trim();
+  return (
+    ["linear", "ease", "ease-in", "ease-out", "ease-in-out", "step-start", "step-end"].includes(easing) ||
+    /^cubic-bezier\(\s*-?(?:\d+|\d*\.\d+)\s*,\s*-?(?:\d+|\d*\.\d+)\s*,\s*-?(?:\d+|\d*\.\d+)\s*,\s*-?(?:\d+|\d*\.\d+)\s*\)$/.test(
+      easing,
+    ) ||
+    /^steps\(\s*\d+\s*(?:,\s*(?:jump-start|jump-end|jump-none|jump-both|start|end))?\s*\)$/.test(easing) ||
+    /^linear\([^)]+\)$/.test(easing)
+  );
 }
 
 function takeStringOrStringArray(attrs: Record<string, unknown>, key: string): string | string[] | undefined {

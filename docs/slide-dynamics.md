@@ -55,7 +55,7 @@ transitionEasing: cubic-bezier(.2, 0, 0, 1)
 ---
 ```
 
-If no timing is specified, package defaults are `--hono-decks-transition-duration: .24s` and `--hono-decks-transition-easing: ease`.
+If no timing is specified, package defaults are `--hono-decks-transition-duration: .24s` and `--hono-decks-transition-easing: ease`. Invalid timing values produce compile warnings and are ignored.
 
 ### Fragments
 
@@ -191,7 +191,7 @@ Base CSS should include conservative defaults:
 
 Theme CSS can override the visual style of known transition and fragment states, but not the navigation algorithm.
 
-The runtime completes transitions on `transitionend` or `transitioncancel` for `opacity`, `transform`, or `all`, with a fallback timeout based on computed `transition-duration + transition-delay`. `ms` and `s` units are supported; if no computed timing is available, the fallback timeout uses 240ms.
+The runtime completes transitions on `transitionend` or `transitioncancel` for `opacity`, `transform`, or `all`, but it does not finish on the first early event. It waits until the computed max `transition-duration + transition-delay` is effectively reached, with a fallback timeout for skipped events. `ms` and `s` units are supported; if no computed timing is available, the fallback timeout uses 240ms.
 
 ## Compiler And Model Changes
 

@@ -210,6 +210,9 @@ describe("compiled deck rendering", () => {
     expect(html).toContain('slide.removeEventListener("transitionend", onTransitionEnd)');
     expect(html).toContain("transitionDurationMs(outgoing)");
     expect(html).toContain("transitionDurationMs(incoming)");
+    expect(html).toContain("const expectedDuration = Math.max(transitionDurationMs(outgoing), transitionDurationMs(incoming))");
+    expect(html).toContain("const elapsed = performance.now() - startedAt");
+    expect(html).toContain("if (elapsed >= Math.max(expectedDuration - 20, 0)) finish()");
     expect(html).toContain("document.startViewTransition");
     expect(html).toContain("queueNavigation(targetIndex, nextStepIndex)");
     expect(html).toContain("drainPendingNavigation()");

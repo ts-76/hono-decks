@@ -240,6 +240,51 @@ transitionEasing: ease-out
     expect(deck.slides[1].meta.transitionEasing).toBe("ease-out");
   });
 
+  it("warns and falls back for invalid transition timing frontmatter", async () => {
+    const deck = await compileMarkdown({
+      slug: "motion",
+      sourcePath: "decks/motion/deck.mdx",
+      kind: "directory",
+      markdown: `---
+title: Motion
+transitionDuration: fast
+transitionEasing: spring(1)
+---
+
+# Invalid deck timing
+
+---
+title: Slide fallback
+---
+
+## Slide fallback
+
+---
+title: Invalid slide timing
+transitionDuration: 12px
+transitionEasing: bounce
+---
+
+## Invalid slide timing
+`,
+    });
+
+    expect(deck.meta.transitionDuration).toBeUndefined();
+    expect(deck.meta.transitionEasing).toBeUndefined();
+    expect(deck.slides[0].meta.transitionDuration).toBeUndefined();
+    expect(deck.slides[0].meta.transitionEasing).toBeUndefined();
+    expect(deck.slides[1].meta.transitionDuration).toBeUndefined();
+    expect(deck.slides[1].meta.transitionEasing).toBeUndefined();
+    expect(deck.warnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "invalid-transition-duration" }),
+        expect.objectContaining({ code: "invalid-transition-easing" }),
+        expect.objectContaining({ code: "invalid-transition-duration", slideIndex: 2 }),
+        expect.objectContaining({ code: "invalid-transition-easing", slideIndex: 2 }),
+      ]),
+    );
+  });
+
   it("falls back for removed and unknown transition values", async () => {
     const deck = await compileMarkdown({
       slug: "motion",
