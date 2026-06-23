@@ -95,31 +95,57 @@ async function runViewportCheck(check, slug, verifyNavigation) {
 
 async function verifyMotionFragmentSteps(label) {
   const initial = await waitForMotionState(
-    (state) => state.position === "1 / 2" && state.stepIndex === "0" && state.stepCount === "1" && state.hiddenFragments === 1,
+    (state) =>
+      state.position === "1 / 3" &&
+      state.stepIndex === "0" &&
+      state.stepCount === "1" &&
+      state.hiddenFragments === 1 &&
+      state.activeTransitions === 0,
     `${label} motion initial fragment state`,
   );
   assertSlideOnlyPosition(initial.position, `${label} motion initial position`);
 
   await evalJson(clickNextControlScript());
   const firstReveal = await waitForMotionState(
-    (state) => state.position === "1 / 2" && state.stepIndex === "1" && state.stepCount === "1" && state.visibleFragments === 1,
+    (state) =>
+      state.position === "1 / 3" &&
+      state.stepIndex === "1" &&
+      state.stepCount === "1" &&
+      state.visibleFragments === 1 &&
+      state.activeTransitions === 0,
     `${label} motion first fragment reveal`,
   );
   assertSlideOnlyPosition(firstReveal.position, `${label} motion first reveal position`);
 
   await evalJson(clickNextControlScript());
   const secondSlide = await waitForMotionState(
-    (state) => state.position === "2 / 2" && state.stepIndex === "0" && Number(state.stepCount) > 0,
+    (state) =>
+      state.position === "2 / 3" &&
+      state.stepIndex === "0" &&
+      Number(state.stepCount) > 0 &&
+      state.activeTransitions === 0,
     `${label} motion second slide fragment state`,
   );
   assertSlideOnlyPosition(secondSlide.position, `${label} motion second slide position`);
 
   await evalJson(clickNextControlScript());
   const secondReveal = await waitForMotionState(
-    (state) => state.position === "2 / 2" && state.stepIndex === "1" && state.visibleFragments >= 1,
+    (state) =>
+      state.position === "2 / 3" &&
+      state.stepIndex === "1" &&
+      state.visibleFragments >= 1 &&
+      state.activeTransitions === 0,
     `${label} motion second slide fragment reveal`,
   );
   assertSlideOnlyPosition(secondReveal.position, `${label} motion second reveal position`);
+
+  await evalJson(dispatchMotionGoToScript(0));
+  await evalJson(dispatchMotionGoToScript(2));
+  const queuedNavigation = await waitForMotionState(
+    (state) => state.position === "3 / 3" && state.stepIndex === "0" && state.activeTransitions === 0,
+    `${label} motion queued slide navigation`,
+  );
+  assertSlideOnlyPosition(queuedNavigation.position, `${label} motion queued navigation position`);
 }
 
 function viewportMetricsScript() {
@@ -248,6 +274,7 @@ function motionStateScript() {
       position: position?.textContent ?? "",
       stepIndex: root?.getAttribute("data-step-index") ?? "",
       stepCount: root?.getAttribute("data-step-count") ?? "",
+      activeTransitions: frameDoc?.querySelectorAll("[data-active-transition]").length ?? 0,
       visibleFragments: fragments.filter((fragment) => !fragment.hasAttribute("data-fragment-hidden")).length,
       hiddenFragments: fragments.filter((fragment) => fragment.hasAttribute("data-fragment-hidden")).length
     };
@@ -260,6 +287,16 @@ function clickNextControlScript() {
     const next = doc.querySelector("[data-action='next']");
     if (!(next instanceof HTMLButtonElement)) throw new Error("missing next control");
     next.click();
+    return { ok: true };
+  })()`;
+}
+
+function dispatchMotionGoToScript(index) {
+  return `(() => {
+    const doc = window.top?.document ?? document;
+    const iframe = doc.querySelector("iframe");
+    if (!(iframe instanceof HTMLIFrameElement) || !iframe.contentWindow) throw new Error("missing deck iframe");
+    iframe.contentWindow.postMessage({ type: "hono-decks:command", action: "goTo", index: ${index} }, "*");
     return { ok: true };
   })()`;
 }

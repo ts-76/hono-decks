@@ -209,6 +209,37 @@ transition: fade-out
     expect(deck.warnings).not.toEqual(expect.arrayContaining([expect.objectContaining({ code: "unknown-transition" })]));
   });
 
+  it("applies deck-level transition timing as slide fallbacks and lets slides override them", async () => {
+    const deck = await compileMarkdown({
+      slug: "motion",
+      sourcePath: "decks/motion/deck.mdx",
+      kind: "directory",
+      markdown: `---
+title: Motion
+transitionDuration: 420ms
+transitionEasing: cubic-bezier(.2, 0, 0, 1)
+---
+
+# Uses deck timing
+
+---
+title: Override
+transitionDuration: 160ms
+transitionEasing: ease-out
+---
+
+## Override
+`,
+    });
+
+    expect(deck.meta.transitionDuration).toBe("420ms");
+    expect(deck.meta.transitionEasing).toBe("cubic-bezier(.2, 0, 0, 1)");
+    expect(deck.slides[0].meta.transitionDuration).toBe("420ms");
+    expect(deck.slides[0].meta.transitionEasing).toBe("cubic-bezier(.2, 0, 0, 1)");
+    expect(deck.slides[1].meta.transitionDuration).toBe("160ms");
+    expect(deck.slides[1].meta.transitionEasing).toBe("ease-out");
+  });
+
   it("falls back for removed and unknown transition values", async () => {
     const deck = await compileMarkdown({
       slug: "motion",

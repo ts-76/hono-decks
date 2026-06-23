@@ -23,7 +23,7 @@ export async function compileMarkdown(input: CompileDeckInput): Promise<Compiled
   const meta = toDeckFrontmatter(deckAttrs, warnings);
   addUnknownFrontmatterWarnings(warnings, meta.meta, "deck");
   const slides: CompiledSlide[] = slideSources.map((source, index) =>
-    compileSlide(input.slug, source, index, warnings, meta.transition),
+    compileSlide(input.slug, source, index, warnings, meta.transition, meta.transitionDuration, meta.transitionEasing),
   );
   const assets = collectExternalAssetRefs(input.markdown, deckAttrsForAssets);
   addExternalAssetWarnings(warnings, assets);
@@ -45,6 +45,8 @@ function compileSlide(
   index: number,
   warnings: CompiledDeck["warnings"],
   fallbackTransition: SlideTransition | undefined,
+  fallbackTransitionDuration: string | undefined,
+  fallbackTransitionEasing: string | undefined,
 ): CompiledSlide {
   const { attrs, body } = readFrontmatter(source);
   const parsed = parseDeck(body);
@@ -60,6 +62,8 @@ function compileSlide(
     warnings,
     index,
     fallbackTransition,
+    fallbackTransitionDuration,
+    fallbackTransitionEasing,
     firstParsedSlide?.title,
     firstParsedSlide?.layout,
     firstParsedSlide?.className,
@@ -275,6 +279,8 @@ function toDeckFrontmatter(attrs: Record<string, unknown>, warnings: CompiledDec
   deck.date = takeString(meta, "date");
   deck.theme = takeString(meta, "theme");
   deck.transition = takeKnownStringWithWarning(meta, "transition", SLIDE_TRANSITIONS, "none", warnings, "unknown-transition");
+  deck.transitionDuration = takeString(meta, "transitionDuration");
+  deck.transitionEasing = takeString(meta, "transitionEasing");
   deck.assets = takeStringOrStringArray(meta, "assets");
   deck.draft = takeBoolean(meta, "draft");
   deck.presenter = takeBoolean(meta, "presenter");
@@ -293,6 +299,8 @@ function toSlideFrontmatter(
   warnings: CompiledDeck["warnings"],
   slideIndex: number,
   fallbackTransition: SlideTransition | undefined,
+  fallbackTransitionDuration: string | undefined,
+  fallbackTransitionEasing: string | undefined,
   fallbackTitle?: string,
   fallbackLayout?: string,
   fallbackClassName?: string,
@@ -307,6 +315,8 @@ function toSlideFrontmatter(
     transition:
       takeKnownStringWithWarning(meta, "transition", SLIDE_TRANSITIONS, "none", warnings, "unknown-transition", slideIndex) ??
       fallbackTransition,
+    transitionDuration: takeString(meta, "transitionDuration") ?? fallbackTransitionDuration,
+    transitionEasing: takeString(meta, "transitionEasing") ?? fallbackTransitionEasing,
     fragments: takeKnownString(meta, "fragments", ["none", "manual", "list"]),
     meta,
   };

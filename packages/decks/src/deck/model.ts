@@ -26,6 +26,8 @@ export interface DeckFrontmatter {
   date?: string;
   theme?: string;
   transition?: SlideTransition;
+  transitionDuration?: string;
+  transitionEasing?: string;
   draft?: boolean;
   assets?: string | string[];
   presenter?: boolean;
@@ -39,6 +41,8 @@ export interface SlideFrontmatter {
   notes?: string;
   background?: string;
   transition?: SlideTransition;
+  transitionDuration?: string;
+  transitionEasing?: string;
   fragments?: SlideFragmentsMode;
   meta: Record<string, unknown>;
 }

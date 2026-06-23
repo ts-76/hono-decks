@@ -45,6 +45,18 @@ Unknown values produce a compile warning and fall back to `none`. The raw value 
 
 Deck frontmatter can define a default transition for every slide. Slide frontmatter overrides that deck-level default.
 
+Deck and slide frontmatter can also define timing. Slide values override deck values, and both compile to CSS variables on the slide element:
+
+```mdx
+---
+transition: slide-left
+transitionDuration: 420ms
+transitionEasing: cubic-bezier(.2, 0, 0, 1)
+---
+```
+
+If no timing is specified, package defaults are `--hono-decks-transition-duration: .24s` and `--hono-decks-transition-easing: ease`.
+
 ### Fragments
 
 Fragments are slide-local reveal steps. The first implementation should support both explicit and list-based authoring.
@@ -112,7 +124,7 @@ The viewer should keep the existing `index` field for backward compatibility. Th
 
 ## Render Contract
 
-Rendered slide sections keep the current attributes and add only known transition data:
+Rendered slide sections keep stable authored metadata. `data-transition` is compiled metadata; it is not the active CSS selector during animation.
 
 ```html
 <section
@@ -127,12 +139,15 @@ Rendered slide sections keep the current attributes and add only known transitio
 
 The presentation runtime owns slide transition state. During navigation it sets:
 
+- `data-active-transition="<known transition>"`
 - `data-slide-state="active"`
 - `data-slide-state="entering"`
 - `data-slide-state="leaving"`
 - `data-slide-state="inactive"`
 - `data-slide-direction="forward"`
 - `data-slide-direction="backward"`
+
+On slide navigation, the runtime reads the incoming slide's `data-transition`, applies it as `data-active-transition` to both outgoing and incoming slides, and copies the incoming slide's timing variables to both slides for the active transition. `data-active-transition` is removed for inactive slides, instant changes, overview mode, print, and reduced-motion paths.
 
 Fragment step navigation does not trigger slide transitions. Slide transitions only run when the slide index changes.
 
@@ -155,10 +170,12 @@ Client islands inside fragments should hydrate once. Reveal/hide changes must us
 Base CSS should include conservative defaults:
 
 ```css
-.slide[data-transition] {
+.slide[data-active-transition] {
   transition:
-    opacity var(--hono-decks-transition-duration) var(--hono-decks-transition-easing),
-    transform var(--hono-decks-transition-duration) var(--hono-decks-transition-easing);
+    opacity var(--hono-decks-active-transition-duration, var(--hono-decks-slide-transition-duration, var(--hono-decks-transition-duration)))
+      var(--hono-decks-active-transition-easing, var(--hono-decks-slide-transition-easing, var(--hono-decks-transition-easing))),
+    transform var(--hono-decks-active-transition-duration, var(--hono-decks-slide-transition-duration, var(--hono-decks-transition-duration)))
+      var(--hono-decks-active-transition-easing, var(--hono-decks-slide-transition-easing, var(--hono-decks-transition-easing)));
 }
 [data-hono-decks-fragment][data-fragment-hidden="true"] {
   visibility: hidden;
@@ -173,6 +190,8 @@ Base CSS should include conservative defaults:
 ```
 
 Theme CSS can override the visual style of known transition and fragment states, but not the navigation algorithm.
+
+The runtime completes transitions on `transitionend` or `transitioncancel` for `opacity`, `transform`, or `all`, with a fallback timeout based on computed `transition-duration + transition-delay`. `ms` and `s` units are supported; if no computed timing is available, the fallback timeout uses 240ms.
 
 ## Compiler And Model Changes
 
@@ -192,11 +211,15 @@ export type SlideFragmentsMode = "none" | "manual" | "list";
 
 export interface DeckFrontmatter {
   transition?: SlideTransition;
+  transitionDuration?: string;
+  transitionEasing?: string;
   meta: Record<string, unknown>;
 }
 
 export interface SlideFrontmatter {
   transition?: SlideTransition;
+  transitionDuration?: string;
+  transitionEasing?: string;
   fragments?: SlideFragmentsMode;
   meta: Record<string, unknown>;
 }

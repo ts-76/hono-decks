@@ -74,7 +74,14 @@ async function compileMdxModuleDeck(
   for (let index = 0; index < slideSources.length; index += 1) {
     const { attrs: slideAttrs, body: slideBody } = readFrontmatter(slideSources[index]);
     const slideModulePath = `${input.outDir}/decks/${entry.slug}/slide-${index}.ts`;
-    const slideMeta = toSlideFrontmatter(slideAttrs, warnings, index, deckMeta.transition);
+    const slideMeta = toSlideFrontmatter(
+      slideAttrs,
+      warnings,
+      index,
+      deckMeta.transition,
+      deckMeta.transitionDuration,
+      deckMeta.transitionEasing,
+    );
     const moduleSource = [prelude, rewriteAssetUrls(slideBody, assets)].filter(Boolean).join("\n\n");
     const rewrittenSource = rewriteRelativeMdxImports(moduleSource, dirname(entry.sourcePath), dirname(slideModulePath));
     const code = await compileMdxModule(rewrittenSource, entry.sourcePath, index, slideMeta.fragments, input.resolveOgp);
@@ -282,6 +289,8 @@ function toDeckFrontmatter(attrs: Record<string, unknown>, warnings: CompiledDec
     author: takeString(meta, "author"),
     theme: takeString(meta, "theme"),
     transition: takeKnownFrontmatter(meta, "transition", SLIDE_TRANSITIONS, "none", warnings, undefined, "unknown-transition"),
+    transitionDuration: takeString(meta, "transitionDuration"),
+    transitionEasing: takeString(meta, "transitionEasing"),
     draft: takeBoolean(meta, "draft"),
     meta,
   };
@@ -292,6 +301,8 @@ function toSlideFrontmatter(
   warnings: CompiledDeck["warnings"],
   slideIndex: number,
   fallbackTransition: SlideFrontmatter["transition"],
+  fallbackTransitionDuration: SlideFrontmatter["transitionDuration"],
+  fallbackTransitionEasing: SlideFrontmatter["transitionEasing"],
 ): SlideFrontmatter {
   const meta = { ...attrs };
   return {
@@ -303,6 +314,8 @@ function toSlideFrontmatter(
     transition:
       takeKnownFrontmatter(meta, "transition", SLIDE_TRANSITIONS, "none", warnings, slideIndex, "unknown-transition") ??
       fallbackTransition,
+    transitionDuration: takeString(meta, "transitionDuration") ?? fallbackTransitionDuration,
+    transitionEasing: takeString(meta, "transitionEasing") ?? fallbackTransitionEasing,
     fragments: takeKnownFrontmatter(meta, "fragments", ["none", "manual", "list"], "none", warnings, slideIndex, "unknown-fragments"),
     meta,
   };

@@ -356,6 +356,55 @@ transition: slide-up
     }
   });
 
+  it("emits deck-level transition timing defaults into generated decks", async () => {
+    const cwd = await createFixture();
+
+    try {
+      await writeFile(
+        join(cwd, "decks", "deck1", "deck.mdx"),
+        `---
+title: Deck One
+transitionDuration: 420ms
+transitionEasing: ease-in-out
+---
+
+# Uses deck timing
+
+---
+title: Override
+transitionDuration: 150ms
+transitionEasing: linear
+---
+
+## Override
+`,
+        "utf8",
+      );
+
+      const manifest = await compileDecks({
+        cwd,
+        root: "decks",
+        out: "src/generated",
+        mountPath: "/slides",
+      });
+
+      expect(manifest.decks[0].meta.transitionDuration).toBe("420ms");
+      expect(manifest.decks[0].meta.transitionEasing).toBe("ease-in-out");
+      expect(manifest.decks[0].slides[0].meta.transitionDuration).toBe("420ms");
+      expect(manifest.decks[0].slides[0].meta.transitionEasing).toBe("ease-in-out");
+      expect(manifest.decks[0].slides[1].meta.transitionDuration).toBe("150ms");
+      expect(manifest.decks[0].slides[1].meta.transitionEasing).toBe("linear");
+
+      const output = await readFile(join(cwd, "src", "generated", "decks.ts"), "utf8");
+      expect(output).toContain('"transitionDuration": "420ms"');
+      expect(output).toContain('"transitionEasing": "ease-in-out"');
+      expect(output).toContain('"transitionDuration": "150ms"');
+      expect(output).toContain('"transitionEasing": "linear"');
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("marks top-level list items as fragments when slide frontmatter uses fragments list", async () => {
     const cwd = await createFixture();
 

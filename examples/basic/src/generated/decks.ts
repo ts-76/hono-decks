@@ -12,6 +12,7 @@ import Slide_media_4 from "./decks/media/slide-4";
 import Slide_media_5 from "./decks/media/slide-5";
 import Slide_motion_0 from "./decks/motion/slide-0";
 import Slide_motion_1 from "./decks/motion/slide-1";
+import Slide_motion_2 from "./decks/motion/slide-2";
 import Slide_sample_0 from "./decks/sample/slide-0";
 import Slide_sample_1 from "./decks/sample/slide-1";
 import Slide_sample_2 from "./decks/sample/slide-2";
@@ -191,6 +192,8 @@ export const decks = defineDecks({
         "title": "Motion Verification",
         "description": "CSS and client island animation checks for @hono/decks",
         "transition": "slide-left",
+        "transitionDuration": "420ms",
+        "transitionEasing": "cubic-bezier(.2, 0, 0, 1)",
         "meta": {}
       },
       "themeStyle": ":root {\n  --hono-decks-color: #eef2ff;\n  --hono-decks-muted-color: #cbd5e1;\n  --hono-decks-accent-color: #8bd3ff;\n  --hono-decks-border-color: rgba(148, 163, 184, .24);\n  --hono-decks-card-background: rgba(15, 23, 42, .78);\n  --hono-decks-inline-code-background: rgba(15, 23, 42, .72);\n  --hono-decks-code-background: rgba(15, 23, 42, .78);\n}\n\n.layout-motion {\n  background: #0b1020;\n  color: #eef2ff;\n}\n",
@@ -207,7 +210,9 @@ export const decks = defineDecks({
           meta: {
             "title": "CSS Animation",
             "layout": "motion",
-            "transition": "fade-out",
+            "transition": "slide-left",
+            "transitionDuration": "420ms",
+            "transitionEasing": "cubic-bezier(.2, 0, 0, 1)",
             "meta": {}
           },
           html: "",
@@ -221,6 +226,8 @@ export const decks = defineDecks({
             "title": "Client Island Animation",
             "layout": "motion",
             "transition": "slide-left",
+            "transitionDuration": "420ms",
+            "transitionEasing": "cubic-bezier(.2, 0, 0, 1)",
             "fragments": "list",
             "meta": {}
           },
@@ -228,6 +235,21 @@ export const decks = defineDecks({
           components: [],
           notes: undefined,
           render: Slide_motion_1
+        },
+        {
+          index: 2,
+          meta: {
+            "title": "Queued Transition",
+            "layout": "motion",
+            "transition": "slide-left",
+            "transitionDuration": "420ms",
+            "transitionEasing": "cubic-bezier(.2, 0, 0, 1)",
+            "meta": {}
+          },
+          html: "",
+          components: [],
+          notes: undefined,
+          render: Slide_motion_2
         }
       ]
     },

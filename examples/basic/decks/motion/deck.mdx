@@ -2,12 +2,13 @@
 title: Motion Verification
 description: CSS and client island animation checks for @hono/decks
 transition: slide-left
+transitionDuration: 420ms
+transitionEasing: cubic-bezier(.2, 0, 0, 1)
 ---
 
 ---
 title: CSS Animation
 layout: motion
-transition: fade-out
 ---
 
 <style>{`
@@ -50,3 +51,16 @@ fragments: list
 <p>JSX fire props are stripped before rendering.</p>
 
 <MotionMeter $fire={2} effect="scale" label="Animation island" initial={35} />
+
+---
+title: Queued Transition
+layout: motion
+---
+
+## Queued navigation
+
+Rapid commands during a slide transition are folded into the latest pending navigation.
+
+:::fire{order="1" effect="fade-up"}
+The outgoing slide keeps sliding with the incoming slide's transition timing.
+:::

@@ -285,8 +285,9 @@ describe("sample Worker app", () => {
     expect(html).toContain("animation:hono-decks-motion-orbit");
     expect(html).toContain("@keyframes hono-decks-motion-orbit");
     expect(html).toContain("@media (prefers-reduced-motion: reduce)");
-    expect(html).toContain('data-transition="fade-out"');
     expect(html).toContain('data-transition="slide-left"');
+    expect(html).toContain("--hono-decks-slide-transition-duration:420ms");
+    expect(html).toContain("--hono-decks-slide-transition-easing:cubic-bezier(.2, 0, 0, 1)");
     expect(html).toContain("data-active-transition");
     expect(html).toContain("data-hono-decks-fragment");
     expect(html).toContain('data-fragment-order="1"');
@@ -297,6 +298,8 @@ describe("sample Worker app", () => {
     expect(html).not.toContain("$fire");
     expect(html).toContain("CSS animation runs before hydration.");
     expect(html).toContain("Client island animation keeps local state.");
+    expect(html).toContain("Queued navigation");
+    expect(html).toContain("Rapid commands during a slide transition");
     expect(html).toContain("let stepIndex = 0");
     expect(html).toContain("stepCount");
     expect(html).toMatch(/data-hono-decks-island="MotionMeter__motion_[a-z0-9]+"/);

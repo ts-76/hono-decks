@@ -51,12 +51,19 @@ describe("compiled deck rendering", () => {
       slides: [
         {
           ...deck.slides[0],
-          meta: { ...deck.slides[0].meta, transition: "slide-left" },
+          meta: {
+            ...deck.slides[0].meta,
+            transition: "slide-left",
+            transitionDuration: "420ms",
+            transitionEasing: "ease-in-out",
+          },
         },
       ],
     });
 
     expect(html).toContain('data-transition="slide-left"');
+    expect(html).toContain("--hono-decks-slide-transition-duration:420ms");
+    expect(html).toContain("--hono-decks-slide-transition-easing:ease-in-out");
     expect(html).toContain('data-slide-state="inactive"');
   });
 
@@ -194,10 +201,18 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("let stepCount = 0");
     expect(html).toContain("let previousIndex = 0");
     expect(html).toContain("let isTransitioning = false");
+    expect(html).toContain("let pendingNavigation = null");
     expect(html).toContain("data-slide-state");
     expect(html).toContain("data-slide-direction");
     expect(html).toContain("function transitionForSlide");
+    expect(html).toContain("function waitForSlideTransition");
+    expect(html).toContain('slide.addEventListener("transitionend", onTransitionEnd)');
+    expect(html).toContain('slide.removeEventListener("transitionend", onTransitionEnd)');
+    expect(html).toContain("transitionDurationMs(outgoing)");
+    expect(html).toContain("transitionDurationMs(incoming)");
     expect(html).toContain("document.startViewTransition");
+    expect(html).toContain("queueNavigation(targetIndex, nextStepIndex)");
+    expect(html).toContain("drainPendingNavigation()");
     expect(html).toContain(
       'window.parent.postMessage({ type: "hono-decks:state", index, stepIndex, stepCount, slideCount: slides.length }, "*")',
     );
@@ -213,6 +228,8 @@ describe("compiled deck rendering", () => {
 
     expect(html).toContain("--hono-decks-transition-duration");
     expect(html).toContain("--hono-decks-transition-easing");
+    expect(html).toContain("var(--hono-decks-active-transition-duration,var(--hono-decks-slide-transition-duration,var(--hono-decks-transition-duration)))");
+    expect(html).toContain("var(--hono-decks-active-transition-easing,var(--hono-decks-slide-transition-easing,var(--hono-decks-transition-easing)))");
     expect(html).toContain('.slide[data-active-transition="fade"][data-slide-state="entering"]');
     expect(html).toContain('.slide[data-active-transition="fade-out"][data-slide-state="leaving"]');
     expect(html).toContain('.slide[data-active-transition="slide-left"][data-slide-direction="forward"][data-slide-state="entering"]');
@@ -226,9 +243,10 @@ describe("compiled deck rendering", () => {
 
     expect(html).toContain("data-active-transition");
     expect(html).toContain('slide.setAttribute("data-active-transition", transition)');
-    expect(html).toContain('setSlideState(outgoing, "active", direction, transition)');
-    expect(html).toContain('setSlideState(outgoing, "leaving", direction, transition)');
-    expect(html).toContain('setSlideState(incoming, "entering", direction, transition)');
+    expect(html).toContain("const timing = activeTransitionTiming(incoming)");
+    expect(html).toContain('setSlideState(outgoing, "active", direction, transition, timing)');
+    expect(html).toContain('setSlideState(outgoing, "leaving", direction, transition, timing)');
+    expect(html).toContain('setSlideState(incoming, "entering", direction, transition, timing)');
   });
 
   it("keeps a 1920x1080 deck canvas and scales it inside the iframe viewport", () => {
