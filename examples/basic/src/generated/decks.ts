@@ -42,9 +42,9 @@ export const decks = defineDecks({
       sourcePath: "decks/code/deck.mdx",
       kind: "directory",
       meta: {
+        "meta": {},
         "title": "Code Verification",
-        "description": "Fenced code block rendering checks for @hono/decks",
-        "meta": {}
+        "description": "Fenced code block rendering checks for @hono/decks"
       },
       "themeStyle": ":root {\n  --hono-decks-color: #eef2ff;\n  --hono-decks-muted-color: #cbd5e1;\n  --hono-decks-accent-color: #8bd3ff;\n  --hono-decks-border-color: rgba(148, 163, 184, .24);\n  --hono-decks-card-background: rgba(15, 23, 42, .78);\n  --hono-decks-inline-code-background: rgba(15, 23, 42, .72);\n  --hono-decks-code-background: rgba(15, 23, 42, .78);\n}\n\n.layout-code {\n  background: #0b1020;\n  color: #eef2ff;\n}\n",
       "themeSourcePath": "decks/code/theme.css",
@@ -84,9 +84,9 @@ export const decks = defineDecks({
       sourcePath: "decks/media/deck.mdx",
       kind: "directory",
       meta: {
+        "meta": {},
         "title": "Media Verification",
-        "description": "Local and remote image asset checks for @hono/decks",
-        "meta": {}
+        "description": "Local and remote image asset checks for @hono/decks"
       },
       "themeStyle": ":root {\n  --hono-decks-color: #eef2ff;\n  --hono-decks-muted-color: #cbd5e1;\n  --hono-decks-accent-color: #2dd4bf;\n  --hono-decks-border-color: rgba(148, 163, 184, .24);\n  --hono-decks-card-background: rgba(8, 18, 34, .82);\n  --hono-decks-inline-code-background: rgba(15, 23, 42, .72);\n  --hono-decks-code-background: rgba(15, 23, 42, .78);\n}\n\n.layout-media {\n  background: #07111f;\n  color: #eef2ff;\n}\n\n.layout-media .media-image {\n  display: block;\n  width: min(100%, 56rem);\n  max-height: 36rem;\n  object-fit: contain;\n}\n",
       "themeSourcePath": "decks/media/theme.css",
@@ -189,12 +189,12 @@ export const decks = defineDecks({
       sourcePath: "decks/motion/deck.mdx",
       kind: "directory",
       meta: {
+        "meta": {},
         "title": "Motion Verification",
         "description": "CSS and client island animation checks for @hono/decks",
         "transition": "slide-left",
         "transitionDuration": "420ms",
-        "transitionEasing": "cubic-bezier(.2, 0, 0, 1)",
-        "meta": {}
+        "transitionEasing": "cubic-bezier(.2, 0, 0, 1)"
       },
       "themeStyle": ":root {\n  --hono-decks-color: #eef2ff;\n  --hono-decks-muted-color: #cbd5e1;\n  --hono-decks-accent-color: #8bd3ff;\n  --hono-decks-border-color: rgba(148, 163, 184, .24);\n  --hono-decks-card-background: rgba(15, 23, 42, .78);\n  --hono-decks-inline-code-background: rgba(15, 23, 42, .72);\n  --hono-decks-code-background: rgba(15, 23, 42, .78);\n}\n\n.layout-motion {\n  background: #0b1020;\n  color: #eef2ff;\n}\n",
       "themeSourcePath": "decks/motion/theme.css",
@@ -258,9 +258,9 @@ export const decks = defineDecks({
       sourcePath: "decks/sample/deck.mdx",
       kind: "directory",
       meta: {
+        "meta": {},
         "title": "Hono Slides",
-        "description": "Hono + Cloudflare Workers で動く MDX-like slide runtime",
-        "meta": {}
+        "description": "Hono + Cloudflare Workers で動く MDX-like slide runtime"
       },
       "themeStyle": ":root {\n  --hono-decks-color: #eef2ff;\n  --hono-decks-muted-color: #cbd5e1;\n  --hono-decks-accent-color: #8bd3ff;\n  --hono-decks-border-color: rgba(148, 163, 184, .24);\n  --hono-decks-card-background: rgba(15, 23, 42, .78);\n  --hono-decks-inline-code-background: rgba(15, 23, 42, .72);\n  --hono-decks-code-background: rgba(15, 23, 42, .78);\n}\n\n.layout-cover,\n.layout-default,\n.layout-statement {\n  background: #0b1020;\n  color: #eef2ff;\n}\n",
       "themeSourcePath": "decks/sample/theme.css",
@@ -295,6 +295,7 @@ export const decks = defineDecks({
           index: 1,
           meta: {
             "title": "Parse and View",
+            "layout": "cover",
             "meta": {}
           },
           html: "",
@@ -305,6 +306,7 @@ export const decks = defineDecks({
         {
           index: 2,
           meta: {
+            "title": "次にやること",
             "layout": "statement",
             "meta": {}
           },

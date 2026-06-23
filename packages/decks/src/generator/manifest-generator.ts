@@ -1,6 +1,7 @@
 import { compileMarkdown } from "../compiler/compiler";
-import type { AssetRef, DeckManifest } from "../deck/model";
+import type { DeckManifest } from "../deck/model";
 import { resolveDeckFiles } from "../routing/file-routing";
+import { buildAssetRefs } from "./assets";
 
 export interface BuildDeckManifestInput {
   root: string;
@@ -38,56 +39,6 @@ export function emitDeckManifestModule(manifest: DeckManifest): string {
     serializable,
     0,
   )} satisfies DeckManifest;\n\nexport const manifest = deckManifest;\n`;
-}
-
-async function buildAssetRefs(
-  slug: string,
-  assetPaths: string[],
-  input: BuildDeckManifestInput,
-): Promise<AssetRef[]> {
-  return Promise.all(
-    assetPaths.map(async (sourcePath) => {
-      return {
-        sourcePath,
-        publicPath: `${normalizeMountPath(input.mountPath ?? `/${input.root}`)}/${encodeURIComponent(slug)}/assets/${assetName(
-          sourcePath,
-          input.root,
-          slug,
-        )}`,
-        type: "local",
-        contentType: contentTypeForPath(sourcePath),
-        body: input.readBinary ? ((await input.readBinary(sourcePath)) as BodyInit) : undefined,
-      };
-    }),
-  );
-}
-
-function assetName(sourcePath: string, root: string, slug: string): string {
-  const normalizedPath = normalizePath(sourcePath);
-  const prefix = `${normalizePath(root).replace(/\/$/, "")}/${slug}/assets/`;
-  const relative = normalizedPath.startsWith(prefix)
-    ? normalizedPath.slice(prefix.length)
-    : (normalizedPath.split("/").at(-1) ?? normalizedPath);
-  return relative.split("/").map(encodeURIComponent).join("/");
-}
-
-function normalizeMountPath(value: string): string {
-  const withLeadingSlash = value.startsWith("/") ? value : `/${value}`;
-  return withLeadingSlash.replace(/\/$/, "");
-}
-
-function normalizePath(path: string): string {
-  return path.replaceAll("\\", "/").replace(/^\.\/+/, "").replace(/\/+/g, "/");
-}
-
-function contentTypeForPath(path: string): string | undefined {
-  const lower = path.toLowerCase();
-  if (lower.endsWith(".png")) return "image/png";
-  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
-  if (lower.endsWith(".gif")) return "image/gif";
-  if (lower.endsWith(".svg")) return "image/svg+xml";
-  if (lower.endsWith(".webp")) return "image/webp";
-  return undefined;
 }
 
 function serializeManifestValue(value: unknown, depth: number): string {

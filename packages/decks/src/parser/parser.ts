@@ -32,34 +32,92 @@ type MdxAttribute = {
 interface ParsedContent {
   blocks: SlideBlock[];
   nodes: SlideNode[];
+  warnings: ParserWarning[];
+}
+
+export type ParserWarningCode =
+  | "code-fence-unclosed"
+  | "mdx-parse-error"
+  | "mdx-import-export-ignored"
+  | "mdx-expression-ignored"
+  | "mdx-expression-prop-ignored";
+
+export interface ParserWarning {
+  code: ParserWarningCode;
+  message: string;
+  slideIndex: number;
+}
+
+interface ParsedDeckWithWarnings {
+  slides: Slide[];
+  warnings: ParserWarning[];
+}
+
+interface ParsedSlide {
+  slide: Slide;
+  warnings: ParserWarning[];
+}
+
+interface ParsedMarkdownTree {
+  root: MarkdownNode;
+  warnings: ParserWarning[];
+}
+
+interface ParsedBlockResult {
+  blocks: SlideBlock[];
+  warnings: ParserWarning[];
+}
+
+interface ParsedNodeResult {
+  nodes: SlideNode[];
+  warnings: ParserWarning[];
+}
+
+interface ParsedProps {
+  props: Record<string, SlidePropValue>;
+  warnings: ParserWarning[];
 }
 
 export function parseDeck(markdown: string): SlideDeck {
-  const warnings: string[] = [];
-  const normalized = markdown.replace(/\r\n/g, "\n").trim();
-  const chunks = normalized.length > 0 ? normalized.split(slideSeparator) : [""];
-  const slides = chunks
-    .map((chunk, index) => parseSlide(chunk.trim(), index, warnings))
-    .filter((slide) => slide.raw.length > 0 || slide.blocks.length > 0 || slide.nodes.length > 0);
+  const parsed = parseDeckWithWarnings(markdown);
 
-  return { slides, warnings };
+  return {
+    slides: parsed.slides,
+    warnings: parsed.warnings.map((warning) => warning.message),
+  };
 }
 
-function parseSlide(source: string, index: number, warnings: string[]): Slide {
+export function parseDeckWithWarnings(markdown: string): ParsedDeckWithWarnings {
+  const normalized = markdown.replace(/\r\n/g, "\n").trim();
+  const chunks = normalized.length > 0 ? normalized.split(slideSeparator) : [""];
+  const parsedSlides = chunks
+    .map((chunk, index) => parseSlide(chunk.trim(), index))
+    .filter(({ slide }) => slide.raw.length > 0 || slide.blocks.length > 0 || slide.nodes.length > 0);
+
+  return {
+    slides: parsedSlides.map(({ slide }) => slide),
+    warnings: parsedSlides.flatMap(({ warnings }) => warnings),
+  };
+}
+
+function parseSlide(source: string, index: number): ParsedSlide {
   const { attrs, body } = readSlideAttributes(source);
-  const parsed = parseContent(body, warnings, index);
+  const parsed = parseContent(body, index);
   const firstHeading = parsed.blocks.find((block) => block.type === "heading") as
     | Extract<SlideBlock, { type: "heading" }>
     | undefined;
 
   return {
-    index,
-    title: stringAttr(attrs.title) ?? firstHeading?.text,
-    layout: stringAttr(attrs.layout) ?? (index === 0 ? "cover" : "default"),
-    className: stringAttr(attrs.class),
-    blocks: parsed.blocks,
-    nodes: parsed.nodes,
-    raw: source,
+    slide: {
+      index,
+      title: stringAttr(attrs.title) ?? firstHeading?.text,
+      layout: stringAttr(attrs.layout) ?? (index === 0 ? "cover" : "default"),
+      className: stringAttr(attrs.class),
+      blocks: parsed.blocks,
+      nodes: parsed.nodes,
+      raw: source,
+    },
+    warnings: parsed.warnings,
   };
 }
 
@@ -82,31 +140,39 @@ function readSlideAttributes(source: string): {
   return { attrs, body: lines.slice(cursor).join("\n").trim() };
 }
 
-function parseContent(body: string, warnings: string[], slideIndex: number): ParsedContent {
-  addFenceWarnings(body, warnings, slideIndex);
-  const root = parseMarkdownTree(body, warnings, slideIndex);
-  const blocks: SlideBlock[] = [];
-  const nodes: SlideNode[] = [];
+function parseContent(body: string, slideIndex: number): ParsedContent {
+  const { root, warnings: parseWarnings } = parseMarkdownTree(body, slideIndex);
+  const blockResults = (root.children ?? []).map((child) => toBlocks(child, slideIndex, body));
+  const nodeResults = (root.children ?? []).map((child) => toNodes(child, slideIndex, body));
 
-  for (const child of root.children ?? []) {
-    blocks.push(...toBlocks(child, warnings, slideIndex, body));
-    nodes.push(...toNodes(child, warnings, slideIndex, body));
-  }
-
-  return { blocks, nodes };
+  return {
+    blocks: blockResults.flatMap(({ blocks }) => blocks),
+    nodes: nodeResults.flatMap(({ nodes }) => nodes),
+    warnings: [
+      ...fenceWarningsFor(body, slideIndex),
+      ...parseWarnings,
+      ...blockResults.flatMap(({ warnings }) => warnings),
+      ...nodeResults.flatMap(({ warnings }) => warnings),
+    ],
+  };
 }
 
-function parseMarkdownTree(body: string, warnings: string[], slideIndex: number): MarkdownNode {
+function parseMarkdownTree(body: string, slideIndex: number): ParsedMarkdownTree {
   try {
-    return unified().use(remarkParse).use(remarkMdx).parse(body) as MarkdownNode;
+    return {
+      root: unified().use(remarkParse).use(remarkMdx).parse(body) as MarkdownNode,
+      warnings: [],
+    };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown MDX parse error";
-    warnings.push(`Slide ${slideIndex + 1}: ${message}`);
-    return unified().use(remarkParse).parse(body) as MarkdownNode;
+    return {
+      root: unified().use(remarkParse).parse(body) as MarkdownNode,
+      warnings: [parserWarning("mdx-parse-error", `Slide ${slideIndex + 1}: ${message}`, slideIndex)],
+    };
   }
 }
 
-function addFenceWarnings(body: string, warnings: string[], slideIndex: number): void {
+function fenceWarningsFor(body: string, slideIndex: number): ParserWarning[] {
   let openFence: string | undefined;
   for (const line of body.split("\n")) {
     const match = /^(```|~~~)/.exec(line);
@@ -117,227 +183,248 @@ function addFenceWarnings(body: string, warnings: string[], slideIndex: number):
     }
     if (line.startsWith(openFence)) openFence = undefined;
   }
-  if (openFence) warnings.push(`Slide ${slideIndex + 1}: code fence is not closed.`);
+  if (!openFence) return [];
+  return [parserWarning("code-fence-unclosed", `Slide ${slideIndex + 1}: code fence is not closed.`, slideIndex)];
 }
 
-function toBlocks(node: MarkdownNode, warnings: string[], slideIndex: number, source: string): SlideBlock[] {
+function toBlocks(node: MarkdownNode, slideIndex: number, source: string): ParsedBlockResult {
   switch (node.type) {
     case "heading":
-      return [{ type: "heading", depth: headingDepth(node.depth), text: textContent(node) }];
+      return blockResult([{ type: "heading", depth: headingDepth(node.depth), text: textContent(node) }]);
     case "paragraph": {
       const image = soleImage(node);
       if (image) {
-        return [
+        return blockResult([
           {
             type: "image",
             alt: image.alt ?? "",
             src: image.url ?? "",
             ...(image.title ? { title: image.title } : {}),
           },
-        ];
+        ]);
       }
-      return [{ type: "paragraph", text: textContent(node).replace(/\s+/g, " ").trim() }];
+      return blockResult([{ type: "paragraph", text: textContent(node).replace(/\s+/g, " ").trim() }]);
     }
     case "list":
-      return [
+      return blockResult([
         {
           type: "list",
           ordered: node.ordered === true,
           items: (node.children ?? []).map((item) => textContent(item).replace(/\s+/g, " ").trim()).filter(Boolean),
         },
-      ];
+      ]);
     case "code":
-      return [{ type: "code", lang: node.lang ?? undefined, code: node.value ?? "" }];
+      return blockResult([{ type: "code", lang: node.lang ?? undefined, code: node.value ?? "" }]);
     case "blockquote":
-      return [{ type: "blockquote", text: textContent(node).trim() }];
+      return blockResult([{ type: "blockquote", text: textContent(node).trim() }]);
     case "mdxJsxFlowElement":
     case "mdxJsxTextElement":
-      return jsxElementBlock(node, warnings, slideIndex, source);
+      return jsxElementBlock(node, slideIndex, source);
     case "mdxjsEsm":
-      return [];
     case "mdxFlowExpression":
     case "mdxTextExpression":
-      return [];
     case "thematicBreak":
-      return [];
+      return blockResult([]);
     default:
-      return textContent(node).trim() ? [{ type: "paragraph", text: textContent(node).trim() }] : [];
+      return blockResult(textContent(node).trim() ? [{ type: "paragraph", text: textContent(node).trim() }] : []);
   }
 }
 
-function jsxElementBlock(
-  node: MarkdownNode,
-  warnings: string[],
-  slideIndex: number,
-  source: string,
-): SlideBlock[] {
+function jsxElementBlock(node: MarkdownNode, slideIndex: number, source: string): ParsedBlockResult {
   const name = node.name ?? "";
-  if (!name) return [];
+  if (!name) return blockResult([]);
 
   if (isComponentName(name)) {
-    return [
-      {
-        type: "component",
-        name,
-        props: parseProps(node.attributes ?? [], warnings, slideIndex, name),
-        raw: sourceForNode(node, source) ?? `<${name} />`,
-      },
-    ];
+    const parsedProps = parseProps(node.attributes ?? [], slideIndex, name);
+    return blockResult(
+      [
+        {
+          type: "component",
+          name,
+          props: parsedProps.props,
+          raw: sourceForNode(node, source) ?? `<${name} />`,
+        },
+      ],
+      parsedProps.warnings,
+    );
   }
 
-  return [{ type: "paragraph", text: textContent(node).trim() }];
+  return blockResult([{ type: "paragraph", text: textContent(node).trim() }]);
 }
 
-function toNodes(node: MarkdownNode, warnings: string[], slideIndex: number, source: string): SlideNode[] {
+function toNodes(node: MarkdownNode, slideIndex: number, source: string): ParsedNodeResult {
   switch (node.type) {
     case "text":
-      return node.value ? [{ type: "text", value: node.value }] : [];
+      return nodeResult(node.value ? [{ type: "text", value: node.value }] : []);
     case "emphasis":
-      return [{ type: "element", tag: "em", props: {}, children: childrenToNodes(node, warnings, slideIndex, source) }];
+      return elementNodeResult(node, "em", slideIndex, source);
     case "strong":
-      return [
-        { type: "element", tag: "strong", props: {}, children: childrenToNodes(node, warnings, slideIndex, source) },
-      ];
+      return elementNodeResult(node, "strong", slideIndex, source);
     case "inlineCode":
-      return [{ type: "element", tag: "code", props: {}, children: [{ type: "text", value: node.value ?? "" }] }];
+      return nodeResult([{ type: "element", tag: "code", props: {}, children: [{ type: "text", value: node.value ?? "" }] }]);
     case "break":
-      return [{ type: "element", tag: "br", props: {}, children: [] }];
+      return nodeResult([{ type: "element", tag: "br", props: {}, children: [] }]);
     case "heading":
-      return [
-        {
-          type: "element",
-          tag: `h${headingDepth(node.depth)}`,
-          props: {},
-          children: childrenToNodes(node, warnings, slideIndex, source),
-        },
-      ];
+      return elementNodeResult(node, `h${headingDepth(node.depth)}`, slideIndex, source);
     case "paragraph": {
-      if (soleImage(node)) return childrenToNodes(node, warnings, slideIndex, source);
-      if (isJsxOnlyParagraph(node)) return childrenToNodes(node, warnings, slideIndex, source);
-      return [
-        {
-          type: "element",
-          tag: "p",
-          props: {},
-          children: childrenToNodes(node, warnings, slideIndex, source),
-        },
-      ];
+      if (soleImage(node)) return childrenToNodes(node, slideIndex, source);
+      if (isJsxOnlyParagraph(node)) return childrenToNodes(node, slideIndex, source);
+      return elementNodeResult(node, "p", slideIndex, source);
     }
     case "list": {
       const tag = node.ordered === true ? "ol" : "ul";
-      return [
-        {
-          type: "element",
-          tag,
-          props: {},
-          children: (node.children ?? []).map((child) => ({
+      const childResults = (node.children ?? []).map((child) => childrenToNodes(child, slideIndex, source));
+      return nodeResult(
+        [
+          {
             type: "element",
-            tag: "li",
+            tag,
             props: {},
-            children: childrenToNodes(child, warnings, slideIndex, source),
-          })),
-        },
-      ];
+            children: childResults.map(({ nodes }) => ({
+              type: "element",
+              tag: "li",
+              props: {},
+              children: nodes,
+            })),
+          },
+        ],
+        childResults.flatMap(({ warnings }) => warnings),
+      );
     }
     case "listItem":
-      return childrenToNodes(node, warnings, slideIndex, source);
+      return childrenToNodes(node, slideIndex, source);
     case "code":
-      return [{ type: "code", lang: node.lang ?? undefined, value: node.value ?? "" }];
+      return nodeResult([{ type: "code", lang: node.lang ?? undefined, value: node.value ?? "" }]);
     case "blockquote":
-      return [
-        {
-          type: "element",
-          tag: "blockquote",
-          props: {},
-          children: childrenToNodes(node, warnings, slideIndex, source),
-        },
-      ];
+      return elementNodeResult(node, "blockquote", slideIndex, source);
     case "image":
-      return [
+      return nodeResult([
         {
           type: "element",
           tag: "img",
           props: { src: node.url ?? "", alt: node.alt ?? "", ...(node.title ? { title: node.title } : {}) },
           children: [],
         },
-      ];
+      ]);
     case "link":
-      return [
-        {
-          type: "element",
-          tag: "a",
-          props: { href: node.url ?? "" },
-          children: childrenToNodes(node, warnings, slideIndex, source),
-        },
-      ];
+      return elementNodeResult(node, "a", slideIndex, source, { href: node.url ?? "" });
     case "mdxJsxFlowElement":
     case "mdxJsxTextElement":
-      return jsxElementNodes(node, warnings, slideIndex, source);
+      return jsxElementNodes(node, slideIndex, source);
     case "mdxjsEsm":
-      warnings.push(`Slide ${slideIndex + 1}: MDX import/export syntax is ignored.`);
-      return [];
+      return nodeResult(
+        [],
+        [
+          parserWarning(
+            "mdx-import-export-ignored",
+            `Slide ${slideIndex + 1}: MDX import/export syntax is ignored.`,
+            slideIndex,
+          ),
+        ],
+      );
     case "mdxFlowExpression":
     case "mdxTextExpression":
-      warnings.push(`Slide ${slideIndex + 1}: MDX JavaScript expressions are ignored.`);
-      return [];
+      return nodeResult(
+        [],
+        [
+          parserWarning(
+            "mdx-expression-ignored",
+            `Slide ${slideIndex + 1}: MDX JavaScript expressions are ignored.`,
+            slideIndex,
+          ),
+        ],
+      );
     case "thematicBreak":
-      return [{ type: "element", tag: "hr", props: {}, children: [] }];
+      return nodeResult([{ type: "element", tag: "hr", props: {}, children: [] }]);
     default:
-      return childrenToNodes(node, warnings, slideIndex, source);
+      return childrenToNodes(node, slideIndex, source);
   }
 }
 
-function jsxElementNodes(
+function elementNodeResult(
   node: MarkdownNode,
-  warnings: string[],
+  tag: string,
   slideIndex: number,
   source: string,
-): SlideNode[] {
-  const name = node.name ?? "";
-  if (!name) return childrenToNodes(node, warnings, slideIndex, source);
-  if (isUnsafeHtmlElement(name)) return [{ type: "text", value: sourceForNode(node, source) ?? textContent(node) }];
-  const props = parseProps(node.attributes ?? [], warnings, slideIndex, name);
-  const children = childrenToNodes(node, warnings, slideIndex, source).filter(
-    (child) => child.type !== "text" || child.value.trim() !== "",
+  props: Record<string, unknown> = {},
+): ParsedNodeResult {
+  const children = childrenToNodes(node, slideIndex, source);
+  return nodeResult(
+    [
+      {
+        type: "element",
+        tag,
+        props,
+        children: children.nodes,
+      },
+    ],
+    children.warnings,
   );
-
-  if (isComponentName(name)) return [{ type: "component", name, props, children }];
-  return [{ type: "element", tag: name, props, children }];
 }
 
-function childrenToNodes(
-  node: MarkdownNode,
-  warnings: string[],
-  slideIndex: number,
-  source: string,
-): SlideNode[] {
-  return (node.children ?? []).flatMap((child) => toNodes(child, warnings, slideIndex, source));
+function jsxElementNodes(node: MarkdownNode, slideIndex: number, source: string): ParsedNodeResult {
+  const name = node.name ?? "";
+  if (!name) return childrenToNodes(node, slideIndex, source);
+  if (isUnsafeHtmlElement(name)) {
+    return nodeResult([{ type: "text", value: sourceForNode(node, source) ?? textContent(node) }]);
+  }
+
+  const parsedProps = parseProps(node.attributes ?? [], slideIndex, name);
+  const parsedChildren = childrenToNodes(node, slideIndex, source);
+  const children = parsedChildren.nodes.filter((child) => child.type !== "text" || child.value.trim() !== "");
+  const warnings = [...parsedProps.warnings, ...parsedChildren.warnings];
+
+  if (isComponentName(name)) return nodeResult([{ type: "component", name, props: parsedProps.props, children }], warnings);
+  return nodeResult([{ type: "element", tag: name, props: parsedProps.props, children }], warnings);
 }
 
-function parseProps(
-  attributes: MdxAttribute[],
-  warnings: string[],
-  slideIndex: number,
-  componentName: string,
-): Record<string, SlidePropValue> {
+function childrenToNodes(node: MarkdownNode, slideIndex: number, source: string): ParsedNodeResult {
+  const results = (node.children ?? []).map((child) => toNodes(child, slideIndex, source));
+  return nodeResult(
+    results.flatMap(({ nodes }) => nodes),
+    results.flatMap(({ warnings }) => warnings),
+  );
+}
+
+function parseProps(attributes: MdxAttribute[], slideIndex: number, componentName: string): ParsedProps {
   const props: Record<string, SlidePropValue> = {};
-
-  for (const attr of attributes) {
-    if (attr.type !== "mdxJsxAttribute" || !attr.name) continue;
+  const warnings = attributes.flatMap((attr) => {
+    if (attr.type !== "mdxJsxAttribute" || !attr.name) return [];
     if (attr.value === null || attr.value === undefined) {
       props[attr.name] = true;
-      continue;
+      return [];
     }
     if (typeof attr.value === "string" || typeof attr.value === "number" || typeof attr.value === "boolean") {
       props[attr.name] = attr.value;
-      continue;
+      return [];
     }
-    warnings.push(
-      `Slide ${slideIndex + 1}: MDX JavaScript expression props are ignored on ${componentName}.${attr.name}.`,
-    );
-  }
+    return [
+      parserWarning(
+        "mdx-expression-prop-ignored",
+        `Slide ${slideIndex + 1}: MDX JavaScript expression props are ignored on ${ignoredPropTarget(componentName, attr.name)}.`,
+        slideIndex,
+      ),
+    ];
+  });
 
-  return props;
+  return { props, warnings };
+}
+
+function blockResult(blocks: SlideBlock[], emittedWarnings: ParserWarning[] = []): ParsedBlockResult {
+  return { blocks, warnings: emittedWarnings };
+}
+
+function nodeResult(nodes: SlideNode[], emittedWarnings: ParserWarning[] = []): ParsedNodeResult {
+  return { nodes, warnings: emittedWarnings };
+}
+
+function parserWarning(code: ParserWarningCode, message: string, slideIndex: number): ParserWarning {
+  return { code, message, slideIndex };
+}
+
+function ignoredPropTarget(componentName: string, propName: string): string {
+  if (propName.startsWith("$")) return `${componentName} dynamic prop`;
+  return `${componentName}.${propName}`;
 }
 
 function textContent(node: MarkdownNode): string {

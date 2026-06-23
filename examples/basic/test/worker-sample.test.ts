@@ -186,6 +186,11 @@ describe("sample Worker app", () => {
     expect(html).toContain('data-sample-layout="deck-embed"');
     expect(html).toContain('data-hono-decks-frame');
     expect(html).toContain('src="/decks/sample/render"');
+    expect(html).toMatch(/\.sample-embed \.hono-decks-frame-stage\s*\{[^}]*width:\s*100%;[^}]*height:\s*100%;/);
+    expect(html).toMatch(/\.sample-embed iframe\s*\{[^}]*width:\s*100%;[^}]*height:\s*100%;/);
+    expect(html).not.toMatch(/\.sample-embed \.hono-decks-frame-stage\s*\{[^}]*width:\s*1920px;/);
+    expect(html).not.toContain("transform: scale(.5)");
+    expect(html).not.toMatch(/\.sample-embed iframe\s*\{[^}]*width:\s*1920px;/);
     expect(html).not.toContain('data-action="previous"');
   });
 

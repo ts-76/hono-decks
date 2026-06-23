@@ -1,3 +1,4 @@
+import { contentTypeForPath } from "../deck/assets";
 import type {
   AssetRef,
   CompiledDeck,
@@ -219,16 +220,6 @@ function publicPathForLocalAsset(slug: string, sourcePath: string, mountPath = "
 function normalizeMountPath(value: string): string {
   const withLeadingSlash = value.startsWith("/") ? value : `/${value}`;
   return withLeadingSlash.replace(/\/$/, "");
-}
-
-function contentTypeForPath(path: string): string | undefined {
-  const lower = path.toLowerCase();
-  if (lower.endsWith(".png")) return "image/png";
-  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
-  if (lower.endsWith(".gif")) return "image/gif";
-  if (lower.endsWith(".svg")) return "image/svg+xml";
-  if (lower.endsWith(".webp")) return "image/webp";
-  return undefined;
 }
 
 function publishUpdate(

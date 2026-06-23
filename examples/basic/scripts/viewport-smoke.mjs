@@ -6,6 +6,7 @@ import { spawn } from "node:child_process";
 
 const cwd = path.resolve(import.meta.dirname, "..");
 const root = path.resolve(cwd, "../..");
+const wranglerConfigHome = path.join(cwd, ".wrangler-config");
 const wranglerBin = path.join(root, "node_modules", ".bin", process.platform === "win32" ? "wrangler.cmd" : "wrangler");
 const port = process.env.HONO_DECKS_SMOKE_PORT ?? String(18787 + (process.pid % 1000));
 const host = "127.0.0.1";
@@ -29,7 +30,7 @@ try {
   server = spawn(wranglerBin, ["dev", "--ip", host, "--port", port], {
     cwd,
     stdio: ["ignore", "pipe", "pipe"],
-    env: { ...process.env, NO_COLOR: "1" },
+    env: { ...process.env, CI: "1", XDG_CONFIG_HOME: wranglerConfigHome, NO_COLOR: "1" },
   });
   serverExit = new Promise((resolve) => {
     server.once("exit", (code, signal) => {

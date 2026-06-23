@@ -5,6 +5,8 @@ import type { DeckRenderable, MaybePromise } from "../renderer/compiled-render";
 import { renderJsxValue } from "../renderer/jsx-renderer";
 import type { DeckExportOptions, DeckViewerExportPaths } from "./browser-export";
 import { resolveAuthorizedExportPaths } from "./browser-export";
+import { renderViewerScript } from "./viewer-script";
+import { baseViewerStyle } from "./viewer-style";
 
 export interface DeckViewerOptions {
   controls?: boolean;
@@ -253,103 +255,6 @@ function renderViewerTocHtml(slides: DeckTocItem[]): string {
     )
     .join("");
   return `<nav class="hono-decks-viewer-toc" data-hono-decks-toc aria-label="Slide navigation"><ol>${items}</ol></nav>`;
-}
-
-function baseViewerStyle(): string {
-  return `
-:root{color-scheme:dark;background:#050816;color:#eef2ff;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-html,body{margin:0;min-height:100vh}
-body{overflow:hidden}
-[data-hono-decks-viewer]{min-height:100vh;display:grid;place-items:center;box-sizing:border-box}
-.hono-decks-viewer-header{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
-.hono-decks-viewer-title{margin:0;font-size:1rem;line-height:1.25}
-.hono-decks-viewer-meta{margin:.2rem 0 0;color:#cbd5e1;font-size:.82rem}
-.hono-decks-viewer-shell{display:grid;place-items:center;gap:12px;min-width:0;min-height:0}
-.hono-decks-viewer-stage{display:grid;place-items:center;min-width:0;min-height:0}
-.hono-decks-viewport{width:min(100vw,calc(100vh * 16 / 9));aspect-ratio:16/9;position:relative;overflow:hidden;touch-action:pan-y}
-.hono-decks-viewport:focus-visible{outline:2px solid currentColor;outline-offset:4px}
-.hono-decks-frame-stage{width:100%;height:100%}
-.hono-decks-frame-stage iframe{width:100%;height:100%;border:0;display:block}
-.hono-decks-viewer-controls{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:8px;align-items:center}
-.hono-decks-viewer-toc button,.hono-decks-viewer-controls button,.hono-decks-viewer-controls a{font:inherit}
-@media (prefers-reduced-motion: reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}}`;
-}
-
-function renderViewerScript(): string {
-  return `<script>
-(() => {
-  const root = document.querySelector("[data-hono-decks-viewer]");
-  const viewport = document.querySelector("[data-viewer-viewport]");
-  const iframe = document.querySelector("iframe");
-  const position = document.querySelector("[data-slide-position]");
-  let pointerStartX = null;
-  let pointerStartY = null;
-
-  function sendCommand(action, index) {
-    iframe?.contentWindow?.postMessage({ type: "hono-decks:command", action, index }, "*");
-  }
-
-  function viewerClick(event) {
-    const target = event.target;
-    if (target instanceof HTMLButtonElement || target instanceof HTMLAnchorElement) return;
-    const bounds = viewport?.getBoundingClientRect();
-    if (!bounds) return;
-    const action = event.clientX < bounds.left + bounds.width / 2 ? "previous" : "next";
-    sendCommand(action);
-  }
-
-  function viewerPointerDown(event) {
-    pointerStartX = event.clientX;
-    pointerStartY = event.clientY;
-  }
-
-  function viewerPointerUp(event) {
-    if (pointerStartX === null || pointerStartY === null) return;
-    const deltaX = event.clientX - pointerStartX;
-    const deltaY = event.clientY - pointerStartY;
-    pointerStartX = null;
-    pointerStartY = null;
-    if (Math.abs(deltaX) < 48 || Math.abs(deltaX) < Math.abs(deltaY)) return;
-    sendCommand(deltaX < 0 ? "next" : "previous");
-  }
-
-  async function toggleViewerFullscreen() {
-    if (document.fullscreenElement) {
-      await document.exitFullscreen?.();
-      return;
-    }
-    await root?.requestFullscreen?.();
-  }
-
-  document.querySelector("[data-action='previous']")?.addEventListener("click", () => sendCommand("previous"));
-  document.querySelector("[data-action='next']")?.addEventListener("click", () => sendCommand("next"));
-  document.querySelector("[data-action='fullscreen']")?.addEventListener("click", () => { void toggleViewerFullscreen(); });
-  document.querySelectorAll("[data-action='goTo']").forEach((control) => {
-    control.addEventListener("click", () => {
-      const index = Number(control.getAttribute("data-slide-index"));
-      if (Number.isFinite(index)) iframe?.contentWindow?.postMessage({ type: "hono-decks:command", action: "goTo", index }, "*");
-    });
-  });
-  viewport?.addEventListener("click", viewerClick);
-  viewport?.addEventListener("pointerdown", viewerPointerDown);
-  viewport?.addEventListener("pointerup", viewerPointerUp);
-  window.addEventListener("message", (event) => {
-    const message = event.data;
-    if (!message || message.type !== "hono-decks:state") return;
-    root?.setAttribute("data-step-index", String(message.stepIndex ?? 0));
-    root?.setAttribute("data-step-count", String(message.stepCount ?? 0));
-    if (position) {
-      const slideText = String(message.index + 1) + " / " + String(message.slideCount ?? "?");
-      position.textContent = slideText;
-    }
-  });
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "ArrowRight" || event.key === " ") sendCommand("next");
-    if (event.key === "ArrowLeft") sendCommand("previous");
-    if (event.key === "f") void toggleViewerFullscreen();
-  });
-})();
-  </script>`;
 }
 
 function escapeHtml(value: string): string {

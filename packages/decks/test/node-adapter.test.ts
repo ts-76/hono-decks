@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DeckFileChange } from "../src/deck/model";
+import { compileMarkdown } from "../src/compiler/compiler";
 import {
   buildDeckManifestFromFileSystem,
   compileDecks,
@@ -161,6 +162,7 @@ export function Counter() {
       expect(slideOutput).toContain('src: "/slides/deck1/assets/my%20image%231.svg"');
       expect(slideOutput).toContain('src: "/slides/deck1/assets/plain.svg"');
       expect(slideOutput).toContain('src: "/slides/deck1/assets/jsx.svg"');
+      expect(slideOutput).toContain("width: 1");
       expect(slideOutput).toContain('src: "https://example.com/hono-decks-remote.png"');
       expect(slideOutput).toContain("highlightedHtml");
       expect(slideOutput).toContain("shiki");
@@ -174,6 +176,160 @@ export function Counter() {
       expect(clientOutput).toContain("decks/deck1/components/client/index.tsx");
       expect(clientOutput).toContain("hydrateSlideIslands");
       expect(clientOutput).toMatch(/Counter__deck1_[a-z0-9]+/);
+      expect(manifest.decks[0].warnings).not.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            code: "parse-warning",
+            message: expect.stringContaining("MDX JavaScript expression props are ignored"),
+          }),
+        ]),
+      );
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("preserves compiler frontmatter semantics in generated deck modules", async () => {
+    const cwd = await createFixture();
+
+    try {
+      await writeFile(
+        join(cwd, "decks", "deck1", "deck.mdx"),
+        `---
+title: [Generated Frontmatter]
+description: Metadata parity
+author: Toma
+tags:
+  - hono
+  - workers
+date: 2026-06-04
+assets:
+  - https://cdn.example.com/front.png?v=1
+  - /public/front.svg#icon
+presenter: true
+custom:
+  intent: demo
+  priority: high
+---
+
+# Generated Frontmatter
+
+---
+title: Details
+notes: |
+  Mention the generated module contract.
+customSlide:
+  owner: docs
+---
+
+## Details
+
+![Body Remote](https://cdn.example.com/body.png)
+
+<Hero image="r2://slides-bucket/body.webp" />
+
+\`\`\`ts
+const generatedWarning = true;
+		`,
+        "utf8",
+      );
+
+      const markdown = await readFile(join(cwd, "decks", "deck1", "deck.mdx"), "utf8");
+      const direct = await compileMarkdown({
+        slug: "deck1",
+        sourcePath: "decks/deck1/deck.mdx",
+        kind: "directory",
+        markdown,
+      });
+      const manifest = await compileDecks({
+        cwd,
+        root: "decks",
+        out: "src/generated",
+        mountPath: "/slides",
+      });
+
+      expect(manifest.decks[0].meta).toEqual(direct.meta);
+      expect(manifest.decks[0].slides.map((slide) => slide.meta)).toEqual(direct.slides.map((slide) => slide.meta));
+      expect(manifest.decks[0].warnings).toEqual(direct.warnings);
+      expect(manifest.decks[0].assets).toEqual(expect.arrayContaining(direct.assets.map((asset) => expect.objectContaining(asset))));
+      expect(manifest.decks[0].meta).toMatchObject({
+        description: "Metadata parity",
+        author: "Toma",
+        tags: ["hono", "workers"],
+        date: "2026-06-04",
+        assets: ["https://cdn.example.com/front.png?v=1", "/public/front.svg#icon"],
+        presenter: true,
+        meta: {
+          custom: {
+            intent: "demo",
+            priority: "high",
+          },
+        },
+      });
+      expect(manifest.decks[0].slides[1].meta).toMatchObject({
+        title: "Details",
+        notes: "Mention the generated module contract.",
+        meta: {
+          customSlide: {
+            owner: "docs",
+          },
+        },
+      });
+      expect(manifest.decks[0].assets).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            sourcePath: "https://cdn.example.com/front.png?v=1",
+            publicPath: "https://cdn.example.com/front.png?v=1",
+            type: "remote",
+            contentType: "image/png",
+          }),
+          expect.objectContaining({
+            sourcePath: "/public/front.svg#icon",
+            publicPath: "/public/front.svg#icon",
+            type: "public",
+            contentType: "image/svg+xml",
+          }),
+          expect.objectContaining({
+            sourcePath: "https://cdn.example.com/body.png",
+            publicPath: "https://cdn.example.com/body.png",
+            type: "remote",
+            contentType: "image/png",
+          }),
+          expect.objectContaining({
+            sourcePath: "r2://slides-bucket/body.webp",
+            publicPath: "r2://slides-bucket/body.webp",
+            type: "r2",
+            contentType: "image/webp",
+          }),
+        ]),
+      );
+      expect(manifest.decks[0].warnings).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            code: "parse-warning",
+            message: "Slide 1: code fence is not closed.",
+            slideIndex: 1,
+          }),
+          expect.objectContaining({
+            code: "external-asset-unverified",
+            message: "Remote asset existence cannot be verified at compile time: https://cdn.example.com/body.png",
+          }),
+          expect.objectContaining({
+            code: "external-asset-unverified",
+            message: "R2 asset existence cannot be verified at compile time: r2://slides-bucket/body.webp",
+          }),
+        ]),
+      );
+
+      const output = await readFile(join(cwd, "src", "generated", "decks.ts"), "utf8");
+      expect(output).toContain('"tags": [');
+      expect(output).toContain('"date": "2026-06-04"');
+      expect(output).toContain('"presenter": true');
+      expect(output).toContain('"assets": [');
+      expect(output).toContain('"intent": "demo"');
+      expect(output).toContain('"notes": "Mention the generated module contract."');
+      expect(output).toContain('"sourcePath": "https://cdn.example.com/body.png"');
+      expect(output).toContain('"code": "external-asset-unverified"');
     } finally {
       await rm(cwd, { recursive: true, force: true });
     }
@@ -784,7 +940,7 @@ title: Deck One
 
 ![Plain](./assets/plain.svg)
 
-<img src="./assets/jsx.svg" alt="Local JSX asset" />
+<img src="./assets/jsx.svg" alt="Local JSX asset" width={1} />
 
 <img src="https://example.com/hono-decks-remote.png" alt="Remote asset" />
 

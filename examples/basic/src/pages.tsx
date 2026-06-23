@@ -149,8 +149,8 @@ a { color: inherit; }
 .sample-embed { display: grid; gap: 16px; }
 .sample-embed .hono-decks-viewer-stage { display: block; width: min(100%, 960px); }
 .sample-embed .hono-decks-viewport { width: 100%; aspect-ratio: 16 / 9; overflow: hidden; }
-.sample-embed .hono-decks-frame-stage { width: 1920px; height: 1080px; transform: scale(.5); transform-origin: top left; }
-.sample-embed iframe { width: 1920px; height: 1080px; border: 0; }
+.sample-embed .hono-decks-frame-stage { width: 100%; height: 100%; }
+.sample-embed iframe { width: 100%; height: 100%; border: 0; }
 `;
 
 const sampleViewerStyle = `

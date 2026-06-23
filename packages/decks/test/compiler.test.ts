@@ -104,6 +104,39 @@ customSlideKey: kept
     );
   });
 
+  it("assigns content types to query and hash frontmatter asset refs", async () => {
+    const deck = await compileMarkdown({
+      slug: "deck1",
+      sourcePath: "decks/deck1/deck.mdx",
+      kind: "directory",
+      markdown: `---
+title: Asset Types
+assets:
+  - https://cdn.example.com/front.png?v=1
+  - /public/front.svg#icon
+---
+
+# Asset Types`,
+    });
+
+    expect(deck.assets).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sourcePath: "https://cdn.example.com/front.png?v=1",
+          publicPath: "https://cdn.example.com/front.png?v=1",
+          type: "remote",
+          contentType: "image/png",
+        }),
+        expect.objectContaining({
+          sourcePath: "/public/front.svg#icon",
+          publicPath: "/public/front.svg#icon",
+          type: "public",
+          contentType: "image/svg+xml",
+        }),
+      ]),
+    );
+  });
+
   it("compiles MDX JSX components with children into serializable slide nodes", async () => {
     const deck = await compileMarkdown({
       slug: "deck1",
@@ -180,6 +213,32 @@ fragments: list
 
     expect(deck.slides[0].meta.transition).toBe("fade");
     expect(deck.slides[0].meta.fragments).toBe("list");
+  });
+
+  it("warns and falls back for unknown slide fragments frontmatter", async () => {
+    const deck = await compileMarkdown({
+      slug: "deck1",
+      sourcePath: "decks/deck1/deck.mdx",
+      kind: "directory",
+      markdown: `# One
+
+---
+fragments: magic
+---
+
+## Two`,
+    });
+
+    expect(deck.slides[1].meta.fragments).toBe("none");
+    expect(deck.warnings).toEqual(
+      expect.arrayContaining([
+        {
+          code: "unknown-fragments",
+          message: 'Unknown fragments value "magic"; using none.',
+          slideIndex: 1,
+        },
+      ]),
+    );
   });
 
   it("applies deck-level transition as a slide fallback and lets slides override it", async () => {
@@ -656,6 +715,31 @@ const unclosed = true;`,
         },
       ]),
     );
+  });
+
+  it("does not expose control prop names in parser warnings", async () => {
+    const deck = await compileMarkdown({
+      slug: "deck1",
+      sourcePath: "decks/deck1/deck.mdx",
+      kind: "directory",
+      markdown: `<Hero $fire={["fade-up"]} count={1} />`,
+    });
+
+    expect(deck.warnings).toEqual(
+      expect.arrayContaining([
+        {
+          code: "parse-warning",
+          message: "Slide 1: MDX JavaScript expression props are ignored on Hero dynamic prop.",
+          slideIndex: 0,
+        },
+        {
+          code: "parse-warning",
+          message: "Slide 1: MDX JavaScript expression props are ignored on Hero.count.",
+          slideIndex: 0,
+        },
+      ]),
+    );
+    expect(deck.warnings.map((warning) => warning.message).join("\n")).not.toContain("$fire");
   });
 
   it("exports the compiler from the public module", async () => {
