@@ -1,4 +1,4 @@
-import { CompileError } from "../deck/model";
+import { CompileError, SLIDE_TRANSITIONS } from "../deck/model";
 import { parseDeck } from "../parser/parser";
 import { renderBlock } from "../renderer/render-block";
 import type {
@@ -9,6 +9,7 @@ import type {
   DeckFrontmatter,
   SlideFrontmatter,
   AssetRef,
+  SlideTransition,
 } from "../deck/model";
 import type { SlideBlock, SlideNode } from "../shared/types";
 
@@ -19,9 +20,11 @@ export async function compileMarkdown(input: CompileDeckInput): Promise<Compiled
 
   const slideSources = splitSlideSources(body);
   const warnings: CompiledDeck["warnings"] = [];
-  const meta = toDeckFrontmatter(deckAttrs);
+  const meta = toDeckFrontmatter(deckAttrs, warnings);
   addUnknownFrontmatterWarnings(warnings, meta.meta, "deck");
-  const slides: CompiledSlide[] = slideSources.map((source, index) => compileSlide(input.slug, source, index, warnings));
+  const slides: CompiledSlide[] = slideSources.map((source, index) =>
+    compileSlide(input.slug, source, index, warnings, meta.transition),
+  );
   const assets = collectExternalAssetRefs(input.markdown, deckAttrsForAssets);
   addExternalAssetWarnings(warnings, assets);
 
@@ -41,6 +44,7 @@ function compileSlide(
   source: string,
   index: number,
   warnings: CompiledDeck["warnings"],
+  fallbackTransition: SlideTransition | undefined,
 ): CompiledSlide {
   const { attrs, body } = readFrontmatter(source);
   const parsed = parseDeck(body);
@@ -51,7 +55,15 @@ function compileSlide(
   const nodes = parsed.slides[0]?.nodes ?? [];
   const components = collectComponents(slug, index, nodes, blocks);
   const firstParsedSlide = parsed.slides[0];
-  const meta = toSlideFrontmatter(attrs, firstParsedSlide?.title, firstParsedSlide?.layout, firstParsedSlide?.className);
+  const meta = toSlideFrontmatter(
+    attrs,
+    warnings,
+    index,
+    fallbackTransition,
+    firstParsedSlide?.title,
+    firstParsedSlide?.layout,
+    firstParsedSlide?.className,
+  );
   addUnknownFrontmatterWarnings(warnings, meta.meta, "slide", index);
 
   return {
@@ -253,7 +265,7 @@ function parseScalar(value: string): unknown {
   return trimmed;
 }
 
-function toDeckFrontmatter(attrs: Record<string, unknown>): DeckFrontmatter {
+function toDeckFrontmatter(attrs: Record<string, unknown>, warnings: CompiledDeck["warnings"]): DeckFrontmatter {
   const meta = { ...attrs };
   const deck: DeckFrontmatter = { meta };
 
@@ -262,6 +274,7 @@ function toDeckFrontmatter(attrs: Record<string, unknown>): DeckFrontmatter {
   deck.author = takeString(meta, "author");
   deck.date = takeString(meta, "date");
   deck.theme = takeString(meta, "theme");
+  deck.transition = takeKnownStringWithWarning(meta, "transition", SLIDE_TRANSITIONS, "none", warnings, "unknown-transition");
   deck.assets = takeStringOrStringArray(meta, "assets");
   deck.draft = takeBoolean(meta, "draft");
   deck.presenter = takeBoolean(meta, "presenter");
@@ -277,6 +290,9 @@ function toDeckFrontmatter(attrs: Record<string, unknown>): DeckFrontmatter {
 
 function toSlideFrontmatter(
   attrs: Record<string, unknown>,
+  warnings: CompiledDeck["warnings"],
+  slideIndex: number,
+  fallbackTransition: SlideTransition | undefined,
   fallbackTitle?: string,
   fallbackLayout?: string,
   fallbackClassName?: string,
@@ -288,7 +304,9 @@ function toSlideFrontmatter(
     className: takeString(meta, "class") ?? fallbackClassName,
     notes: takeString(meta, "notes"),
     background: takeString(meta, "background"),
-    transition: takeKnownString(meta, "transition", ["none", "fade", "slide", "zoom"]),
+    transition:
+      takeKnownStringWithWarning(meta, "transition", SLIDE_TRANSITIONS, "none", warnings, "unknown-transition", slideIndex) ??
+      fallbackTransition,
     fragments: takeKnownString(meta, "fragments", ["none", "manual", "list"]),
     meta,
   };
@@ -420,6 +438,27 @@ function takeKnownString<const T extends string>(
   const value = attrs[key];
   delete attrs[key];
   return typeof value === "string" && values.includes(value as T) ? (value as T) : undefined;
+}
+
+function takeKnownStringWithWarning<const T extends string>(
+  attrs: Record<string, unknown>,
+  key: string,
+  values: readonly T[],
+  fallback: T,
+  warnings: CompiledDeck["warnings"],
+  code: string,
+  slideIndex?: number,
+): T | undefined {
+  const value = attrs[key];
+  delete attrs[key];
+  if (value === undefined) return undefined;
+  if (typeof value === "string" && values.includes(value as T)) return value as T;
+  warnings.push({
+    code,
+    message: `Unknown ${key} value "${String(value)}"; using ${fallback}.`,
+    ...(slideIndex !== undefined ? { slideIndex } : {}),
+  });
+  return fallback;
 }
 
 function takeStringOrStringArray(attrs: Record<string, unknown>, key: string): string | string[] | undefined {

@@ -1,20 +1,20 @@
 # Slidev-style Built-in Slide Transitions Plan
 
-This document records the follow-up plan for adding Slidev-style built-in slide transitions to `@hono/decks`.
+This document records the implemented design for Slidev-style built-in slide transitions in `@hono/decks`.
 
 Reference: https://sli.dev/guide/animations#builtin-transitions
 
 ## Current State
 
-`@hono/decks` already keeps the basic transition contract:
+`@hono/decks` supports Slidev-style built-in slide transitions:
 
 - `transition` is parsed from slide frontmatter.
+- `transition` is parsed from deck frontmatter as a deck-level default.
 - known values are emitted as `data-transition` on each slide section.
 - unknown values produce a compile warning and fall back to `none`.
-- base CSS exposes minimal hooks for `fade`, `slide`, and `zoom`.
-- `prefers-reduced-motion` is respected at the CSS level.
-
-However, this is not yet equivalent to Slidev built-in transitions. The runtime does not yet keep previous/next slide state, does not attach entering/leaving classes, and does not run direction-aware slide switching animations.
+- base CSS implements the supported transition presets.
+- the presentation runtime owns active, entering, leaving, inactive, and direction state.
+- `prefers-reduced-motion` is respected.
 
 ## Goals
 
@@ -44,7 +44,7 @@ transition: slide-left
 ---
 ```
 
-The supported values should expand to:
+The supported values are:
 
 - `none`
 - `fade`
@@ -53,10 +53,9 @@ The supported values should expand to:
 - `slide-right`
 - `slide-up`
 - `slide-down`
-- `zoom`
 - `view-transition`
 
-Deck-level defaults can be considered later. The first implementation should keep slide-local frontmatter as the only public authoring API.
+Deck-level `transition` is the fallback for slides without their own `transition`. Slide frontmatter takes precedence over deck frontmatter.
 
 ## Runtime Contract
 
@@ -122,10 +121,6 @@ Forward navigation moves the new slide in from the bottom and the old slide out 
 
 Forward navigation moves the new slide in from the top and the old slide out to the bottom. Backward navigation reverses the direction.
 
-### `zoom`
-
-Use a conservative scale and opacity transition. Avoid changing layout dimensions.
-
 ### `view-transition`
 
 Use `document.startViewTransition()` when available. Fall back to `fade` when unsupported or when reduced motion is requested.
@@ -155,17 +150,15 @@ Reduced motion must disable movement:
 }
 ```
 
-## Implementation Steps
+## Implementation Notes
 
-1. Expand `SlideTransition` in `packages/decks/src/deck/model.ts`.
-2. Update parser/compiler/generator validation lists.
-3. Update tests that assert unknown transition fallback behavior.
-4. Update presentation runtime in `compiled-render.ts` to track previous index and direction.
-5. Add stable slide state attributes/classes during navigation.
-6. Add package base CSS for built-in transitions.
-7. Add View Transitions API progressive enhancement.
-8. Update `examples/basic/decks/motion` to cover at least one directional transition.
-9. Document theme override examples.
+- `SlideTransition` intentionally excludes the old `slide` and `zoom` values.
+- `slide` and `zoom` now warn and fall back to `none`.
+- Transition timing is controlled with CSS variables:
+  - `--hono-decks-transition-duration`
+  - `--hono-decks-transition-easing`
+- Fragment step navigation does not trigger slide transitions.
+- Overview, print preview, and print rendering disable transition movement.
 
 ## Test Plan
 
@@ -179,7 +172,5 @@ Reduced motion must disable movement:
 
 ## Open Questions
 
-- Should deck-level transition defaults be supported in deck frontmatter?
 - Should `view-transition` be opt-in per deck or per slide only?
-- Should transition duration be configurable through CSS variables only, or also through frontmatter?
-- Should `zoom` remain as a package built-in, or should it be considered a theme-level effect?
+- Should transition duration ever be configurable through frontmatter, or should it stay CSS-only?

@@ -53,16 +53,16 @@ const decksConfig = defineDecksConfig({
 
   router: {
     export: {
-authorize: (c) => {
-  const token = (c.env as DecksConfigBindings).DECK_EXPORT_TOKEN;
-  if (typeof token !== "string" || token.length === 0) return false;
+      authorize: (c) => {
+        const token = (c.env as DecksConfigBindings | undefined)?.DECK_EXPORT_TOKEN;
+        if (typeof token !== "string" || token.length === 0) return false;
 
-  const authorization = c.req.header("authorization");
-  if (!authorization) return false;
+        const authorization = c.req.header("authorization");
+        if (!authorization) return false;
 
-  const match = authorization.match(/^Bearer\s+(.+)$/i);
-  return match?.[1]?.trim() === token;
-},
+        const match = authorization.match(/^Bearer\s+(.+)$/i);
+        return match?.[1]?.trim() === token;
+      },
       browser: (c) => (c.env as DecksConfigBindings).BROWSER,
       pdf: true,
       png: true,

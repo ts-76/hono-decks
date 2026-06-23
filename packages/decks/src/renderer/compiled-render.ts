@@ -71,7 +71,7 @@ export function renderCompiledSlide(
   const style = slide.meta.background ? ` style="${escapeHtml(backgroundStyle(slide.meta.background, assets))}"` : "";
   const transition = slide.meta.transition ? ` data-transition="${escapeHtml(safeClass(slide.meta.transition))}"` : "";
 
-  return `<section class="${classes}" data-slide-index="${slide.index}"${slide.meta.title ? ` aria-label="${escapeHtml(slide.meta.title)}"` : ""}${transition}${style}><div class="hono-decks-slide-content">${html}</div>${notesHtml}</section>`;
+  return `<section class="${classes}" data-slide-index="${slide.index}" data-slide-state="inactive"${slide.meta.title ? ` aria-label="${escapeHtml(slide.meta.title)}"` : ""}${transition}${style}><div class="hono-decks-slide-content">${html}</div>${notesHtml}</section>`;
 }
 
 export async function renderCompiledSlideAsync(
@@ -92,7 +92,7 @@ export async function renderCompiledSlideAsync(
   const style = slide.meta.background ? ` style="${escapeHtml(backgroundStyle(slide.meta.background, assets))}"` : "";
   const transition = slide.meta.transition ? ` data-transition="${escapeHtml(safeClass(slide.meta.transition))}"` : "";
 
-  return `<section class="${classes}" data-slide-index="${slide.index}"${slide.meta.title ? ` aria-label="${escapeHtml(slide.meta.title)}"` : ""}${transition}${style}><div class="hono-decks-slide-content">${html}</div>${notesHtml}</section>`;
+  return `<section class="${classes}" data-slide-index="${slide.index}" data-slide-state="inactive"${slide.meta.title ? ` aria-label="${escapeHtml(slide.meta.title)}"` : ""}${transition}${style}><div class="hono-decks-slide-content">${html}</div>${notesHtml}</section>`;
 }
 
 async function renderSlideBodyAsync(
@@ -209,7 +209,7 @@ function mergeComponentInputs(
 
 function basePresentationStyle(): string {
   return `
-:root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:32px;--hono-decks-width:1920px;--hono-decks-height:1080px;--hono-decks-color:#eef2ff;--hono-decks-muted-color:#cbd5e1;--hono-decks-accent-color:#8bd3ff;--hono-decks-border-color:rgba(148,163,184,.24);--hono-decks-inline-code-background:rgba(15,23,42,.72);--hono-decks-code-background:rgba(15,23,42,.78);--hono-decks-card-background:rgba(15,23,42,.78);--hono-decks-card-image-background:rgba(255,255,255,.08);--hono-decks-warning-background:rgba(255,193,7,.12);--hono-decks-warning-color:#ffe59b;color:var(--hono-decks-color)}
+:root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:32px;--hono-decks-width:1920px;--hono-decks-height:1080px;--hono-decks-transition-duration:.24s;--hono-decks-transition-easing:ease;--hono-decks-color:#eef2ff;--hono-decks-muted-color:#cbd5e1;--hono-decks-accent-color:#8bd3ff;--hono-decks-border-color:rgba(148,163,184,.24);--hono-decks-inline-code-background:rgba(15,23,42,.72);--hono-decks-code-background:rgba(15,23,42,.78);--hono-decks-card-background:rgba(15,23,42,.78);--hono-decks-card-image-background:rgba(255,255,255,.08);--hono-decks-warning-background:rgba(255,193,7,.12);--hono-decks-warning-color:#ffe59b;color:var(--hono-decks-color)}
 html,body{margin:0;width:100%;height:100%;overflow:hidden}
 .hono-decks-stage{width:100vw;height:100vh;overflow:hidden;position:relative;display:grid;place-items:center}
 .hono-decks-deck{display:grid;gap:1rem;width:var(--hono-decks-width);height:var(--hono-decks-height);box-sizing:border-box;transform-origin:left top}
@@ -258,10 +258,22 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden}
 [data-fire-effect=fade][data-fragment-hidden]{transform:none}
 [data-fire-effect=fade-up][data-fragment-hidden]{transform:translateY(.85rem)}
 [data-fire-effect=scale][data-fragment-hidden]{transform:scale(.96)}
-.slide[data-transition]{transition:opacity .2s ease,transform .2s ease}
-.slide[data-transition="fade"]{will-change:opacity}
-.slide[data-transition="slide"]{will-change:transform}
-.slide[data-transition="zoom"]{will-change:transform}
+body:not([data-overview-mode]) .hono-decks-deck{position:relative}
+body:not([data-overview-mode]) .slide{position:absolute;inset:0;width:100%;height:100%}
+.slide[data-transition]{transition:opacity var(--hono-decks-transition-duration) var(--hono-decks-transition-easing),transform var(--hono-decks-transition-duration) var(--hono-decks-transition-easing);will-change:opacity,transform}
+.slide[data-slide-state="inactive"]{visibility:hidden;pointer-events:none}
+.slide[data-slide-state="active"]{visibility:visible;opacity:1;transform:translate3d(0,0,0) scale(1)}
+.slide[data-transition="fade"][data-slide-state="entering"],.slide[data-transition="fade"][data-slide-state="leaving"],.slide[data-transition="view-transition"][data-slide-state="entering"],.slide[data-transition="view-transition"][data-slide-state="leaving"]{opacity:0}
+.slide[data-transition="fade-out"][data-slide-state="entering"]{opacity:1}
+.slide[data-transition="fade-out"][data-slide-state="leaving"]{opacity:0}
+.slide[data-transition="slide-left"][data-slide-direction="forward"][data-slide-state="entering"],.slide[data-transition="slide-right"][data-slide-direction="backward"][data-slide-state="leaving"]{transform:translate3d(100%,0,0)}
+.slide[data-transition="slide-left"][data-slide-direction="forward"][data-slide-state="leaving"],.slide[data-transition="slide-right"][data-slide-direction="backward"][data-slide-state="entering"]{transform:translate3d(-100%,0,0)}
+.slide[data-transition="slide-left"][data-slide-direction="backward"][data-slide-state="entering"],.slide[data-transition="slide-right"][data-slide-direction="forward"][data-slide-state="leaving"]{transform:translate3d(-100%,0,0)}
+.slide[data-transition="slide-left"][data-slide-direction="backward"][data-slide-state="leaving"],.slide[data-transition="slide-right"][data-slide-direction="forward"][data-slide-state="entering"]{transform:translate3d(100%,0,0)}
+.slide[data-transition="slide-up"][data-slide-direction="forward"][data-slide-state="entering"],.slide[data-transition="slide-down"][data-slide-direction="backward"][data-slide-state="leaving"]{transform:translate3d(0,100%,0)}
+.slide[data-transition="slide-up"][data-slide-direction="forward"][data-slide-state="leaving"],.slide[data-transition="slide-down"][data-slide-direction="backward"][data-slide-state="entering"]{transform:translate3d(0,-100%,0)}
+.slide[data-transition="slide-up"][data-slide-direction="backward"][data-slide-state="entering"],.slide[data-transition="slide-down"][data-slide-direction="forward"][data-slide-state="leaving"]{transform:translate3d(0,-100%,0)}
+.slide[data-transition="slide-up"][data-slide-direction="backward"][data-slide-state="leaving"],.slide[data-transition="slide-down"][data-slide-direction="forward"][data-slide-state="entering"]{transform:translate3d(0,100%,0)}
 body:not([data-overview-mode]) .slide[hidden]{display:none}
 body[data-overview-mode] .hono-decks-deck{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
 body[data-overview-mode] .slide{cursor:pointer}
@@ -271,13 +283,14 @@ body[data-presenter-mode] .speaker-notes{display:block;margin-top:1rem;padding:.
 body[data-hono-decks-print-preview]{min-height:100vh;overflow:auto;color-scheme:light;color:#000;--hono-decks-print-gap:6mm;--hono-decks-print-slot-height:80mm;--hono-decks-print-scale:.28}
 body[data-hono-decks-print-preview] .hono-decks-stage{display:block;width:auto;height:auto;min-height:100vh;overflow:visible;padding:12mm 0;box-sizing:border-box}
 body[data-hono-decks-print-preview] .hono-decks-deck{display:grid;grid-template-columns:1fr;grid-auto-rows:var(--hono-decks-print-slot-height);gap:var(--hono-decks-print-gap);width:calc(var(--hono-decks-print-slot-height) * 16 / 9);max-width:calc(100vw - 24px);height:auto;margin:0 auto;transform:none!important}
-body[data-hono-decks-print-preview] .slide{width:100%;max-width:100%;height:var(--hono-decks-print-slot-height);aspect-ratio:16/9;justify-self:center;align-self:center;padding:0;box-shadow:0 2px 10px rgba(15,23,42,.16)}
+body[data-hono-decks-print-preview] .slide{position:static;width:100%;max-width:100%;height:var(--hono-decks-print-slot-height);aspect-ratio:16/9;justify-self:center;align-self:center;padding:0;box-shadow:0 2px 10px rgba(15,23,42,.16);transition:none!important;transform:none!important}
 body[data-hono-decks-print-preview] .hono-decks-slide-content{width:var(--hono-decks-width);height:var(--hono-decks-height);box-sizing:border-box;padding:clamp(1.2rem,3vw,3rem);transform:scale(var(--hono-decks-print-scale));transform-origin:left top;overflow:hidden}
 body[data-hono-decks-print-preview]:not([data-overview-mode]) .slide[hidden]{display:block!important}
+body[data-hono-decks-print-preview] .slide[data-slide-state]{visibility:visible!important;opacity:1!important;transform:none!important}
 body[data-hono-decks-print-preview] [data-hono-decks-fragment]{visibility:visible!important;opacity:1!important;transform:none!important}}
 @page{size:A4 portrait;margin:12mm}
-@media print{:root{color-scheme:light;color:#000;--hono-decks-print-gap:6mm;--hono-decks-print-slot-height:80mm;--hono-decks-print-scale:.28}html,body{width:auto;height:auto;overflow:visible}.hono-decks-stage{display:block;width:auto;height:auto;overflow:visible}.hono-decks-deck{display:grid;grid-template-columns:1fr;grid-auto-rows:var(--hono-decks-print-slot-height);gap:var(--hono-decks-print-gap);width:calc(var(--hono-decks-print-slot-height) * 16 / 9);height:auto;margin:0 auto;transform:none!important}.slide{width:100%;max-width:100%;height:var(--hono-decks-print-slot-height);aspect-ratio:16/9;justify-self:center;align-self:center;padding:0;page-break-after:auto;break-after:auto;break-inside:avoid;box-shadow:none}.hono-decks-slide-content{width:var(--hono-decks-width);height:var(--hono-decks-height);box-sizing:border-box;padding:clamp(1.2rem,3vw,3rem);transform:scale(var(--hono-decks-print-scale));transform-origin:left top;overflow:hidden}.slide:nth-of-type(3n):not(:last-child){page-break-after:always;break-after:page}body:not([data-overview-mode]) .slide[hidden]{display:block!important}[data-hono-decks-fragment]{visibility:visible!important;opacity:1!important;transform:none!important}}
-@media (prefers-reduced-motion: reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}}`;
+@media print{:root{color-scheme:light;color:#000;--hono-decks-print-gap:6mm;--hono-decks-print-slot-height:80mm;--hono-decks-print-scale:.28}html,body{width:auto;height:auto;overflow:visible}.hono-decks-stage{display:block;width:auto;height:auto;overflow:visible}.hono-decks-deck{display:grid;grid-template-columns:1fr;grid-auto-rows:var(--hono-decks-print-slot-height);gap:var(--hono-decks-print-gap);width:calc(var(--hono-decks-print-slot-height) * 16 / 9);height:auto;margin:0 auto;transform:none!important}.slide{position:static;width:100%;max-width:100%;height:var(--hono-decks-print-slot-height);aspect-ratio:16/9;justify-self:center;align-self:center;padding:0;page-break-after:auto;break-after:auto;break-inside:avoid;box-shadow:none;transition:none!important;transform:none!important}.hono-decks-slide-content{width:var(--hono-decks-width);height:var(--hono-decks-height);box-sizing:border-box;padding:clamp(1.2rem,3vw,3rem);transform:scale(var(--hono-decks-print-scale));transform-origin:left top;overflow:hidden}.slide:nth-of-type(3n):not(:last-child){page-break-after:always;break-after:page}body:not([data-overview-mode]) .slide[hidden]{display:block!important}.slide[data-slide-state]{visibility:visible!important;opacity:1!important;transform:none!important}[data-hono-decks-fragment]{visibility:visible!important;opacity:1!important;transform:none!important}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}.slide[data-transition]{transform:none!important}}`;
 }
 
 function renderPresentationScript(): string {
@@ -289,8 +302,10 @@ function renderPresentationScript(): string {
   const DESIGN_WIDTH = 1920;
   const DESIGN_HEIGHT = 1080;
   let index = 0;
+  let previousIndex = 0;
   let stepIndex = 0;
   let stepCount = 0;
+  let isTransitioning = false;
 
   function fitDeck() {
     if (!(stage instanceof HTMLElement) || !(deck instanceof HTMLElement)) return;
@@ -334,13 +349,91 @@ function renderPresentationScript(): string {
     });
   }
 
-  function show(nextIndex, nextStepIndex = 0) {
-    index = Math.max(0, Math.min(slides.length - 1, nextIndex));
-    if (!document.body.hasAttribute("data-overview-mode")) {
-      slides.forEach((slide, slideIndex) => { slide.hidden = slideIndex !== index; });
+  function setSlideState(slide, state, direction) {
+    if (!slide) return;
+    slide.setAttribute("data-slide-state", state);
+    if (direction) {
+      slide.setAttribute("data-slide-direction", direction);
+    } else {
+      slide.removeAttribute("data-slide-direction");
     }
+    slide.hidden = state === "inactive";
+  }
+
+  function transitionForSlide(slide) {
+    return slide?.getAttribute("data-transition") || "none";
+  }
+
+  function transitionDurationMs() {
+    const value = getComputedStyle(document.documentElement).getPropertyValue("--hono-decks-transition-duration").trim();
+    if (value.endsWith("ms")) return Number.parseFloat(value) || 0;
+    if (value.endsWith("s")) return (Number.parseFloat(value) || 0) * 1000;
+    return 240;
+  }
+
+  function prefersReducedMotion() {
+    return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
+  }
+
+  function applyInstantSlideChange(targetIndex, nextStepIndex = 0, direction) {
+    previousIndex = index;
+    index = Math.max(0, Math.min(slides.length - 1, targetIndex));
+    slides.forEach((slide, slideIndex) => {
+      setSlideState(slide, slideIndex === index ? "active" : "inactive", slideIndex === index ? direction : undefined);
+    });
     updateFragments(nextStepIndex);
     publishState();
+  }
+
+  function finishSlideTransition(outgoing, incoming, direction) {
+    setSlideState(outgoing, "inactive");
+    setSlideState(incoming, "active", direction);
+    isTransitioning = false;
+  }
+
+  function show(nextIndex, nextStepIndex = 0) {
+    const targetIndex = Math.max(0, Math.min(slides.length - 1, nextIndex));
+    const direction = targetIndex >= index ? "forward" : "backward";
+    if (document.body.hasAttribute("data-overview-mode") || targetIndex === index) {
+      applyInstantSlideChange(targetIndex, nextStepIndex, direction);
+      return;
+    }
+    if (isTransitioning) return;
+
+    const outgoing = slides[index];
+    const incoming = slides[targetIndex];
+    const transition = transitionForSlide(incoming);
+    if (transition === "none" || prefersReducedMotion()) {
+      applyInstantSlideChange(targetIndex, nextStepIndex, direction);
+      return;
+    }
+
+    if (transition === "view-transition" && typeof document.startViewTransition === "function") {
+      isTransitioning = true;
+      const viewTransition = document.startViewTransition(() => {
+        applyInstantSlideChange(targetIndex, nextStepIndex, direction);
+      });
+      Promise.resolve(viewTransition.finished).finally(() => {
+        isTransitioning = false;
+      });
+      return;
+    }
+
+    isTransitioning = true;
+    previousIndex = index;
+    index = targetIndex;
+    slides.forEach((slide) => {
+      if (slide !== outgoing && slide !== incoming) setSlideState(slide, "inactive");
+    });
+    setSlideState(outgoing, "active", direction);
+    setSlideState(incoming, "entering", direction);
+    updateFragments(nextStepIndex);
+    publishState();
+    requestAnimationFrame(() => {
+      setSlideState(outgoing, "leaving", direction);
+      setSlideState(incoming, "active", direction);
+      window.setTimeout(() => finishSlideTransition(outgoing, incoming, direction), transitionDurationMs() + 40);
+    });
   }
 
   function next() {
@@ -368,7 +461,11 @@ function renderPresentationScript(): string {
 
   function toggleOverview() {
     const enabled = document.body.toggleAttribute("data-overview-mode");
-    slides.forEach((slide) => { slide.hidden = false; });
+    slides.forEach((slide) => {
+      slide.hidden = false;
+      slide.setAttribute("data-slide-state", "active");
+      slide.removeAttribute("data-slide-direction");
+    });
     setFragmentsVisible(Array.from(document.querySelectorAll("[data-hono-decks-fragment]")), enabled);
     if (!enabled) show(index);
   }

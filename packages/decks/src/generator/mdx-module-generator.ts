@@ -1,6 +1,6 @@
 import { compile } from "@mdx-js/mdx";
 import remarkDirective from "remark-directive";
-import { CompileError } from "../deck/model";
+import { CompileError, SLIDE_TRANSITIONS } from "../deck/model";
 import type { CompiledDeck, DeckFrontmatter, DeckKind, SlideFrontmatter } from "../deck/model";
 import type { ResolvedDeckFile } from "../routing/file-routing";
 import { buildAssetRefs, componentImportPath, dirname, rewriteAssetUrls, rewriteRelativeMdxImports } from "./mdx/assets";
@@ -69,11 +69,12 @@ async function compileMdxModuleDeck(
   const slideModules: GeneratedSlideModule[] = [];
   const slides: CompiledDeck["slides"] = [];
   const warnings: CompiledDeck["warnings"] = [];
+  const deckMeta = toDeckFrontmatter(attrs, warnings);
 
   for (let index = 0; index < slideSources.length; index += 1) {
     const { attrs: slideAttrs, body: slideBody } = readFrontmatter(slideSources[index]);
     const slideModulePath = `${input.outDir}/decks/${entry.slug}/slide-${index}.ts`;
-    const slideMeta = toSlideFrontmatter(slideAttrs, warnings, index);
+    const slideMeta = toSlideFrontmatter(slideAttrs, warnings, index, deckMeta.transition);
     const moduleSource = [prelude, rewriteAssetUrls(slideBody, assets)].filter(Boolean).join("\n\n");
     const rewrittenSource = rewriteRelativeMdxImports(moduleSource, dirname(entry.sourcePath), dirname(slideModulePath));
     const code = await compileMdxModule(rewrittenSource, entry.sourcePath, index, slideMeta.fragments, input.resolveOgp);
@@ -99,7 +100,7 @@ async function compileMdxModuleDeck(
       slug: entry.slug,
       sourcePath: entry.sourcePath,
       kind: entry.kind,
-      meta: toDeckFrontmatter(attrs),
+      meta: deckMeta,
       themeStyle: themeStyle?.style,
       themeSourcePath: themeStyle?.sourcePath,
       slides,
@@ -273,13 +274,14 @@ function hasMeaningfulLines(lines: string[]): boolean {
   return lines.some((line) => line.trim() !== "");
 }
 
-function toDeckFrontmatter(attrs: Record<string, unknown>): DeckFrontmatter {
+function toDeckFrontmatter(attrs: Record<string, unknown>, warnings: CompiledDeck["warnings"]): DeckFrontmatter {
   const meta = { ...attrs };
   return {
     title: takeString(meta, "title"),
     description: takeString(meta, "description"),
     author: takeString(meta, "author"),
     theme: takeString(meta, "theme"),
+    transition: takeKnownFrontmatter(meta, "transition", SLIDE_TRANSITIONS, "none", warnings, undefined, "unknown-transition"),
     draft: takeBoolean(meta, "draft"),
     meta,
   };
@@ -289,6 +291,7 @@ function toSlideFrontmatter(
   attrs: Record<string, unknown>,
   warnings: CompiledDeck["warnings"],
   slideIndex: number,
+  fallbackTransition: SlideFrontmatter["transition"],
 ): SlideFrontmatter {
   const meta = { ...attrs };
   return {
@@ -297,7 +300,9 @@ function toSlideFrontmatter(
     className: takeString(meta, "class"),
     notes: takeString(meta, "notes"),
     background: takeString(meta, "background"),
-    transition: takeKnownFrontmatter(meta, "transition", ["none", "fade", "slide", "zoom"], "none", warnings, slideIndex, "unknown-transition"),
+    transition:
+      takeKnownFrontmatter(meta, "transition", SLIDE_TRANSITIONS, "none", warnings, slideIndex, "unknown-transition") ??
+      fallbackTransition,
     fragments: takeKnownFrontmatter(meta, "fragments", ["none", "manual", "list"], "none", warnings, slideIndex, "unknown-fragments"),
     meta,
   };
@@ -321,7 +326,7 @@ function takeKnownFrontmatter<const T extends string>(
   values: readonly T[],
   fallback: T,
   warnings: CompiledDeck["warnings"],
-  slideIndex: number,
+  slideIndex: number | undefined,
   code: string,
 ): T | undefined {
   const value = source[key];
@@ -331,7 +336,7 @@ function takeKnownFrontmatter<const T extends string>(
   warnings.push({
     code,
     message: `Unknown ${key} value "${String(value)}"; using ${fallback}.`,
-    slideIndex,
+    ...(slideIndex !== undefined ? { slideIndex } : {}),
   });
   return fallback;
 }

@@ -30,16 +30,20 @@ transition: fade
 ---
 ```
 
-Supported values are a small string union at runtime:
+Supported values are a Slidev-style string union at runtime:
 
 - `none`
 - `fade`
-- `slide`
-- `zoom`
+- `fade-out`
+- `slide-left`
+- `slide-right`
+- `slide-up`
+- `slide-down`
+- `view-transition`
 
 Unknown values produce a compile warning and fall back to `none`. The raw value is not copied into CSS class names except through a sanitizer and a known-value check.
 
-Transition direction is still a follow-up. The current implementation emits known `data-transition` values and conservative base CSS hooks; richer forward/backward effects can be layered on that contract.
+Deck frontmatter can define a default transition for every slide. Slide frontmatter overrides that deck-level default.
 
 ### Fragments
 
@@ -115,10 +119,22 @@ Rendered slide sections keep the current attributes and add only known transitio
   class="slide layout-cover"
   data-slide-index="0"
   data-transition="fade"
+  data-slide-state="inactive"
 >
   ...
 </section>
 ```
+
+The presentation runtime owns slide transition state. During navigation it sets:
+
+- `data-slide-state="active"`
+- `data-slide-state="entering"`
+- `data-slide-state="leaving"`
+- `data-slide-state="inactive"`
+- `data-slide-direction="forward"`
+- `data-slide-direction="backward"`
+
+Fragment step navigation does not trigger slide transitions. Slide transitions only run when the slide index changes.
 
 Fragments are normal elements with stable data attributes:
 
@@ -139,7 +155,11 @@ Client islands inside fragments should hydrate once. Reveal/hide changes must us
 Base CSS should include conservative defaults:
 
 ```css
-.slide[data-transition="fade"] { transition: opacity .24s ease; }
+.slide[data-transition] {
+  transition:
+    opacity var(--hono-decks-transition-duration) var(--hono-decks-transition-easing),
+    transform var(--hono-decks-transition-duration) var(--hono-decks-transition-easing);
+}
 [data-hono-decks-fragment][data-fragment-hidden="true"] {
   visibility: hidden;
 }
@@ -159,8 +179,21 @@ Theme CSS can override the visual style of known transition and fragment states,
 Model additions:
 
 ```ts
-export type SlideTransition = "none" | "fade" | "slide" | "zoom";
+export type SlideTransition =
+  | "none"
+  | "fade"
+  | "fade-out"
+  | "slide-left"
+  | "slide-right"
+  | "slide-up"
+  | "slide-down"
+  | "view-transition";
 export type SlideFragmentsMode = "none" | "manual" | "list";
+
+export interface DeckFrontmatter {
+  transition?: SlideTransition;
+  meta: Record<string, unknown>;
+}
 
 export interface SlideFrontmatter {
   transition?: SlideTransition;
@@ -172,6 +205,7 @@ export interface SlideFrontmatter {
 The MDX module generator:
 
 - validate `transition`
+- apply deck-level `transition` as the slide fallback
 - parse `fragments`
 - inject or expose a built-in `Fragment` component
 - add a remark transform that marks top-level list items when `fragments: list`
@@ -202,4 +236,3 @@ Custom viewers using `deckContext()` or `createDeckViewerParts()` can keep readi
 - Whether nested list items participate in `fragments: list`; first implementation should restrict to top-level list items.
 - Whether `goTo` from TOC should always reset to step 0; this design says yes.
 - Whether fragment state should be reflected in URL hash; out of scope for the first implementation.
-- Whether transition direction should be reflected as a body attribute for richer animation themes.

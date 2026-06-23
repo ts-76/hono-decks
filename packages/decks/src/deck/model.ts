@@ -4,7 +4,18 @@ import type { SlideNode } from "../shared/types";
 
 export type DeckKind = "directory" | "single-file";
 
-export type SlideTransition = "none" | "fade" | "slide" | "zoom";
+export const SLIDE_TRANSITIONS = [
+  "none",
+  "fade",
+  "fade-out",
+  "slide-left",
+  "slide-right",
+  "slide-up",
+  "slide-down",
+  "view-transition",
+] as const;
+
+export type SlideTransition = (typeof SLIDE_TRANSITIONS)[number];
 export type SlideFragmentsMode = "none" | "manual" | "list";
 
 export interface DeckFrontmatter {
@@ -14,6 +25,7 @@ export interface DeckFrontmatter {
   tags?: string[];
   date?: string;
   theme?: string;
+  transition?: SlideTransition;
   draft?: boolean;
   assets?: string | string[];
   presenter?: boolean;

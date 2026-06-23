@@ -314,6 +314,48 @@ fragments: magic
     }
   });
 
+  it("emits deck-level transition defaults into generated decks", async () => {
+    const cwd = await createFixture();
+
+    try {
+      await writeFile(
+        join(cwd, "decks", "deck1", "deck.mdx"),
+        `---
+title: Deck One
+transition: slide-left
+---
+
+# Uses deck default
+
+---
+title: Override
+transition: slide-up
+---
+
+## Override
+`,
+        "utf8",
+      );
+
+      const manifest = await compileDecks({
+        cwd,
+        root: "decks",
+        out: "src/generated",
+        mountPath: "/slides",
+      });
+
+      expect(manifest.decks[0].meta.transition).toBe("slide-left");
+      expect(manifest.decks[0].slides[0].meta.transition).toBe("slide-left");
+      expect(manifest.decks[0].slides[1].meta.transition).toBe("slide-up");
+
+      const output = await readFile(join(cwd, "src", "generated", "decks.ts"), "utf8");
+      expect(output).toContain('"transition": "slide-left"');
+      expect(output).toContain('"transition": "slide-up"');
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("marks top-level list items as fragments when slide frontmatter uses fragments list", async () => {
     const cwd = await createFixture();
 

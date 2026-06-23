@@ -51,12 +51,13 @@ describe("compiled deck rendering", () => {
       slides: [
         {
           ...deck.slides[0],
-          meta: { ...deck.slides[0].meta, transition: "fade" },
+          meta: { ...deck.slides[0].meta, transition: "slide-left" },
         },
       ],
     });
 
-    expect(html).toContain('data-transition="fade"');
+    expect(html).toContain('data-transition="slide-left"');
+    expect(html).toContain('data-slide-state="inactive"');
   });
 
   it("renders explicit Fragment components with stable fragment attributes", async () => {
@@ -191,6 +192,12 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("data-fragment-hidden");
     expect(html).toContain("let stepIndex = 0");
     expect(html).toContain("let stepCount = 0");
+    expect(html).toContain("let previousIndex = 0");
+    expect(html).toContain("let isTransitioning = false");
+    expect(html).toContain("data-slide-state");
+    expect(html).toContain("data-slide-direction");
+    expect(html).toContain("function transitionForSlide");
+    expect(html).toContain("document.startViewTransition");
     expect(html).toContain(
       'window.parent.postMessage({ type: "hono-decks:state", index, stepIndex, stepCount, slideCount: slides.length }, "*")',
     );
@@ -199,6 +206,19 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("if (stepIndex < stepCount)");
     expect(html).toContain("updateFragments(stepIndex + 1)");
     expect(html).toContain("show(index + 1, 0)");
+  });
+
+  it("includes built-in slide transition CSS hooks", () => {
+    const html = renderCompiledDeckPage({ deck, mountPath: "/decks" });
+
+    expect(html).toContain("--hono-decks-transition-duration");
+    expect(html).toContain("--hono-decks-transition-easing");
+    expect(html).toContain('.slide[data-transition="fade"][data-slide-state="entering"]');
+    expect(html).toContain('.slide[data-transition="fade-out"][data-slide-state="leaving"]');
+    expect(html).toContain('.slide[data-transition="slide-left"][data-slide-direction="forward"][data-slide-state="entering"]');
+    expect(html).toContain('.slide[data-transition="slide-right"][data-slide-direction="backward"][data-slide-state="leaving"]');
+    expect(html).toContain('.slide[data-transition="view-transition"]');
+    expect(html).not.toContain('.slide[data-transition="zoom"]');
   });
 
   it("keeps a 1920x1080 deck canvas and scales it inside the iframe viewport", () => {
@@ -246,7 +266,7 @@ describe("compiled deck rendering", () => {
       ".hono-decks-deck{display:grid;grid-template-columns:1fr;grid-auto-rows:var(--hono-decks-print-slot-height);gap:var(--hono-decks-print-gap);width:calc(var(--hono-decks-print-slot-height) * 16 / 9);height:auto;margin:0 auto;transform:none!important}",
     );
     expect(html).toContain(
-      ".slide{width:100%;max-width:100%;height:var(--hono-decks-print-slot-height);aspect-ratio:16/9;justify-self:center;align-self:center;padding:0;page-break-after:auto;break-after:auto;break-inside:avoid;box-shadow:none}",
+      ".slide{position:static;width:100%;max-width:100%;height:var(--hono-decks-print-slot-height);aspect-ratio:16/9;justify-self:center;align-self:center;padding:0;page-break-after:auto;break-after:auto;break-inside:avoid;box-shadow:none;transition:none!important;transform:none!important}",
     );
     expect(html).toContain(
       ".hono-decks-slide-content{width:var(--hono-decks-width);height:var(--hono-decks-height);box-sizing:border-box;padding:clamp(1.2rem,3vw,3rem);transform:scale(var(--hono-decks-print-scale));transform-origin:left top;overflow:hidden}",
@@ -255,6 +275,9 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("body:not([data-overview-mode]) .slide[hidden]{display:block!important}");
     expect(html).toContain(
       "[data-hono-decks-fragment]{visibility:visible!important;opacity:1!important;transform:none!important}",
+    );
+    expect(html).toContain(
+      ".slide[data-slide-state]{visibility:visible!important;opacity:1!important;transform:none!important}",
     );
     expect(html).toContain("--hono-decks-print-slot-height:80mm");
   });

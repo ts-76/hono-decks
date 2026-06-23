@@ -182,6 +182,74 @@ fragments: list
     expect(deck.slides[0].meta.fragments).toBe("list");
   });
 
+  it("applies deck-level transition as a slide fallback and lets slides override it", async () => {
+    const deck = await compileMarkdown({
+      slug: "motion",
+      sourcePath: "decks/motion/deck.mdx",
+      kind: "directory",
+      markdown: `---
+title: Motion
+transition: slide-left
+---
+
+# Uses deck default
+
+---
+title: Override
+transition: fade-out
+---
+
+## Override
+`,
+    });
+
+    expect(deck.meta.transition).toBe("slide-left");
+    expect(deck.slides[0].meta.transition).toBe("slide-left");
+    expect(deck.slides[1].meta.transition).toBe("fade-out");
+    expect(deck.warnings).not.toEqual(expect.arrayContaining([expect.objectContaining({ code: "unknown-transition" })]));
+  });
+
+  it("falls back for removed and unknown transition values", async () => {
+    const deck = await compileMarkdown({
+      slug: "motion",
+      sourcePath: "decks/motion/deck.mdx",
+      kind: "directory",
+      markdown: `---
+title: Motion
+transition: zoom
+---
+
+# Removed deck transition
+
+---
+title: Removed slide transition
+transition: slide
+---
+
+## Removed slide transition
+
+---
+title: Unknown slide transition
+transition: spin
+---
+
+## Unknown slide transition
+`,
+    });
+
+    expect(deck.meta.transition).toBe("none");
+    expect(deck.slides[0].meta.transition).toBe("none");
+    expect(deck.slides[1].meta.transition).toBe("none");
+    expect(deck.slides[2].meta.transition).toBe("none");
+    expect(deck.warnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "unknown-transition" }),
+        expect.objectContaining({ code: "unknown-transition", slideIndex: 1 }),
+        expect.objectContaining({ code: "unknown-transition", slideIndex: 2 }),
+      ]),
+    );
+  });
+
   it("rejects local relative assets in single-file decks", async () => {
     await expect(
       compileMarkdown({

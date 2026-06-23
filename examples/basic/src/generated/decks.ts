@@ -190,6 +190,7 @@ export const decks = defineDecks({
       meta: {
         "title": "Motion Verification",
         "description": "CSS and client island animation checks for @hono/decks",
+        "transition": "slide-left",
         "meta": {}
       },
       "themeStyle": ":root {\n  --hono-decks-color: #eef2ff;\n  --hono-decks-muted-color: #cbd5e1;\n  --hono-decks-accent-color: #8bd3ff;\n  --hono-decks-border-color: rgba(148, 163, 184, .24);\n  --hono-decks-card-background: rgba(15, 23, 42, .78);\n  --hono-decks-inline-code-background: rgba(15, 23, 42, .72);\n  --hono-decks-code-background: rgba(15, 23, 42, .78);\n}\n\n.layout-motion {\n  background: #0b1020;\n  color: #eef2ff;\n}\n",
@@ -206,7 +207,7 @@ export const decks = defineDecks({
           meta: {
             "title": "CSS Animation",
             "layout": "motion",
-            "transition": "fade",
+            "transition": "fade-out",
             "meta": {}
           },
           html: "",
@@ -219,6 +220,7 @@ export const decks = defineDecks({
           meta: {
             "title": "Client Island Animation",
             "layout": "motion",
+            "transition": "slide-left",
             "fragments": "list",
             "meta": {}
           },
