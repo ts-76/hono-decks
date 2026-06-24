@@ -159,15 +159,14 @@ const sampleViewerStyle = `
   padding: 16px;
 }
 
-.hono-decks-viewer-controls {
+.sample-viewer-controls {
   padding: 8px 10px;
   border-radius: 999px;
   background: rgba(5, 8, 22, .72);
   backdrop-filter: blur(12px);
 }
 
-.hono-decks-viewer-controls button,
-.hono-decks-viewer-controls a {
+.sample-viewer-control {
   border: 1px solid rgba(255, 255, 255, .22);
   border-radius: 999px;
   background: rgba(255, 255, 255, .1);
@@ -176,7 +175,7 @@ const sampleViewerStyle = `
   text-decoration: none;
 }
 
-.hono-decks-viewer-controls button {
+.sample-viewer-control:is(button) {
   cursor: pointer;
 }
 `;

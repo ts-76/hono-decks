@@ -35,7 +35,11 @@ describe("sample Worker app", () => {
     expect(configSource).toContain("renderSampleViewerHead");
     expect(configSource).toContain("pdf: true");
     expect(configSource).toContain("data-sample-control");
-    expect(configSource).toContain("items: (defaults, context)");
+    expect(configSource).toContain('className: "sample-viewer-controls"');
+    expect(configSource).toContain('itemClassName: "sample-viewer-control"');
+    expect(configSource).toContain('hidden: ["fullscreen"]');
+    expect(configSource).toContain("before: [");
+    expect(configSource).toContain("after: (context)");
   });
 
   it("uses a generated module-backed deck source", async () => {
@@ -96,6 +100,10 @@ describe("sample Worker app", () => {
     expect(html).toContain('href="/"');
     expect(html).toContain('data-sample-control="home"');
     expect(html).toContain(">Home</a>");
+    expect(html).toContain('class="hono-decks-viewer-controls sample-viewer-controls"');
+    expect(html).toContain('class="sample-viewer-control"');
+    expect(html).toContain('href="/decks"');
+    expect(html).toContain('data-hono-decks-back-link');
     expect(html).toContain('href="/decks/sample/about"');
     expect(html).toContain('data-sample-control="details"');
     expect(html).toContain(">Details</a>");

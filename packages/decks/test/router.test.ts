@@ -159,6 +159,132 @@ describe("decksRouter", () => {
     expect(html.indexOf('data-action="previous"')).toBeLessThan(html.indexOf('data-hono-decks-back-link'));
   });
 
+  it("lets callers customize default controls with diff-style options", async () => {
+    const app = new Hono();
+    app.route(
+      "/slides",
+      decksRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        viewer: {
+          controls: {
+            className: "custom-controls",
+            itemClassName: "custom-control-item",
+            attributes: {
+              "data-controls-shell": "diff",
+              "aria-label": "ignored",
+            },
+            ariaLabel: "Deck controls",
+            hidden: ["fullscreen"],
+            labels: {
+              previous: "Back <",
+              next: "Forward >",
+            },
+            before: [
+              {
+                type: "link",
+                href: "/home?from=<deck>",
+                label: "Home <Deck>",
+                className: "home-control",
+                attributes: { "data-extra": "home" },
+              },
+            ],
+            after: (context) => [
+              {
+                type: "link",
+                href: `${context.meta.canonicalPath}/about`,
+                label: "Details",
+                attributes: { "data-extra": "details" },
+              },
+            ],
+          },
+        },
+      }),
+    );
+
+    const html = await (await app.request("/slides/deck1")).text();
+
+    expect(html).toContain('class="hono-decks-viewer-controls custom-controls"');
+    expect(html).toContain('aria-label="Deck controls"');
+    expect(html).toContain('data-controls-shell="diff"');
+    expect(html).toContain('href="/home?from=&lt;deck&gt;"');
+    expect(html).toContain('class="custom-control-item home-control"');
+    expect(html).toContain(">Home &lt;Deck&gt;</a>");
+    expect(html).toContain(">Back &lt;</button>");
+    expect(html).toContain(">Forward &gt;</button>");
+    expect(html).toContain('href="/slides/deck1/about"');
+    expect(html).toContain('data-extra="details"');
+    expect(html).not.toContain('data-action="fullscreen"');
+    expect(html.indexOf('data-extra="home"')).toBeLessThan(html.indexOf('data-hono-decks-back-link'));
+    expect(html.indexOf('data-action="next"')).toBeLessThan(html.indexOf('data-extra="details"'));
+  });
+
+  it("keeps items as a full override while applying labels and renderItem", async () => {
+    const app = new Hono();
+    app.route(
+      "/slides",
+      decksRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        viewer: {
+          controls: {
+            hidden: ["next"],
+            before: [{ type: "link", href: "/ignored", label: "Ignored" }],
+            labels: { next: "Forward" },
+            items: (defaults) => [defaults.next],
+            renderItem: (item, _context, renderDefault) => {
+              if (item.type === "default" && item.key === "next") {
+                return jsx("span", {
+                  "data-rendered-control": item.label,
+                  children: renderDefault(),
+                });
+              }
+              return renderDefault();
+            },
+          },
+        },
+      }),
+    );
+
+    const html = await (await app.request("/slides/deck1")).text();
+
+    expect(html).toContain('data-rendered-control="Forward"');
+    expect(html).toContain('data-action="next"');
+    expect(html).toContain(">Forward</button>");
+    expect(html).not.toContain("Ignored");
+    expect(html).not.toContain('data-action="previous"');
+  });
+
+  it("renders custom JSX control items in the viewer controls", async () => {
+    const app = new Hono();
+    app.route(
+      "/slides",
+      decksRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        viewer: {
+          controls: {
+            items: (defaults) => [
+              {
+                type: "render",
+                key: "custom",
+                render: ({ context }) =>
+                  jsx("strong", {
+                    "data-render-control": context.slug,
+                    children: "Custom JSX",
+                  }),
+              },
+              defaults.position,
+            ],
+          },
+        },
+      }),
+    );
+
+    const html = await (await app.request("/slides/deck1")).text();
+
+    expect(html).toContain('<strong data-render-control="deck1">Custom JSX</strong>');
+    expect(html).toContain('data-slide-position');
+    expect(html).not.toContain('data-action="previous"');
+  });
+
   it("lets callers replace the back link and add escaped custom link items", async () => {
     const app = new Hono();
     app.route(
@@ -175,13 +301,21 @@ describe("decksRouter", () => {
                 key: "home",
                 href: `/library?deck=${context.slug}&name=<Deck One>`,
                 label: "Library <Home>",
+                className: "custom-link-item",
                 attributes: {
                   "data-custom-control": "home",
                   "aria-current": true,
                   "data-hidden": false,
                 },
               },
-              defaults.position,
+              {
+                ...defaults.position,
+                className: "custom-position-item",
+                attributes: {
+                  "data-position-control": "<position>",
+                  "data-slide-position": "ignored",
+                },
+              },
             ],
           },
         },
@@ -191,10 +325,13 @@ describe("decksRouter", () => {
     const html = await (await app.request("/slides/deck1")).text();
 
     expect(html).toContain('class="hono-decks-viewer-controls custom-controls"');
-    expect(html).toContain('class="custom-control-item"');
+    expect(html).toContain('class="custom-control-item custom-link-item"');
+    expect(html).toContain('class="custom-control-item custom-position-item"');
     expect(html).toContain('href="/library?deck=deck1&amp;name=&lt;Deck One&gt;"');
     expect(html).toContain(">Library &lt;Home&gt;</a>");
     expect(html).toContain('data-custom-control="home"');
+    expect(html).toContain('data-position-control="&lt;position&gt;"');
+    expect(html).toContain("data-slide-position");
     expect(html).toContain("aria-current");
     expect(html).not.toContain("data-hidden");
     expect(html).not.toContain('data-hono-decks-back-link');
@@ -689,8 +826,23 @@ describe("decksRouter", () => {
                 label: "Overview & Notes",
                 attributes: { "data-custom-control": "overview" },
               },
+              {
+                type: "render",
+                render: ({ context }) =>
+                  jsx("span", {
+                    "data-rendered-html-control": context.slug,
+                    children: "Rendered HTML",
+                  }),
+              },
               defaults.next,
             ],
+            labels: { next: "Forward" },
+            renderItem: (item, _context, renderDefault) => {
+              if (item.type === "default" && item.key === "next") {
+                return jsx("span", { "data-html-render-item": item.label, children: renderDefault() });
+              }
+              return renderDefault();
+            },
           },
         },
       }),
@@ -702,7 +854,10 @@ describe("decksRouter", () => {
     expect(html).toContain('href="/slides/overview?deck=deck1"');
     expect(html).toContain(">Overview &amp; Notes</a>");
     expect(html).toContain('data-custom-control="overview"');
+    expect(html).toContain('<span data-rendered-html-control="deck1">Rendered HTML</span>');
+    expect(html).toContain('data-html-render-item="Forward"');
     expect(html).toContain('data-action="next"');
+    expect(html).toContain(">Forward</button>");
     expect(html).not.toContain('data-action="previous"');
     expect(html).not.toContain('data-hono-decks-back-link');
   });

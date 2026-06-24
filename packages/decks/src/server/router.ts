@@ -17,6 +17,9 @@ import {
   type DeckViewerControlDefaults,
   type DeckViewerControlItem,
   type DeckViewerControlKey,
+  type DeckViewerControlItemRenderer,
+  type DeckViewerControlRenderInput,
+  type DeckViewerControlSlotItems,
   type DeckViewerControlsContext,
   type DeckViewerControlsItemsResolver,
   type DeckViewerControlsOptions,
@@ -45,6 +48,9 @@ export type {
   DeckViewerControlDefaults,
   DeckViewerControlItem,
   DeckViewerControlKey,
+  DeckViewerControlItemRenderer,
+  DeckViewerControlRenderInput,
+  DeckViewerControlSlotItems,
   DeckViewerControlsContext,
   DeckViewerControlsItemsResolver,
   DeckViewerControlsOptions,
@@ -201,7 +207,7 @@ export function deckContext(options: DeckContextOptions): MiddlewareHandler<{ Va
     const deck = await options.source.getCompiledDeck(c, slug);
     if (!deck || (options.dev !== true && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
     const mountPath = options.mountPath ?? inferMountPath(c.req.path, slug);
-    const viewer = createDeckViewerParts({
+    const viewer = await createDeckViewerParts({
       deck,
       mountPath,
       controls: options.viewer?.controls,

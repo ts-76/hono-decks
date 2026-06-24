@@ -56,24 +56,24 @@ const decksConfig = defineDecksConfig({
     viewer: {
       head: renderSampleViewerHead(),
       controls: {
-        items: (defaults, context) => [
+        className: "sample-viewer-controls",
+        itemClassName: "sample-viewer-control",
+        hidden: ["fullscreen"],
+        before: [
           {
             type: "link",
             href: "/",
             label: "Home",
             attributes: { "data-sample-control": "home" },
           },
-          defaults.previous,
-          defaults.position,
-          defaults.next,
+        ],
+        after: (context) => [
           {
             type: "link",
             href: `${context.meta.canonicalPath}/about`,
             label: "Details",
             attributes: { "data-sample-control": "details" },
           },
-          defaults.exportPdf,
-          defaults.exportPng,
         ],
       },
     },

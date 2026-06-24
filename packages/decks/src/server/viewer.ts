@@ -27,7 +27,14 @@ export type DeckViewerControlKey =
 export interface DeckViewerControlsOptions {
   className?: string;
   itemClassName?: string;
+  attributes?: Record<string, string | boolean | undefined>;
+  ariaLabel?: string;
+  hidden?: DeckViewerControlKey[];
+  labels?: Partial<Record<DeckViewerControlKey, string>>;
+  before?: DeckViewerControlSlotItems;
+  after?: DeckViewerControlSlotItems;
   items?: DeckViewerControlItem[] | DeckViewerControlsItemsResolver;
+  renderItem?: DeckViewerControlItemRenderer;
 }
 
 export type DeckViewerControlsItemsResolver = (
@@ -35,14 +42,28 @@ export type DeckViewerControlsItemsResolver = (
   context: DeckViewerControlsContext,
 ) => DeckViewerControlItem[];
 
+export type DeckViewerControlSlotItems =
+  | DeckViewerControlItem[]
+  | ((context: DeckViewerControlsContext) => DeckViewerControlItem[]);
+
+export interface DeckViewerControlRenderInput {
+  context: DeckViewerControlsContext;
+}
+
+export type DeckViewerControlItemRenderer = (
+  item: Exclude<DeckViewerControlItem, null | false | undefined>,
+  context: DeckViewerControlsContext,
+  renderDefault: () => DeckRenderable,
+) => DeckRenderable;
+
 export interface DeckViewerControlDefaults {
-  back: DeckViewerControlItem;
-  previous: DeckViewerControlItem;
-  position: DeckViewerControlItem;
-  next: DeckViewerControlItem;
-  fullscreen: DeckViewerControlItem;
-  exportPdf: DeckViewerControlItem | null;
-  exportPng: DeckViewerControlItem | null;
+  back: DeckViewerDefaultControlItem;
+  previous: DeckViewerDefaultControlItem;
+  position: DeckViewerDefaultControlItem;
+  next: DeckViewerDefaultControlItem;
+  fullscreen: DeckViewerDefaultControlItem;
+  exportPdf: DeckViewerDefaultControlItem | null;
+  exportPng: DeckViewerDefaultControlItem | null;
 }
 
 export interface DeckViewerControlsContext {
@@ -53,11 +74,20 @@ export interface DeckViewerControlsContext {
   slides: DeckTocItem[];
 }
 
-export type DeckViewerControlItem = DeckViewerDefaultControlItem | DeckViewerLinkControlItem | null | false | undefined;
+export type DeckViewerControlItem =
+  | DeckViewerDefaultControlItem
+  | DeckViewerLinkControlItem
+  | DeckViewerRenderControlItem
+  | null
+  | false
+  | undefined;
 
 export interface DeckViewerDefaultControlItem {
   type: "default";
   key: DeckViewerControlKey;
+  label?: string;
+  className?: string;
+  attributes?: Record<string, string | boolean | undefined>;
 }
 
 export interface DeckViewerLinkControlItem {
@@ -66,7 +96,14 @@ export interface DeckViewerLinkControlItem {
   href: string;
   label: string;
   download?: string;
+  className?: string;
   attributes?: Record<string, string | boolean | undefined>;
+}
+
+export interface DeckViewerRenderControlItem {
+  type: "render";
+  key?: string;
+  render(input: DeckViewerControlRenderInput): DeckRenderable;
 }
 
 export interface DeckTocItem {
@@ -105,12 +142,12 @@ export interface DeckViewerRenderInput extends DeckViewerParts {
   mountPath: string;
 }
 
-export function createDeckViewerParts(input: {
+export async function createDeckViewerParts(input: {
   deck: CompiledDeck;
   mountPath: string;
   controls?: false | DeckViewerControlsOptions;
   exportPaths?: DeckViewerExportPaths;
-}): DeckViewerParts {
+}): Promise<DeckViewerParts> {
   const slug = input.deck.slug;
   const title = input.deck.meta.title ?? slug;
   const basePath = input.mountPath.replace(/\/$/, "");
@@ -132,14 +169,16 @@ export function createDeckViewerParts(input: {
   const controlsInput = input.controls === false ? false : input.controls ?? {};
   const controlsContext: DeckViewerControlsContext = { slug, title, mountPath: basePath, meta, slides };
 
+  const controls = controlsInput === false ? null : renderViewerControls(controlsInput, controlsContext);
+
   return {
     slug,
     title,
     renderUrl,
     frame: renderViewerFrame({ title, renderUrl }),
     frameHtml: renderViewerFrameHtml({ title, renderUrl }),
-    controls: controlsInput === false ? null : renderViewerControls(controlsInput, controlsContext),
-    controlsHtml: controlsInput === false ? null : renderViewerControlsHtml(controlsInput, controlsContext),
+    controls,
+    controlsHtml: controls ? await renderJsxValue(controls) : null,
     toc: renderViewerToc(slides),
     tocHtml: renderViewerTocHtml(slides),
     slides,
@@ -154,7 +193,7 @@ export async function renderDeckViewerPage(input: {
   viewer?: DeckViewerOptions;
   exportOptions?: DeckExportOptions;
 }): Promise<string> {
-  const parts = createDeckViewerParts({
+  const parts = await createDeckViewerParts({
     deck: input.deck,
     mountPath: input.mountPath,
     controls: input.viewer?.controls,
@@ -239,18 +278,12 @@ function renderViewerFrameHtml(input: { title: string; renderUrl: string }): str
 
 function renderViewerControls(options: DeckViewerControlsOptions, context: DeckViewerControlsContext): DeckRenderable {
   return jsx("nav", {
+    ...controlAttributes(options.attributes),
     class: controlsClassName(options),
     "data-hono-decks-viewer-controls": true,
-    "aria-label": "Viewer controls",
+    "aria-label": options.ariaLabel ?? "Viewer controls",
     children: resolveViewerControlItems(options, context).map((item) => renderViewerControlItem(item, options, context)),
   });
-}
-
-function renderViewerControlsHtml(options: DeckViewerControlsOptions, context: DeckViewerControlsContext): string {
-  const items = resolveViewerControlItems(options, context)
-    .map((item) => renderViewerControlItemHtml(item, options, context))
-    .join("");
-  return `<nav class="${escapeHtml(controlsClassName(options))}" data-hono-decks-viewer-controls aria-label="Viewer controls">${items}</nav>`;
 }
 
 function renderViewerToc(slides: DeckTocItem[]): DeckRenderable {
@@ -312,22 +345,38 @@ function resolveViewerControlItems(
   context: DeckViewerControlsContext,
 ): Array<Exclude<DeckViewerControlItem, null | false | undefined>> {
   const defaults = buildViewerControlDefaults(context);
+  const baseItems = [
+    defaults.back,
+    defaults.previous,
+    defaults.position,
+    defaults.next,
+    defaults.fullscreen,
+    defaults.exportPdf,
+    defaults.exportPng,
+  ];
   const items =
     typeof options.items === "function"
       ? options.items(defaults, context)
       : (options.items ?? [
-          defaults.back,
-          defaults.previous,
-          defaults.position,
-          defaults.next,
-          defaults.fullscreen,
-          defaults.exportPdf,
-          defaults.exportPng,
+          ...resolveViewerControlSlotItems(options.before, context),
+          ...filterHiddenDefaultItems(baseItems, options.hidden),
+          ...resolveViewerControlSlotItems(options.after, context),
         ]);
-  return items.filter((item): item is Exclude<DeckViewerControlItem, null | false | undefined> => Boolean(item));
+  return items
+    .filter((item): item is Exclude<DeckViewerControlItem, null | false | undefined> => Boolean(item))
+    .map((item) => applyViewerControlLabels(item, options.labels));
 }
 
 function renderViewerControlItem(
+  item: Exclude<DeckViewerControlItem, null | false | undefined>,
+  options: DeckViewerControlsOptions,
+  context: DeckViewerControlsContext,
+): DeckRenderable {
+  const renderDefault = () => renderBaseViewerControlItem(item, options, context);
+  return options.renderItem?.(item, context, renderDefault) ?? renderDefault();
+}
+
+function renderBaseViewerControlItem(
   item: Exclude<DeckViewerControlItem, null | false | undefined>,
   options: DeckViewerControlsOptions,
   context: DeckViewerControlsContext,
@@ -337,94 +386,91 @@ function renderViewerControlItem(
       ...linkAttributes(item.attributes),
       href: item.href,
       ...(item.download ? { download: item.download } : {}),
-      ...(options.itemClassName ? { class: options.itemClassName } : {}),
+      ...classAttribute(options.itemClassName, item.className),
       children: item.label,
     });
   }
 
-  return renderDefaultViewerControlItem(item.key, options, context);
+  if (item.type === "render") {
+    return item.render({ context });
+  }
+
+  return renderDefaultViewerControlItem(item, options, context);
 }
 
 function renderDefaultViewerControlItem(
-  key: DeckViewerControlKey,
+  item: DeckViewerDefaultControlItem,
   options: DeckViewerControlsOptions,
   context: DeckViewerControlsContext,
 ): DeckRenderable {
-  const classProps = options.itemClassName ? { class: options.itemClassName } : {};
-  switch (key) {
+  const itemProps = {
+    ...linkAttributes(item.attributes),
+    ...classAttribute(options.itemClassName, item.className),
+  };
+  switch (item.key) {
     case "back":
-      return jsx("a", { href: context.mountPath, "data-hono-decks-back-link": true, ...classProps, children: "Decks" });
+      return jsx("a", {
+        ...itemProps,
+        href: context.mountPath,
+        "data-hono-decks-back-link": true,
+        children: item.label ?? "Decks",
+      });
     case "previous":
-      return jsx("button", { type: "button", "data-action": "previous", ...classProps, children: "Prev" });
+      return jsx("button", { ...itemProps, type: "button", "data-action": "previous", children: item.label ?? "Prev" });
     case "position":
-      return jsx("span", { "data-slide-position": true, ...classProps, children: "1 / ?" });
+      return jsx("span", { ...itemProps, "data-slide-position": true, children: item.label ?? "1 / ?" });
     case "next":
-      return jsx("button", { type: "button", "data-action": "next", ...classProps, children: "Next" });
+      return jsx("button", { ...itemProps, type: "button", "data-action": "next", children: item.label ?? "Next" });
     case "fullscreen":
-      return jsx("button", { type: "button", "data-action": "fullscreen", ...classProps, children: "Full" });
+      return jsx("button", { ...itemProps, type: "button", "data-action": "fullscreen", children: item.label ?? "Full" });
     case "exportPdf":
       return jsx("a", {
+        ...itemProps,
         href: context.meta.exportPdfPath ?? "",
         download: `${safeFilename(context.meta.title)}.pdf`,
         "data-hono-decks-export": "pdf",
-        ...classProps,
-        children: "PDF",
+        children: item.label ?? "PDF",
       });
     case "exportPng":
       return jsx("a", {
+        ...itemProps,
         href: context.meta.exportPngPath ?? "",
         download: `${safeFilename(context.meta.title)}.png`,
         "data-hono-decks-export": "png",
-        ...classProps,
-        children: "PNG",
+        children: item.label ?? "PNG",
       });
-  }
-}
-
-function renderViewerControlItemHtml(
-  item: Exclude<DeckViewerControlItem, null | false | undefined>,
-  options: DeckViewerControlsOptions,
-  context: DeckViewerControlsContext,
-): string {
-  if (item.type === "link") {
-    const attributes = htmlAttributes({
-      ...item.attributes,
-      href: item.href,
-      ...(item.download ? { download: item.download } : {}),
-      ...(options.itemClassName ? { class: options.itemClassName } : {}),
-    });
-    return `<a${attributes}>${escapeHtml(item.label)}</a>`;
-  }
-
-  return renderDefaultViewerControlItemHtml(item.key, options, context);
-}
-
-function renderDefaultViewerControlItemHtml(
-  key: DeckViewerControlKey,
-  options: DeckViewerControlsOptions,
-  context: DeckViewerControlsContext,
-): string {
-  const classAttribute = options.itemClassName ? ` class="${escapeHtml(options.itemClassName)}"` : "";
-  switch (key) {
-    case "back":
-      return `<a href="${escapeHtml(context.mountPath)}" data-hono-decks-back-link${classAttribute}>Decks</a>`;
-    case "previous":
-      return `<button type="button" data-action="previous"${classAttribute}>Prev</button>`;
-    case "position":
-      return `<span data-slide-position${classAttribute}>1 / ?</span>`;
-    case "next":
-      return `<button type="button" data-action="next"${classAttribute}>Next</button>`;
-    case "fullscreen":
-      return `<button type="button" data-action="fullscreen"${classAttribute}>Full</button>`;
-    case "exportPdf":
-      return `<a href="${escapeHtml(context.meta.exportPdfPath ?? "")}" download="${escapeHtml(safeFilename(context.meta.title))}.pdf" data-hono-decks-export="pdf"${classAttribute}>PDF</a>`;
-    case "exportPng":
-      return `<a href="${escapeHtml(context.meta.exportPngPath ?? "")}" download="${escapeHtml(safeFilename(context.meta.title))}.png" data-hono-decks-export="png"${classAttribute}>PNG</a>`;
   }
 }
 
 function controlsClassName(options: DeckViewerControlsOptions): string {
   return ["hono-decks-viewer-controls", options.className].filter(Boolean).join(" ");
+}
+
+function resolveViewerControlSlotItems(
+  items: DeckViewerControlSlotItems | undefined,
+  context: DeckViewerControlsContext,
+): DeckViewerControlItem[] {
+  return typeof items === "function" ? items(context) : (items ?? []);
+}
+
+function filterHiddenDefaultItems(
+  items: DeckViewerControlItem[],
+  hidden: DeckViewerControlKey[] | undefined,
+): DeckViewerControlItem[] {
+  if (!hidden?.length) return items;
+
+  const hiddenKeys = new Set(hidden);
+  return items.filter((item) => !item || item.type !== "default" || !hiddenKeys.has(item.key));
+}
+
+function applyViewerControlLabels(
+  item: Exclude<DeckViewerControlItem, null | false | undefined>,
+  labels: DeckViewerControlsOptions["labels"],
+): Exclude<DeckViewerControlItem, null | false | undefined> {
+  if (item.type !== "default" || item.label !== undefined) return item;
+
+  const label = labels?.[item.key];
+  return label === undefined ? item : { ...item, label };
 }
 
 function linkAttributes(attributes: DeckViewerLinkControlItem["attributes"]): Record<string, string | boolean> {
@@ -436,11 +482,17 @@ function linkAttributes(attributes: DeckViewerLinkControlItem["attributes"]): Re
   return props;
 }
 
-function htmlAttributes(attributes: Record<string, string | boolean | undefined>): string {
-  return Object.entries(attributes)
-    .filter(([name, value]) => isSafeAttributeName(name) && value !== false && value !== undefined)
-    .map(([name, value]) => (value === true ? ` ${name}` : ` ${name}="${escapeHtml(String(value))}"`))
-    .join("");
+function controlAttributes(attributes: DeckViewerControlsOptions["attributes"]): Record<string, string | boolean> {
+  const props = linkAttributes(attributes);
+  delete props.class;
+  delete props["aria-label"];
+  delete props["data-hono-decks-viewer-controls"];
+  return props;
+}
+
+function classAttribute(...classNames: Array<string | undefined>): { class?: string } {
+  const className = classNames.filter(Boolean).join(" ");
+  return className ? { class: className } : {};
 }
 
 function isSafeAttributeName(value: string): boolean {
