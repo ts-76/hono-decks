@@ -64,9 +64,11 @@ export function renderCompiledSlide(
     components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
     deck?: CompiledDeck;
     speakerNotes?: boolean;
+    slideState?: "active" | "inactive";
   } = {},
 ): string {
   const components = normalizeComponents(input.components);
+  const slideState = input.slideState ?? "inactive";
   const layout = slide.meta.layout ?? "default";
   const classes = ["slide", `layout-${safeClass(layout)}`, slide.meta.className ? safeClass(slide.meta.className) : ""]
     .filter(Boolean)
@@ -80,7 +82,7 @@ export function renderCompiledSlide(
   const style = slideStyleAttribute(slide, assets);
   const transition = slide.meta.transition ? ` data-transition="${escapeHtml(safeClass(slide.meta.transition))}"` : "";
 
-  return `<section class="${classes}" data-slide-index="${slide.index}" data-slide-state="inactive"${slide.meta.title ? ` aria-label="${escapeHtml(slide.meta.title)}"` : ""}${transition}${style}><div class="hono-decks-slide-content">${html}</div>${notesHtml}</section>`;
+  return `<section class="${classes}" data-slide-index="${slide.index}" data-slide-state="${slideState}"${slide.meta.title ? ` aria-label="${escapeHtml(slide.meta.title)}"` : ""}${transition}${style}><div class="hono-decks-slide-content">${html}</div>${notesHtml}</section>`;
 }
 
 export async function renderCompiledSlideAsync(
@@ -90,9 +92,11 @@ export async function renderCompiledSlideAsync(
     components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
     deck?: CompiledDeck;
     speakerNotes?: boolean;
+    slideState?: "active" | "inactive";
   } = {},
 ): Promise<string> {
   const components = normalizeComponents(input.components);
+  const slideState = input.slideState ?? "inactive";
   const layout = slide.meta.layout ?? "default";
   const classes = ["slide", `layout-${safeClass(layout)}`, slide.meta.className ? safeClass(slide.meta.className) : ""]
     .filter(Boolean)
@@ -104,7 +108,7 @@ export async function renderCompiledSlideAsync(
   const style = slideStyleAttribute(slide, assets);
   const transition = slide.meta.transition ? ` data-transition="${escapeHtml(safeClass(slide.meta.transition))}"` : "";
 
-  return `<section class="${classes}" data-slide-index="${slide.index}" data-slide-state="inactive"${slide.meta.title ? ` aria-label="${escapeHtml(slide.meta.title)}"` : ""}${transition}${style}><div class="hono-decks-slide-content">${html}</div>${notesHtml}</section>`;
+  return `<section class="${classes}" data-slide-index="${slide.index}" data-slide-state="${slideState}"${slide.meta.title ? ` aria-label="${escapeHtml(slide.meta.title)}"` : ""}${transition}${style}><div class="hono-decks-slide-content">${html}</div>${notesHtml}</section>`;
 }
 
 function slideStyleAttribute(slide: CompiledSlide, assets: AssetRef[]): string {

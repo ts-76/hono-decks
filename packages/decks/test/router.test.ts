@@ -116,6 +116,9 @@ describe("decksRouter", () => {
     expect(presenterHtml).toContain('src="/slides/deck1/presentation"');
     expect(presenterHtml).toContain("data-hono-decks-presenter-next");
     expect(presenterHtml).toContain("<h2>Next Steps</h2>");
+    expect(presenterHtml).toMatch(
+      /data-hono-decks-presenter-preview data-slide-index="1"[^>]*><section[^>]*data-slide-state="active"/,
+    );
     expect(presenterHtml).toContain("data-hono-decks-presenter-notes");
     expect(presenterHtml).toContain("Open with the Worker runtime boundary.");
     expect(presenterHtml).toContain("Point people to the presenter route.");

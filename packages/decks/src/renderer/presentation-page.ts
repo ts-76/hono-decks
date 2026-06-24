@@ -96,7 +96,9 @@ export async function renderPresenterPageAsync(input: {
   const components = mergeComponentInputs(deck.componentRegistry, input.components);
   const projectionPath = `${input.mountPath.replace(/\/$/, "")}/${encodeURIComponent(deck.slug)}/presentation`;
   const previews = await Promise.all(
-    deck.slides.map((slide) => renderCompiledSlideAsync(slide, deck.assets, { components, deck, speakerNotes: false })),
+    deck.slides.map((slide) =>
+      renderCompiledSlideAsync(slide, deck.assets, { components, deck, speakerNotes: false, slideState: "active" }),
+    ),
   );
   const notes = deck.slides.map((slide) => slide.notes ?? slide.meta.notes);
 
