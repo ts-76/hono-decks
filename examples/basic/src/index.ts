@@ -6,7 +6,6 @@ import {
   renderDeckDetailsPage,
   renderDeckEmbedPage,
   renderHomePage,
-  renderSampleViewerHead,
 } from "./pages";
 
 interface Env {
@@ -36,14 +35,7 @@ app.get(
       viewer: c.var.deckViewer,
     })),
 );
-app.route(
-  deckMountPath,
-  createDecksRouter({
-    viewer: {
-      head: renderSampleViewerHead(),
-    },
-  }),
-);
+app.route(deckMountPath, createDecksRouter());
 
 app.notFound((c) => c.json({ error: "Not found" }, 404));
 

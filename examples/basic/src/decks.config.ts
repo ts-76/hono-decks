@@ -5,6 +5,7 @@ import {
   type DeckSource,
   type R2BucketLike,
 } from "@hono/decks";
+import { renderSampleViewerHead } from "./pages";
 
 export interface DecksConfigBindings {
   DECK_ASSETS?: R2BucketLike;
@@ -53,6 +54,7 @@ const decksConfig = defineDecksConfig({
 
   router: {
     viewer: {
+      head: renderSampleViewerHead(),
       controls: {
         items: (defaults, context) => [
           {

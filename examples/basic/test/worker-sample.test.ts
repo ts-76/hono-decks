@@ -17,6 +17,7 @@ describe("sample Worker app", () => {
     expect(entrySource).not.toContain("DeckBrowserRunBinding");
     expect(entrySource).not.toContain("pdf: true");
     expect(entrySource).not.toContain("data-sample-control");
+    expect(entrySource).not.toContain("renderSampleViewerHead");
     expect(entrySource).toContain("deckMountPath");
     expect(facadeSource).toContain("This file is safe to edit.");
     expect(facadeSource).toContain("./generated/decks");
@@ -31,6 +32,7 @@ describe("sample Worker app", () => {
     expect(configSource).toContain("defineDecksConfig");
     expect(configSource).toContain('mountPath: "/decks"');
     expect(configSource).toContain("DeckBrowserRunBinding");
+    expect(configSource).toContain("renderSampleViewerHead");
     expect(configSource).toContain("pdf: true");
     expect(configSource).toContain("data-sample-control");
     expect(configSource).toContain("items: (defaults, context)");
