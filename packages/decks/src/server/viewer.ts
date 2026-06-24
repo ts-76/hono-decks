@@ -10,10 +10,18 @@ import { baseViewerStyle } from "./viewer-style";
 
 export interface DeckViewerOptions {
   controls?: boolean;
+  backLink?: DeckViewerBackLinkInput;
   style?: string;
   head?: MaybePromise<DeckRenderable>;
   render?(input: DeckViewerRenderInput): MaybePromise<DeckRenderable>;
 }
+
+export interface DeckViewerBackLink {
+  href: string;
+  label: string;
+}
+
+export type DeckViewerBackLinkInput = false | string | Partial<DeckViewerBackLink>;
 
 export interface DeckTocItem {
   index: number;
@@ -27,6 +35,7 @@ export interface DeckPageMeta {
   canonicalPath: string;
   renderPath: string;
   printPath: string;
+  backLink?: DeckViewerBackLink;
   exportPdfPath?: string;
   exportPngPath?: string;
   imagePath?: string;
@@ -55,6 +64,7 @@ export function createDeckViewerParts(input: {
   deck: CompiledDeck;
   mountPath: string;
   controls?: boolean;
+  backLink?: DeckViewerBackLinkInput;
   exportPaths?: DeckViewerExportPaths;
 }): DeckViewerParts {
   const slug = input.deck.slug;
@@ -72,6 +82,7 @@ export function createDeckViewerParts(input: {
     canonicalPath,
     renderPath: renderUrl,
     printPath,
+    backLink: resolveViewerBackLink(basePath, input.backLink),
     exportPdfPath,
     exportPngPath,
   };
@@ -102,6 +113,7 @@ export async function renderDeckViewerPage(input: {
     deck: input.deck,
     mountPath: input.mountPath,
     controls: input.viewer?.controls,
+    backLink: input.viewer?.backLink,
     exportPaths: await resolveAuthorizedExportPaths(input.c, input.deck, input.exportOptions),
   });
   const content =
@@ -182,6 +194,13 @@ function renderViewerFrameHtml(input: { title: string; renderUrl: string }): str
 }
 
 function renderViewerControls(meta: DeckPageMeta): DeckRenderable {
+  const backLink = meta.backLink
+    ? jsx("a", {
+        href: meta.backLink.href,
+        "data-hono-decks-back-link": true,
+        children: meta.backLink.label,
+      })
+    : null;
   const exportLinks = [
     meta.exportPdfPath
       ? jsx("a", {
@@ -206,6 +225,7 @@ function renderViewerControls(meta: DeckPageMeta): DeckRenderable {
     "data-hono-decks-viewer-controls": true,
     "aria-label": "Viewer controls",
     children: [
+      backLink,
       jsx("button", { type: "button", "data-action": "previous", children: "Prev" }),
       jsx("span", { "data-slide-position": true, children: "1 / ?" }),
       jsx("button", { type: "button", "data-action": "next", children: "Next" }),
@@ -216,6 +236,9 @@ function renderViewerControls(meta: DeckPageMeta): DeckRenderable {
 }
 
 function renderViewerControlsHtml(meta: DeckPageMeta): string {
+  const backLink = meta.backLink
+    ? `<a href="${escapeHtml(meta.backLink.href)}" data-hono-decks-back-link>${escapeHtml(meta.backLink.label)}</a>`
+    : "";
   const exportLinks = [
     meta.exportPdfPath
       ? `<a href="${escapeHtml(meta.exportPdfPath)}" download="${escapeHtml(safeFilename(meta.title))}.pdf" data-hono-decks-export="pdf">PDF</a>`
@@ -224,7 +247,7 @@ function renderViewerControlsHtml(meta: DeckPageMeta): string {
       ? `<a href="${escapeHtml(meta.exportPngPath)}" download="${escapeHtml(safeFilename(meta.title))}.png" data-hono-decks-export="png">PNG</a>`
       : "",
   ].join("");
-  return `<nav class="hono-decks-viewer-controls" data-hono-decks-viewer-controls aria-label="Viewer controls"><button type="button" data-action="previous">Prev</button><span data-slide-position>1 / ?</span><button type="button" data-action="next">Next</button><button type="button" data-action="fullscreen">Full</button>${exportLinks}</nav>`;
+  return `<nav class="hono-decks-viewer-controls" data-hono-decks-viewer-controls aria-label="Viewer controls">${backLink}<button type="button" data-action="previous">Prev</button><span data-slide-position>1 / ?</span><button type="button" data-action="next">Next</button><button type="button" data-action="fullscreen">Full</button>${exportLinks}</nav>`;
 }
 
 function renderViewerToc(slides: DeckTocItem[]): DeckRenderable {
@@ -259,6 +282,15 @@ function renderViewerTocHtml(slides: DeckTocItem[]): string {
 
 function escapeHtml(value: string): string {
   return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+}
+
+function resolveViewerBackLink(basePath: string, input: DeckViewerBackLinkInput | undefined): DeckViewerBackLink | undefined {
+  if (input === false) return undefined;
+  if (typeof input === "string") return { href: input, label: "Decks" };
+  return {
+    href: input?.href ?? basePath,
+    label: input?.label ?? "Decks",
+  };
 }
 
 function safeFilename(value: string): string {

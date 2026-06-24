@@ -50,6 +50,8 @@ export type {
   DeckExportOptions,
   DeckPageMeta,
   DeckTocItem,
+  DeckViewerBackLink,
+  DeckViewerBackLinkInput,
   DeckViewerOptions,
   DeckViewerParts,
   DeckViewerRenderInput,

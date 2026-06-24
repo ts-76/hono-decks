@@ -58,6 +58,8 @@ describe("decksRouter", () => {
     expect(html).toContain('data-action="previous"');
     expect(html).toContain('data-action="next"');
     expect(html).toContain('data-action="fullscreen"');
+    expect(html).toContain('href="/slides"');
+    expect(html).toContain('data-hono-decks-back-link');
     expect(html).toContain("message.stepCount");
     expect(html).toContain("root?.setAttribute(\"data-step-index\", String(message.stepIndex ?? 0))");
     expect(html).toContain("root?.setAttribute(\"data-step-count\", String(message.stepCount ?? 0))");
@@ -100,19 +102,21 @@ describe("decksRouter", () => {
     expect(renderHtml).not.toContain("custom-viewer");
   });
 
-  it("lets callers render a custom viewer layout with frame, controls, and toc parts", async () => {
+  it("lets callers render a custom viewer layout with frame, controls, toc, and configured back link parts", async () => {
     const app = new Hono();
     app.route(
       "/slides",
       decksRouter({
         source: manifestDeckSource({ decks: [deck] }),
         viewer: {
+          backLink: { href: "/library", label: "Deck Library" },
           render: ({ frame, controls, toc, slides, meta }) =>
             jsx("section", {
               "data-custom-viewer": meta.title,
               "data-slide-count": String(slides.length),
               children: [
                 jsx("header", { children: meta.title }),
+                meta.backLink ? jsx("a", { href: meta.backLink.href, children: meta.backLink.label }) : null,
                 toc,
                 frame,
                 controls,
@@ -128,6 +132,8 @@ describe("decksRouter", () => {
     expect(html).toContain('data-slide-count="1"');
     expect(html).toContain('data-hono-decks-frame');
     expect(html).toContain('data-hono-decks-toc');
+    expect(html).toContain('href="/library"');
+    expect(html).toContain(">Deck Library</a>");
     expect(html).toContain('data-action="goTo"');
     expect(html).toContain('action: "goTo"');
   });
