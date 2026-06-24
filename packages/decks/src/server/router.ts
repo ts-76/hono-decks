@@ -14,8 +14,12 @@ import {
 import {
   createDeckViewerParts,
   renderDeckViewerPage,
-  type DeckViewerBackLink,
-  type DeckViewerBackLinkInput,
+  type DeckViewerControlDefaults,
+  type DeckViewerControlItem,
+  type DeckViewerControlKey,
+  type DeckViewerControlsContext,
+  type DeckViewerControlsItemsResolver,
+  type DeckViewerControlsOptions,
   type DeckPageMeta,
   type DeckTocItem,
   type DeckViewerOptions,
@@ -38,8 +42,12 @@ export type {
 } from "./browser-export";
 export { createDeckViewerParts } from "./viewer";
 export type {
-  DeckViewerBackLink,
-  DeckViewerBackLinkInput,
+  DeckViewerControlDefaults,
+  DeckViewerControlItem,
+  DeckViewerControlKey,
+  DeckViewerControlsContext,
+  DeckViewerControlsItemsResolver,
+  DeckViewerControlsOptions,
   DeckPageMeta,
   DeckTocItem,
   DeckViewerOptions,
@@ -77,7 +85,7 @@ export interface DeckContextOptions {
   source: DeckSource;
   dev?: boolean;
   mountPath?: string;
-  viewer?: Pick<DeckViewerOptions, "controls" | "backLink">;
+  viewer?: Pick<DeckViewerOptions, "controls">;
 }
 
 export function decksRouter(options: DecksRouterOptions): Hono {
@@ -197,7 +205,6 @@ export function deckContext(options: DeckContextOptions): MiddlewareHandler<{ Va
       deck,
       mountPath,
       controls: options.viewer?.controls,
-      backLink: options.viewer?.backLink,
     });
 
     c.set("deck", deck);

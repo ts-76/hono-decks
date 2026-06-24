@@ -102,21 +102,19 @@ describe("decksRouter", () => {
     expect(renderHtml).not.toContain("custom-viewer");
   });
 
-  it("lets callers render a custom viewer layout with frame, controls, toc, and configured back link parts", async () => {
+  it("lets callers render a custom viewer layout with frame, controls, and toc parts", async () => {
     const app = new Hono();
     app.route(
       "/slides",
       decksRouter({
         source: manifestDeckSource({ decks: [deck] }),
         viewer: {
-          backLink: { href: "/library", label: "Deck Library" },
           render: ({ frame, controls, toc, slides, meta }) =>
             jsx("section", {
               "data-custom-viewer": meta.title,
               "data-slide-count": String(slides.length),
               children: [
                 jsx("header", { children: meta.title }),
-                meta.backLink ? jsx("a", { href: meta.backLink.href, children: meta.backLink.label }) : null,
                 toc,
                 frame,
                 controls,
@@ -132,10 +130,77 @@ describe("decksRouter", () => {
     expect(html).toContain('data-slide-count="1"');
     expect(html).toContain('data-hono-decks-frame');
     expect(html).toContain('data-hono-decks-toc');
-    expect(html).toContain('href="/library"');
-    expect(html).toContain(">Deck Library</a>");
     expect(html).toContain('data-action="goTo"');
     expect(html).toContain('action: "goTo"');
+  });
+
+  it("lets callers reorder and remove default viewer control items", async () => {
+    const app = new Hono();
+    app.route(
+      "/slides",
+      decksRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        viewer: {
+          controls: {
+            items: (defaults) => [defaults.next, defaults.position, defaults.previous, defaults.back],
+          },
+        },
+      }),
+    );
+
+    const html = await (await app.request("/slides/deck1")).text();
+
+    expect(html).toContain('href="/slides"');
+    expect(html).toContain('data-action="previous"');
+    expect(html).toContain('data-action="next"');
+    expect(html).not.toContain('data-action="fullscreen"');
+    expect(html.indexOf('data-action="next"')).toBeLessThan(html.indexOf('data-slide-position'));
+    expect(html.indexOf('data-slide-position')).toBeLessThan(html.indexOf('data-action="previous"'));
+    expect(html.indexOf('data-action="previous"')).toBeLessThan(html.indexOf('data-hono-decks-back-link'));
+  });
+
+  it("lets callers replace the back link and add escaped custom link items", async () => {
+    const app = new Hono();
+    app.route(
+      "/slides",
+      decksRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        viewer: {
+          controls: {
+            className: "custom-controls",
+            itemClassName: "custom-control-item",
+            items: (defaults, context) => [
+              {
+                type: "link",
+                key: "home",
+                href: `/library?deck=${context.slug}&name=<Deck One>`,
+                label: "Library <Home>",
+                attributes: {
+                  "data-custom-control": "home",
+                  "aria-current": true,
+                  "data-hidden": false,
+                },
+              },
+              defaults.position,
+            ],
+          },
+        },
+      }),
+    );
+
+    const html = await (await app.request("/slides/deck1")).text();
+
+    expect(html).toContain('class="hono-decks-viewer-controls custom-controls"');
+    expect(html).toContain('class="custom-control-item"');
+    expect(html).toContain('href="/library?deck=deck1&amp;name=&lt;Deck One&gt;"');
+    expect(html).toContain(">Library &lt;Home&gt;</a>");
+    expect(html).toContain('data-custom-control="home"');
+    expect(html).toContain("aria-current");
+    expect(html).not.toContain("data-hidden");
+    expect(html).not.toContain('data-hono-decks-back-link');
+    expect(html).not.toContain('data-action="previous"');
+    expect(html).not.toContain('data-action="next"');
+    expect(html).not.toContain('data-action="fullscreen"');
   });
 
   it("creates a router from a generated manifest with defineDecks", async () => {
@@ -265,6 +330,45 @@ describe("decksRouter", () => {
         screenshotOptions: { type: "png", fullPage: true },
       },
     });
+  });
+
+  it("exposes export defaults only when exports are authorized for viewer controls", async () => {
+    const browser = {
+      async quickAction(action: "pdf" | "screenshot", input: Record<string, unknown>) {
+        return new Response(`${action}:${String(input.url)}`);
+      },
+    };
+    const app = new Hono();
+    app.route(
+      "/slides",
+      decksRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        viewer: {
+          controls: {
+            items: (defaults) => [defaults.exportPng, defaults.position, defaults.exportPdf],
+          },
+        },
+        export: {
+          authorize: (c) => c.req.header("x-owner") === "yes",
+          browser: () => browser,
+          pdf: true,
+          png: true,
+        },
+      }),
+    );
+
+    const unauthorizedViewer = await (await app.request("/slides/deck1")).text();
+    const authorizedViewer = await (await app.request("/slides/deck1", { headers: { "x-owner": "yes" } })).text();
+
+    expect(unauthorizedViewer).not.toContain('data-hono-decks-export="pdf"');
+    expect(unauthorizedViewer).not.toContain('data-hono-decks-export="png"');
+    expect(unauthorizedViewer).toContain('data-slide-position');
+    expect(authorizedViewer.indexOf('data-hono-decks-export="png"')).toBeLessThan(
+      authorizedViewer.indexOf("data-slide-position"),
+    );
+    expect(authorizedViewer.indexOf("data-slide-position")).toBeLessThan(
+      authorizedViewer.indexOf('data-hono-decks-export="pdf"'),
+    );
   });
 
   it("authorizes Browser Run export links and direct export routes per request", async () => {
@@ -568,6 +672,39 @@ describe("decksRouter", () => {
     expect(html).toContain('data-toc-count="1"');
     expect(html).toContain('data-hono-decks-frame');
     expect(html).toContain("Deck One");
+  });
+
+  it("builds controlsHtml from the same configured viewer control items", async () => {
+    const app = new Hono<{ Variables: DeckContextVariables }>();
+    app.get(
+      "/slides/:slug/embed",
+      deckContext({
+        source: manifestDeckSource({ decks: [deck] }),
+        viewer: {
+          controls: {
+            items: (defaults, context) => [
+              {
+                type: "link",
+                href: `${context.mountPath}/overview?deck=${context.slug}`,
+                label: "Overview & Notes",
+                attributes: { "data-custom-control": "overview" },
+              },
+              defaults.next,
+            ],
+          },
+        },
+      }),
+      (c) => c.html(`<article>${c.var.deckViewer.controlsHtml}</article>`),
+    );
+
+    const html = await (await app.request("/slides/deck1/embed")).text();
+
+    expect(html).toContain('href="/slides/overview?deck=deck1"');
+    expect(html).toContain(">Overview &amp; Notes</a>");
+    expect(html).toContain('data-custom-control="overview"');
+    expect(html).toContain('data-action="next"');
+    expect(html).not.toContain('data-action="previous"');
+    expect(html).not.toContain('data-hono-decks-back-link');
   });
 
   it("lets deckContext target a public mount path from custom admin routes", async () => {
