@@ -328,6 +328,10 @@ app.route("/decks", createDecksRouter({
 
 `attributes` は app-owned class、analytics 用 `data-*`、`aria-*` など信頼済み設定から渡す用途です。`on*` event 属性は出力されず、link item の `href` は `javascript:` / `data:` / `vbscript:` などの危険な scheme を出力しません。
 
+`createDeckViewerParts()` は `Promise<DeckViewerParts>` を返すため、独自 route から直接使う場合は `await createDeckViewerParts(...)` してください。`deckContext()` はこの処理を middleware 内で済ませ、`c.var.deckViewer` に `frame` / `controls` / `controlsHtml` / `toc` を入れます。
+
+標準 router の `/:slug` viewer では export 認可後の `PDF` / `PNG` controls が自動で反映されます。`deckContext()` を使う独自 page は export 認可を自動実行しないため、独自 page 上で export controls を出したい場合は `createDeckViewerParts({ exportPaths })` を直接使うか、app 側で許可済み link を組み立てます。
+
 Cloudflare Browser Run binding がある環境では、`/:slug/print` の handout layout をそのまま PDF/PNG export に使えます。これは opt-in です。`export.browser(c)` が binding を返す場合だけ `/:slug/export.pdf` と `/:slug/export.png` が有効になり、標準 viewer controls に `PDF` / `PNG` link が追加されます。
 
 ```toml

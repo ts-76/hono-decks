@@ -6,7 +6,7 @@ import { defineDecks, defineDecksConfig } from "../src/server/define-decks";
 import { manifestDeckSource } from "../src/source/manifest-source";
 import { withR2Assets } from "../src/source/r2-assets";
 import { createDeckViewerParts, deckContext, decksRouter } from "../src/server/router";
-import type { DeckContextVariables } from "../src/server/router";
+import type { DeckContextVariables, DeckViewerControlsOptions } from "../src/server/router";
 
 const deck = {
   slug: "deck1",
@@ -396,6 +396,54 @@ describe("decksRouter", () => {
     expect(html).not.toContain("onclick");
     expect(html).not.toContain("onmouseover");
     expect(html).not.toContain("javascript:alert");
+  });
+
+  it("keeps default control action attributes from being overridden", async () => {
+    const parts = await createDeckViewerParts({
+      deck,
+      mountPath: "/slides",
+      exportPaths: { pdf: true, png: true },
+      controls: {
+        items: (defaults) => {
+          if (!defaults.exportPdf || !defaults.exportPng) throw new Error("Expected export defaults");
+
+          return [
+            { ...defaults.back, attributes: { href: "/wrong", "data-hono-decks-back-link": false } },
+            { ...defaults.previous, attributes: { type: "submit", "data-action": "next" } },
+            { ...defaults.position, attributes: { "data-slide-position": false } },
+            { ...defaults.next, attributes: { "data-action": "previous" } },
+            { ...defaults.fullscreen, attributes: { "data-action": "next" } },
+            {
+              ...defaults.exportPdf,
+              attributes: { href: "/wrong.pdf", download: "wrong.pdf", "data-hono-decks-export": "png" },
+            },
+            {
+              ...defaults.exportPng,
+              attributes: { href: "/wrong.png", download: "wrong.png", "data-hono-decks-export": "pdf" },
+            },
+          ];
+        },
+      },
+    });
+    const html = parts.controlsHtml ?? "";
+
+    expect(html).toContain('href="/slides"');
+    expect(html).toContain("data-hono-decks-back-link");
+    expect(html).toContain('type="button"');
+    expect(html).toContain('data-action="previous"');
+    expect(html).toContain('data-action="next"');
+    expect(html).toContain('data-action="fullscreen"');
+    expect(html).toContain("data-slide-position");
+    expect(html).toContain('href="/slides/deck1/export.pdf"');
+    expect(html).toContain('download="Deck-One.pdf"');
+    expect(html).toContain('data-hono-decks-export="pdf"');
+    expect(html).toContain('href="/slides/deck1/export.png"');
+    expect(html).toContain('download="Deck-One.png"');
+    expect(html).toContain('data-hono-decks-export="png"');
+    expect(html).not.toContain("/wrong");
+    expect(html).not.toContain("wrong.pdf");
+    expect(html).not.toContain("wrong.png");
+    expect(html).not.toContain('type="submit"');
   });
 
   it("creates a router from a generated manifest with defineDecks", async () => {
@@ -918,6 +966,35 @@ describe("decksRouter", () => {
     expect(html).toContain(">Forward</button>");
     expect(html).not.toContain('data-action="previous"');
     expect(html).not.toContain('data-hono-decks-back-link');
+  });
+
+  it("reflects export paths in controlsHtml only when provided", async () => {
+    const controls = {
+      items: (defaults) => [defaults.exportPng, defaults.position, defaults.exportPdf],
+    } satisfies DeckViewerControlsOptions;
+    const withoutExports = await createDeckViewerParts({
+      deck,
+      mountPath: "/slides",
+      controls,
+    });
+    const withExports = await createDeckViewerParts({
+      deck,
+      mountPath: "/slides",
+      controls,
+      exportPaths: { pdf: true, png: true },
+    });
+
+    expect(withoutExports.controlsHtml).not.toContain('data-hono-decks-export="pdf"');
+    expect(withoutExports.controlsHtml).not.toContain('data-hono-decks-export="png"');
+    expect(withoutExports.controlsHtml).toContain("data-slide-position");
+    const exportedHtml = withExports.controlsHtml ?? "";
+    expect(exportedHtml).toContain('href="/slides/deck1/export.png"');
+    expect(exportedHtml).toContain('data-hono-decks-export="png"');
+    expect(exportedHtml).toContain('href="/slides/deck1/export.pdf"');
+    expect(exportedHtml).toContain('data-hono-decks-export="pdf"');
+    expect(exportedHtml.indexOf('data-hono-decks-export="png"')).toBeLessThan(
+      exportedHtml.indexOf("data-slide-position"),
+    );
   });
 
   it("lets deckContext target a public mount path from custom admin routes", async () => {
