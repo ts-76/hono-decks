@@ -85,9 +85,17 @@ describe("sample Worker app", () => {
     expect(html).not.toContain("stage.style.transform");
     expect(html).toContain('id="hono-css"');
     expect(html).toContain("radial-gradient(circle at top, #1e2b5c, #050816 62%)");
+    expect(html).toContain('href="/"');
+    expect(html).toContain('data-sample-control="home"');
+    expect(html).toContain(">Home</a>");
+    expect(html).toContain('href="/decks/sample/about"');
+    expect(html).toContain('data-sample-control="details"');
+    expect(html).toContain(">Details</a>");
     expect(html).toContain('data-action="previous"');
     expect(html).toContain('data-action="next"');
-    expect(html).toContain('data-action="fullscreen"');
+    expect(html).not.toContain('data-action="fullscreen"');
+    expect(html.indexOf('data-sample-control="home"')).toBeLessThan(html.indexOf('data-action="previous"'));
+    expect(html.indexOf('data-action="next"')).toBeLessThan(html.indexOf('data-sample-control="details"'));
     expect(html).not.toContain('href="/decks/sample/export.pdf"');
     expect(html).not.toContain('data-hono-decks-export="pdf"');
     expect(html).not.toContain('href="/decks/sample/export.png"');

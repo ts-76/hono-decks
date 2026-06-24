@@ -166,12 +166,17 @@ const sampleViewerStyle = `
   backdrop-filter: blur(12px);
 }
 
-.hono-decks-viewer-controls button {
+.hono-decks-viewer-controls button,
+.hono-decks-viewer-controls a {
   border: 1px solid rgba(255, 255, 255, .22);
   border-radius: 999px;
   background: rgba(255, 255, 255, .1);
   color: inherit;
   padding: 8px 12px;
+  text-decoration: none;
+}
+
+.hono-decks-viewer-controls button {
   cursor: pointer;
 }
 `;
