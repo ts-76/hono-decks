@@ -9,6 +9,7 @@ Status:
 - `done`: covered by current package or sample tests.
 - `sample`: should be demonstrated in `examples/basic` or another official example.
 - `design`: needs an API or runtime decision before implementation.
+- `deferred`: intentionally outside the V1 scope.
 - `smoke`: needs deployed Worker or browser verification in addition to unit tests.
 
 ## Media And Assets
@@ -19,12 +20,12 @@ Status:
 | Local image asset | JSX image: `<img src="./assets/image.png" />` | done | `examples/basic/decks/media` and node adapter tests cover MDX JSX compile output and public URL rewriting. |
 | Local image asset | Bare `assets/image.png` without `./` | done | Covered by generator rewrite behavior; keep this idempotent. |
 | Remote image asset | `https://...` remains unchanged | done | Node adapter tests verify remote URLs remain normal remote URLs and are not rewritten to local asset paths. |
-| R2 public URL | Custom domain or `r2.dev` URL used directly | design | Treat as remote URL unless an explicit R2 asset policy is introduced. Decide whether this belongs in the official sample. |
+| R2 public URL | Custom domain or `r2.dev` URL used directly | deferred | Treat as a normal remote URL in V1. Binding-backed delivery is the official R2 sample because it exercises `DeckSource.getAsset()`. |
 | R2 binding delivery | Local asset path served from R2 with cache headers | done | `withR2Assets()` supports a pre-existing object using the generated `sourcePath` as the R2 key and falls back to embedded local assets when the binding is missing. `examples/basic/decks/media` includes an R2-backed image sample. |
 | Asset cache headers | Long-lived cache for R2-backed assets | done | Local tests assert `Cache-Control`; Cloudflare edge cache hit/miss needs deployed smoke verification. |
 | Asset cache headers | `cf-cache-status` / `age` on deployed Worker | smoke | Requires deployment. `examples/basic` includes `smoke:r2-cache` for the deployed URL; local Miniflare-style tests can only check route behavior and headers. |
 
-R2 official sample direction is still open. The current package API supports binding-backed delivery because it proves the Worker integration and cache headers without requiring an upload command. A public URL example is simpler for users, but it does not exercise `DeckSource.getAsset()` or Worker cache behavior.
+R2 official sample direction is binding-backed delivery. The package should support serving pre-existing R2 objects through `withR2Assets()`, but R2 upload, sync, cache rules, and purge workflows remain deployment concerns.
 
 ## Embeds
 
@@ -47,7 +48,7 @@ R2 official sample direction is still open. The current package API supports bin
 | Markdown fenced code | Triple-backtick code block | done | `examples/basic/decks/code` verifies language classes, HTML escaping, and overflow-oriented default presentation styles. |
 | MDX component code block | `<CodeBlock lang="ts">...</CodeBlock>` | done | Built-in `CodeBlock` accepts text children with `lang`, `filename`, and `highlight`; package and sample tests cover stable metadata and escaping. |
 | Syntax highlighting | Build-time Shiki or equivalent | done | Shiki runs during CLI/module generation; generated slide modules carry highlighted HTML and Worker-safe runtime exports do not import Shiki. |
-| Copy UI | Copy button or line highlight controls | design | Optional; should not be required for the core renderer. |
+| Copy UI | Copy button or line highlight controls | deferred | Optional authoring convenience; not required for V1. |
 
 ## Animation And Navigation
 
@@ -65,8 +66,10 @@ R2 official sample direction is still open. The current package API supports bin
 
 | Area | Case | Status | Notes |
 | --- | --- | --- | --- |
-| Presenter notes | `notes` frontmatter or slide notes block | design | Model exists partially; speaker-view behavior still needs an API and route. |
-| Speaker view | Separate presenter route/window | design | Needs state sync with the main presentation and clear public/private route boundaries. |
+| Presentation route | Audience-facing route without viewer controls | design | V1 should add a dedicated `/:slug/presentation` route instead of relying on `/:slug` viewer chrome. |
+| Speaker notes | MDX comments parsed as slide notes | design | V1 should parse MDX comments into slide notes, remove them from visible slide content, and preserve multiple notes in source order. Existing `notes` frontmatter can remain supported. |
+| Presenter view | Speaker-facing route with current slide, next preview, and speaker notes | design | V1 should add `/:slug/presenter` with a left current-slide area and right next-preview/notes panel. Cross-device sync remains out of scope. |
+| Presenter synchronization | Cross-device or multi-window speaker/projection sync | deferred | Not required for V1. The V1 presenter route should be local and route-owned. |
 | Print view | Browser print stylesheet | done | Package tests assert a dedicated `/:slug/print` page with an A4 portrait handout stylesheet, margins, 3-up slide grouping, and all fragments visible. |
 | PDF export | Print-to-PDF compatible output | smoke | `examples/basic` includes `smoke:pdf`, which starts `wrangler dev`, saves sample/media/motion print pages to PDF, checks A4 handout page counts, and renders first-page PNG previews with Poppler or Quick Look. Final visual approval remains a release checklist item. |
 | Browser Run export | Opt-in Worker PDF/PNG routes | done | `decksRouter({ export })` can expose `/:slug/export.pdf` and `/:slug/export.png` using Cloudflare Browser Run `quickAction()` against the existing `/:slug/print` layout. Package tests cover payloads, download headers, viewer links, and disabled-by-default behavior. |
@@ -77,11 +80,11 @@ R2 official sample direction is still open. The current package API supports bin
 
 | Area | Case | Status | Notes |
 | --- | --- | --- | --- |
-| OGP metadata | Custom details page using `deckContext()` | sample | Verify title/description/image metadata can be rendered by the app. |
+| OGP metadata | Custom details page using `deckContext()` | design | V1 should demonstrate app-owned `<title>`, description, `og:title`, `og:description`, `og:url`, and optional `og:image` tags on a custom details page. |
 | Embed page | Viewer frame embedded in custom layout | done | Basic sample includes an embed route using shared viewer parts. |
-| Share image route | OGP image generation route | design | Out of scope for the current package, but `deckContext()` should provide enough metadata. |
+| Share image route | OGP image generation route | deferred | Out of scope for V1; `deckContext()` should provide enough metadata for app-owned future routes. |
 | Draft deck | Production hides draft deck | done | Router tests cover production vs dev behavior. |
-| Draft slide | Per-slide draft behavior | design | Needs a clear rule: remove from deck, hide in viewer, or show only in dev. |
+| Draft slide | Per-slide draft behavior | deferred | V1 commits only to deck-level draft filtering. |
 | Compile errors | File/slide context in CLI output | done | CLI tests cover MDX compile failures with `MDX compile failed`, deck source path, and slide index in stderr. |
 | Runtime render errors | Clear 500 or slide error UI | done | Router tests cover slide render failures returning a 500 text response with deck source path and slide index. |
 

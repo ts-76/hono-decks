@@ -14,7 +14,7 @@ See also: [Verification Matrix](./verification-matrix.md).
 | P0 | Asset pipeline, code blocks, compile/runtime diagnostics, prop serialization | These define the core authoring and build-time contract. If they move later, examples and APIs built on top will churn. |
 | P1 | Embeds, accessibility, viewport behavior, layout/theme | These make the slide system usable as a public viewer and shape package APIs, but can build on the P0 foundation. |
 | P2 | Animation, transitions, fragments | These add presentation polish but touch navigation and state, so they should wait until viewer basics are stable. |
-| P3 | OGP, speaker view, print/PDF | These are important distribution and presentation workflows, but they depend on stable render/viewer output. |
+| P3 | OGP, projection, presenter view, print/PDF | These complete the V1 publishing and presentation workflow after the render/viewer output is stable. |
 
 ## P0: Core Contracts
 
@@ -147,24 +147,28 @@ Rationale: fragments and transitions touch navigation semantics. They are valuab
 
 ### 9. OGP And Embed Pages
 
-Add examples for:
+Add V1 examples for:
 
-- OGP metadata through `deckContext()`
+- OGP metadata tags through `deckContext()`
 - Custom embed pages
-- Optional share image route shape
 
-Rationale: `deckContext()` already provides a good foundation, so this can wait until content rendering and assets are reliable.
+Keep OGP image generation out of V1. `deckContext()` should provide enough metadata for an app-owned future route, but the basic example only needs ordinary `<title>`, description, and Open Graph tags.
 
-### 10. Presenter Notes And Speaker View
+Rationale: `deckContext()` already provides the right app boundary. OGP metadata is site policy, while OGP image generation would expand the package into share-image rendering.
 
-Design:
+### 10. Projection And Presenter View
 
-- Notes syntax
-- Speaker view route
-- Public/private route boundaries
-- State sync between main presentation and speaker view
+Add V1 behavior for:
 
-Rationale: speaker view is important for real presentations but is a larger workflow than the core viewer. It should not block asset, code, embed, or layout verification.
+- A clean `/:slug/presentation` projection route without viewer controls
+- MDX comments parsed into slide speaker notes
+- A `/:slug/presenter` route with current slide on the left
+- A right-side presenter panel with next-slide preview and speaker notes
+- Clear public/private route boundaries for standard deployments
+
+Defer cross-device synchronization, remote control, and persisted presentation sessions until after the local presenter route is stable.
+
+Rationale: V1 should support actually giving a talk, not only publishing deck pages. The local presenter route is the smallest useful presentation feature set; distributed control can layer on later.
 
 ### 11. Print And PDF Export
 
