@@ -42,6 +42,7 @@ export type {
   DeckBrowserRunPngOptions,
   DeckExportAuthorizeInput,
   DeckExportOptions,
+  DeckViewerExportPaths,
 } from "./browser-export";
 export { createDeckViewerParts } from "./viewer";
 export type {

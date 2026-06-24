@@ -27,6 +27,7 @@ export type {
   DeckViewerControlsContext,
   DeckViewerControlsItemsResolver,
   DeckViewerControlsOptions,
+  DeckViewerExportPaths,
   DeckViewerOptions,
   DeckViewerParts,
   DeckViewerRenderInput,
