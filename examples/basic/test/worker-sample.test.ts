@@ -38,6 +38,8 @@ describe("sample Worker app", () => {
     expect(configSource).toContain('className: "sample-viewer-controls"');
     expect(configSource).toContain('itemClassName: "sample-viewer-control"');
     expect(configSource).toContain('hidden: ["fullscreen"]');
+    expect(configSource).toContain('previous: "Back"');
+    expect(configSource).toContain('next: "Forward"');
     expect(configSource).toContain("before: [");
     expect(configSource).toContain("after: (context)");
   });
@@ -108,7 +110,9 @@ describe("sample Worker app", () => {
     expect(html).toContain('data-sample-control="details"');
     expect(html).toContain(">Details</a>");
     expect(html).toContain('data-action="previous"');
+    expect(html).toContain(">Back</button>");
     expect(html).toContain('data-action="next"');
+    expect(html).toContain(">Forward</button>");
     expect(html).not.toContain('data-action="fullscreen"');
     expect(html.indexOf('data-sample-control="home"')).toBeLessThan(html.indexOf('data-action="previous"'));
     expect(html.indexOf('data-action="next"')).toBeLessThan(html.indexOf('data-sample-control="details"'));

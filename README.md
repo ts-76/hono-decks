@@ -303,6 +303,31 @@ app.route("/decks", createDecksRouter({
 }));
 ```
 
+標準 viewer controls は `viewer.controls` で差分カスタムできます。`before` / `after` は標準項目の前後に link や render item を追加し、`hidden` は標準項目だけを非表示にします。`labels` は標準項目の表示名だけを差し替えます。
+
+```ts
+app.route("/decks", createDecksRouter({
+  viewer: {
+    controls: {
+      className: "app-viewer-controls",
+      itemClassName: "app-viewer-control",
+      hidden: ["fullscreen"],
+      labels: { previous: "Back", next: "Forward" },
+      before: [{ type: "link", href: "/", label: "Home" }],
+      after: (context) => [
+        { type: "link", href: `${context.meta.canonicalPath}/about`, label: "Details" },
+      ],
+    },
+  },
+}));
+```
+
+`items(defaults, context)` は controls の最終形を返す full override です。`items` を指定した場合、`before` / `after` / `hidden` は適用されません。`labels` と `renderItem` は `items` で返した標準項目にも適用されます。
+
+`renderItem` と `{ type: "render" }` は JSX まで差し込むための escape hatch です。標準の `data-action` や export link を維持して見た目だけ変えたい場合は `renderItem`、完全に独自 markup を置きたい場合は `type: "render"` を使います。
+
+`attributes` は app-owned class、analytics 用 `data-*`、`aria-*` など信頼済み設定から渡す用途です。`on*` event 属性は出力されず、link item の `href` は `javascript:` / `data:` / `vbscript:` などの危険な scheme を出力しません。
+
 Cloudflare Browser Run binding がある環境では、`/:slug/print` の handout layout をそのまま PDF/PNG export に使えます。これは opt-in です。`export.browser(c)` が binding を返す場合だけ `/:slug/export.pdf` と `/:slug/export.png` が有効になり、標準 viewer controls に `PDF` / `PNG` link が追加されます。
 
 ```toml

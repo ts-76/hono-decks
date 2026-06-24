@@ -59,6 +59,10 @@ const decksConfig = defineDecksConfig({
         className: "sample-viewer-controls",
         itemClassName: "sample-viewer-control",
         hidden: ["fullscreen"],
+        labels: {
+          previous: "Back",
+          next: "Forward",
+        },
         before: [
           {
             type: "link",

@@ -5,7 +5,7 @@ import type { CompiledDeck } from "../src/deck/model";
 import { defineDecks, defineDecksConfig } from "../src/server/define-decks";
 import { manifestDeckSource } from "../src/source/manifest-source";
 import { withR2Assets } from "../src/source/r2-assets";
-import { deckContext, decksRouter } from "../src/server/router";
+import { createDeckViewerParts, deckContext, decksRouter } from "../src/server/router";
 import type { DeckContextVariables } from "../src/server/router";
 
 const deck = {
@@ -67,6 +67,9 @@ describe("decksRouter", () => {
     expect(html).toContain("pointerdown");
     expect(html).toContain("pointerup");
     expect(html).toContain("touch-action:pan-y");
+    expect(html).toContain('document.querySelectorAll("[data-action=\'previous\']")');
+    expect(html).toContain('document.querySelectorAll("[data-action=\'next\']")');
+    expect(html).toContain('document.querySelectorAll("[data-action=\'fullscreen\']")');
     expect(html).not.toContain("/edit");
     expect(html).not.toContain("/agent/chat");
     expect(html).not.toContain("/apply");
@@ -100,6 +103,17 @@ describe("decksRouter", () => {
     expect(renderHtml).toContain(".slide-only { color: red; }");
     expect(renderHtml).not.toContain("[data-custom-viewer-shell] { color: cyan; }");
     expect(renderHtml).not.toContain("custom-viewer");
+  });
+
+  it("returns null controls parts when viewer controls are disabled", async () => {
+    const parts = await createDeckViewerParts({
+      deck,
+      mountPath: "/slides",
+      controls: false,
+    });
+
+    expect(parts.controls).toBeNull();
+    expect(parts.controlsHtml).toBeNull();
   });
 
   it("lets callers render a custom viewer layout with frame, controls, and toc parts", async () => {
@@ -338,6 +352,50 @@ describe("decksRouter", () => {
     expect(html).not.toContain('data-action="previous"');
     expect(html).not.toContain('data-action="next"');
     expect(html).not.toContain('data-action="fullscreen"');
+  });
+
+  it("drops unsafe control attributes and link href schemes", async () => {
+    const app = new Hono();
+    app.route(
+      "/slides",
+      decksRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        viewer: {
+          controls: {
+            attributes: {
+              onclick: "alert(1)",
+              "data-safe-controls": "yes",
+            },
+            items: [
+              {
+                type: "link",
+                href: "javascript:alert(1)",
+                label: "Unsafe",
+                attributes: {
+                  onmouseover: "alert(2)",
+                  "data-safe-link": "yes",
+                },
+              },
+              {
+                type: "link",
+                href: "https://example.com/deck",
+                label: "Safe",
+              },
+            ],
+          },
+        },
+      }),
+    );
+
+    const html = await (await app.request("/slides/deck1")).text();
+
+    expect(html).toContain('data-safe-controls="yes"');
+    expect(html).toContain('data-safe-link="yes"');
+    expect(html).toContain(">Unsafe</a>");
+    expect(html).toContain('href="https://example.com/deck"');
+    expect(html).not.toContain("onclick");
+    expect(html).not.toContain("onmouseover");
+    expect(html).not.toContain("javascript:alert");
   });
 
   it("creates a router from a generated manifest with defineDecks", async () => {

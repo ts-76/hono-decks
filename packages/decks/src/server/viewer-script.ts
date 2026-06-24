@@ -47,9 +47,15 @@ export function renderViewerScript(): string {
     await root?.requestFullscreen?.();
   }
 
-  document.querySelector("[data-action='previous']")?.addEventListener("click", () => sendCommand("previous"));
-  document.querySelector("[data-action='next']")?.addEventListener("click", () => sendCommand("next"));
-  document.querySelector("[data-action='fullscreen']")?.addEventListener("click", () => { void toggleViewerFullscreen(); });
+  document.querySelectorAll("[data-action='previous']").forEach((control) => {
+    control.addEventListener("click", () => sendCommand("previous"));
+  });
+  document.querySelectorAll("[data-action='next']").forEach((control) => {
+    control.addEventListener("click", () => sendCommand("next"));
+  });
+  document.querySelectorAll("[data-action='fullscreen']").forEach((control) => {
+    control.addEventListener("click", () => { void toggleViewerFullscreen(); });
+  });
   document.querySelectorAll("[data-action='goTo']").forEach((control) => {
     control.addEventListener("click", () => {
       const index = Number(control.getAttribute("data-slide-index"));

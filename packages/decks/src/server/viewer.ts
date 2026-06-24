@@ -384,7 +384,7 @@ function renderBaseViewerControlItem(
   if (item.type === "link") {
     return jsx("a", {
       ...linkAttributes(item.attributes),
-      href: item.href,
+      ...(safeHref(item.href) ? { href: safeHref(item.href) } : {}),
       ...(item.download ? { download: item.download } : {}),
       ...classAttribute(options.itemClassName, item.className),
       children: item.label,
@@ -496,5 +496,14 @@ function classAttribute(...classNames: Array<string | undefined>): { class?: str
 }
 
 function isSafeAttributeName(value: string): boolean {
-  return /^[A-Za-z_:][A-Za-z0-9:_.-]*$/.test(value);
+  return /^[A-Za-z_:][A-Za-z0-9:_.-]*$/.test(value) && !/^on/i.test(value);
+}
+
+function safeHref(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return undefined;
+  if (/^(https?:|mailto:|tel:)/i.test(trimmed)) return value;
+  if (/^(javascript:|data:|vbscript:)/i.test(trimmed)) return undefined;
+  if (/^[^/?#.]+:/i.test(trimmed)) return undefined;
+  return value;
 }
