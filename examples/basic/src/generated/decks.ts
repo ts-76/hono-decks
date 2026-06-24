@@ -288,7 +288,7 @@ export const decks = defineDecks({
           },
           html: "",
           components: [],
-          notes: undefined,
+          notes: "Introduce the clean projection route for talks.",
           render: Slide_sample_0
         },
         {
@@ -300,7 +300,7 @@ export const decks = defineDecks({
           },
           html: "",
           components: [],
-          notes: undefined,
+          notes: "Use the presenter route for notes and next-slide preview.",
           render: Slide_sample_1
         },
         {
@@ -312,7 +312,7 @@ export const decks = defineDecks({
           },
           html: "",
           components: [],
-          notes: undefined,
+          notes: "Close with the V1 extension points: viewer, projection, presenter, and assets.",
           render: Slide_sample_2
         }
       ]

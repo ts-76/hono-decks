@@ -13,6 +13,7 @@ import {
   collectMarkdownAssetCandidates,
   isLocalRelativeAssetCandidate,
 } from "../deck/assets";
+import { combineSpeakerNotes, extractMdxCommentSpeakerNotes } from "../deck/speaker-notes";
 import { parseDeck } from "../parser/parser";
 import { renderBlock } from "../renderer/render-block";
 import type {
@@ -61,7 +62,8 @@ function compileSlide(
   fallbackTransitionEasing: string | undefined,
 ): CompiledSlide {
   const { attrs, body } = readFrontmatter(source);
-  const parsed = parseDeck(body);
+  const speakerNotes = extractMdxCommentSpeakerNotes(body);
+  const parsed = parseDeck(speakerNotes.body);
   for (const warning of parsed.warnings) {
     warnings.push({ code: "parse-warning", message: warning, slideIndex: index });
   }
@@ -86,7 +88,7 @@ function compileSlide(
     html: blocks.map(renderBlock).join("\n"),
     nodes,
     components,
-    notes: meta.notes,
+    notes: combineSpeakerNotes(meta.notes, speakerNotes.notes),
   };
 }
 

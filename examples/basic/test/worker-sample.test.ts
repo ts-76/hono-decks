@@ -46,6 +46,7 @@ describe("sample Worker app", () => {
 
   it("uses a generated module-backed deck source", async () => {
     const entries = await deckSource.listDecks({} as never);
+    const sampleDeck = await deckSource.getCompiledDeck({} as never, "sample");
 
     expect(entries).toHaveLength(4);
     expect(entries[0]).toMatchObject({
@@ -64,6 +65,8 @@ describe("sample Worker app", () => {
       slug: "sample",
       sourcePath: "decks/sample/deck.mdx",
     });
+    expect(sampleDeck?.slides[0]?.notes).toContain("Introduce the clean projection route for talks.");
+    expect(sampleDeck?.slides[1]?.notes).toContain("Use the presenter route for notes and next-slide preview.");
     expect(typeof createDecksRouter).toBe("function");
   });
 
@@ -123,6 +126,30 @@ describe("sample Worker app", () => {
     expect(html).not.toContain("/decks/sample/edit");
     expect(html).not.toContain("/agent/chat");
     expect(html).not.toContain("/apply");
+  });
+
+  it("serves presentation and presenter routes for the sample deck", async () => {
+    const app = await sampleApp();
+    const projection = await app.request("/decks/sample/presentation");
+    const presenter = await app.request("/decks/sample/presenter");
+
+    expect(projection.status).toBe(200);
+    const projectionHtml = await projection.text();
+    expect(projectionHtml).toContain('data-hono-decks-projection="true"');
+    expect(projectionHtml).toContain('data-hono-decks-stage');
+    expect(projectionHtml).not.toContain('data-hono-decks-viewer-controls');
+    expect(projectionHtml).not.toContain("Introduce the clean projection route for talks.");
+    expect(projectionHtml).not.toContain("Use the presenter route for notes and next-slide preview.");
+
+    expect(presenter.status).toBe(200);
+    const presenterHtml = await presenter.text();
+    expect(presenterHtml).toContain('data-hono-decks-presenter');
+    expect(presenterHtml).toContain('data-hono-decks-presenter-current');
+    expect(presenterHtml).toContain('src="/decks/sample/presentation"');
+    expect(presenterHtml).toContain('data-hono-decks-presenter-next');
+    expect(presenterHtml).toContain('data-hono-decks-presenter-notes');
+    expect(presenterHtml).toContain("Introduce the clean projection route for talks.");
+    expect(presenterHtml).toContain("Use the presenter route for notes and next-slide preview.");
   });
 
   it("rejects Browser Run export routes without the sample export token", async () => {
@@ -199,6 +226,12 @@ describe("sample Worker app", () => {
     expect(response.status).toBe(200);
     const html = await response.text();
     expect(html).toContain("<title>Hono Slides - Details</title>");
+    expect(html).toContain('<meta name="description" content="Hono + Cloudflare Workers で動く MDX-like slide runtime"/>');
+    expect(html).toContain('<meta property="og:title" content="Hono Slides"/>');
+    expect(html).toContain(
+      '<meta property="og:description" content="Hono + Cloudflare Workers で動く MDX-like slide runtime"/>',
+    );
+    expect(html).toContain('<meta property="og:url" content="/decks/sample"/>');
     expect(html).toContain('data-sample-layout="deck-details"');
     expect(html).toContain("decks/sample/deck.mdx");
     expect(html).toContain('href="/decks/sample/render"');

@@ -335,6 +335,50 @@ const generatedWarning = true;
     }
   });
 
+  it("emits MDX comment speaker notes in generated deck metadata without rendering them into slide modules", async () => {
+    const cwd = await createFixture();
+
+    try {
+      await writeFile(
+        join(cwd, "decks", "deck1", "deck.mdx"),
+        `---
+title: Deck One
+---
+
+# Intro
+
+{/* Mention the projection route. */}
+
+Visible generated content.
+
+{/* Remind yourself to open presenter view. */}
+`,
+        "utf8",
+      );
+
+      const manifest = await compileDecks({
+        cwd,
+        root: "decks",
+        out: "src/generated",
+        mountPath: "/slides",
+      });
+
+      expect(manifest.decks[0].slides[0].notes).toBe(
+        "Mention the projection route.\n\nRemind yourself to open presenter view.",
+      );
+
+      const output = await readFile(join(cwd, "src", "generated", "decks.ts"), "utf8");
+      expect(output).toContain('notes: "Mention the projection route.\\n\\nRemind yourself to open presenter view."');
+
+      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.ts"), "utf8");
+      expect(slideOutput).toContain("Visible generated content.");
+      expect(slideOutput).not.toContain("Mention the projection route.");
+      expect(slideOutput).not.toContain("Remind yourself to open presenter view.");
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("embeds deck-local theme.css into generated directory decks", async () => {
     const cwd = await createFixture();
 

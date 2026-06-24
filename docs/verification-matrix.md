@@ -66,9 +66,9 @@ R2 official sample direction is binding-backed delivery. The package should supp
 
 | Area | Case | Status | Notes |
 | --- | --- | --- | --- |
-| Presentation route | Audience-facing route without viewer controls | design | V1 should add a dedicated `/:slug/presentation` route instead of relying on `/:slug` viewer chrome. |
-| Speaker notes | MDX comments parsed as slide notes | design | V1 should parse MDX comments into slide notes, remove them from visible slide content, and preserve multiple notes in source order. Existing `notes` frontmatter can remain supported. |
-| Presenter view | Speaker-facing route with current slide, next preview, and speaker notes | design | V1 should add `/:slug/presenter` with a left current-slide area and right next-preview/notes panel. Cross-device sync remains out of scope. |
+| Presentation route | Audience-facing route without viewer controls | done | `/:slug/presentation` renders the compiled deck without standard viewer controls or speaker notes. Package and sample route tests cover the route. |
+| Speaker notes | MDX comments parsed as slide notes | done | MDX comments are extracted into slide notes during compile/module generation, removed from visible slide content, and preserved in source order. Existing `notes` frontmatter remains supported. |
+| Presenter view | Speaker-facing route with current slide, next preview, and speaker notes | done | `/:slug/presenter` renders a local presenter surface with current projection iframe, next-slide preview, and speaker notes. Cross-device sync remains out of scope. |
 | Presenter synchronization | Cross-device or multi-window speaker/projection sync | deferred | Not required for V1. The V1 presenter route should be local and route-owned. |
 | Print view | Browser print stylesheet | done | Package tests assert a dedicated `/:slug/print` page with an A4 portrait handout stylesheet, margins, 3-up slide grouping, and all fragments visible. |
 | PDF export | Print-to-PDF compatible output | smoke | `examples/basic` includes `smoke:pdf`, which starts `wrangler dev`, saves sample/media/motion print pages to PDF, checks A4 handout page counts, and renders first-page PNG previews with Poppler or Quick Look. Final visual approval remains a release checklist item. |
@@ -80,7 +80,7 @@ R2 official sample direction is binding-backed delivery. The package should supp
 
 | Area | Case | Status | Notes |
 | --- | --- | --- | --- |
-| OGP metadata | Custom details page using `deckContext()` | design | V1 should demonstrate app-owned `<title>`, description, `og:title`, `og:description`, `og:url`, and optional `og:image` tags on a custom details page. |
+| OGP metadata | Custom details page using `deckContext()` | done | `examples/basic` demonstrates app-owned `<title>`, description, `og:title`, `og:description`, `og:url`, and optional `og:image` tags on a custom details page. |
 | Embed page | Viewer frame embedded in custom layout | done | Basic sample includes an embed route using shared viewer parts. |
 | Share image route | OGP image generation route | deferred | Out of scope for V1; `deckContext()` should provide enough metadata for app-owned future routes. |
 | Draft deck | Production hides draft deck | done | Router tests cover production vs dev behavior. |

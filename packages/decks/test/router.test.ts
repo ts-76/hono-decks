@@ -75,6 +75,53 @@ describe("decksRouter", () => {
     expect(html).not.toContain("/apply");
   });
 
+  it("serves a clean projection route and a presenter route with next preview and speaker notes", async () => {
+    const presentationDeck = {
+      ...deck,
+      slides: [
+        {
+          index: 0,
+          meta: { title: "Intro", layout: "cover", meta: {} },
+          html: "<h1>Intro</h1>",
+          notes: "Open with the Worker runtime boundary.",
+          components: [],
+        },
+        {
+          index: 1,
+          meta: { title: "Next Steps", layout: "default", meta: {} },
+          html: "<h2>Next Steps</h2>",
+          notes: "Point people to the presenter route.",
+          components: [],
+        },
+      ],
+    } satisfies CompiledDeck;
+    const app = new Hono();
+    app.route("/slides", decksRouter({ source: manifestDeckSource({ decks: [presentationDeck] }) }));
+
+    const projection = await app.request("/slides/deck1/presentation");
+    expect(projection.status).toBe(200);
+    const projectionHtml = await projection.text();
+    expect(projectionHtml).toContain("data-hono-decks-projection");
+    expect(projectionHtml).toContain("<h1>Intro</h1>");
+    expect(projectionHtml).toContain("hono-decks:state");
+    expect(projectionHtml).not.toContain("data-hono-decks-viewer-controls");
+    expect(projectionHtml).not.toContain("data-hono-decks-back-link");
+    expect(projectionHtml).not.toContain("Open with the Worker runtime boundary.");
+
+    const presenter = await app.request("/slides/deck1/presenter");
+    expect(presenter.status).toBe(200);
+    const presenterHtml = await presenter.text();
+    expect(presenterHtml).toContain("data-hono-decks-presenter");
+    expect(presenterHtml).toContain("data-hono-decks-presenter-current");
+    expect(presenterHtml).toContain('src="/slides/deck1/presentation"');
+    expect(presenterHtml).toContain("data-hono-decks-presenter-next");
+    expect(presenterHtml).toContain("<h2>Next Steps</h2>");
+    expect(presenterHtml).toContain("data-hono-decks-presenter-notes");
+    expect(presenterHtml).toContain("Open with the Worker runtime boundary.");
+    expect(presenterHtml).toContain("Point people to the presenter route.");
+    expect(presenterHtml).not.toContain("data-hono-decks-viewer-controls");
+  });
+
   it("lets callers hide default viewer controls and add viewer-only styles", async () => {
     const app = new Hono();
     app.route(

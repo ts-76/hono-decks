@@ -8,6 +8,7 @@ import {
   toDeckFrontmatter,
   toSlideFrontmatter,
 } from "../deck/frontmatter";
+import { combineSpeakerNotes, extractMdxCommentSpeakerNotes } from "../deck/speaker-notes";
 import type { AssetRef, CompiledDeck, DeckKind, SlideFrontmatter } from "../deck/model";
 import { parseDeckWithWarnings, type ParserWarning } from "../parser/parser";
 import type { ResolvedDeckFile } from "../routing/file-routing";
@@ -95,7 +96,8 @@ async function compileMdxModuleDeck(
 
   for (let index = 0; index < slideSources.length; index += 1) {
     const { attrs: slideAttrs, body: slideBody } = readFrontmatter(slideSources[index]);
-    const parsed = parseDeckWithWarnings(slideBody);
+    const speakerNotes = extractMdxCommentSpeakerNotes(slideBody);
+    const parsed = parseDeckWithWarnings(speakerNotes.body);
     warnings = warnings.concat(toGeneratedParserCompileWarnings(parsed.warnings, index));
     const firstParsedSlide = parsed.slides[0];
     const slideModulePath = `${input.outDir}/decks/${entry.slug}/slide-${index}.ts`;
@@ -109,7 +111,7 @@ async function compileMdxModuleDeck(
       fallbackClassName: firstParsedSlide?.className,
     });
     addUnknownFrontmatterWarnings(warnings, slideMeta.meta, "slide", index);
-    const moduleSource = [prelude, rewriteAssetUrls(slideBody, assets)].filter(Boolean).join("\n\n");
+    const moduleSource = [prelude, rewriteAssetUrls(speakerNotes.body, assets)].filter(Boolean).join("\n\n");
     const rewrittenSource = rewriteRelativeMdxImports(moduleSource, dirname(entry.sourcePath), dirname(slideModulePath));
     const code = await compileMdxModule(rewrittenSource, entry.sourcePath, index, slideMeta.fragments, input.resolveOgp);
 
@@ -123,7 +125,7 @@ async function compileMdxModuleDeck(
       meta: slideMeta,
       html: "",
       components: [],
-      notes: slideMeta.notes,
+      notes: combineSpeakerNotes(slideMeta.notes, speakerNotes.notes),
     });
   }
   addExternalAssetWarnings(warnings, assets);

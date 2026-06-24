@@ -44,8 +44,22 @@ export function renderDeckDetailsPage(input: {
   meta: DeckPageMeta;
   toc: DeckTocItem[];
 }) {
+  const description = input.meta.description;
+
   return (
-    <SampleLayout title={`${input.meta.title} - Details`} layout="deck-details">
+    <SampleLayout
+      title={`${input.meta.title} - Details`}
+      layout="deck-details"
+      head={
+        <>
+          {description ? <meta name="description" content={description} /> : null}
+          <meta property="og:title" content={input.meta.title} />
+          {description ? <meta property="og:description" content={description} /> : null}
+          <meta property="og:url" content={input.meta.canonicalPath} />
+          {input.meta.imagePath ? <meta property="og:image" content={input.meta.imagePath} /> : null}
+        </>
+      }
+    >
       <section class="sample-page-section">
         <p class="sample-kicker">Deck details</p>
         <h1>{input.meta.title}</h1>
@@ -102,6 +116,7 @@ export function renderDeckEmbedPage(input: {
 function SampleLayout(props: {
   title: string;
   layout: string;
+  head?: DeckRenderable;
   children?: DeckRenderable;
 }) {
   return (
@@ -110,6 +125,7 @@ function SampleLayout(props: {
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>{props.title}</title>
+        {props.head}
         <style id="hono-css">{samplePageStyle}</style>
       </head>
       <body>

@@ -104,6 +104,29 @@ customSlideKey: kept
     );
   });
 
+  it("parses MDX comments as speaker notes and removes them from visible slide content", async () => {
+    const deck = await compileMarkdown({
+      slug: "deck1",
+      sourcePath: "decks/deck1/deck.mdx",
+      kind: "directory",
+      markdown: `# Intro
+
+{/* Remind the audience this runs on Workers. */}
+
+Visible slide content.
+
+{/* Mention that speaker notes stay out of the projection. */}
+`,
+    });
+
+    expect(deck.slides[0].notes).toBe(
+      "Remind the audience this runs on Workers.\n\nMention that speaker notes stay out of the projection.",
+    );
+    expect(deck.slides[0].html).toContain("Visible slide content.");
+    expect(deck.slides[0].html).not.toContain("Remind the audience");
+    expect(deck.slides[0].html).not.toContain("speaker notes stay out");
+  });
+
   it("assigns content types to query and hash frontmatter asset refs", async () => {
     const deck = await compileMarkdown({
       slug: "deck1",

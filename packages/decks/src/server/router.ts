@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { MiddlewareHandler } from "hono";
 import { renderCompiledDeckPageAsync } from "../renderer/compiled-render";
+import { renderPresenterPageAsync } from "../renderer/presentation-page";
 import { RenderError } from "../deck/model";
 import type { CompiledDeck, DeckSource } from "../deck/model";
 import type { SlideComponentInput, SlideComponentRegistry } from "../renderer/compiled-render";
@@ -179,7 +180,48 @@ export function decksRouter(options: DecksRouterOptions): Hono {
 
   router.get("/:slug/presentation", async (c) => {
     const slug = c.req.param("slug");
-    return c.redirect(`${stripPathSuffix(c.req.path, `/${slug}/presentation`)}/${encodeURIComponent(slug)}/render`, 302);
+    const deck = await options.source.getCompiledDeck(c, slug);
+    if (!deck || (!isDevEnabled(options) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
+    const mountPath = stripPathSuffix(c.req.path, `/${slug}/presentation`);
+    const clientEntry = options.clientEntry ?? resolveGeneratedClientEntryUrl(options, mountPath);
+    try {
+      return c.html(
+        await renderCompiledDeckPageAsync({
+          deck,
+          mountPath,
+          style: options.style,
+          components: options.components,
+          clientEntry,
+          speakerNotes: false,
+          liveReloadPath: isDevEnabled(options) ? options.liveReloadPath?.(slug, mountPath) : undefined,
+        }),
+      );
+    } catch (error) {
+      const message =
+        error instanceof RenderError ? error.message : `Render failed in ${deck.sourcePath}: ${formatErrorMessage(error)}`;
+      return c.text(message, 500);
+    }
+  });
+
+  router.get("/:slug/presenter", async (c) => {
+    const slug = c.req.param("slug");
+    const deck = await options.source.getCompiledDeck(c, slug);
+    if (!deck || (!isDevEnabled(options) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
+    const mountPath = stripPathSuffix(c.req.path, `/${slug}/presenter`);
+    try {
+      return c.html(
+        await renderPresenterPageAsync({
+          deck,
+          mountPath,
+          style: options.style,
+          components: options.components,
+        }),
+      );
+    } catch (error) {
+      const message =
+        error instanceof RenderError ? error.message : `Render failed in ${deck.sourcePath}: ${formatErrorMessage(error)}`;
+      return c.text(message, 500);
+    }
   });
 
   router.get("/:slug", async (c) => {

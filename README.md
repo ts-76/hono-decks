@@ -330,6 +330,16 @@ app.route("/decks", createDecksRouter({
 
 `createDeckViewerParts()` は `Promise<DeckViewerParts>` を返すため、独自 route から直接使う場合は `await createDeckViewerParts(...)` してください。`deckContext()` はこの処理を middleware 内で済ませ、`c.var.deckViewer` に `frame` / `controls` / `controlsHtml` / `toc` を入れます。
 
+`/:slug/presentation` は発表用の投影 route です。標準 viewer の controls や deck index への戻るリンクを出さず、slide runtime だけを表示します。`/:slug/presenter` は発表者向け route で、左に投影用 iframe、右に次スライド preview と speaker notes を表示します。speaker notes は MDX コメントから compile 時に抽出され、通常の slide content と audience-facing projection には出ません。
+
+```mdx
+# Hono Slides
+
+Cloudflare Workers で動く slide runtime
+
+{/* Talk about the Worker-safe generated module boundary. */}
+```
+
 標準 router の `/:slug` viewer では export 認可後の `PDF` / `PNG` controls が自動で反映されます。`deckContext()` を使う独自 page は export 認可を自動実行しないため、独自 page 上で export controls を出したい場合は `createDeckViewerParts({ exportPaths })` を直接使うか、app 側で許可済み link を組み立てます。
 
 Cloudflare Browser Run binding がある環境では、`/:slug/print` の handout layout をそのまま PDF/PNG export に使えます。これは opt-in です。`export.browser(c)` が binding を返す場合だけ `/:slug/export.pdf` と `/:slug/export.png` が有効になり、標準 viewer controls に `PDF` / `PNG` link が追加されます。
@@ -400,6 +410,8 @@ app.get("/decks/:slug/embed", deckContext({ source: deckSource, mountPath: "/dec
 });
 ```
 
+OGP metadata は package が自動生成するのではなく app-owned page で出す想定です。`examples/basic/src/pages.tsx` の details page は `deckContext()` 由来の `DeckPageMeta` を使い、`description`、`og:title`、`og:description`、`og:url`、任意の `og:image` を head に出す実装例になっています。
+
 ## Basic Example
 
 `examples/basic` は directory deck を package CLI で manifest 化し、Cloudflare Workers 上で表示する最小サンプルです。
@@ -465,6 +477,8 @@ bun run smoke:pdf
 - `GET /` は `/decks` に redirect
 - `GET /decks` は deck index
 - `GET /decks/sample` は viewer
+- `GET /decks/sample/presentation` は controls なしの発表用 projection
+- `GET /decks/sample/presenter` は次スライド preview と speaker notes 付きの presenter view
 - `GET /decks/sample/render` は固定キャンバスの render page
 - `GET /decks/sample/print` は A4 handout の print/PDF 用 render page
 - `GET /decks/sample/export.pdf` は Browser Run binding 経由の PDF download
