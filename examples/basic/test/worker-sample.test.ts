@@ -16,10 +16,14 @@ describe("sample Worker app", () => {
     expect(entrySource).not.toContain("./generated/decks");
     expect(entrySource).not.toContain("DeckBrowserRunBinding");
     expect(entrySource).not.toContain("pdf: true");
+    expect(entrySource).not.toContain("data-sample-control");
     expect(entrySource).toContain("deckMountPath");
     expect(facadeSource).toContain("This file is safe to edit.");
     expect(facadeSource).toContain("./generated/decks");
     expect(facadeSource).toContain("decksConfig.router");
+    expect(facadeSource).toContain("viewer: {");
+    expect(facadeSource).toContain("...decksConfig.router?.viewer");
+    expect(facadeSource).toContain("...options.viewer");
     expect(facadeSource).toContain("source: options.source ?? deckSource");
     expect(facadeSource).toContain("export const deckSource");
     expect(facadeSource).toContain("export const deckMountPath");
@@ -28,6 +32,8 @@ describe("sample Worker app", () => {
     expect(configSource).toContain('mountPath: "/decks"');
     expect(configSource).toContain("DeckBrowserRunBinding");
     expect(configSource).toContain("pdf: true");
+    expect(configSource).toContain("data-sample-control");
+    expect(configSource).toContain("items: (defaults, context)");
   });
 
   it("uses a generated module-backed deck source", async () => {

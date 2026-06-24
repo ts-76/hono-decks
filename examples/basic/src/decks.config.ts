@@ -52,6 +52,29 @@ const decksConfig = defineDecksConfig({
   },
 
   router: {
+    viewer: {
+      controls: {
+        items: (defaults, context) => [
+          {
+            type: "link",
+            href: "/",
+            label: "Home",
+            attributes: { "data-sample-control": "home" },
+          },
+          defaults.previous,
+          defaults.position,
+          defaults.next,
+          {
+            type: "link",
+            href: `${context.meta.canonicalPath}/about`,
+            label: "Details",
+            attributes: { "data-sample-control": "details" },
+          },
+          defaults.exportPdf,
+          defaults.exportPng,
+        ],
+      },
+    },
     export: {
       authorize: (c) => {
         const token = (c.env as DecksConfigBindings | undefined)?.DECK_EXPORT_TOKEN;

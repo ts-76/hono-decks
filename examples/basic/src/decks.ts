@@ -11,6 +11,10 @@ export function createDecksRouter(options: DecksRouterOverrides = {}) {
   return decks.router({
     ...decksConfig.router,
     ...options,
+    viewer: {
+      ...decksConfig.router?.viewer,
+      ...options.viewer,
+    },
     source: options.source ?? deckSource,
   });
 }
