@@ -169,8 +169,8 @@ body{margin:0;min-height:100vh;background:#050816;color:#eef2ff;font-family:Inte
 .hono-decks-presenter-panel{display:grid;grid-template-rows:auto 1fr;gap:16px}
 .hono-decks-presenter-next,.hono-decks-presenter-notes{min-width:0;border:1px solid rgba(148,163,184,.28);border-radius:8px;background:rgba(15,23,42,.78);padding:12px}
 .hono-decks-presenter-next h2,.hono-decks-presenter-notes h2{margin:0 0 8px;font-size:16px;color:#93c5fd}
-.hono-decks-presenter-preview{overflow:hidden;border-radius:6px;background:#020617}
-.hono-decks-presenter-preview .slide{position:relative;display:block;aspect-ratio:16/9;min-height:0;padding:24px;font-size:10px}
+.hono-decks-presenter-preview{position:relative;aspect-ratio:16/9;overflow:hidden;border-radius:6px;background:#020617}
+body:not([data-overview-mode]) .hono-decks-presenter-preview .slide{position:absolute;inset:0 auto auto 0;width:var(--hono-decks-width);height:var(--hono-decks-height);aspect-ratio:16/9;max-width:none;transform-origin:left top;transition:none!important}
 .hono-decks-presenter-preview .hono-decks-slide-content{transform-origin:top left}
 .hono-decks-presenter-notes article{white-space:pre-wrap;font-size:18px;line-height:1.6}
 @media (max-width:900px){.hono-decks-presenter{grid-template-columns:1fr}.hono-decks-presenter-panel{grid-template-rows:auto auto}}`;
@@ -183,6 +183,23 @@ function renderPresenterScript(): string {
   const previews = Array.from(document.querySelectorAll("[data-hono-decks-presenter-preview]"));
   const notes = Array.from(document.querySelectorAll("[data-hono-decks-presenter-note]"));
   const noNext = document.querySelector("[data-hono-decks-presenter-no-next]");
+  const DESIGN_WIDTH = 1920;
+  const DESIGN_HEIGHT = 1080;
+
+  function fitPresenterPreview(preview) {
+    const slide = preview?.querySelector(".slide");
+    if (!(preview instanceof HTMLElement) || !(slide instanceof HTMLElement)) return;
+    const bounds = preview.getBoundingClientRect();
+    if (bounds.width <= 0 || bounds.height <= 0) return;
+    const scale = Math.min(bounds.width / DESIGN_WIDTH, bounds.height / DESIGN_HEIGHT);
+    slide.style.transform = "scale(" + scale + ")";
+  }
+
+  function fitVisiblePresenterPreviews() {
+    previews.forEach((preview) => {
+      if (!preview.hidden) fitPresenterPreview(preview);
+    });
+  }
 
   function show(index) {
     const nextIndex = index + 1;
@@ -194,7 +211,11 @@ function renderPresenterScript(): string {
     notes.forEach((note) => {
       note.hidden = Number(note.getAttribute("data-slide-index")) !== index;
     });
+    fitVisiblePresenterPreviews();
   }
+
+  fitVisiblePresenterPreviews();
+  window.addEventListener("resize", fitVisiblePresenterPreviews);
 
   window.addEventListener("message", (event) => {
     const message = event.data;

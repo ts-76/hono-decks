@@ -116,6 +116,13 @@ describe("decksRouter", () => {
     expect(presenterHtml).toContain('src="/slides/deck1/presentation"');
     expect(presenterHtml).toContain("data-hono-decks-presenter-next");
     expect(presenterHtml).toContain("<h2>Next Steps</h2>");
+    expect(presenterHtml).toContain(
+      ".hono-decks-presenter-preview{position:relative;aspect-ratio:16/9;overflow:hidden;",
+    );
+    expect(presenterHtml).toContain(
+      "body:not([data-overview-mode]) .hono-decks-presenter-preview .slide{position:absolute;inset:0 auto auto 0;width:var(--hono-decks-width);height:var(--hono-decks-height);",
+    );
+    expect(presenterHtml).toContain("function fitPresenterPreview(preview)");
     expect(presenterHtml).toMatch(
       /data-hono-decks-presenter-preview data-slide-index="1"[^>]*><section[^>]*data-slide-state="active"/,
     );
