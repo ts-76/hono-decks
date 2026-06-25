@@ -132,6 +132,21 @@ describe("decksRouter", () => {
     expect(presenterHtml).not.toContain("data-hono-decks-viewer-controls");
   });
 
+  it("keeps the presenter next preview height when there is no next slide", async () => {
+    const app = new Hono();
+    app.route("/slides", decksRouter({ source: manifestDeckSource({ decks: [deck] }) }));
+
+    const presenter = await app.request("/slides/deck1/presenter");
+    expect(presenter.status).toBe(200);
+    const presenterHtml = await presenter.text();
+    expect(presenterHtml).toContain(
+      ".hono-decks-presenter-no-next:not([hidden]){display:grid;place-items:center;aspect-ratio:16/9;",
+    );
+    expect(presenterHtml).toContain(
+      '<p class="hono-decks-presenter-no-next" data-hono-decks-presenter-no-next>No next slide</p>',
+    );
+  });
+
   it("lets callers hide default viewer controls and add viewer-only styles", async () => {
     const app = new Hono();
     app.route(
