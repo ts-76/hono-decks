@@ -12,6 +12,7 @@ export interface DecksConfigBindings {
   BROWSER?: DeckBrowserRunBinding;
   DECK_EXPORT_TOKEN?: string;
   DECK_PRESENTER_ENABLED?: boolean;
+  DECK_RUNTIME_DEV?: boolean | string;
 }
 
 const R2_CACHE_CONTROL = "public, max-age=31536000, immutable";
@@ -54,6 +55,10 @@ const decksConfig = defineDecksConfig({
   },
 
   router: {
+    dev: (c) => {
+      const value = (c.env as DecksConfigBindings | undefined)?.DECK_RUNTIME_DEV;
+      return value === true || value === "true";
+    },
     presenter: {
       enabled: ({ c, dev }) => dev || (c.env as DecksConfigBindings | undefined)?.DECK_PRESENTER_ENABLED === true,
       viewerControl: {

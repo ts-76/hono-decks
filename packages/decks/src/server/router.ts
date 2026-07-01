@@ -71,7 +71,7 @@ export interface DecksRouterExtension {
 
 export interface DecksRouterOptions {
   source: DeckSource;
-  dev?: boolean;
+  dev?: boolean | DeckDevResolver;
   extensions?: DecksRouterExtension[];
   liveReloadPath?(slug: string, mountPath: string): string | undefined;
   style?: string;
@@ -83,6 +83,8 @@ export interface DecksRouterOptions {
   presenter?: false | DecksRouterPresenterOptions;
   export?: DeckExportOptions;
 }
+
+export type DeckDevResolver = (c: Context) => MaybePromise<boolean>;
 
 export interface DecksRouterPresenterOptions {
   enabled?: boolean | DeckPresenterEnabledResolver;
@@ -118,7 +120,7 @@ export interface DeckContextVariables {
 
 export interface DeckContextOptions {
   source: DeckSource;
-  dev?: boolean;
+  dev?: boolean | DeckDevResolver;
   mountPath?: string;
   viewer?: Pick<DeckViewerOptions, "controls">;
 }
@@ -135,7 +137,8 @@ export function decksRouter(options: DecksRouterOptions): Hono {
   }
 
   router.get("/", async (c) => {
-    const decks = (await options.source.listDecks(c)).filter((deck) => isDevEnabled(options) || !deck.draft);
+    const dev = await isDevEnabled(c, options);
+    const decks = (await options.source.listDecks(c)).filter((deck) => dev || !deck.draft);
     return c.html(renderDeckIndex(decks, c.req.path));
   });
 
@@ -143,7 +146,7 @@ export function decksRouter(options: DecksRouterOptions): Hono {
     const slug = c.req.param("slug");
     const assetPath = extractAssetPath(c.req.path, slug);
     const deck = await options.source.getCompiledDeck(c, slug);
-    if (!deck || (!isDevEnabled(options) && deck.meta.draft)) {
+    if (!deck || (!(await isDevEnabled(c, options)) && deck.meta.draft)) {
       return c.json({ error: "Asset not found", slug, assetPath }, 404);
     }
     const response = await options.source.getAsset?.(c, slug, assetPath);
@@ -154,7 +157,8 @@ export function decksRouter(options: DecksRouterOptions): Hono {
   router.get("/:slug/render", async (c) => {
     const slug = c.req.param("slug");
     const deck = await options.source.getCompiledDeck(c, slug);
-    if (!deck || (!isDevEnabled(options) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
+    const dev = await isDevEnabled(c, options);
+    if (!deck || (!dev && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
     const mountPath = stripPathSuffix(c.req.path, `/${slug}/render`);
     const clientEntry = options.clientEntry ?? resolveGeneratedClientEntryUrl(options, mountPath);
     try {
@@ -165,7 +169,7 @@ export function decksRouter(options: DecksRouterOptions): Hono {
           style: options.style,
           components: options.components,
           clientEntry,
-          liveReloadPath: isDevEnabled(options) ? options.liveReloadPath?.(slug, mountPath) : undefined,
+          liveReloadPath: dev ? options.liveReloadPath?.(slug, mountPath) : undefined,
         }),
       );
     } catch (error) {
@@ -178,7 +182,7 @@ export function decksRouter(options: DecksRouterOptions): Hono {
   router.get("/:slug/print", async (c) => {
     const slug = c.req.param("slug");
     const deck = await options.source.getCompiledDeck(c, slug);
-    if (!deck || (!isDevEnabled(options) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
+    if (!deck || (!(await isDevEnabled(c, options)) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
     const mountPath = stripPathSuffix(c.req.path, `/${slug}/print`);
     try {
       return c.html(
@@ -198,17 +202,22 @@ export function decksRouter(options: DecksRouterOptions): Hono {
   });
 
   if (isPdfExportEnabled(options.export)) {
-    router.get("/:slug/export.pdf", async (c) => renderDeckBrowserExport(c, options, "pdf"));
+    router.get("/:slug/export.pdf", async (c) =>
+      renderDeckBrowserExport(c, { ...options, dev: await isDevEnabled(c, options) }, "pdf"),
+    );
   }
 
   if (isPngExportEnabled(options.export)) {
-    router.get("/:slug/export.png", async (c) => renderDeckBrowserExport(c, options, "png"));
+    router.get("/:slug/export.png", async (c) =>
+      renderDeckBrowserExport(c, { ...options, dev: await isDevEnabled(c, options) }, "png"),
+    );
   }
 
   router.get("/:slug/presentation", async (c) => {
     const slug = c.req.param("slug");
     const deck = await options.source.getCompiledDeck(c, slug);
-    if (!deck || (!isDevEnabled(options) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
+    const dev = await isDevEnabled(c, options);
+    if (!deck || (!dev && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
     const mountPath = stripPathSuffix(c.req.path, `/${slug}/presentation`);
     const clientEntry = options.clientEntry ?? resolveGeneratedClientEntryUrl(options, mountPath);
     try {
@@ -220,7 +229,7 @@ export function decksRouter(options: DecksRouterOptions): Hono {
           components: options.components,
           clientEntry,
           speakerNotes: false,
-          liveReloadPath: isDevEnabled(options) ? options.liveReloadPath?.(slug, mountPath) : undefined,
+          liveReloadPath: dev ? options.liveReloadPath?.(slug, mountPath) : undefined,
         }),
       );
     } catch (error) {
@@ -233,7 +242,7 @@ export function decksRouter(options: DecksRouterOptions): Hono {
   router.get("/:slug/presenter", async (c) => {
     const slug = c.req.param("slug");
     const deck = await options.source.getCompiledDeck(c, slug);
-    if (!deck || (!isDevEnabled(options) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
+    if (!deck || (!(await isDevEnabled(c, options)) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
     const mountPath = stripPathSuffix(c.req.path, `/${slug}/presenter`);
     if (!(await isPresenterEnabled(c, options, deck, slug, mountPath))) {
       return c.json({ error: "Presenter route not found", slug }, 404);
@@ -257,7 +266,7 @@ export function decksRouter(options: DecksRouterOptions): Hono {
   router.get("/:slug", async (c) => {
     const slug = c.req.param("slug");
     const deck = await options.source.getCompiledDeck(c, slug);
-    if (!deck || (!isDevEnabled(options) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
+    if (!deck || (!(await isDevEnabled(c, options)) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
     const mountPath = stripPathSuffix(c.req.path, `/${slug}`);
     return c.html(
       await renderDeckViewerPage({
@@ -281,7 +290,7 @@ export function deckContext(options: DeckContextOptions): MiddlewareHandler<{ Va
     const slug = c.req.param("slug");
     if (!slug) return c.json({ error: "Deck not found", slug: "" }, 404);
     const deck = await options.source.getCompiledDeck(c, slug);
-    if (!deck || (options.dev !== true && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
+    if (!deck || (!(await isDevEnabled(c, options)) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
     const mountPath = options.mountPath ?? inferMountPath(c.req.path, slug);
     const viewer = await createDeckViewerParts({
       deck,
@@ -297,7 +306,8 @@ export function deckContext(options: DeckContextOptions): MiddlewareHandler<{ Va
   };
 }
 
-function isDevEnabled(options: DecksRouterOptions): boolean {
+async function isDevEnabled(c: Context, options: Pick<DecksRouterOptions, "dev">): Promise<boolean> {
+  if (typeof options.dev === "function") return Boolean(await options.dev(c));
   return options.dev === true;
 }
 
@@ -385,7 +395,7 @@ async function isPresenterEnabled(
       deck,
       slug,
       mountPath: mountPath.replace(/\/$/, ""),
-      dev: isDevEnabled(options),
+      dev: await isDevEnabled(c, options),
       presenterPath: presenterRoutePath(mountPath, slug),
       presentationPath: presentationRoutePath(mountPath, slug),
     }),

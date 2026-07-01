@@ -14,6 +14,7 @@ export type {
   DeckBrowserRunPngOptions,
   DeckContextOptions,
   DeckContextVariables,
+  DeckDevResolver,
   DeckExportAuthorizeInput,
   DeckExportOptions,
   DeckPresenterEnabledInput,

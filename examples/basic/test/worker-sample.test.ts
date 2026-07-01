@@ -33,6 +33,7 @@ describe("sample Worker app", () => {
     expect(configSource).toContain('mountPath: "/decks"');
     expect(configSource).toContain("DeckBrowserRunBinding");
     expect(configSource).toContain("DECK_PRESENTER_ENABLED");
+    expect(configSource).toContain("DECK_RUNTIME_DEV");
     expect(configSource).toContain("renderSampleViewerHead");
     expect(configSource).toContain("pdf: true");
     expect(configSource).toContain("data-sample-control");
@@ -137,7 +138,10 @@ describe("sample Worker app", () => {
     const app = await sampleApp();
     const projection = await app.request("/decks/sample/presentation");
     const disabledPresenter = await app.request("/decks/sample/presenter");
+    const devEnv = { DECK_RUNTIME_DEV: "true" };
     const presenterEnv = { DECK_PRESENTER_ENABLED: true };
+    const devPresenterViewer = await app.request("/decks/sample", {}, devEnv);
+    const devPresenter = await app.request("/decks/sample/presenter", {}, devEnv);
     const presenterViewer = await app.request("/decks/sample", {}, presenterEnv);
     const presenter = await app.request("/decks/sample/presenter", {}, presenterEnv);
 
@@ -150,6 +154,11 @@ describe("sample Worker app", () => {
     expect(projectionHtml).not.toContain("Use the presenter route for notes and next-slide preview.");
 
     expect(disabledPresenter.status).toBe(404);
+
+    expect(devPresenterViewer.status).toBe(200);
+    const devPresenterViewerHtml = await devPresenterViewer.text();
+    expect(devPresenterViewerHtml).toContain('href="/decks/sample/presenter"');
+    expect(devPresenter.status).toBe(200);
 
     expect(presenterViewer.status).toBe(200);
     const presenterViewerHtml = await presenterViewer.text();

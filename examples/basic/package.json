@@ -5,7 +5,7 @@
   "scripts": {
     "decks:compile": "bun run --cwd ../../packages/decks build && node ../../packages/decks/dist/bin.js compile --root decks --out src/generated --mount /decks",
     "decks:compile:dev": "bun run --cwd ../../packages/decks build -- --clean=false && node ../../packages/decks/dist/bin.js compile --root decks --out src/generated --mount /decks",
-    "dev": "bun run decks:compile:dev && CI=1 XDG_CONFIG_HOME=.wrangler-config wrangler dev",
+    "dev": "bun run decks:compile:dev && CI=1 XDG_CONFIG_HOME=.wrangler-config wrangler dev --var DECK_RUNTIME_DEV:true",
     "deploy": "bun run decks:compile && wrangler deploy",
     "smoke:pdf": "node scripts/pdf-smoke.mjs",
     "smoke:r2-cache": "node scripts/deployed-r2-cache-smoke.mjs",

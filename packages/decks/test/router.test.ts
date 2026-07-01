@@ -175,6 +175,33 @@ describe("decksRouter", () => {
     expect(enabledViewerHtml).toContain(">Present</a>");
   });
 
+  it("resolves dev mode from the request context", async () => {
+    const draftDeck = {
+      ...deck,
+      meta: { ...deck.meta, draft: true },
+    } satisfies CompiledDeck;
+    const app = new Hono();
+    app.route(
+      "/slides",
+      decksRouter({
+        source: manifestDeckSource({ decks: [draftDeck] }),
+        dev: (c) => c.req.header("x-runtime-dev") === "1",
+        presenter: {
+          enabled: ({ dev }) => dev,
+        },
+      }),
+    );
+
+    expect((await app.request("/slides/deck1")).status).toBe(404);
+    expect((await app.request("/slides/deck1/presenter")).status).toBe(404);
+
+    const viewer = await app.request("/slides/deck1", { headers: { "x-runtime-dev": "1" } });
+    expect(viewer.status).toBe(200);
+
+    const presenter = await app.request("/slides/deck1/presenter", { headers: { "x-runtime-dev": "1" } });
+    expect(presenter.status).toBe(200);
+  });
+
   it("keeps the presenter next preview height when there is no next slide", async () => {
     const app = new Hono();
     app.route("/slides", decksRouter({ source: manifestDeckSource({ decks: [deck] }) }));
