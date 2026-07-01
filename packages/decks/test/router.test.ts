@@ -132,6 +132,49 @@ describe("decksRouter", () => {
     expect(presenterHtml).not.toContain("data-hono-decks-viewer-controls");
   });
 
+  it("gates the presenter route and viewer control link from router options", async () => {
+    const app = new Hono();
+    app.route(
+      "/slides",
+      decksRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        presenter: {
+          enabled: ({ c, dev, presenterPath, presentationPath }) => {
+            expect(dev).toBe(false);
+            expect(presenterPath).toBe("/slides/deck1/presenter");
+            expect(presentationPath).toBe("/slides/deck1/presentation");
+            return c.req.header("x-presenter-enabled") === "1";
+          },
+          viewerControl: {
+            label: "Present",
+            attributes: { "data-presenter-control": "enabled" },
+          },
+        },
+      }),
+    );
+
+    const disabledPresenter = await app.request("/slides/deck1/presenter");
+    expect(disabledPresenter.status).toBe(404);
+
+    const disabledViewerHtml = await (await app.request("/slides/deck1")).text();
+    expect(disabledViewerHtml).not.toContain('href="/slides/deck1/presenter"');
+    expect(disabledViewerHtml).not.toContain('data-presenter-control="enabled"');
+
+    const enabledPresenter = await app.request("/slides/deck1/presenter", {
+      headers: { "x-presenter-enabled": "1" },
+    });
+    expect(enabledPresenter.status).toBe(200);
+
+    const enabledViewerHtml = await (
+      await app.request("/slides/deck1", {
+        headers: { "x-presenter-enabled": "1" },
+      })
+    ).text();
+    expect(enabledViewerHtml).toContain('href="/slides/deck1/presenter"');
+    expect(enabledViewerHtml).toContain('data-presenter-control="enabled"');
+    expect(enabledViewerHtml).toContain(">Present</a>");
+  });
+
   it("keeps the presenter next preview height when there is no next slide", async () => {
     const app = new Hono();
     app.route("/slides", decksRouter({ source: manifestDeckSource({ decks: [deck] }) }));

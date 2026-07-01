@@ -1,6 +1,7 @@
 import { Hono } from "hono";
-import type { MiddlewareHandler } from "hono";
+import type { Context, MiddlewareHandler } from "hono";
 import { renderCompiledDeckPageAsync } from "../renderer/compiled-render";
+import type { MaybePromise } from "../renderer/compiled-render";
 import { renderPresenterPageAsync } from "../renderer/presentation-page";
 import { RenderError } from "../deck/model";
 import type { CompiledDeck, DeckSource } from "../deck/model";
@@ -79,7 +80,33 @@ export interface DecksRouterOptions {
   clientEntryAsset?: string;
   clientEntryAssetPath?: string;
   viewer?: DeckViewerOptions;
+  presenter?: false | DecksRouterPresenterOptions;
   export?: DeckExportOptions;
+}
+
+export interface DecksRouterPresenterOptions {
+  enabled?: boolean | DeckPresenterEnabledResolver;
+  viewerControl?: boolean | DeckPresenterViewerControlOptions;
+}
+
+export type DeckPresenterEnabledResolver = (input: DeckPresenterEnabledInput) => MaybePromise<boolean>;
+
+export interface DeckPresenterEnabledInput {
+  c: Context;
+  deck: CompiledDeck;
+  slug: string;
+  mountPath: string;
+  dev: boolean;
+  presenterPath: string;
+  presentationPath: string;
+}
+
+export interface DeckPresenterViewerControlOptions {
+  key?: string;
+  label?: string;
+  className?: string;
+  attributes?: Record<string, string | boolean | undefined>;
+  placement?: "before" | "after";
 }
 
 export interface DeckContextVariables {
@@ -208,6 +235,9 @@ export function decksRouter(options: DecksRouterOptions): Hono {
     const deck = await options.source.getCompiledDeck(c, slug);
     if (!deck || (!isDevEnabled(options) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
     const mountPath = stripPathSuffix(c.req.path, `/${slug}/presenter`);
+    if (!(await isPresenterEnabled(c, options, deck, slug, mountPath))) {
+      return c.json({ error: "Presenter route not found", slug }, 404);
+    }
     try {
       return c.html(
         await renderPresenterPageAsync({
@@ -234,7 +264,10 @@ export function decksRouter(options: DecksRouterOptions): Hono {
         c,
         deck,
         mountPath,
-        viewer: options.viewer,
+        viewer: {
+          ...options.viewer,
+          controls: await resolveViewerControls(c, options, deck, slug, mountPath),
+        },
         exportOptions: options.export,
       }),
     );
@@ -266,6 +299,105 @@ export function deckContext(options: DeckContextOptions): MiddlewareHandler<{ Va
 
 function isDevEnabled(options: DecksRouterOptions): boolean {
   return options.dev === true;
+}
+
+async function resolveViewerControls(
+  c: Context,
+  options: DecksRouterOptions,
+  deck: CompiledDeck,
+  slug: string,
+  mountPath: string,
+): Promise<false | DeckViewerControlsOptions | undefined> {
+  const controls = options.viewer?.controls;
+  const presenterControl = await resolvePresenterViewerControl(c, options, deck, slug, mountPath);
+  if (!presenterControl) return controls;
+  if (controls === false) return false;
+
+  const nextControls: DeckViewerControlsOptions = controls ? { ...controls } : {};
+  if (nextControls.items) return nextControls;
+
+  const placement = presenterControl.placement ?? "after";
+  const item = presenterControl.item;
+  if (placement === "before") {
+    nextControls.before = mergeControlSlotItems(nextControls.before, item, "before");
+  } else {
+    nextControls.after = mergeControlSlotItems(nextControls.after, item, "after");
+  }
+  return nextControls;
+}
+
+async function resolvePresenterViewerControl(
+  c: Context,
+  options: DecksRouterOptions,
+  deck: CompiledDeck,
+  slug: string,
+  mountPath: string,
+): Promise<{ item: Exclude<DeckViewerControlItem, null | false | undefined>; placement: "before" | "after" } | null> {
+  const presenter = options.presenter;
+  if (!presenter || !presenter.viewerControl) return null;
+  if (!(await isPresenterEnabled(c, options, deck, slug, mountPath))) return null;
+
+  const control = presenter.viewerControl === true ? {} : presenter.viewerControl;
+  const presenterPath = presenterRoutePath(mountPath, slug);
+  return {
+    item: {
+      type: "link",
+      key: control.key ?? "presenter",
+      href: presenterPath,
+      label: control.label ?? "Presenter",
+      className: control.className,
+      attributes: control.attributes,
+    },
+    placement: control.placement ?? "after",
+  };
+}
+
+function mergeControlSlotItems(
+  slot: DeckViewerControlSlotItems | undefined,
+  item: Exclude<DeckViewerControlItem, null | false | undefined>,
+  placement: "before" | "after",
+): DeckViewerControlSlotItems {
+  if (!slot) return [item];
+  if (Array.isArray(slot)) return placement === "before" ? [item, ...slot] : [...slot, item];
+  return (context) => {
+    const items = slot(context);
+    return placement === "before" ? [item, ...items] : [...items, item];
+  };
+}
+
+async function isPresenterEnabled(
+  c: Context,
+  options: DecksRouterOptions,
+  deck: CompiledDeck,
+  slug: string,
+  mountPath: string,
+): Promise<boolean> {
+  const presenter = options.presenter;
+  if (presenter === false) return false;
+
+  const enabled = presenter?.enabled;
+  if (enabled === undefined) return true;
+  if (typeof enabled === "boolean") return enabled;
+
+  return Boolean(
+    await enabled({
+      c,
+      deck,
+      slug,
+      mountPath: mountPath.replace(/\/$/, ""),
+      dev: isDevEnabled(options),
+      presenterPath: presenterRoutePath(mountPath, slug),
+      presentationPath: presentationRoutePath(mountPath, slug),
+    }),
+  );
+}
+
+function presenterRoutePath(mountPath: string, slug: string): string {
+  return `${mountPath.replace(/\/$/, "")}/${encodeURIComponent(slug)}/presenter`;
+}
+
+function presentationRoutePath(mountPath: string, slug: string): string {
+  return `${mountPath.replace(/\/$/, "")}/${encodeURIComponent(slug)}/presentation`;
 }
 
 function renderDeckIndex(decks: Awaited<ReturnType<DeckSource["listDecks"]>>, mountPath: string): string {

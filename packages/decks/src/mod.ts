@@ -48,6 +48,9 @@ export type {
   DeckContextVariables,
   DeckExportAuthorizeInput,
   DeckExportOptions,
+  DeckPresenterEnabledInput,
+  DeckPresenterEnabledResolver,
+  DeckPresenterViewerControlOptions,
   DeckPageMeta,
   DeckTocItem,
   DeckViewerControlDefaults,
@@ -65,6 +68,7 @@ export type {
   DeckViewerRenderInput,
   DecksRouterExtension,
   DecksRouterOptions,
+  DecksRouterPresenterOptions,
 } from "./server/router";
 export { manifestDeckSource } from "./source/manifest-source";
 export { withR2Assets } from "./source/r2-assets";

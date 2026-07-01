@@ -11,6 +11,7 @@ export interface DecksConfigBindings {
   DECK_ASSETS?: R2BucketLike;
   BROWSER?: DeckBrowserRunBinding;
   DECK_EXPORT_TOKEN?: string;
+  DECK_PRESENTER_ENABLED?: boolean;
 }
 
 const R2_CACHE_CONTROL = "public, max-age=31536000, immutable";
@@ -53,6 +54,13 @@ const decksConfig = defineDecksConfig({
   },
 
   router: {
+    presenter: {
+      enabled: ({ c, dev }) => dev || (c.env as DecksConfigBindings | undefined)?.DECK_PRESENTER_ENABLED === true,
+      viewerControl: {
+        label: "Presenter",
+        attributes: { "data-sample-control": "presenter" },
+      },
+    },
     viewer: {
       head: renderSampleViewerHead(),
       controls: {

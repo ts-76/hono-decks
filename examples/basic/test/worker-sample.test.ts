@@ -32,9 +32,12 @@ describe("sample Worker app", () => {
     expect(configSource).toContain("defineDecksConfig");
     expect(configSource).toContain('mountPath: "/decks"');
     expect(configSource).toContain("DeckBrowserRunBinding");
+    expect(configSource).toContain("DECK_PRESENTER_ENABLED");
     expect(configSource).toContain("renderSampleViewerHead");
     expect(configSource).toContain("pdf: true");
     expect(configSource).toContain("data-sample-control");
+    expect(configSource).toContain("presenter: {");
+    expect(configSource).toContain("viewerControl: {");
     expect(configSource).toContain('className: "sample-viewer-controls"');
     expect(configSource).toContain('itemClassName: "sample-viewer-control"');
     expect(configSource).toContain('hidden: ["fullscreen"]');
@@ -117,6 +120,8 @@ describe("sample Worker app", () => {
     expect(html).toContain('data-action="next"');
     expect(html).toContain(">Forward</button>");
     expect(html).not.toContain('data-action="fullscreen"');
+    expect(html).not.toContain('href="/decks/sample/presenter"');
+    expect(html).not.toContain('data-sample-control="presenter"');
     expect(html.indexOf('data-sample-control="home"')).toBeLessThan(html.indexOf('data-action="previous"'));
     expect(html.indexOf('data-action="next"')).toBeLessThan(html.indexOf('data-sample-control="details"'));
     expect(html).not.toContain('href="/decks/sample/export.pdf"');
@@ -131,7 +136,10 @@ describe("sample Worker app", () => {
   it("serves presentation and presenter routes for the sample deck", async () => {
     const app = await sampleApp();
     const projection = await app.request("/decks/sample/presentation");
-    const presenter = await app.request("/decks/sample/presenter");
+    const disabledPresenter = await app.request("/decks/sample/presenter");
+    const presenterEnv = { DECK_PRESENTER_ENABLED: true };
+    const presenterViewer = await app.request("/decks/sample", {}, presenterEnv);
+    const presenter = await app.request("/decks/sample/presenter", {}, presenterEnv);
 
     expect(projection.status).toBe(200);
     const projectionHtml = await projection.text();
@@ -140,6 +148,14 @@ describe("sample Worker app", () => {
     expect(projectionHtml).not.toContain('data-hono-decks-viewer-controls');
     expect(projectionHtml).not.toContain("Introduce the clean projection route for talks.");
     expect(projectionHtml).not.toContain("Use the presenter route for notes and next-slide preview.");
+
+    expect(disabledPresenter.status).toBe(404);
+
+    expect(presenterViewer.status).toBe(200);
+    const presenterViewerHtml = await presenterViewer.text();
+    expect(presenterViewerHtml).toContain('href="/decks/sample/presenter"');
+    expect(presenterViewerHtml).toContain('data-sample-control="presenter"');
+    expect(presenterViewerHtml).toContain(">Presenter</a>");
 
     expect(presenter.status).toBe(200);
     const presenterHtml = await presenter.text();
