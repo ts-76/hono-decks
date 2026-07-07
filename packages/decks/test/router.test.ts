@@ -208,10 +208,16 @@ describe("decksRouter", () => {
 
     expect(presenter.status).toBe(200);
     expect(presenterHtml).toContain("data-hono-decks-presenter-controls");
+    expect(presenterHtml).toContain('href="/slides"');
+    expect(presenterHtml).toContain('href="/slides/deck1"');
+    expect(presenterHtml).toContain('href="/slides/deck1/presentation"');
+    expect(presenterHtml).toContain("data-hono-decks-presenter-control-icon");
     expect(presenterHtml).toContain('data-action="previous"');
     expect(presenterHtml).toContain('data-action="next"');
     expect(presenterHtml).toContain("data-hono-decks-presenter-position");
-    expect(presenterHtml).toContain("data-hono-decks-presenter-clock");
+    expect(presenterHtml).not.toContain("data-hono-decks-presenter-clock");
+    expect(presenterHtml).not.toContain("updateClock");
+    expect(presenterHtml).not.toContain("setInterval");
     expect(presenterHtml).toContain("data-hono-decks-presenter-connection");
     expect(presenterHtml).toContain("event.source !== frame?.contentWindow");
     expect(presenterHtml).toContain("event.origin !== window.location.origin");

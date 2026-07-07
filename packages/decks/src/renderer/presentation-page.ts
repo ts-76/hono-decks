@@ -94,7 +94,9 @@ export async function renderPresenterPageAsync(input: {
 }): Promise<string> {
   const { deck } = input;
   const components = mergeComponentInputs(deck.componentRegistry, input.components);
-  const projectionPath = `${input.mountPath.replace(/\/$/, "")}/${encodeURIComponent(deck.slug)}/presentation`;
+  const mountPath = input.mountPath.replace(/\/$/, "") || "/";
+  const deckPath = `${mountPath === "/" ? "" : mountPath}/${encodeURIComponent(deck.slug)}`;
+  const projectionPath = `${deckPath}/presentation`;
   const previews = await Promise.all(
     deck.slides.map((slide) =>
       renderCompiledSlideAsync(slide, deck.assets, { components, deck, speakerNotes: false, slideState: "active" }),
@@ -114,10 +116,12 @@ export async function renderPresenterPageAsync(input: {
   <main class="hono-decks-presenter" data-hono-decks-presenter data-slide-index="0">
     <section class="hono-decks-presenter-current" data-hono-decks-presenter-current aria-label="Current slide">
       <nav class="hono-decks-presenter-controls" data-hono-decks-presenter-controls aria-label="Presenter controls">
-        <button type="button" data-action="previous">Back</button>
+        <a href="${escapeHtml(mountPath)}" title="Deck list" aria-label="Deck list">${presenterControlIcon("deck-list")}<span class="hono-decks-presenter-control-text">Decks</span></a>
+        <a href="${escapeHtml(deckPath)}" title="Viewer" aria-label="Viewer">${presenterControlIcon("viewer")}<span class="hono-decks-presenter-control-text">Viewer</span></a>
+        <a href="${escapeHtml(projectionPath)}" title="Projection" aria-label="Projection">${presenterControlIcon("projection")}<span class="hono-decks-presenter-control-text">Projection</span></a>
+        <button type="button" data-action="previous" title="Previous slide" aria-label="Previous slide">${presenterControlIcon("previous")}<span class="hono-decks-presenter-control-text">Back</span></button>
         <span data-hono-decks-presenter-position>1 / ${deck.slides.length}</span>
-        <button type="button" data-action="next">Next</button>
-        <span data-hono-decks-presenter-clock>00:00</span>
+        <button type="button" data-action="next" title="Next slide" aria-label="Next slide">${presenterControlIcon("next")}<span class="hono-decks-presenter-control-text">Next</span></button>
         <span data-hono-decks-presenter-connection>Connected</span>
       </nav>
       <iframe title="${escapeHtml(presentationPageTitle(deck))}" src="${escapeHtml(projectionPath)}"></iframe>
@@ -173,8 +177,9 @@ body{margin:0;min-height:100vh;background:#050816;color:#eef2ff;font-family:Inte
 .hono-decks-presenter-current,.hono-decks-presenter-panel{min-width:0}
 .hono-decks-presenter-current{display:grid;grid-template-rows:auto 1fr;gap:12px;align-items:center}
 .hono-decks-presenter-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.hono-decks-presenter-controls button,.hono-decks-presenter-controls span{border:1px solid rgba(148,163,184,.32);border-radius:8px;background:rgba(15,23,42,.78);color:inherit;padding:8px 10px;font:inherit;font-size:14px}
-.hono-decks-presenter-controls button{cursor:pointer}
+.hono-decks-presenter-controls a,.hono-decks-presenter-controls button,.hono-decks-presenter-controls span{border:1px solid rgba(148,163,184,.32);border-radius:8px;background:rgba(15,23,42,.78);color:inherit;padding:8px 10px;font:inherit;font-size:14px}
+.hono-decks-presenter-controls a,.hono-decks-presenter-controls button{display:inline-flex;align-items:center;gap:6px;min-height:38px;box-sizing:border-box;text-decoration:none;cursor:pointer}
+.hono-decks-presenter-control-icon{width:16px;height:16px;flex:0 0 auto;stroke:currentColor}
 .hono-decks-presenter-current iframe{width:100%;aspect-ratio:16/9;border:0;border-radius:8px;background:#000}
 .hono-decks-presenter-panel{display:grid;grid-template-rows:auto 1fr;gap:16px}
 .hono-decks-presenter-next,.hono-decks-presenter-notes{min-width:0;border:1px solid rgba(148,163,184,.28);border-radius:8px;background:rgba(15,23,42,.78);padding:12px}
@@ -196,10 +201,8 @@ function renderPresenterScript(slideCount: number): string {
   const notes = Array.from(document.querySelectorAll("[data-hono-decks-presenter-note]"));
   const noNext = document.querySelector("[data-hono-decks-presenter-no-next]");
   const position = document.querySelector("[data-hono-decks-presenter-position]");
-  const clock = document.querySelector("[data-hono-decks-presenter-clock]");
   const DESIGN_WIDTH = 1920;
   const DESIGN_HEIGHT = 1080;
-  const startedAt = Date.now();
 
   function fitPresenterPreview(preview) {
     const slide = preview?.querySelector(".slide");
@@ -234,17 +237,7 @@ function renderPresenterScript(slideCount: number): string {
     frame?.contentWindow?.postMessage({ type: "hono-decks:command", action }, window.location.origin);
   }
 
-  function updateClock() {
-    if (!clock) return;
-    const elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
-    const minutes = String(Math.floor(elapsedSeconds / 60)).padStart(2, "0");
-    const seconds = String(elapsedSeconds % 60).padStart(2, "0");
-    clock.textContent = minutes + ":" + seconds;
-  }
-
   fitVisiblePresenterPreviews();
-  updateClock();
-  setInterval(updateClock, 1000);
   window.addEventListener("resize", fitVisiblePresenterPreviews);
   document.querySelectorAll("[data-action='previous']").forEach((button) => {
     button.addEventListener("click", () => sendCommand("previous"));
@@ -262,6 +255,17 @@ function renderPresenterScript(slideCount: number): string {
   });
 })();
 </script>`;
+}
+
+function presenterControlIcon(name: "deck-list" | "viewer" | "projection" | "previous" | "next"): string {
+  const paths = {
+    "deck-list": '<path d="M4 5h16M4 12h16M4 19h16" />',
+    viewer: '<rect x="4" y="5" width="16" height="11" rx="2" /><path d="M9 20h6M12 16v4" />',
+    projection: '<rect x="3" y="5" width="18" height="12" rx="2" /><path d="M8 21h8M12 17v4" />',
+    previous: '<path d="M15 6l-6 6 6 6" />',
+    next: '<path d="M9 6l6 6-6 6" />',
+  } satisfies Record<typeof name, string>;
+  return `<svg class="hono-decks-presenter-control-icon" data-hono-decks-presenter-control-icon viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths[name]}</svg>`;
 }
 
 function escapeHtml(value: string): string {
