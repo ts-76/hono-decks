@@ -217,7 +217,10 @@ describe("decksRouter", () => {
     expect(presenterHtml).toContain("data-hono-decks-presenter-controls");
     expect(presenterHtml).toContain('href="/slides"');
     expect(presenterHtml).toContain('href="/slides/deck1"');
-    expect(presenterHtml).toContain('href="/slides/deck1/presentation"');
+    expect(presenterHtml).toContain('data-action="openProjection"');
+    expect(presenterHtml).toContain('data-projection-url="/slides/deck1/presentation"');
+    expect(presenterHtml).toContain("window.open(projectionUrl");
+    expect(presenterHtml).toContain("width=1920,height=1080");
     expect(presenterHtml).toContain("data-hono-decks-control-icon");
     expect(presenterHtml).toContain("pointer-events:none");
     expect(presenterHtml).not.toContain("hono-decks-presenter-control-text");

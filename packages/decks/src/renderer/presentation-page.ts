@@ -119,7 +119,7 @@ export async function renderPresenterPageAsync(input: {
       <nav class="hono-decks-presenter-controls" data-hono-decks-presenter-controls aria-label="Presenter controls">
         <a href="${escapeHtml(mountPath)}" title="Deck list" aria-label="Deck list">${renderControlIconHtml("home")}</a>
         <a href="${escapeHtml(deckPath)}" title="Viewer" aria-label="Viewer">${renderControlIconHtml("viewer")}</a>
-        <a href="${escapeHtml(projectionPath)}" title="Projection" aria-label="Projection">${renderControlIconHtml("projection")}</a>
+        <button type="button" data-action="openProjection" data-projection-url="${escapeHtml(projectionPath)}" title="Projection" aria-label="Projection">${renderControlIconHtml("projection")}</button>
         <button type="button" data-action="previous" title="Previous slide" aria-label="Previous slide">${renderControlIconHtml("previous")}</button>
         <span data-hono-decks-presenter-position>1 / ${deck.slides.length}</span>
         <button type="button" data-action="next" title="Next slide" aria-label="Next slide">${renderControlIconHtml("next")}</button>
@@ -239,6 +239,14 @@ function renderPresenterScript(slideCount: number): string {
     frame?.contentWindow?.postMessage({ type: "hono-decks:command", action }, window.location.origin);
   }
 
+  function openProjection(button) {
+    const projectionUrl = button.getAttribute("data-projection-url");
+    if (!projectionUrl) return;
+    const features = "popup=yes,width=1920,height=1080,left=0,top=0,menubar=no,toolbar=no,location=no,status=no";
+    const projection = window.open(projectionUrl, "hono-decks-projection", features);
+    projection?.focus?.();
+  }
+
   fitVisiblePresenterPreviews();
   window.addEventListener("resize", fitVisiblePresenterPreviews);
   document.querySelectorAll("[data-action='previous']").forEach((button) => {
@@ -246,6 +254,9 @@ function renderPresenterScript(slideCount: number): string {
   });
   document.querySelectorAll("[data-action='next']").forEach((button) => {
     button.addEventListener("click", () => sendCommand("next"));
+  });
+  document.querySelectorAll("[data-action='openProjection']").forEach((button) => {
+    button.addEventListener("click", () => openProjection(button));
   });
 
   window.addEventListener("message", (event) => {
