@@ -63,7 +63,8 @@ hono-decks init \
 hono-decks compile \
   --root decks \
   --out src/generated \
-  --mount /slides
+  --mount /slides \
+  --ogp-cache decks/ogp-cache.json
 ```
 
 `hono-decks init` は `src/decks.ts` の雛形を初回だけ作ります。既存ファイルは上書きしません。生成される `src/generated/decks.ts` は Worker bundle に deck module を含めるための generated entry です。app の主 entry では直接 import せず、`src/decks.ts` のような app-owned facade に閉じ込めると、開発中の route code と generated code の距離を保てます。`src/decks.ts` は編集してよいファイルで、compile/watch が上書きする対象は `src/generated/decks.ts` です。custom page や `deckContext()` も同じ facade から export した `deckSource` を共有できます。
@@ -224,7 +225,7 @@ Low-level fallback embeds stay link-first when you do not want third-party scrip
 </SocialEmbed>
 ```
 
-外部リンクの preview は `@[card](url)` または built-in `<LinkCard>` を使います。`@[card](url)` は compile 時に OGP metadata を best-effort で解決し、取得できた `title`、`description`、`image`、`siteName` を生成済み slide module に埋め込みます。取得できない場合でも compile は失敗せず、従来通り URL ベースの link card fallback を render します。Worker runtime では OGP fetch を実行しません。
+外部リンクの preview は `@[card](url)` または built-in `<LinkCard>` を使います。`@[card](url)` は compile 時に OGP metadata を解決し、取得できた `title`、`description`、`image`、`siteName` を生成済み slide module に埋め込みます。`--ogp-cache <path>` を指定すると通常 compile は cache だけを読み、ネットワーク状態に左右されない生成結果になります。metadata を更新したいときだけ `--refresh-ogp` を付けて cache を更新します。取得できない場合でも compile は失敗せず、従来通り URL ベースの link card fallback を render します。Worker runtime では OGP fetch を実行しません。
 
 `@hono/decks` は標準 viewer に Content-Security-Policy header を設定しません。アプリ側で CSP を設定する場合、iframe embed は `frame-src`、画像は `img-src`、client entry と X widgets は `script-src` の対象になります。X の third-party script を使いたくない場合は、低レベル built-in の `<SocialEmbed>` を直接使うと link-first fallback にできます。
 
@@ -330,7 +331,7 @@ app.route("/decks", createDecksRouter({
 
 `createDeckViewerParts()` は `Promise<DeckViewerParts>` を返すため、独自 route から直接使う場合は `await createDeckViewerParts(...)` してください。`deckContext()` はこの処理を middleware 内で済ませ、`c.var.deckViewer` に `frame` / `controls` / `controlsHtml` / `toc` を入れます。
 
-`/:slug/presentation` は発表用の投影 route です。標準 viewer の controls や deck index への戻るリンクを出さず、slide runtime だけを表示します。`/:slug/presenter` は発表者向け route で、左に投影用 iframe、右に次スライド preview と speaker notes を表示します。speaker notes は MDX コメントから compile 時に抽出され、通常の slide content と audience-facing projection には出ません。
+`/:slug/presentation` は発表用の投影 route です。標準 viewer の controls や deck index への戻るリンクを出さず、slide runtime だけを表示します。`/:slug/presenter` は発表者向け route で、投影用 iframe、前後移動 controls、経過時間、次スライド preview、speaker notes を表示します。speaker notes は MDX コメントから compile 時に抽出され、通常の slide content と audience-facing projection には出ません。`presenter: false` で presenter route を無効化できます。公開環境で speaker notes を隠したい場合は `presenter.enabled` で runtime env や認可状態を見て gate してください。
 
 ```mdx
 # Hono Slides
@@ -456,7 +457,7 @@ examples/basic/
           slide-0.ts
 ```
 
-`src/decks.ts` は `hono-decks init --out src/decks.ts` で作れる app-owned facade です。basic sample ではその facade から `decks.config.ts` の default config object を読み、R2/cache behavior や export 設定を差し込んでいます。`decks.config.ts` は任意ファイルなので、拡張が不要な app では置かなくても構いません。`dev`、`typecheck`、`test`、`deploy` は事前に `bun run decks:compile` を実行し、`decks/*/deck.mdx` から `src/generated/decks.ts` と slide module 群を更新します。sample や motion のように deck-local な `components/client/index.tsx` を持つ deck は browser bundle 化されて `src/generated/client-entry.ts` に埋め込まれ、`client: true` component を `hono/jsx/dom` で hydrate します。Worker runtime は生成済み router/client asset を import するだけで、file system の読み取りは build-time CLI に閉じています。
+`src/decks.ts` は `hono-decks init --out src/decks.ts` で作れる app-owned facade です。basic sample ではその facade から `decks.config.ts` の default config object を読み、R2/cache behavior、OGP cache、export 設定を差し込んでいます。`decks.config.ts` は任意ファイルなので、拡張が不要な app では置かなくても構いません。`dev`、`typecheck`、`test`、`deploy` は事前に `bun run decks:compile` を実行し、`decks/*/deck.mdx` から `src/generated/decks.ts` と slide module 群を更新します。sample や motion のように deck-local な `components/client/index.tsx` を持つ deck は browser bundle 化されて `src/generated/client-entry.ts` に埋め込まれ、`client: true` component を `hono/jsx/dom` で hydrate します。Worker runtime は生成済み router/client asset を import するだけで、file system の読み取りは build-time CLI に閉じています。
 
 未完了の検証項目と実装課題は [Remaining Work](docs/remaining-work.md) にまとめています。desktop/mobile の viewer framing は `agent-browser` を使う `bun run smoke:viewport` で、print-to-PDF は `bun run smoke:pdf` で確認できます。
 

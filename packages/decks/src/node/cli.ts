@@ -18,6 +18,8 @@ interface CompileCommandOptions {
   root?: string;
   out?: string;
   mountPath?: string;
+  ogpCacheFile?: string;
+  refreshOgp?: boolean;
 }
 
 interface InitCommandOptions {
@@ -26,7 +28,7 @@ interface InitCommandOptions {
 }
 
 const USAGE = `Usage:
-  hono-decks compile --root decks --out src/generated [--mount /slides]
+  hono-decks compile --root decks --out src/generated [--mount /slides] [--ogp-cache decks/ogp-cache.json] [--refresh-ogp]
   hono-decks init --out src/decks.ts [--generated ./generated/decks]
 
 Commands:
@@ -37,6 +39,8 @@ Options:
   --root <path>            Deck root directory relative to the current working directory.
   --out <path>             Output directory for generated deck modules.
   --mount <path>           Public mount path used for local asset URLs.
+  --ogp-cache <path>       JSON cache file for deterministic LinkCard OGP metadata.
+  --refresh-ogp            Refresh OGP cache entries from the network.
   --generated <path>       Generated decks module import path for init.
   -h, --help               Show this help.`;
 
@@ -90,6 +94,8 @@ export async function runHonoDecksCli(input: RunHonoDecksCliInput): Promise<RunH
       root,
       out,
       mountPath: parsed.options.mountPath,
+      ogpCacheFile: parsed.options.ogpCacheFile,
+      refreshOgp: parsed.options.refreshOgp,
     });
     stdout(`Compiled ${manifest.decks.length} decks to ${out}`);
     return { exitCode: 0 };
@@ -144,13 +150,19 @@ function parseCompileArgs(args: string[]): { options: CompileCommandOptions; err
     const arg = args[index];
     if (arg === "--help" || arg === "-h") return { options, help: true };
 
-    if (arg === "--root" || arg === "--out" || arg === "--mount") {
+    if (arg === "--refresh-ogp") {
+      options.refreshOgp = true;
+      continue;
+    }
+
+    if (arg === "--root" || arg === "--out" || arg === "--mount" || arg === "--ogp-cache") {
       const value = args[index + 1];
       if (!value || value.startsWith("--")) return { options, error: `Missing value for ${arg}` };
       index += 1;
       if (arg === "--root") options.root = value;
       if (arg === "--out") options.out = value;
       if (arg === "--mount") options.mountPath = value;
+      if (arg === "--ogp-cache") options.ogpCacheFile = value;
       continue;
     }
 

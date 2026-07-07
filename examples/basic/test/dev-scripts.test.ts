@@ -7,6 +7,8 @@ describe("development scripts", () => {
       scripts: Record<string, string>;
     };
 
+    expect(packageJson.scripts["decks:compile"]).toContain("--ogp-cache decks/ogp-cache.json");
+    expect(packageJson.scripts["decks:compile:dev"]).toContain("--ogp-cache decks/ogp-cache.json");
     expect(packageJson.scripts["decks:compile:dev"]).toContain("--clean=false");
     expect(packageJson.scripts.dev).toContain("bun run decks:compile:dev");
     expect(packageJson.scripts.dev).toContain("CI=1");

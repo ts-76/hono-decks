@@ -38,6 +38,8 @@ export interface WriteDecksRouterModuleInput {
 
 export interface CompileDecksInput extends BuildDeckManifestFromFileSystemInput {
   out: string;
+  ogpCacheFile?: string;
+  refreshOgp?: boolean;
   resolveOgp?(url: string): Promise<LinkCardOgpMetadata | undefined>;
 }
 
@@ -61,6 +63,12 @@ export async function compileDecks(input: CompileDecksInput): Promise<DeckManife
     cwd: input.cwd,
     clientEntries: clientEntryPaths,
   });
+  const ogpCache = await createOgpCacheResolver({
+    cwd: input.cwd,
+    cacheFile: input.ogpCacheFile,
+    refresh: input.refreshOgp,
+    resolveOgp: input.resolveOgp ?? resolveOgpMetadata,
+  });
   const generated = await compileMdxModuleDecks({
     root,
     outDir: out,
@@ -69,7 +77,7 @@ export async function compileDecks(input: CompileDecksInput): Promise<DeckManife
     componentModulePaths,
     clientComponentIds,
     themeStyles,
-    resolveOgp: input.resolveOgp ?? resolveOgpMetadata,
+    resolveOgp: ogpCache.resolveOgp,
     readText: (path) => readFile(join(input.cwd, path), "utf8"),
     readBinary: (path) => readFile(join(input.cwd, path)),
   });
@@ -84,8 +92,77 @@ export async function compileDecks(input: CompileDecksInput): Promise<DeckManife
     join(input.cwd, out, "client-entry.ts"),
     await emitClientEntryModule({ cwd: input.cwd, clientEntries: clientEntryPaths, clientComponentIds }),
   );
+  await ogpCache.write();
 
   return { decks: generated.decks.map((deck) => deck.deck) };
+}
+
+async function createOgpCacheResolver(input: {
+  cwd: string;
+  cacheFile: string | undefined;
+  refresh: boolean | undefined;
+  resolveOgp: (url: string) => Promise<LinkCardOgpMetadata | undefined>;
+}): Promise<{ resolveOgp?: (url: string) => Promise<LinkCardOgpMetadata | undefined>; write(): Promise<void> }> {
+  if (!input.cacheFile) {
+    return {
+      resolveOgp: input.resolveOgp,
+      write: async () => undefined,
+    };
+  }
+
+  const cachePath = join(input.cwd, normalizeRelativePath(input.cacheFile, "OGP cache file"));
+  const cache = await readOgpCache(cachePath);
+  let dirty = false;
+
+  return {
+    async resolveOgp(url) {
+      if (!input.refresh && cache[url]) return cache[url];
+      if (!input.refresh) return undefined;
+
+      const metadata = await input.resolveOgp(url);
+      if (metadata) {
+        cache[url] = metadata;
+        dirty = true;
+      }
+      return metadata;
+    },
+    async write() {
+      if (!dirty) return;
+      await writeTextFile(cachePath, `${JSON.stringify(cache, null, 2)}\n`);
+    },
+  };
+}
+
+async function readOgpCache(path: string): Promise<Record<string, LinkCardOgpMetadata>> {
+  let raw: string;
+  try {
+    raw = await readFile(path, "utf8");
+  } catch (error) {
+    if (isNodeError(error) && error.code === "ENOENT") return {};
+    throw error;
+  }
+
+  const parsed = JSON.parse(raw) as unknown;
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("OGP cache file must contain a JSON object");
+  }
+
+  const cache: Record<string, LinkCardOgpMetadata> = {};
+  for (const [url, value] of Object.entries(parsed)) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+    const metadata = value as Record<string, unknown>;
+    cache[url] = {
+      ...(typeof metadata.title === "string" ? { title: metadata.title } : {}),
+      ...(typeof metadata.description === "string" ? { description: metadata.description } : {}),
+      ...(typeof metadata.image === "string" ? { image: metadata.image } : {}),
+      ...(typeof metadata.siteName === "string" ? { siteName: metadata.siteName } : {}),
+    };
+  }
+  return cache;
+}
+
+function isNodeError(error: unknown): error is Error & { code?: string } {
+  return error instanceof Error && "code" in error;
 }
 
 export async function buildDeckManifestFromFileSystem(

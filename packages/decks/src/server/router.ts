@@ -319,9 +319,9 @@ async function resolveViewerControls(
   mountPath: string,
 ): Promise<false | DeckViewerControlsOptions | undefined> {
   const controls = options.viewer?.controls;
+  if (controls === false) return false;
   const presenterControl = await resolvePresenterViewerControl(c, options, deck, slug, mountPath);
   if (!presenterControl) return controls;
-  if (controls === false) return false;
 
   const nextControls: DeckViewerControlsOptions = controls ? { ...controls } : {};
   if (nextControls.items) return nextControls;

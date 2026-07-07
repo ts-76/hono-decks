@@ -76,6 +76,105 @@ describe("Node filesystem deck adapter", () => {
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
+  it("uses cached OGP metadata without refreshing from the network", async () => {
+    const cwd = await createFixture();
+    const resolveOgp = vi.fn().mockResolvedValue({
+      title: "Network Title",
+    });
+
+    try {
+      await writeFile(
+        join(cwd, "decks", "deck1", "deck.mdx"),
+        `# Cached card
+
+@[card](https://hono.dev/docs/)`,
+        "utf8",
+      );
+      await writeFile(
+        join(cwd, "decks", "ogp-cache.json"),
+        JSON.stringify({
+          "https://hono.dev/docs/": {
+            title: "Cached Hono Docs",
+            description: "Cached docs description.",
+            image: "https://hono.dev/cached.png",
+            siteName: "Hono",
+          },
+        }),
+        "utf8",
+      );
+
+      await compileDecks({
+        cwd,
+        root: "decks",
+        out: "src/generated",
+        mountPath: "/slides",
+        ogpCacheFile: "decks/ogp-cache.json",
+        resolveOgp,
+      });
+
+      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.ts"), "utf8");
+      expect(resolveOgp).not.toHaveBeenCalled();
+      expect(slideOutput).toContain('title: "Cached Hono Docs"');
+      expect(slideOutput).toContain('description: "Cached docs description."');
+      expect(slideOutput).toContain('image: "https://hono.dev/cached.png"');
+      expect(slideOutput).not.toContain("Network Title");
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("refreshes and writes OGP metadata only when requested", async () => {
+    const cwd = await createFixture();
+    const resolveOgp = vi.fn().mockResolvedValue({
+      title: "Fresh Hono Docs",
+      description: "Fresh docs description.",
+      image: "https://hono.dev/fresh.png",
+      siteName: "Hono",
+    });
+
+    try {
+      await writeFile(
+        join(cwd, "decks", "deck1", "deck.mdx"),
+        `# Fresh card
+
+@[card](https://hono.dev/docs/)`,
+        "utf8",
+      );
+      await writeFile(
+        join(cwd, "decks", "ogp-cache.json"),
+        JSON.stringify({
+          "https://hono.dev/docs/": {
+            title: "Stale Hono Docs",
+          },
+        }),
+        "utf8",
+      );
+
+      await compileDecks({
+        cwd,
+        root: "decks",
+        out: "src/generated",
+        mountPath: "/slides",
+        ogpCacheFile: "decks/ogp-cache.json",
+        refreshOgp: true,
+        resolveOgp,
+      });
+
+      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.ts"), "utf8");
+      const cacheOutput = JSON.parse(await readFile(join(cwd, "decks", "ogp-cache.json"), "utf8"));
+      expect(resolveOgp).toHaveBeenCalledWith("https://hono.dev/docs/");
+      expect(slideOutput).toContain('title: "Fresh Hono Docs"');
+      expect(cacheOutput["https://hono.dev/docs/"]).toEqual({
+        title: "Fresh Hono Docs",
+        description: "Fresh docs description.",
+        image: "https://hono.dev/fresh.png",
+        siteName: "Hono",
+      });
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("writes a generated manifest module", async () => {
     const cwd = await createFixture();
 

@@ -175,6 +175,48 @@ describe("decksRouter", () => {
     expect(enabledViewerHtml).toContain(">Present</a>");
   });
 
+  it("does not resolve presenter viewer control when viewer controls are disabled", async () => {
+    const app = new Hono();
+    let calls = 0;
+    app.route(
+      "/slides",
+      decksRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        viewer: { controls: false },
+        presenter: {
+          enabled: () => {
+            calls += 1;
+            return true;
+          },
+          viewerControl: true,
+        },
+      }),
+    );
+
+    const response = await app.request("/slides/deck1");
+
+    expect(response.status).toBe(200);
+    expect(calls).toBe(0);
+  });
+
+  it("renders presenter controls and guards state messages to the projection frame", async () => {
+    const app = new Hono();
+    app.route("/slides", decksRouter({ source: manifestDeckSource({ decks: [deck] }) }));
+
+    const presenter = await app.request("/slides/deck1/presenter");
+    const presenterHtml = await presenter.text();
+
+    expect(presenter.status).toBe(200);
+    expect(presenterHtml).toContain("data-hono-decks-presenter-controls");
+    expect(presenterHtml).toContain('data-action="previous"');
+    expect(presenterHtml).toContain('data-action="next"');
+    expect(presenterHtml).toContain("data-hono-decks-presenter-position");
+    expect(presenterHtml).toContain("data-hono-decks-presenter-clock");
+    expect(presenterHtml).toContain("data-hono-decks-presenter-connection");
+    expect(presenterHtml).toContain("event.source !== frame?.contentWindow");
+    expect(presenterHtml).toContain("event.origin !== window.location.origin");
+  });
+
   it("resolves dev mode from the request context", async () => {
     const draftDeck = {
       ...deck,

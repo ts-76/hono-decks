@@ -113,6 +113,13 @@ export async function renderPresenterPageAsync(input: {
 <body>
   <main class="hono-decks-presenter" data-hono-decks-presenter data-slide-index="0">
     <section class="hono-decks-presenter-current" data-hono-decks-presenter-current aria-label="Current slide">
+      <nav class="hono-decks-presenter-controls" data-hono-decks-presenter-controls aria-label="Presenter controls">
+        <button type="button" data-action="previous">Back</button>
+        <span data-hono-decks-presenter-position>1 / ${deck.slides.length}</span>
+        <button type="button" data-action="next">Next</button>
+        <span data-hono-decks-presenter-clock>00:00</span>
+        <span data-hono-decks-presenter-connection>Connected</span>
+      </nav>
       <iframe title="${escapeHtml(presentationPageTitle(deck))}" src="${escapeHtml(projectionPath)}"></iframe>
     </section>
     <aside class="hono-decks-presenter-panel" aria-label="Presenter panel">
@@ -139,7 +146,7 @@ export async function renderPresenterPageAsync(input: {
       </section>
     </aside>
   </main>
-  ${renderPresenterScript()}
+  ${renderPresenterScript(deck.slides.length)}
 </body>
 </html>`;
 }
@@ -164,7 +171,10 @@ function basePresenterStyle(): string {
 body{margin:0;min-height:100vh;background:#050816;color:#eef2ff;font-family:Inter,ui-sans-serif,system-ui,sans-serif}
 .hono-decks-presenter{box-sizing:border-box;display:grid;grid-template-columns:minmax(0,2fr) minmax(320px,1fr);gap:16px;min-height:100vh;padding:16px}
 .hono-decks-presenter-current,.hono-decks-presenter-panel{min-width:0}
-.hono-decks-presenter-current{display:grid;align-items:center}
+.hono-decks-presenter-current{display:grid;grid-template-rows:auto 1fr;gap:12px;align-items:center}
+.hono-decks-presenter-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.hono-decks-presenter-controls button,.hono-decks-presenter-controls span{border:1px solid rgba(148,163,184,.32);border-radius:8px;background:rgba(15,23,42,.78);color:inherit;padding:8px 10px;font:inherit;font-size:14px}
+.hono-decks-presenter-controls button{cursor:pointer}
 .hono-decks-presenter-current iframe{width:100%;aspect-ratio:16/9;border:0;border-radius:8px;background:#000}
 .hono-decks-presenter-panel{display:grid;grid-template-rows:auto 1fr;gap:16px}
 .hono-decks-presenter-next,.hono-decks-presenter-notes{min-width:0;border:1px solid rgba(148,163,184,.28);border-radius:8px;background:rgba(15,23,42,.78);padding:12px}
@@ -177,15 +187,19 @@ body:not([data-overview-mode]) .hono-decks-presenter-preview .slide{position:abs
 @media (max-width:900px){.hono-decks-presenter{grid-template-columns:1fr}.hono-decks-presenter-panel{grid-template-rows:auto auto}}`;
 }
 
-function renderPresenterScript(): string {
+function renderPresenterScript(slideCount: number): string {
   return `<script>
 (() => {
   const root = document.querySelector("[data-hono-decks-presenter]");
+  const frame = document.querySelector("[data-hono-decks-presenter-current] iframe");
   const previews = Array.from(document.querySelectorAll("[data-hono-decks-presenter-preview]"));
   const notes = Array.from(document.querySelectorAll("[data-hono-decks-presenter-note]"));
   const noNext = document.querySelector("[data-hono-decks-presenter-no-next]");
+  const position = document.querySelector("[data-hono-decks-presenter-position]");
+  const clock = document.querySelector("[data-hono-decks-presenter-clock]");
   const DESIGN_WIDTH = 1920;
   const DESIGN_HEIGHT = 1080;
+  const startedAt = Date.now();
 
   function fitPresenterPreview(preview) {
     const slide = preview?.querySelector(".slide");
@@ -205,6 +219,7 @@ function renderPresenterScript(): string {
   function show(index) {
     const nextIndex = index + 1;
     root?.setAttribute("data-slide-index", String(index));
+    if (position) position.textContent = String(index + 1) + " / ${slideCount}";
     previews.forEach((preview) => {
       preview.hidden = Number(preview.getAttribute("data-slide-index")) !== nextIndex;
     });
@@ -215,10 +230,32 @@ function renderPresenterScript(): string {
     fitVisiblePresenterPreviews();
   }
 
+  function sendCommand(action) {
+    frame?.contentWindow?.postMessage({ type: "hono-decks:command", action }, window.location.origin);
+  }
+
+  function updateClock() {
+    if (!clock) return;
+    const elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
+    const minutes = String(Math.floor(elapsedSeconds / 60)).padStart(2, "0");
+    const seconds = String(elapsedSeconds % 60).padStart(2, "0");
+    clock.textContent = minutes + ":" + seconds;
+  }
+
   fitVisiblePresenterPreviews();
+  updateClock();
+  setInterval(updateClock, 1000);
   window.addEventListener("resize", fitVisiblePresenterPreviews);
+  document.querySelectorAll("[data-action='previous']").forEach((button) => {
+    button.addEventListener("click", () => sendCommand("previous"));
+  });
+  document.querySelectorAll("[data-action='next']").forEach((button) => {
+    button.addEventListener("click", () => sendCommand("next"));
+  });
 
   window.addEventListener("message", (event) => {
+    if (event.source !== frame?.contentWindow) return;
+    if (event.origin !== window.location.origin) return;
     const message = event.data;
     if (!message || message.type !== "hono-decks:state") return;
     if (Number.isInteger(message.index)) show(message.index);

@@ -83,6 +83,52 @@ describe("hono-decks CLI", () => {
     }
   });
 
+  it("uses an OGP cache file during compile", async () => {
+    const cwd = await createFixture();
+
+    try {
+      await writeFile(
+        join(cwd, "decks", "intro", "deck.mdx"),
+        `# Intro
+
+@[card](https://hono.dev/docs/)`,
+        "utf8",
+      );
+      await writeFile(
+        join(cwd, "decks", "ogp-cache.json"),
+        JSON.stringify({
+          "https://hono.dev/docs/": {
+            title: "Cached Hono Docs",
+            description: "Cached docs description.",
+          },
+        }),
+        "utf8",
+      );
+
+      const result = await runHonoDecksCli({
+        argv: [
+          "compile",
+          "--root",
+          "decks",
+          "--out",
+          "src/generated",
+          "--mount",
+          "/slides",
+          "--ogp-cache",
+          "decks/ogp-cache.json",
+        ],
+        cwd,
+      });
+
+      expect(result.exitCode).toBe(0);
+      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "intro", "slide-0.ts"), "utf8");
+      expect(slideOutput).toContain('title: "Cached Hono Docs"');
+      expect(slideOutput).toContain('description: "Cached docs description."');
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("reports usage errors without writing files", async () => {
     const cwd = await createFixture();
     const stderr: string[] = [];
