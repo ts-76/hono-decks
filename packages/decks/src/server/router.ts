@@ -6,6 +6,7 @@ import { renderPresenterPageAsync } from "../renderer/presentation-page";
 import { RenderError } from "../deck/model";
 import type { CompiledDeck, DeckSource } from "../deck/model";
 import type { SlideComponentInput, SlideComponentRegistry } from "../renderer/compiled-render";
+import type { DeckControlIconName } from "../renderer/control-icons";
 import { serveDecksClientEntry } from "./client-entry";
 import {
   isPdfExportEnabled,
@@ -106,6 +107,7 @@ export interface DeckPresenterEnabledInput {
 export interface DeckPresenterViewerControlOptions {
   key?: string;
   label?: string;
+  icon?: DeckControlIconName;
   className?: string;
   attributes?: Record<string, string | boolean | undefined>;
   placement?: "before" | "after";
@@ -355,6 +357,7 @@ async function resolvePresenterViewerControl(
       key: control.key ?? "presenter",
       href: presenterPath,
       label: control.label ?? "Presenter",
+      icon: control.icon ?? "presenter",
       className: control.className,
       attributes: control.attributes,
     },

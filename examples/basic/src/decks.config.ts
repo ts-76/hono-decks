@@ -67,6 +67,7 @@ const decksConfig = defineDecksConfig({
       enabled: ({ c, dev }) => dev || truthyBinding((c.env as DecksConfigBindings | undefined)?.DECK_PRESENTER_ENABLED),
       viewerControl: {
         label: "Presenter",
+        icon: "presenter",
         attributes: { "data-sample-control": "presenter" },
       },
     },
@@ -76,15 +77,12 @@ const decksConfig = defineDecksConfig({
         className: "sample-viewer-controls",
         itemClassName: "sample-viewer-control",
         hidden: ["fullscreen"],
-        labels: {
-          previous: "Back",
-          next: "Forward",
-        },
         before: [
           {
             type: "link",
             href: "/",
             label: "Home",
+            icon: "home",
             attributes: { "data-sample-control": "home" },
           },
         ],
@@ -93,6 +91,7 @@ const decksConfig = defineDecksConfig({
             type: "link",
             href: `${context.meta.canonicalPath}/about`,
             label: "Details",
+            icon: "details",
             attributes: { "data-sample-control": "details" },
           },
         ],

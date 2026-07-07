@@ -117,7 +117,7 @@ export async function renderPresenterPageAsync(input: {
   <main class="hono-decks-presenter" data-hono-decks-presenter data-slide-index="0">
     <section class="hono-decks-presenter-current" data-hono-decks-presenter-current aria-label="Current slide">
       <nav class="hono-decks-presenter-controls" data-hono-decks-presenter-controls aria-label="Presenter controls">
-        <a href="${escapeHtml(mountPath)}" title="Deck list" aria-label="Deck list">${renderControlIconHtml("deck-list")}</a>
+        <a href="${escapeHtml(mountPath)}" title="Deck list" aria-label="Deck list">${renderControlIconHtml("home")}</a>
         <a href="${escapeHtml(deckPath)}" title="Viewer" aria-label="Viewer">${renderControlIconHtml("viewer")}</a>
         <a href="${escapeHtml(projectionPath)}" title="Projection" aria-label="Projection">${renderControlIconHtml("projection")}</a>
         <button type="button" data-action="previous" title="Previous slide" aria-label="Previous slide">${renderControlIconHtml("previous")}</button>
@@ -180,7 +180,8 @@ body{margin:0;min-height:100vh;background:#050816;color:#eef2ff;font-family:Inte
 .hono-decks-presenter-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .hono-decks-presenter-controls a,.hono-decks-presenter-controls button,.hono-decks-presenter-controls span{border:1px solid rgba(148,163,184,.32);border-radius:8px;background:rgba(15,23,42,.78);color:inherit;padding:8px 10px;font:inherit;font-size:14px}
 .hono-decks-presenter-controls a,.hono-decks-presenter-controls button{display:inline-flex;align-items:center;justify-content:center;width:38px;min-height:38px;box-sizing:border-box;text-decoration:none;cursor:pointer}
-.hono-decks-control-icon{width:16px;height:16px;flex:0 0 auto;stroke:currentColor}
+.hono-decks-presenter-controls a *,.hono-decks-presenter-controls button *{pointer-events:none;cursor:pointer}
+.hono-decks-control-icon{width:16px;height:16px;flex:0 0 auto;stroke:currentColor;pointer-events:none}
 .hono-decks-presenter-current iframe{width:100%;aspect-ratio:16/9;border:0;border-radius:8px;background:#000}
 .hono-decks-presenter-panel{display:grid;grid-template-rows:auto 1fr;gap:16px}
 .hono-decks-presenter-next,.hono-decks-presenter-notes{min-width:0;border:1px solid rgba(148,163,184,.28);border-radius:8px;background:rgba(15,23,42,.78);padding:12px}

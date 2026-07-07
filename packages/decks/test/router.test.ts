@@ -59,6 +59,7 @@ describe("decksRouter", () => {
     expect(html).toContain('data-action="next"');
     expect(html).toContain('data-action="fullscreen"');
     expect(html).toContain("data-hono-decks-control-icon");
+    expect(html).toContain("pointer-events:none");
     expect(html).toContain('aria-label="Previous slide"');
     expect(html).toContain('aria-label="Next slide"');
     expect(html).toContain('aria-label="Toggle fullscreen"');
@@ -176,7 +177,9 @@ describe("decksRouter", () => {
     ).text();
     expect(enabledViewerHtml).toContain('href="/slides/deck1/presenter"');
     expect(enabledViewerHtml).toContain('data-presenter-control="enabled"');
-    expect(enabledViewerHtml).toContain(">Present</a>");
+    expect(enabledViewerHtml).toContain('aria-label="Present"');
+    expect(enabledViewerHtml).toContain("data-hono-decks-control-icon");
+    expect(enabledViewerHtml).not.toContain(">Present</a>");
   });
 
   it("does not resolve presenter viewer control when viewer controls are disabled", async () => {
@@ -216,7 +219,10 @@ describe("decksRouter", () => {
     expect(presenterHtml).toContain('href="/slides/deck1"');
     expect(presenterHtml).toContain('href="/slides/deck1/presentation"');
     expect(presenterHtml).toContain("data-hono-decks-control-icon");
+    expect(presenterHtml).toContain("pointer-events:none");
     expect(presenterHtml).not.toContain("hono-decks-presenter-control-text");
+    expect(presenterHtml).toContain('d="M3 11l9-8 9 8"');
+    expect(presenterHtml).toContain('d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"');
     expect(presenterHtml).toContain('aria-label="Deck list"');
     expect(presenterHtml).toContain('aria-label="Viewer"');
     expect(presenterHtml).toContain('aria-label="Projection"');

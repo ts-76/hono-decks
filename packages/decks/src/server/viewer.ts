@@ -96,6 +96,7 @@ export interface DeckViewerLinkControlItem {
   key?: string;
   href: string;
   label: string;
+  icon?: DeckControlIconName;
   download?: string;
   className?: string;
   attributes?: Record<string, string | boolean | undefined>;
@@ -383,12 +384,14 @@ function renderBaseViewerControlItem(
   context: DeckViewerControlsContext,
 ): DeckRenderable {
   if (item.type === "link") {
+    const ariaLabel = item.icon ? String(item.attributes?.["aria-label"] ?? item.label) : undefined;
     return jsx("a", {
       ...linkAttributes(item.attributes),
       ...(safeHref(item.href) ? { href: safeHref(item.href) } : {}),
       ...(item.download ? { download: item.download } : {}),
       ...classAttribute(options.itemClassName, item.className),
-      children: item.label,
+      ...(item.icon ? { "aria-label": ariaLabel, title: ariaLabel } : {}),
+      children: item.icon ? renderControlIcon(item.icon) : item.label,
     });
   }
 

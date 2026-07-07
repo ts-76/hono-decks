@@ -191,7 +191,12 @@ const sampleViewerStyle = `
   text-decoration: none;
 }
 
-.sample-viewer-control:is(button) {
+.sample-viewer-control:is(a, button) {
+  cursor: pointer;
+}
+
+.sample-viewer-control:is(a, button) * {
+  pointer-events: none;
   cursor: pointer;
 }
 `;
