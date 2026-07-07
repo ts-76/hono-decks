@@ -58,6 +58,10 @@ describe("decksRouter", () => {
     expect(html).toContain('data-action="previous"');
     expect(html).toContain('data-action="next"');
     expect(html).toContain('data-action="fullscreen"');
+    expect(html).toContain("data-hono-decks-control-icon");
+    expect(html).toContain('aria-label="Previous slide"');
+    expect(html).toContain('aria-label="Next slide"');
+    expect(html).toContain('aria-label="Toggle fullscreen"');
     expect(html).toContain('href="/slides"');
     expect(html).toContain('data-hono-decks-back-link');
     expect(html).toContain("message.stepCount");
@@ -211,7 +215,11 @@ describe("decksRouter", () => {
     expect(presenterHtml).toContain('href="/slides"');
     expect(presenterHtml).toContain('href="/slides/deck1"');
     expect(presenterHtml).toContain('href="/slides/deck1/presentation"');
-    expect(presenterHtml).toContain("data-hono-decks-presenter-control-icon");
+    expect(presenterHtml).toContain("data-hono-decks-control-icon");
+    expect(presenterHtml).not.toContain("hono-decks-presenter-control-text");
+    expect(presenterHtml).toContain('aria-label="Deck list"');
+    expect(presenterHtml).toContain('aria-label="Viewer"');
+    expect(presenterHtml).toContain('aria-label="Projection"');
     expect(presenterHtml).toContain('data-action="previous"');
     expect(presenterHtml).toContain('data-action="next"');
     expect(presenterHtml).toContain("data-hono-decks-presenter-position");

@@ -3,6 +3,12 @@ export type { DeckMiddlewareOptions } from "./server/middleware";
 export { parseDeck } from "./parser/parser";
 export { renderDeck, renderSlide } from "./renderer/render";
 export {
+  controlIconLabel,
+  renderControlIcon,
+  renderControlIconHtml,
+} from "./renderer/control-icons";
+export type { DeckControlIconName } from "./renderer/control-icons";
+export {
   builtInSlideComponents,
   defineSlideComponents,
   renderCompiledDeck,

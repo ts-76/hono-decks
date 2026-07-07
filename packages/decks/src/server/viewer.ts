@@ -2,6 +2,7 @@ import type { Context } from "hono";
 import { jsx } from "hono/jsx/jsx-runtime";
 import type { CompiledDeck } from "../deck/model";
 import type { DeckRenderable, MaybePromise } from "../renderer/compiled-render";
+import { controlIconLabel, renderControlIcon, type DeckControlIconName } from "../renderer/control-icons";
 import { renderJsxValue } from "../renderer/jsx-renderer";
 import type { DeckExportOptions, DeckViewerExportPaths } from "./browser-export";
 import { resolveAuthorizedExportPaths } from "./browser-export";
@@ -413,23 +414,25 @@ function renderDefaultViewerControlItem(
         ...itemProps,
         href: context.mountPath,
         "data-hono-decks-back-link": true,
-        children: item.label ?? "Decks",
+        ...(item.label === undefined ? { "aria-label": controlIconLabel("deck-list"), title: controlIconLabel("deck-list") } : {}),
+        children: item.label ?? renderControlIcon("deck-list"),
       });
     case "previous":
-      return jsx("button", { ...itemProps, type: "button", "data-action": "previous", children: item.label ?? "Prev" });
+      return renderIconButton("previous", item, itemProps);
     case "position":
       return jsx("span", { ...itemProps, "data-slide-position": true, children: item.label ?? "1 / ?" });
     case "next":
-      return jsx("button", { ...itemProps, type: "button", "data-action": "next", children: item.label ?? "Next" });
+      return renderIconButton("next", item, itemProps);
     case "fullscreen":
-      return jsx("button", { ...itemProps, type: "button", "data-action": "fullscreen", children: item.label ?? "Full" });
+      return renderIconButton("fullscreen", item, itemProps);
     case "exportPdf":
       return jsx("a", {
         ...itemProps,
         href: context.meta.exportPdfPath ?? "",
         download: `${safeFilename(context.meta.title)}.pdf`,
         "data-hono-decks-export": "pdf",
-        children: item.label ?? "PDF",
+        ...(item.label === undefined ? { "aria-label": controlIconLabel("export-pdf"), title: controlIconLabel("export-pdf") } : {}),
+        children: item.label ?? renderControlIcon("export-pdf"),
       });
     case "exportPng":
       return jsx("a", {
@@ -437,8 +440,44 @@ function renderDefaultViewerControlItem(
         href: context.meta.exportPngPath ?? "",
         download: `${safeFilename(context.meta.title)}.png`,
         "data-hono-decks-export": "png",
-        children: item.label ?? "PNG",
+        ...(item.label === undefined ? { "aria-label": controlIconLabel("export-png"), title: controlIconLabel("export-png") } : {}),
+        children: item.label ?? renderControlIcon("export-png"),
       });
+  }
+}
+
+function renderIconButton(
+  action: Extract<DeckViewerControlKey, "previous" | "next" | "fullscreen">,
+  item: DeckViewerDefaultControlItem,
+  itemProps: Record<string, string | boolean>,
+): DeckRenderable {
+  const iconName = controlIconNameForKey(action);
+  const label = controlIconLabel(iconName);
+  return jsx("button", {
+    ...itemProps,
+    type: "button",
+    "data-action": action,
+    ...(item.label === undefined ? { "aria-label": label, title: label } : {}),
+    children: item.label ?? renderControlIcon(iconName),
+  });
+}
+
+function controlIconNameForKey(key: DeckViewerControlKey): DeckControlIconName {
+  switch (key) {
+    case "back":
+      return "deck-list";
+    case "previous":
+      return "previous";
+    case "next":
+      return "next";
+    case "fullscreen":
+      return "fullscreen";
+    case "exportPdf":
+      return "export-pdf";
+    case "exportPng":
+      return "export-png";
+    case "position":
+      return "viewer";
   }
 }
 
