@@ -1,23 +1,74 @@
-# 残件一覧
+# Remaining Work
 
-beads に登録されている open Issue と、`.takt` 最新セッションの残件・引き継ぎ事項を突き合わせた一覧（一覧＋概要）。各残件は ID・タイトル・概要・ステータス・優先度の5項目で整理し、beads 由来 / `.takt` 由来をセクションで区別する。
+This file is the single markdown source for known unfinished work. Keep detailed implementation plans out of separate markdown files unless they are actively being executed.
 
-**生成基準:**
+## Beads Issues
 
-- beads データ: `bd list --status=open` と `bd show <id>`（取得時点で `Total: 2 issues (2 open, 0 in progress)`）
-- `.takt` 最新セッション: `.takt/runs/` 配下各 `meta.json` の `startTime` を比較し、進行中の本タスク run を除外した最新の完了済み run = `20260623-083536-task`（`status: aborted`、`startTime: 2026-06-23T08:35:36Z`）。残件は同 run の `reports/plan.md` と `git status` から抽出
-- 優先度は beads の値（P0〜P4）をそのまま記載。beads 値を持たない `.takt` 由来残件は `—`（未設定）とする
+These items are tracked in beads and remain open.
 
-## 1. beads 由来の残件
+| ID | Priority | Title | Remaining work |
+| --- | --- | --- | --- |
+| hono-slides-uuo | P1 | Verify deployed R2 smoke after custom domain DNS provisioning | After the custom domain resolves, run `bun run --cwd examples/basic smoke:r2-cache -- --origin https://hono-decks-basic.tslab.app` and record whether the deployed Worker returns the expected R2-backed asset headers. |
+| hono-slides-owa | P2 | Stabilize compile-time OGP metadata generation | Make LinkCard OGP generation deterministic by adding a cache, fixture, or opt-in refresh path so generated slide output no longer changes with network availability. |
 
-| ID | タイトル | 概要 | ステータス | 優先度 |
-|----|---------|------|-----------|--------|
-| hono-slides-uuo | Verify deployed R2 smoke after custom domain DNS provisioning | カスタムドメイン解決後に `bun run --cwd examples/basic smoke:r2-cache -- --origin https://hono-decks-basic.tslab.app` を実行する。Worker デプロイは成功し remote R2 オブジェクトもアップロード済みだが、現状 smoke は DNS ENOTFOUND で失敗する。 | open (task) | P1 |
-| hono-slides-owa | Stabilize compile-time OGP metadata generation | コンパイル時 LinkCard OGP フェッチがネットワーク可否で生成スライド出力を変える。決定的なキャッシュ・フィクスチャ・opt-in リフレッシュ経路を追加し、生成例を安定させつつ OGP metadata を実演できるようにする。 | open (task) | P2 |
+## Dev Auto Mode
 
-## 2. `.takt` 由来の残件（最新セッション: `20260623-083536-task`）
+Status: not implemented.
 
-| ID | タイトル | 概要 | ステータス | 優先度 |
-|----|---------|------|-----------|--------|
-| takt-083536-1 | decks パッケージのファイル分割リファクタリング（未コミット） | `packages/decks/` で `compiler.ts`・`compiled-render.ts` 等が変更され、新規ファイル `deck/assets.ts`・`deck/frontmatter.ts`・`generator/assets.ts`・`renderer/asset-rewrite.ts`・`renderer/presentation-{page,script,style}.ts`・`server/viewer-{script,style}.ts` 等が未追跡（`??`）。`git status` で継続を確認。 | 進行中（未コミット） | — |
-| takt-083536-2 | 指示書本文の欠落によるセッション中断（引き継ぎ事項） | タスク本文が「上記指示書で始めてください」のみで要件が渡されず、計画を確定できないまま abort。本来の指示書本文または対象タスクの指定があれば再開可能。 | 中断（要再指示） | — |
+Current router shape: `DecksRouterOptions.dev` accepts `boolean | DeckDevResolver`. It does not accept the older planned `dev: "auto"` mode.
+
+Decision needed: either implement `dev: "auto"` or drop the feature from the design docs.
+
+If implemented, the work is:
+
+- Extend the router dev option type to include `"auto"`.
+- Resolve `"auto"` to enabled only when a local development I/O adapter is present.
+- Add router tests proving auto mode enables local dev routes when local I/O exists and keeps them unavailable otherwise.
+- Verify with the focused router tests and the package check.
+
+Likely files:
+
+- `packages/decks/src/server/router.ts`
+- `packages/decks/test/router.test.ts`
+- Any type exports that expose the router options.
+
+## Presenter Improvements
+
+Status: partially implemented presenter route, unfinished workflow polish.
+
+Current state:
+
+- `/:slug/presenter` exists.
+- It renders current slide, next-slide preview, and speaker notes.
+- It does not yet provide a fuller presenter control/status surface.
+- The presenter viewer-control behavior still needs safety and DX tightening.
+
+Remaining work:
+
+- Avoid resolving presenter control state when viewer controls are disabled.
+- Keep `presenter: false` as an explicit route disable switch.
+- Support string env values such as `"true"` in the basic sample presenter gate.
+- Add presenter controls for previous/next navigation.
+- Add presenter status elements for slide position, clock, and connection state.
+- Forward presenter control commands to the projection iframe.
+- Update presenter position from `hono-decks:state`.
+- Harden presenter message handling by checking both `event.source` and `event.origin`.
+- Document presenter configuration, route gating, and viewer-control insertion behavior.
+
+Likely files:
+
+- `packages/decks/src/server/router.ts`
+- `packages/decks/src/renderer/presentation-page.ts`
+- `packages/decks/test/router.test.ts`
+- `examples/basic/src/decks.config.ts`
+- `examples/basic/test/worker-sample.test.ts`
+- `README.md`
+
+Suggested verification:
+
+```bash
+bunx vitest run packages/decks/test/router.test.ts
+bunx vitest run examples/basic/test/worker-sample.test.ts examples/basic/test/dev-scripts.test.ts
+bunx vitest run packages/decks/test
+git diff --check
+```
