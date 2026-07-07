@@ -176,18 +176,15 @@ const sampleViewerStyle = `
 }
 
 .sample-viewer-controls {
-  padding: 8px 10px;
-  border-radius: 999px;
-  background: rgba(5, 8, 22, .72);
-  backdrop-filter: blur(12px);
+  padding: 0;
 }
 
 .sample-viewer-control {
-  border: 1px solid rgba(255, 255, 255, .22);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, .1);
+  border: 1px solid rgba(148, 163, 184, .32);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, .78);
   color: inherit;
-  padding: 8px 12px;
+  padding: 8px 10px;
   text-decoration: none;
 }
 

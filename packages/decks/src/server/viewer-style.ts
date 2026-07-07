@@ -20,8 +20,9 @@ ${viewerViewportRule()}
 .hono-decks-frame-stage{width:100%;height:100%}
 .hono-decks-frame-stage iframe{width:100%;height:100%;border:0;display:block}
 .hono-decks-viewer-controls{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:8px;align-items:center}
+.hono-decks-viewer-controls button,.hono-decks-viewer-controls a,.hono-decks-viewer-controls span{border:1px solid rgba(148,163,184,.32);border-radius:8px;background:rgba(15,23,42,.78);color:inherit;padding:8px 10px;font:inherit;font-size:14px}
 .hono-decks-viewer-toc button,.hono-decks-viewer-controls button,.hono-decks-viewer-controls a{font:inherit}
-.hono-decks-viewer-controls button,.hono-decks-viewer-controls a{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;box-sizing:border-box;cursor:pointer}
+.hono-decks-viewer-controls button,.hono-decks-viewer-controls a{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;box-sizing:border-box;text-decoration:none;cursor:pointer}
 .hono-decks-viewer-controls button *,.hono-decks-viewer-controls a *{pointer-events:none;cursor:pointer}
 .hono-decks-control-icon{width:16px;height:16px;flex:0 0 auto;stroke:currentColor;pointer-events:none}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}}`;

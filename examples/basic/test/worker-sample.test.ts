@@ -41,7 +41,7 @@ describe("sample Worker app", () => {
     expect(configSource).toContain("viewerControl: {");
     expect(configSource).toContain('className: "sample-viewer-controls"');
     expect(configSource).toContain('itemClassName: "sample-viewer-control"');
-    expect(configSource).toContain('hidden: ["fullscreen"]');
+    expect(configSource).not.toContain('hidden: ["fullscreen"]');
     expect(configSource).toContain('icon: "home"');
     expect(configSource).toContain('icon: "details"');
     expect(configSource).toContain('icon: "presenter"');
@@ -107,6 +107,8 @@ describe("sample Worker app", () => {
     expect(html).not.toContain("stage.style.transform");
     expect(html).toContain('id="hono-css"');
     expect(html).toContain("radial-gradient(circle at top, #1e2b5c, #050816 62%)");
+    expect(html).toContain("border-radius: 8px");
+    expect(html).toContain("background: rgba(15, 23, 42, .78)");
     expect(html).toContain('href="/"');
     expect(html).toContain('data-sample-control="home"');
     expect(html).toContain('aria-label="Home"');
@@ -127,7 +129,8 @@ describe("sample Worker app", () => {
     expect(html).toContain('data-action="next"');
     expect(html).toContain('aria-label="Next slide"');
     expect(html).not.toContain(">Forward</button>");
-    expect(html).not.toContain('data-action="fullscreen"');
+    expect(html).toContain('data-action="fullscreen"');
+    expect(html).toContain('aria-label="Toggle fullscreen"');
     expect(html).not.toContain('href="/decks/sample/presenter"');
     expect(html).not.toContain('data-sample-control="presenter"');
     expect(html.indexOf('data-sample-control="home"')).toBeLessThan(html.indexOf('data-action="previous"'));

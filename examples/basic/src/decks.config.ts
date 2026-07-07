@@ -76,7 +76,6 @@ const decksConfig = defineDecksConfig({
       controls: {
         className: "sample-viewer-controls",
         itemClassName: "sample-viewer-control",
-        hidden: ["fullscreen"],
         before: [
           {
             type: "link",
