@@ -36,7 +36,9 @@ export function renderPresentationScript(): string {
   }
 
   function publishState() {
-    if (window.parent !== window) window.parent.postMessage({ type: "hono-decks:state", index, stepIndex, stepCount, slideCount: slides.length }, "*");
+    const state = { type: "hono-decks:state", index, stepIndex, stepCount, slideCount: slides.length };
+    if (window.parent !== window) window.parent.postMessage(state, "*");
+    if (window.opener && window.opener !== window) window.opener.postMessage(state, window.location.origin);
   }
 
   function slideFragments(slide) {

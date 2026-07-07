@@ -205,6 +205,9 @@ function renderPresenterScript(slideCount: number): string {
   const position = document.querySelector("[data-hono-decks-presenter-position]");
   const DESIGN_WIDTH = 1920;
   const DESIGN_HEIGHT = 1080;
+  let projectionWindow = null;
+  let currentIndex = 0;
+  let currentStepIndex = 0;
 
   function fitPresenterPreview(preview) {
     const slide = preview?.querySelector(".slide");
@@ -221,8 +224,10 @@ function renderPresenterScript(slideCount: number): string {
     });
   }
 
-  function show(index) {
+  function show(index, stepIndex = 0) {
     const nextIndex = index + 1;
+    currentIndex = index;
+    currentStepIndex = stepIndex;
     root?.setAttribute("data-slide-index", String(index));
     if (position) position.textContent = String(index + 1) + " / ${slideCount}";
     previews.forEach((preview) => {
@@ -236,15 +241,24 @@ function renderPresenterScript(slideCount: number): string {
   }
 
   function sendCommand(action) {
-    frame?.contentWindow?.postMessage({ type: "hono-decks:command", action }, window.location.origin);
+    const message = { type: "hono-decks:command", action };
+    frame?.contentWindow?.postMessage(message, window.location.origin);
+    if (projectionWindow?.closed) projectionWindow = null;
+    projectionWindow?.postMessage(message, window.location.origin);
   }
 
   function openProjection(button) {
     const projectionUrl = button.getAttribute("data-projection-url");
     if (!projectionUrl) return;
     const features = "popup=yes,width=1920,height=1080,left=0,top=0,menubar=no,toolbar=no,location=no,status=no";
-    const projection = window.open(projectionUrl, "hono-decks-projection", features);
-    projection?.focus?.();
+    projectionWindow = window.open(projectionUrl, "hono-decks-projection", features);
+    projectionWindow?.focus?.();
+    window.setTimeout(() => {
+      projectionWindow?.postMessage(
+        { type: "hono-decks:command", action: "goTo", index: currentIndex, stepIndex: currentStepIndex },
+        window.location.origin,
+      );
+    }, 250);
   }
 
   fitVisiblePresenterPreviews();
@@ -260,11 +274,11 @@ function renderPresenterScript(slideCount: number): string {
   });
 
   window.addEventListener("message", (event) => {
-    if (event.source !== frame?.contentWindow) return;
+    if (event.source !== frame?.contentWindow && event.source !== projectionWindow) return;
     if (event.origin !== window.location.origin) return;
     const message = event.data;
     if (!message || message.type !== "hono-decks:state") return;
-    if (Number.isInteger(message.index)) show(message.index);
+    if (Number.isInteger(message.index)) show(message.index, Number.isInteger(message.stepIndex) ? message.stepIndex : 0);
   });
 })();
 </script>`;

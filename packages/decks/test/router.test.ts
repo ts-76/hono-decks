@@ -109,6 +109,7 @@ describe("decksRouter", () => {
     expect(projectionHtml).toContain("data-hono-decks-projection");
     expect(projectionHtml).toContain("<h1>Intro</h1>");
     expect(projectionHtml).toContain("hono-decks:state");
+    expect(projectionHtml).toContain("window.opener.postMessage");
     expect(projectionHtml).not.toContain("data-hono-decks-viewer-controls");
     expect(projectionHtml).not.toContain("data-hono-decks-back-link");
     expect(projectionHtml).not.toContain("Open with the Worker runtime boundary.");
@@ -220,6 +221,7 @@ describe("decksRouter", () => {
     expect(presenterHtml).toContain('data-action="openProjection"');
     expect(presenterHtml).toContain('data-projection-url="/slides/deck1/presentation"');
     expect(presenterHtml).toContain("window.open(projectionUrl");
+    expect(presenterHtml).toContain("projectionWindow?.postMessage");
     expect(presenterHtml).toContain("width=1920,height=1080");
     expect(presenterHtml).toContain("data-hono-decks-control-icon");
     expect(presenterHtml).toContain("pointer-events:none");
@@ -236,7 +238,7 @@ describe("decksRouter", () => {
     expect(presenterHtml).not.toContain("updateClock");
     expect(presenterHtml).not.toContain("setInterval");
     expect(presenterHtml).toContain("data-hono-decks-presenter-connection");
-    expect(presenterHtml).toContain("event.source !== frame?.contentWindow");
+    expect(presenterHtml).toContain("event.source !== frame?.contentWindow && event.source !== projectionWindow");
     expect(presenterHtml).toContain("event.origin !== window.location.origin");
   });
 

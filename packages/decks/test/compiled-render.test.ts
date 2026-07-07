@@ -216,9 +216,9 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("document.startViewTransition");
     expect(html).toContain("queueNavigation(targetIndex, nextStepIndex)");
     expect(html).toContain("drainPendingNavigation()");
-    expect(html).toContain(
-      'window.parent.postMessage({ type: "hono-decks:state", index, stepIndex, stepCount, slideCount: slides.length }, "*")',
-    );
+    expect(html).toContain('const state = { type: "hono-decks:state", index, stepIndex, stepCount, slideCount: slides.length }');
+    expect(html).toContain('window.parent.postMessage(state, "*")');
+    expect(html).toContain("window.opener.postMessage(state, window.location.origin)");
     expect(html).toContain("function next()");
     expect(html).toContain("function previous()");
     expect(html).toContain("if (stepIndex < stepCount)");
