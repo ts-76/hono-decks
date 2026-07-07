@@ -192,7 +192,7 @@ app.route(deckMountPath, createDecksRouter());
 
 `examples/basic/src/decks.ts` は `hono-decks init` の雛形を stable app API として使い、任意設定を `examples/basic/src/decks.config.ts` の default config object に分けた例です。`decks.config.ts` では `withR2Assets()` をさらに custom `DeckSource` として包み、asset response に `x-hono-decks-asset-source: r2 | embedded` を付けています。これは package が compile-time Node I/O で R2 を読まず、Worker runtime の `DeckSource.getAsset()` 境界で存在確認・cache header・fallback を扱う例です。`examples/basic/decks/media` には R2-backed image の表示サンプルがあります。
 
-この package は R2 upload までは行いません。`withR2Assets()` は `decks/media/assets/r2-remote.svg` のような generated asset の `sourcePath` を R2 key として読むため、deploy 前に同じ key で object を置いてください。ローカル test では `Cache-Control` header と R2 binding 経由の response を検証できますが、Cloudflare edge cache の hit/miss は deploy 後に `cf-cache-status` や `age` を見る smoke check で確認します。未完了の確認項目は [Remaining Work](docs/remaining-work.md) にまとめています。
+この package は R2 upload までは行いません。`withR2Assets()` は `decks/media/assets/r2-remote.svg` のような generated asset の `sourcePath` を R2 key として読むため、deploy 前に同じ key で object を置いてください。ローカル test では `Cache-Control` header と R2 binding 経由の response を検証できますが、Cloudflare edge cache の hit/miss は deploy 後に `cf-cache-status` や `age` を見る smoke check で確認します。未完了の確認項目は beads issue で管理しています。
 
 iframe embed は Zenn 風 shorthand または built-in `<EmbedFrame>` を使えます。`sandbox`、`allow`、`referrerpolicy`、`loading="lazy"`、fallback link、aspect ratio の既定値を package 側で揃えます。YouTube など特定サービスで必要な permission は `allow` で上書きしてください。
 
@@ -459,7 +459,7 @@ examples/basic/
 
 `src/decks.ts` は `hono-decks init --out src/decks.ts` で作れる app-owned facade です。basic sample ではその facade から `decks.config.ts` の default config object を読み、R2/cache behavior、OGP cache、export 設定を差し込んでいます。`decks.config.ts` は任意ファイルなので、拡張が不要な app では置かなくても構いません。`dev`、`typecheck`、`test`、`deploy` は事前に `bun run decks:compile` を実行し、`decks/*/deck.mdx` から `src/generated/decks.ts` と slide module 群を更新します。sample や motion のように deck-local な `components/client/index.tsx` を持つ deck は browser bundle 化されて `src/generated/client-entry.ts` に埋め込まれ、`client: true` component を `hono/jsx/dom` で hydrate します。Worker runtime は生成済み router/client asset を import するだけで、file system の読み取りは build-time CLI に閉じています。
 
-未完了の検証項目と実装課題は [Remaining Work](docs/remaining-work.md) にまとめています。desktop/mobile の viewer framing は `agent-browser` を使う `bun run smoke:viewport` で、print-to-PDF は `bun run smoke:pdf` で確認できます。
+未完了の検証項目と実装課題は beads issue で管理しています。desktop/mobile の viewer framing は `agent-browser` を使う `bun run smoke:viewport` で、print-to-PDF は `bun run smoke:pdf` で確認できます。
 
 ```bash
 bun run --cwd examples/basic dev
