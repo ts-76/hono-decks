@@ -222,6 +222,9 @@ describe("decksRouter", () => {
     expect(presenterHtml).toContain('data-projection-url="/slides/deck1/presentation"');
     expect(presenterHtml).toContain("window.open(projectionUrl");
     expect(presenterHtml).toContain("projectionWindow?.postMessage");
+    expect(presenterHtml).toContain("function syncProjectionState(source, index, stepIndex)");
+    expect(presenterHtml).toContain("if (event.source !== frame?.contentWindow) projectionWindow = event.source");
+    expect(presenterHtml).toContain('action: "goTo", index, stepIndex');
     expect(presenterHtml).toContain("width=1920,height=1080");
     expect(presenterHtml).toContain("data-hono-decks-control-icon");
     expect(presenterHtml).toContain("pointer-events:none");
@@ -238,7 +241,7 @@ describe("decksRouter", () => {
     expect(presenterHtml).not.toContain("updateClock");
     expect(presenterHtml).not.toContain("setInterval");
     expect(presenterHtml).toContain("data-hono-decks-presenter-connection");
-    expect(presenterHtml).toContain("event.source !== frame?.contentWindow && event.source !== projectionWindow");
+    expect(presenterHtml).toContain("syncProjectionState(event.source, message.index, stepIndex)");
     expect(presenterHtml).toContain("event.origin !== window.location.origin");
   });
 

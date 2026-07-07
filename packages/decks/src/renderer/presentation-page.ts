@@ -247,6 +247,13 @@ function renderPresenterScript(slideCount: number): string {
     projectionWindow?.postMessage(message, window.location.origin);
   }
 
+  function syncProjectionState(source, index, stepIndex) {
+    const message = { type: "hono-decks:command", action: "goTo", index, stepIndex };
+    if (source !== frame?.contentWindow) frame?.contentWindow?.postMessage(message, window.location.origin);
+    if (projectionWindow?.closed) projectionWindow = null;
+    if (projectionWindow && source !== projectionWindow) projectionWindow.postMessage(message, window.location.origin);
+  }
+
   function openProjection(button) {
     const projectionUrl = button.getAttribute("data-projection-url");
     if (!projectionUrl) return;
@@ -274,11 +281,17 @@ function renderPresenterScript(slideCount: number): string {
   });
 
   window.addEventListener("message", (event) => {
-    if (event.source !== frame?.contentWindow && event.source !== projectionWindow) return;
     if (event.origin !== window.location.origin) return;
     const message = event.data;
     if (!message || message.type !== "hono-decks:state") return;
-    if (Number.isInteger(message.index)) show(message.index, Number.isInteger(message.stepIndex) ? message.stepIndex : 0);
+    if (event.source !== frame?.contentWindow && event.source !== projectionWindow && !window.opener) return;
+    if (event.source !== frame?.contentWindow) projectionWindow = event.source;
+    if (Number.isInteger(message.index)) {
+      const stepIndex = Number.isInteger(message.stepIndex) ? message.stepIndex : 0;
+      const alreadyCurrent = message.index === currentIndex && stepIndex === currentStepIndex;
+      show(message.index, stepIndex);
+      if (!alreadyCurrent) syncProjectionState(event.source, message.index, stepIndex);
+    }
   });
 })();
 </script>`;
