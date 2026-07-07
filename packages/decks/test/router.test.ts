@@ -66,6 +66,8 @@ describe("decksRouter", () => {
     expect(html).toContain('href="/slides"');
     expect(html).toContain('data-hono-decks-back-link');
     expect(html).toContain("message.stepCount");
+    expect(html).toContain("writeViewerPaginationState(message)");
+    expect(html).toContain('params.set("slide", String(message.index + 1))');
     expect(html).toContain("root?.setAttribute(\"data-step-index\", String(message.stepIndex ?? 0))");
     expect(html).toContain("root?.setAttribute(\"data-step-count\", String(message.stepCount ?? 0))");
     expect(html).not.toContain('String(message.stepIndex) + " / " + String(message.stepCount)');
@@ -78,6 +80,35 @@ describe("decksRouter", () => {
     expect(html).not.toContain("/edit");
     expect(html).not.toContain("/agent/chat");
     expect(html).not.toContain("/apply");
+  });
+
+  it("keeps viewer pagination in query parameters", async () => {
+    const app = new Hono();
+    app.route("/slides", decksRouter({ source: manifestDeckSource({ decks: [deck] }) }));
+
+    const response = await app.request("/slides/deck1?slide=2&step=1&ignored=yes");
+    expect(response.status).toBe(200);
+    const html = await response.text();
+
+    expect(html).toContain('src="/slides/deck1/render?slide=2&amp;step=1"');
+    expect(html).toContain("writeViewerPaginationState(message)");
+    expect(html).not.toContain("ignored=yes");
+  });
+
+  it("keeps presenter pagination in query parameters", async () => {
+    const app = new Hono();
+    app.route("/slides", decksRouter({ source: manifestDeckSource({ decks: [deck] }) }));
+
+    const response = await app.request("/slides/deck1/presenter?slide=2&step=1&ignored=yes");
+    expect(response.status).toBe(200);
+    const html = await response.text();
+
+    expect(html).toContain('href="/slides/deck1?slide=2&amp;step=1"');
+    expect(html).toContain('src="/slides/deck1/presentation?slide=2&amp;step=1"');
+    expect(html).toContain('data-projection-url="/slides/deck1/presentation?slide=2&amp;step=1"');
+    expect(html).toContain("writePresenterPaginationState()");
+    expect(html).toContain('url.searchParams.set("slide", String(currentIndex + 1))');
+    expect(html).not.toContain("ignored=yes");
   });
 
   it("serves a clean projection route and a presenter route with next preview and speaker notes", async () => {
@@ -220,7 +251,7 @@ describe("decksRouter", () => {
     expect(presenterHtml).toContain('href="/slides/deck1"');
     expect(presenterHtml).toContain('data-action="openProjection"');
     expect(presenterHtml).toContain('data-projection-url="/slides/deck1/presentation"');
-    expect(presenterHtml).toContain("window.open(projectionUrl");
+    expect(presenterHtml).toContain("window.open(url.href");
     expect(presenterHtml).toContain("projectionWindow?.postMessage");
     expect(presenterHtml).toContain("function syncProjectionState(source, index, stepIndex)");
     expect(presenterHtml).toContain("if (event.source !== frame?.contentWindow) projectionWindow = event.source");

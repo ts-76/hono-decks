@@ -90,6 +90,7 @@ export async function renderCompiledDeckPageAsync(input: {
 export async function renderPresenterPageAsync(input: {
   deck: CompiledDeck;
   mountPath: string;
+  presenterStateQuery?: string;
   style?: string;
   components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
 }): Promise<string> {
@@ -97,7 +98,9 @@ export async function renderPresenterPageAsync(input: {
   const components = mergeComponentInputs(deck.componentRegistry, input.components);
   const mountPath = input.mountPath.replace(/\/$/, "") || "/";
   const deckPath = `${mountPath === "/" ? "" : mountPath}/${encodeURIComponent(deck.slug)}`;
-  const projectionPath = `${deckPath}/presentation`;
+  const stateQuery = input.presenterStateQuery ?? "";
+  const deckHref = `${deckPath}${stateQuery}`;
+  const projectionPath = `${deckPath}/presentation${stateQuery}`;
   const previews = await Promise.all(
     deck.slides.map((slide) =>
       renderCompiledSlideAsync(slide, deck.assets, { components, deck, speakerNotes: false, slideState: "active" }),
@@ -118,7 +121,7 @@ export async function renderPresenterPageAsync(input: {
     <section class="hono-decks-presenter-current" data-hono-decks-presenter-current aria-label="Current slide">
       <nav class="hono-decks-presenter-controls" data-hono-decks-presenter-controls aria-label="Presenter controls">
         <a href="${escapeHtml(mountPath)}" title="Deck list" aria-label="Deck list">${renderControlIconHtml("home")}</a>
-        <a href="${escapeHtml(deckPath)}" title="Viewer" aria-label="Viewer">${renderControlIconHtml("viewer")}</a>
+        <a href="${escapeHtml(deckHref)}" title="Viewer" aria-label="Viewer">${renderControlIconHtml("viewer")}</a>
         <button type="button" data-action="openProjection" data-projection-url="${escapeHtml(projectionPath)}" title="Projection" aria-label="Projection">${renderControlIconHtml("projection")}</button>
         <button type="button" data-action="previous" title="Previous slide" aria-label="Previous slide">${renderControlIconHtml("previous")}</button>
         <span data-hono-decks-presenter-position>1 / ${deck.slides.length}</span>
@@ -228,6 +231,7 @@ function renderPresenterScript(slideCount: number): string {
     const nextIndex = index + 1;
     currentIndex = index;
     currentStepIndex = stepIndex;
+    writePresenterPaginationState();
     root?.setAttribute("data-slide-index", String(index));
     if (position) position.textContent = String(index + 1) + " / ${slideCount}";
     previews.forEach((preview) => {
@@ -238,6 +242,14 @@ function renderPresenterScript(slideCount: number): string {
       note.hidden = Number(note.getAttribute("data-slide-index")) !== index;
     });
     fitVisiblePresenterPreviews();
+  }
+
+  function writePresenterPaginationState() {
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+    params.set("slide", String(currentIndex + 1));
+    params.set("step", String(currentStepIndex));
+    window.history.replaceState(null, "", url);
   }
 
   function sendCommand(action) {
@@ -257,8 +269,11 @@ function renderPresenterScript(slideCount: number): string {
   function openProjection(button) {
     const projectionUrl = button.getAttribute("data-projection-url");
     if (!projectionUrl) return;
+    const url = new URL(projectionUrl, window.location.href);
+    url.searchParams.set("slide", String(currentIndex + 1));
+    url.searchParams.set("step", String(currentStepIndex));
     const features = "popup=yes,width=1920,height=1080,left=0,top=0,menubar=no,toolbar=no,location=no,status=no";
-    projectionWindow = window.open(projectionUrl, "hono-decks-projection", features);
+    projectionWindow = window.open(url.href, "hono-decks-projection", features);
     projectionWindow?.focus?.();
     window.setTimeout(() => {
       projectionWindow?.postMessage(

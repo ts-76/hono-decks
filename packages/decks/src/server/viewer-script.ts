@@ -47,6 +47,15 @@ export function renderViewerScript(): string {
     await root?.requestFullscreen?.();
   }
 
+  function writeViewerPaginationState(message) {
+    if (!Number.isInteger(message.index)) return;
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+    params.set("slide", String(message.index + 1));
+    params.set("step", String(Number.isInteger(message.stepIndex) ? message.stepIndex : 0));
+    window.history.replaceState(null, "", url);
+  }
+
   document.querySelectorAll("[data-action='previous']").forEach((control) => {
     control.addEventListener("click", () => sendCommand("previous"));
   });
@@ -68,6 +77,7 @@ export function renderViewerScript(): string {
   window.addEventListener("message", (event) => {
     const message = event.data;
     if (!message || message.type !== ${JSON.stringify(VIEWER_STATE_MESSAGE_TYPE)}) return;
+    writeViewerPaginationState(message);
     root?.setAttribute("data-step-index", String(message.stepIndex ?? 0));
     root?.setAttribute("data-step-count", String(message.stepCount ?? 0));
     if (position) {

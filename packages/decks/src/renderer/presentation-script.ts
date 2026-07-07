@@ -37,8 +37,26 @@ export function renderPresentationScript(): string {
 
   function publishState() {
     const state = { type: "hono-decks:state", index, stepIndex, stepCount, slideCount: slides.length };
+    writePaginationState();
     if (window.parent !== window) window.parent.postMessage(state, "*");
     if (window.opener && window.opener !== window) window.opener.postMessage(state, window.location.origin);
+  }
+
+  function readInitialState() {
+    const params = new URLSearchParams(window.location.search);
+    const slide = Number(params.get("slide"));
+    const step = Number(params.get("step"));
+    const initialIndex = Number.isInteger(slide) ? Math.max(0, Math.min(slides.length - 1, slide - 1)) : 0;
+    const initialStepIndex = Number.isInteger(step) ? Math.max(0, step) : 0;
+    return { index: initialIndex, stepIndex: initialStepIndex };
+  }
+
+  function writePaginationState() {
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+    params.set("slide", String(index + 1));
+    params.set("step", String(stepIndex));
+    window.history.replaceState(null, "", url);
   }
 
   function slideFragments(slide) {
@@ -353,7 +371,8 @@ export function renderPresentationScript(): string {
 
   window.addEventListener("resize", fitDeck);
   fitDeck();
-  show(0);
+  const initialState = readInitialState();
+  show(initialState.index, initialState.stepIndex);
 })();
 </script>`;
 }

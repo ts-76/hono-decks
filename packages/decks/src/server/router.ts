@@ -254,6 +254,7 @@ export function decksRouter(options: DecksRouterOptions): Hono {
         await renderPresenterPageAsync({
           deck,
           mountPath,
+          presenterStateQuery: paginationQueryFromRequest(c),
           style: options.style,
           components: options.components,
         }),
@@ -275,6 +276,7 @@ export function decksRouter(options: DecksRouterOptions): Hono {
         c,
         deck,
         mountPath,
+        viewerStateQuery: paginationQueryFromRequest(c),
         viewer: {
           ...options.viewer,
           controls: await resolveViewerControls(c, options, deck, slug, mountPath),
@@ -285,6 +287,29 @@ export function decksRouter(options: DecksRouterOptions): Hono {
   });
 
   return router;
+}
+
+function paginationQueryFromRequest(c: Context): string {
+  const source = new URL(c.req.url);
+  const params = new URLSearchParams();
+  const slide = positiveIntegerParam(source.searchParams.get("slide"));
+  const step = nonNegativeIntegerParam(source.searchParams.get("step"));
+  if (slide !== undefined) params.set("slide", String(slide));
+  if (step !== undefined) params.set("step", String(step));
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
+function positiveIntegerParam(value: string | null): number | undefined {
+  if (value === null) return undefined;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+function nonNegativeIntegerParam(value: string | null): number | undefined {
+  if (value === null) return undefined;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : undefined;
 }
 
 export function deckContext(options: DeckContextOptions): MiddlewareHandler<{ Variables: DeckContextVariables }> {

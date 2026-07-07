@@ -147,6 +147,7 @@ export interface DeckViewerRenderInput extends DeckViewerParts {
 export async function createDeckViewerParts(input: {
   deck: CompiledDeck;
   mountPath: string;
+  viewerStateQuery?: string;
   controls?: false | DeckViewerControlsOptions;
   exportPaths?: DeckViewerExportPaths;
 }): Promise<DeckViewerParts> {
@@ -154,7 +155,7 @@ export async function createDeckViewerParts(input: {
   const title = input.deck.meta.title ?? slug;
   const basePath = input.mountPath.replace(/\/$/, "");
   const canonicalPath = `${basePath}/${encodeURIComponent(slug)}`;
-  const renderUrl = `${canonicalPath}/render`;
+  const renderUrl = `${canonicalPath}/render${input.viewerStateQuery ?? ""}`;
   const printPath = `${canonicalPath}/print`;
   const exportPdfPath = input.exportPaths?.pdf ? `${canonicalPath}/export.pdf` : undefined;
   const exportPngPath = input.exportPaths?.png ? `${canonicalPath}/export.png` : undefined;
@@ -192,12 +193,14 @@ export async function renderDeckViewerPage(input: {
   c: Context;
   deck: CompiledDeck;
   mountPath: string;
+  viewerStateQuery?: string;
   viewer?: DeckViewerOptions;
   exportOptions?: DeckExportOptions;
 }): Promise<string> {
   const parts = await createDeckViewerParts({
     deck: input.deck,
     mountPath: input.mountPath,
+    viewerStateQuery: input.viewerStateQuery,
     controls: input.viewer?.controls,
     exportPaths: await resolveAuthorizedExportPaths(input.c, input.deck, input.exportOptions),
   });

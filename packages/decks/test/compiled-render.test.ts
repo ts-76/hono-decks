@@ -199,6 +199,10 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("data-fragment-hidden");
     expect(html).toContain("let stepIndex = 0");
     expect(html).toContain("let stepCount = 0");
+    expect(html).toContain("function readInitialState()");
+    expect(html).toContain("function writePaginationState()");
+    expect(html).toContain('params.set("slide", String(index + 1))');
+    expect(html).toContain("show(initialState.index, initialState.stepIndex)");
     expect(html).toContain("let previousIndex = 0");
     expect(html).toContain("let isTransitioning = false");
     expect(html).toContain("let pendingNavigation = null");
