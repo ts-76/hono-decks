@@ -22,6 +22,7 @@ export type DeckViewerControlKey =
   | "position"
   | "next"
   | "fullscreen"
+  | "print"
   | "exportPdf"
   | "exportPng";
 
@@ -63,6 +64,7 @@ export interface DeckViewerControlDefaults {
   position: DeckViewerDefaultControlItem;
   next: DeckViewerDefaultControlItem;
   fullscreen: DeckViewerDefaultControlItem;
+  print: DeckViewerDefaultControlItem;
   exportPdf: DeckViewerDefaultControlItem | null;
   exportPng: DeckViewerDefaultControlItem | null;
 }
@@ -354,6 +356,7 @@ function buildViewerControlDefaults(context: DeckViewerControlsContext): DeckVie
     position: { type: "default", key: "position" },
     next: { type: "default", key: "next" },
     fullscreen: { type: "default", key: "fullscreen" },
+    print: { type: "default", key: "print" },
     exportPdf: context.meta.exportPdfPath ? { type: "default", key: "exportPdf" } : null,
     exportPng: context.meta.exportPngPath ? { type: "default", key: "exportPng" } : null,
   };
@@ -370,6 +373,7 @@ function resolveViewerControlItems(
     defaults.position,
     defaults.next,
     defaults.fullscreen,
+    defaults.print,
     defaults.exportPdf,
     defaults.exportPng,
   ];
@@ -450,6 +454,14 @@ function renderDefaultViewerControlItem(
       return renderIconButton("next", item, itemProps);
     case "fullscreen":
       return renderIconButton("fullscreen", item, itemProps);
+    case "print":
+      return jsx("a", {
+        ...itemProps,
+        href: context.meta.printPath,
+        "data-hono-decks-print": true,
+        ...(item.label === undefined ? { "aria-label": controlIconLabel("print"), title: controlIconLabel("print") } : {}),
+        children: item.label ?? renderControlIcon("print"),
+      });
     case "exportPdf":
       return jsx("a", {
         ...itemProps,
@@ -498,6 +510,8 @@ function controlIconNameForKey(key: DeckViewerControlKey): DeckControlIconName {
       return "next";
     case "fullscreen":
       return "fullscreen";
+    case "print":
+      return "print";
     case "exportPdf":
       return "export-pdf";
     case "exportPng":

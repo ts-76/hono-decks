@@ -304,7 +304,7 @@ app.route("/decks", createDecksRouter({
 }));
 ```
 
-標準 viewer controls は `viewer.controls` で差分カスタムできます。`before` / `after` は標準項目の前後に link や render item を追加し、`hidden` は標準項目だけを非表示にします。`labels` は標準項目の表示名だけを差し替えます。
+標準 viewer controls は `viewer.controls` で差分カスタムできます。`before` / `after` は標準項目の前後に link や render item を追加し、`hidden` は標準項目だけを非表示にします。`labels` は標準項目の表示名だけを差し替えます。`print` は `/:slug/print` へのリンクで、PCでは標準表示されます。タッチ操作が主となる端末では、動作が安定しない `fullscreen` とPC向けの `print` を標準スタイルで非表示にします。
 
 ```ts
 app.route("/decks", createDecksRouter({

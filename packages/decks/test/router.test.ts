@@ -62,9 +62,14 @@ describe("decksRouter", () => {
     expect(html).toContain('@media (orientation:landscape) and (max-height:600px)');
     expect(html).toContain("grid-template-columns:minmax(0,1fr) auto");
     expect(html).toContain(".hono-decks-viewer-controls{flex-direction:column}");
+    expect(html).toContain('@media (pointer:coarse)');
+    expect(html).toContain('.hono-decks-viewer-controls [data-hono-decks-navigation-control="fullscreen"],.hono-decks-viewer-controls [data-hono-decks-print]{display:none}');
     expect(html).toContain('data-action="previous"');
     expect(html).toContain('data-action="next"');
     expect(html).toContain('data-action="fullscreen"');
+    expect(html).toContain('href="/slides/deck1/print"');
+    expect(html).toContain('data-hono-decks-print="true"');
+    expect(html).toContain('aria-label="Print view"');
     expect(html).toContain("data-hono-decks-control-icon");
     expect(html).toContain("pointer-events:none");
     expect(html).toContain('aria-label="Previous slide"');

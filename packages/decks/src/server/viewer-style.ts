@@ -36,6 +36,7 @@ ${viewerViewportRule()}
 .hono-decks-viewer-controls button *,.hono-decks-viewer-controls a *{pointer-events:none;cursor:pointer}
 .hono-decks-control-icon{width:16px;height:16px;flex:0 0 auto;stroke:currentColor;pointer-events:none}
 @media (max-width:480px){.hono-decks-viewer-controls{gap:4px}.hono-decks-viewer-controls button,.hono-decks-viewer-controls a{width:36px;height:36px}.hono-decks-viewer-controls button,.hono-decks-viewer-controls a,.hono-decks-viewer-controls span{padding:7px 8px}}
+@media (pointer:coarse){.hono-decks-viewer-controls [data-hono-decks-navigation-control="fullscreen"],.hono-decks-viewer-controls [data-hono-decks-print]{display:none}}
 @media (orientation:landscape) and (max-height:600px){.hono-decks-viewer-shell{grid-template-columns:minmax(0,1fr) auto;grid-template-rows:minmax(0,1fr)}.hono-decks-viewer-controls{flex-direction:column}.hono-decks-viewport{width:min(100%,calc(100dvh * 16 / 9))}}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}}`;
 }

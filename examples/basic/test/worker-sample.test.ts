@@ -131,6 +131,9 @@ describe("sample Worker app", () => {
     expect(html).not.toContain(">Forward</button>");
     expect(html).toContain('data-action="fullscreen"');
     expect(html).toContain('aria-label="Toggle fullscreen"');
+    expect(html).toContain('href="/decks/sample/print"');
+    expect(html).toContain('data-hono-decks-print="true"');
+    expect(html).toContain('aria-label="Print view"');
     expect(html).toContain('data-viewer-navigation="previous"');
     expect(html).toContain('data-viewer-navigation="next"');
     expect(html).toContain('orientation.lock("landscape")');

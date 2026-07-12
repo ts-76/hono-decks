@@ -10,6 +10,7 @@ export type DeckControlIconName =
   | "previous"
   | "next"
   | "fullscreen"
+  | "print"
   | "details"
   | "export-pdf"
   | "export-png";
@@ -51,6 +52,8 @@ export function controlIconLabel(name: DeckControlIconName): string {
       return "Next slide";
     case "fullscreen":
       return "Toggle fullscreen";
+    case "print":
+      return "Print view";
     case "details":
       return "Details";
     case "export-pdf":
@@ -78,6 +81,8 @@ function controlIconPathHtml(name: DeckControlIconName): string {
       return '<path d="M9 6l6 6-6 6" />';
     case "fullscreen":
       return '<path d="M8 3H5a2 2 0 0 0-2 2v3" /><path d="M16 3h3a2 2 0 0 1 2 2v3" /><path d="M8 21H5a2 2 0 0 1-2-2v-3" /><path d="M16 21h3a2 2 0 0 0 2-2v-3" />';
+    case "print":
+      return '<path d="M6 9V3h12v6" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><path d="M6 14h12v7H6z" />';
     case "details":
       return '<circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 8h.01" />';
     case "export-pdf":
@@ -128,6 +133,12 @@ function controlIconPaths(name: DeckControlIconName): DeckRenderable[] {
         jsx("path", { d: "M16 3h3a2 2 0 0 1 2 2v3" }),
         jsx("path", { d: "M8 21H5a2 2 0 0 1-2-2v-3" }),
         jsx("path", { d: "M16 21h3a2 2 0 0 0 2-2v-3" }),
+      ];
+    case "print":
+      return [
+        jsx("path", { d: "M6 9V3h12v6" }),
+        jsx("path", { d: "M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" }),
+        jsx("path", { d: "M6 14h12v7H6z" }),
       ];
     case "details":
       return [
