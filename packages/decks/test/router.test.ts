@@ -80,6 +80,7 @@ describe("decksRouter", () => {
     expect(html).toContain("grid-template-rows:minmax(0,1fr) auto");
     expect(html).toContain("padding:env(safe-area-inset-top,0)");
     expect(html).toContain("container-type:size");
+    expect(html).toContain(".hono-decks-viewer-stage{display:grid;place-items:center;justify-content:center");
     expect(html).toContain("@supports (width:1cqw)");
     expect(html).not.toContain("position:fixed;left:50%;bottom:16px");
     expect(html).toContain("root?.setAttribute(\"data-step-index\", String(message.stepIndex ?? 0))");
