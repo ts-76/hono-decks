@@ -265,20 +265,34 @@ function renderViewerFrame(input: { title: string; renderUrl: string }): DeckRen
       class: "hono-decks-viewport",
       "data-viewer-viewport": true,
       tabindex: "0",
-      children: jsx("div", {
-        class: "hono-decks-frame-stage",
-        "data-viewer-stage": true,
-        children: jsx("iframe", {
-          title: input.title,
-          src: input.renderUrl,
+      children: [
+        jsx("div", {
+          class: "hono-decks-frame-stage",
+          "data-viewer-stage": true,
+          children: jsx("iframe", {
+            title: input.title,
+            src: input.renderUrl,
+          }),
         }),
-      }),
+        jsx("button", {
+          class: "hono-decks-viewer-navigation-layer hono-decks-viewer-navigation-previous",
+          type: "button",
+          "data-viewer-navigation": "previous",
+          "aria-label": "Previous slide",
+        }),
+        jsx("button", {
+          class: "hono-decks-viewer-navigation-layer hono-decks-viewer-navigation-next",
+          type: "button",
+          "data-viewer-navigation": "next",
+          "aria-label": "Next slide",
+        }),
+      ],
     }),
   });
 }
 
 function renderViewerFrameHtml(input: { title: string; renderUrl: string }): string {
-  return `<div class="hono-decks-viewer-stage" data-hono-decks-frame><div class="hono-decks-viewport" data-viewer-viewport tabindex="0"><div class="hono-decks-frame-stage" data-viewer-stage><iframe title="${escapeHtml(input.title)}" src="${escapeHtml(input.renderUrl)}"></iframe></div></div></div>`;
+  return `<div class="hono-decks-viewer-stage" data-hono-decks-frame><div class="hono-decks-viewport" data-viewer-viewport tabindex="0"><div class="hono-decks-frame-stage" data-viewer-stage><iframe title="${escapeHtml(input.title)}" src="${escapeHtml(input.renderUrl)}"></iframe></div><button class="hono-decks-viewer-navigation-layer hono-decks-viewer-navigation-previous" type="button" data-viewer-navigation="previous" aria-label="Previous slide"></button><button class="hono-decks-viewer-navigation-layer hono-decks-viewer-navigation-next" type="button" data-viewer-navigation="next" aria-label="Next slide"></button></div></div>`;
 }
 
 function renderViewerControls(options: DeckViewerControlsOptions, context: DeckViewerControlsContext): DeckRenderable {
@@ -426,7 +440,12 @@ function renderDefaultViewerControlItem(
     case "previous":
       return renderIconButton("previous", item, itemProps);
     case "position":
-      return jsx("span", { ...itemProps, "data-slide-position": true, children: item.label ?? "1 / ?" });
+      return jsx("span", {
+        ...itemProps,
+        "data-slide-position": true,
+        "data-hono-decks-position": true,
+        children: item.label ?? "1 / ?",
+      });
     case "next":
       return renderIconButton("next", item, itemProps);
     case "fullscreen":
@@ -463,6 +482,7 @@ function renderIconButton(
     ...itemProps,
     type: "button",
     "data-action": action,
+    "data-hono-decks-navigation-control": action,
     ...(item.label === undefined ? { "aria-label": label, title: label } : {}),
     children: item.label ?? renderControlIcon(iconName),
   });

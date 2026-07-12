@@ -55,6 +55,13 @@ describe("decksRouter", () => {
     expect(html).not.toContain("DESIGN_WIDTH");
     expect(html).not.toContain("stage.style.transform");
     expect(html).toContain('tabindex="0"');
+    expect(html).toContain('data-viewer-navigation="previous"');
+    expect(html).toContain('data-viewer-navigation="next"');
+    expect(html).toContain(".hono-decks-viewer-navigation-layer{position:absolute;top:0;bottom:0;width:50%");
+    expect(html).toContain(".hono-decks-viewport>[data-hono-decks-position]{position:absolute;left:50%");
+    expect(html).toContain('@media (orientation:landscape) and (max-height:600px)');
+    expect(html).toContain("grid-template-columns:minmax(0,1fr) auto");
+    expect(html).toContain(".hono-decks-viewer-controls{flex-direction:column}");
     expect(html).toContain('data-action="previous"');
     expect(html).toContain('data-action="next"');
     expect(html).toContain('data-action="fullscreen"');
@@ -80,7 +87,12 @@ describe("decksRouter", () => {
     expect(html).not.toContain('String(message.stepIndex) + " / " + String(message.stepCount)');
     expect(html).toContain("pointerdown");
     expect(html).toContain("pointerup");
+    expect(html).toContain("pointercancel");
     expect(html).toContain("touch-action:pan-y");
+    expect(html).toContain("suppressNavigationClick = true");
+    expect(html).toContain('orientation.lock("landscape")');
+    expect(html).toContain("unlockViewerOrientation()");
+    expect(html).toContain('document.addEventListener("fullscreenchange"');
     expect(html).toContain('document.querySelectorAll("[data-action=\'previous\']")');
     expect(html).toContain('document.querySelectorAll("[data-action=\'next\']")');
     expect(html).toContain('document.querySelectorAll("[data-action=\'fullscreen\']")');

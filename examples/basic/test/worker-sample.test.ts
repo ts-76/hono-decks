@@ -131,6 +131,9 @@ describe("sample Worker app", () => {
     expect(html).not.toContain(">Forward</button>");
     expect(html).toContain('data-action="fullscreen"');
     expect(html).toContain('aria-label="Toggle fullscreen"');
+    expect(html).toContain('data-viewer-navigation="previous"');
+    expect(html).toContain('data-viewer-navigation="next"');
+    expect(html).toContain('orientation.lock("landscape")');
     expect(html).not.toContain('href="/decks/sample/presenter"');
     expect(html).not.toContain('data-sample-control="presenter"');
     expect(html.indexOf('data-sample-control="home"')).toBeLessThan(html.indexOf('data-action="previous"'));

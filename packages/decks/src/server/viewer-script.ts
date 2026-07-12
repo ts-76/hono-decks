@@ -8,20 +8,25 @@ export function renderViewerScript(): string {
   const viewport = document.querySelector("[data-viewer-viewport]");
   const iframe = document.querySelector("iframe");
   const position = document.querySelector("[data-slide-position]");
+  const navigationLayers = document.querySelectorAll("[data-viewer-navigation]");
   let pointerStartX = null;
   let pointerStartY = null;
+  let suppressNavigationClick = false;
+
+  if (position && viewport) viewport.append(position);
 
   function sendCommand(action, index) {
     iframe?.contentWindow?.postMessage({ type: ${JSON.stringify(VIEWER_COMMAND_MESSAGE_TYPE)}, action, index }, "*");
   }
 
-  function viewerClick(event) {
-    const target = event.target;
-    if (target instanceof HTMLButtonElement || target instanceof HTMLAnchorElement) return;
-    const bounds = viewport?.getBoundingClientRect();
-    if (!bounds) return;
-    const action = event.clientX < bounds.left + bounds.width / 2 ? "previous" : "next";
-    sendCommand(action);
+  function navigationClick(event) {
+    if (suppressNavigationClick) {
+      suppressNavigationClick = false;
+      event.preventDefault();
+      return;
+    }
+    const action = event.currentTarget?.getAttribute("data-viewer-navigation");
+    if (action === "previous" || action === "next") sendCommand(action);
   }
 
   function viewerPointerDown(event) {
@@ -36,15 +41,44 @@ export function renderViewerScript(): string {
     pointerStartX = null;
     pointerStartY = null;
     if (Math.abs(deltaX) < 48 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+    suppressNavigationClick = true;
     sendCommand(deltaX < 0 ? "next" : "previous");
+  }
+
+  function viewerPointerCancel() {
+    pointerStartX = null;
+    pointerStartY = null;
+    suppressNavigationClick = false;
+  }
+
+  function isPortraitMobile() {
+    return window.matchMedia("(orientation: portrait) and (pointer: coarse)").matches;
+  }
+
+  async function lockViewerLandscape() {
+    const orientation = window.screen?.orientation;
+    if (!orientation || typeof orientation.lock !== "function") return;
+    try {
+      await orientation.lock("landscape");
+    } catch {
+      // Orientation locking is optional; fullscreen remains available when unsupported.
+    }
+  }
+
+  function unlockViewerOrientation() {
+    const orientation = window.screen?.orientation;
+    if (!orientation || typeof orientation.unlock !== "function") return;
+    orientation.unlock();
   }
 
   async function toggleViewerFullscreen() {
     if (document.fullscreenElement) {
+      unlockViewerOrientation();
       await document.exitFullscreen?.();
       return;
     }
     await root?.requestFullscreen?.();
+    if (document.fullscreenElement && isPortraitMobile()) await lockViewerLandscape();
   }
 
   function writeViewerPaginationState(message) {
@@ -71,9 +105,13 @@ export function renderViewerScript(): string {
       if (Number.isFinite(index)) iframe?.contentWindow?.postMessage({ type: ${JSON.stringify(VIEWER_COMMAND_MESSAGE_TYPE)}, action: "goTo", index }, "*");
     });
   });
-  viewport?.addEventListener("click", viewerClick);
+  navigationLayers.forEach((layer) => layer.addEventListener("click", navigationClick));
   viewport?.addEventListener("pointerdown", viewerPointerDown);
   viewport?.addEventListener("pointerup", viewerPointerUp);
+  viewport?.addEventListener("pointercancel", viewerPointerCancel);
+  document.addEventListener("fullscreenchange", () => {
+    if (!document.fullscreenElement) unlockViewerOrientation();
+  });
   window.addEventListener("message", (event) => {
     const message = event.data;
     if (!message || message.type !== ${JSON.stringify(VIEWER_STATE_MESSAGE_TYPE)}) return;
