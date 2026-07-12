@@ -16,7 +16,8 @@ const artifactDir = process.env.HONO_DECKS_SMOKE_ARTIFACTS ?? path.join(tmpdir()
 
 const checks = [
   { name: "desktop", width: 1280, height: 800 },
-  { name: "mobile", width: 390, height: 844 },
+  { name: "mobile-portrait", width: 390, height: 844 },
+  { name: "mobile-landscape", width: 844, height: 390 },
 ];
 const deckSlugs = ["sample", "code", "media", "motion"];
 
@@ -161,10 +162,14 @@ function viewportMetricsScript() {
     if (errors.length) return { ok: false, errors };
     const view = viewport.getBoundingClientRect();
     const frame = iframe.getBoundingClientRect();
+    const controlBounds = controls.getBoundingClientRect();
     const ratio = view.width / view.height;
     const style = getComputedStyle(viewport);
     if (Math.abs(ratio - 16 / 9) > 0.025) errors.push("viewport ratio is " + ratio.toFixed(3));
     if (view.width > window.innerWidth + 1 || view.height > window.innerHeight + 1) errors.push("viewport overflows window");
+    if (view.bottom > controlBounds.top + 1) errors.push("viewport overlaps controls");
+    if (controlBounds.left < -1 || controlBounds.right > window.innerWidth + 1) errors.push("controls overflow window horizontally");
+    if (controlBounds.top < -1 || controlBounds.bottom > window.innerHeight + 1) errors.push("controls overflow window vertically");
     if (Math.abs(frame.width - view.width) > 1 || Math.abs(frame.height - view.height) > 1) errors.push("iframe does not follow viewport size");
     if (iframe.hasAttribute("width") || iframe.hasAttribute("height")) errors.push("iframe has fixed width/height attributes");
     if (!iframe.title) errors.push("iframe title is missing");
@@ -175,6 +180,7 @@ function viewportMetricsScript() {
       ok: errors.length === 0,
       errors,
       viewport: { width: view.width, height: view.height },
+      controls: { left: controlBounds.left, top: controlBounds.top, right: controlBounds.right, bottom: controlBounds.bottom },
       iframe: { width: frame.width, height: frame.height },
       title: iframe.title,
       controlsText: controls.textContent?.trim(),

@@ -44,7 +44,7 @@ describe("decksRouter", () => {
     expect(html).toContain('class="hono-decks-viewer-meta"');
     expect(html).toContain('src="/slides/deck1/render"');
     expect(html).toContain('title="Deck One"');
-    expect(html).toContain(".hono-decks-viewport{width:min(100vw,calc(100vh * 16 / 9));aspect-ratio:16/9");
+    expect(html).toContain(".hono-decks-viewport{width:min(100%,calc((100vh - 58px) * 16 / 9));aspect-ratio:16/9");
     expect(html).toContain(".hono-decks-viewport:focus-visible");
     expect(html).toContain(".hono-decks-frame-stage{width:100%;height:100%");
     expect(html).toContain(".hono-decks-frame-stage iframe{width:100%;height:100%");
@@ -68,6 +68,13 @@ describe("decksRouter", () => {
     expect(html).toContain("message.stepCount");
     expect(html).toContain("writeViewerPaginationState(message)");
     expect(html).toContain('params.set("slide", String(message.index + 1))');
+    expect(html).toContain('content="width=device-width, initial-scale=1, viewport-fit=cover"');
+    expect(html).toContain("@supports (height:100dvh)");
+    expect(html).toContain("grid-template-rows:minmax(0,1fr) auto");
+    expect(html).toContain("padding:env(safe-area-inset-top,0)");
+    expect(html).toContain("container-type:size");
+    expect(html).toContain("@supports (width:1cqw)");
+    expect(html).not.toContain("position:fixed;left:50%;bottom:16px");
     expect(html).toContain("root?.setAttribute(\"data-step-index\", String(message.stepIndex ?? 0))");
     expect(html).toContain("root?.setAttribute(\"data-step-count\", String(message.stepCount ?? 0))");
     expect(html).not.toContain('String(message.stepIndex) + " / " + String(message.stepCount)');
