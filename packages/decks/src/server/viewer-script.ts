@@ -1,7 +1,7 @@
 export const VIEWER_STATE_MESSAGE_TYPE = "hono-decks:state";
 export const VIEWER_COMMAND_MESSAGE_TYPE = "hono-decks:command";
 
-export function renderViewerScript(): string {
+export function renderViewerScript(printPath: string): string {
   return `<script>
 (() => {
   const root = document.querySelector("[data-hono-decks-viewer]");
@@ -12,6 +12,7 @@ export function renderViewerScript(): string {
   let pointerStartX = null;
   let pointerStartY = null;
   let suppressNavigationClick = false;
+  const printPath = ${JSON.stringify(printPath)};
 
   if (position && viewport) viewport.append(position);
 
@@ -124,6 +125,13 @@ export function renderViewerScript(): string {
     }
   });
   document.addEventListener("keydown", (event) => {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "p") {
+      event.preventDefault();
+      const printUrl = new URL(printPath, window.location.href);
+      printUrl.searchParams.set("autoprint", "1");
+      window.location.assign(printUrl);
+      return;
+    }
     if (event.key === "ArrowRight" || event.key === " ") sendCommand("next");
     if (event.key === "ArrowLeft") sendCommand("previous");
     if (event.key === "f") void toggleViewerFullscreen();

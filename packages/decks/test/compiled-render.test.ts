@@ -171,6 +171,8 @@ describe("compiled deck rendering", () => {
 
     expect(html).toContain('<html lang="ja" data-hono-decks-print-preview="true">');
     expect(html).toContain(".print-theme{background:white}");
+    expect(html).toContain('params.get("autoprint") !== "1"');
+    expect(html).toContain("window.requestAnimationFrame(() => window.print())");
   });
 
   it("publishes step state and advances fragments before slides", async () => {
@@ -301,10 +303,12 @@ describe("compiled deck rendering", () => {
       ".hono-decks-deck{display:grid;grid-template-columns:1fr;grid-auto-rows:var(--hono-decks-print-slot-height);gap:var(--hono-decks-print-gap);width:calc(var(--hono-decks-print-slot-height) * 16 / 9);height:auto;margin:0 auto;transform:none!important}",
     );
     expect(html).toContain(
-      ".slide{position:static;width:100%;max-width:100%;height:var(--hono-decks-print-slot-height);aspect-ratio:16/9;justify-self:center;align-self:center;padding:0;page-break-after:auto;break-after:auto;break-inside:avoid;box-shadow:none;transition:none!important;transform:none!important}",
+      ".slide{position:relative;width:100%;max-width:100%;height:var(--hono-decks-print-slot-height);aspect-ratio:16/9;justify-self:center;align-self:center;padding:0;page-break-after:auto;break-after:auto;break-inside:avoid;box-shadow:none;transition:none!important;transform:none!important}",
     );
+    expect(html).toContain("body:not([data-overview-mode]) .slide{position:relative}");
+    expect(html).toContain(".slide.layout-cover,.slide.layout-statement{display:block}");
     expect(html).toContain(
-      ".hono-decks-slide-content{width:var(--hono-decks-width);height:var(--hono-decks-height);box-sizing:border-box;padding:clamp(1.2rem,3vw,3rem);transform:scale(var(--hono-decks-print-scale));transform-origin:left top;overflow:hidden}",
+      ".hono-decks-slide-content{position:absolute;inset:0 auto auto 0;width:var(--hono-decks-width);height:var(--hono-decks-height);box-sizing:border-box;padding:clamp(1.2rem,3vw,3rem);transform:scale(var(--hono-decks-print-scale));transform-origin:left top;overflow:hidden}",
     );
     expect(html).toContain(".slide:nth-of-type(3n):not(:last-child){page-break-after:always;break-after:page}");
     expect(html).toContain("body:not([data-overview-mode]) .slide[hidden]{display:block!important}");

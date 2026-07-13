@@ -102,6 +102,10 @@ describe("decksRouter", () => {
     expect(html).toContain('document.querySelectorAll("[data-action=\'previous\']")');
     expect(html).toContain('document.querySelectorAll("[data-action=\'next\']")');
     expect(html).toContain('document.querySelectorAll("[data-action=\'fullscreen\']")');
+    expect(html).toContain('const printPath = "/slides/deck1/print"');
+    expect(html).toContain('(event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "p"');
+    expect(html).toContain('printUrl.searchParams.set("autoprint", "1")');
+    expect(html).toContain("window.location.assign(printUrl)");
     expect(html).not.toContain("/edit");
     expect(html).not.toContain("/agent/chat");
     expect(html).not.toContain("/apply");
@@ -772,6 +776,10 @@ describe("decksRouter", () => {
       "html[data-hono-decks-print-preview]{width:auto;height:auto;min-height:100%;overflow:visible}",
     );
     expect(html).toContain(".slide:nth-of-type(3n):not(:last-child){page-break-after:always;break-after:page}");
+    expect(html).toContain("body:not([data-overview-mode]) .slide{position:relative}");
+    expect(html).toContain(".slide.layout-cover,.slide.layout-statement{display:block}");
+    expect(html).toContain('params.get("autoprint") !== "1"');
+    expect(html).toContain("window.requestAnimationFrame(() => window.print())");
     expect(html).not.toContain("function fitDeck()");
     expect(html).not.toContain('window.addEventListener("message"');
   });

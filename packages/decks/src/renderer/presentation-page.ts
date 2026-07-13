@@ -41,7 +41,7 @@ export function renderCompiledDeckPage(input: {
     components: mergeComponentInputs(deck.componentRegistry, input.components),
     speakerNotes: input.speakerNotes,
   })}
-  ${input.printPreview ? "" : renderPresentationScript()}
+  ${input.printPreview ? renderPrintPreviewScript() : renderPresentationScript()}
   ${!input.printPreview && input.liveReloadPath ? renderLiveReloadScript(input.liveReloadPath) : ""}
   ${!input.printPreview && input.clientEntry ? renderClientEntryScript(input.clientEntry) : ""}
 </body>
@@ -80,7 +80,7 @@ export async function renderCompiledDeckPageAsync(input: {
     components: mergeComponentInputs(deck.componentRegistry, input.components),
     speakerNotes: input.speakerNotes,
   })}
-  ${input.printPreview ? "" : renderPresentationScript()}
+  ${input.printPreview ? renderPrintPreviewScript() : renderPresentationScript()}
   ${!input.printPreview && input.liveReloadPath ? renderLiveReloadScript(input.liveReloadPath) : ""}
   ${!input.printPreview && input.clientEntry ? renderClientEntryScript(input.clientEntry) : ""}
 </body>
@@ -163,6 +163,18 @@ function renderWarnings(deck: CompiledDeck): string {
   return deck.warnings.length
     ? `<aside class="hono-decks-warnings">${deck.warnings.map((warning) => `<p>${escapeHtml(warning.message)}</p>`).join("")}</aside>`
     : "";
+}
+
+function renderPrintPreviewScript(): string {
+  return `<script>
+(() => {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("autoprint") !== "1") return;
+  window.addEventListener("load", () => {
+    window.requestAnimationFrame(() => window.print());
+  }, { once: true });
+})();
+  </script>`;
 }
 
 function mergeComponentInputs(

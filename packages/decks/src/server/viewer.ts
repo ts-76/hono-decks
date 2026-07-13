@@ -246,7 +246,7 @@ export async function renderDeckViewerPage(input: {
 </head>
 <body>
   ${await renderJsxValue(await content)}
-  ${renderViewerScript()}
+  ${renderViewerScript(parts.meta.printPath)}
 </body>
 </html>`;
 }
