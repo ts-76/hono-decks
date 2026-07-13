@@ -145,23 +145,26 @@ function SampleLayout(props: {
 }
 
 const samplePageStyle = `
-:root { color-scheme: dark; background: #050816; color: #eef2ff; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
-body { margin: 0; min-height: 100vh; background: #050816; }
+:root { color-scheme: light; background: oklch(94% 0 0); color: #111827; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+body { margin: 0; min-height: 100vh; background: linear-gradient(145deg, oklch(99% 0 0) 0%, oklch(94% 0 0) 58%, oklch(88% 0 0) 100%); background-attachment: fixed; }
 a { color: inherit; }
 [data-sample-layout] { width: min(1120px, calc(100vw - 32px)); margin: 0 auto; padding: 32px 0; }
 .sample-page-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
 .sample-page-header nav { display: flex; gap: 12px; }
-.sample-page-section { margin: 0 0 24px; padding: 20px; border: 1px solid rgba(255,255,255,.14); border-radius: 8px; background: rgba(255,255,255,.06); }
+.sample-page-section { margin: 0 0 24px; padding: 20px; border: 1px solid #94a3b8; border-radius: 8px; background: #ffffff; }
 .sample-page-section h1, .sample-page-section h2, .sample-embed h1 { margin: 0 0 12px; }
-.sample-kicker { margin: 0 0 8px; color: #8bd3ff; font-size: .85rem; text-transform: uppercase; }
+.sample-kicker { margin: 0 0 8px; color: #075985; font-size: .85rem; text-transform: uppercase; }
 .sample-actions, .sample-link-list, .sample-link-list li { display: flex; flex-wrap: wrap; gap: 10px; padding: 0; list-style: none; }
-.sample-actions a, .sample-link-list a { display: inline-flex; padding: 8px 10px; border: 1px solid rgba(255,255,255,.18); border-radius: 8px; text-decoration: none; }
+.sample-actions a, .sample-link-list a { display: inline-flex; padding: 8px 10px; border: 1px solid #64748b; border-radius: 8px; background: #ffffff; text-decoration: none; }
+.sample-actions a:hover, .sample-link-list a:hover { background: #f1f5f9; }
+.sample-actions a:active, .sample-link-list a:active { background: #e2e8f0; }
+.sample-page-header a:focus-visible, .sample-actions a:focus-visible, .sample-link-list a:focus-visible { outline: 3px solid #0369a1; outline-offset: 2px; }
 .sample-meta-list { display: grid; gap: 8px; }
 .sample-meta-list div { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 12px; }
-.sample-meta-list dt { color: #93a4bd; }
+.sample-meta-list dt { color: #475569; }
 .sample-meta-list dd { margin: 0; overflow-wrap: anywhere; }
 .sample-toc { display: grid; gap: 8px; padding-left: 1.25rem; }
-.sample-toc span { display: inline-flex; min-width: 2rem; color: #93a4bd; }
+.sample-toc span { display: inline-flex; min-width: 2rem; color: #475569; }
 .sample-embed { display: grid; gap: 16px; }
 .sample-embed .hono-decks-viewer-stage { display: block; width: min(100%, 960px); }
 .sample-embed .hono-decks-viewport { width: 100%; aspect-ratio: 16 / 9; overflow: hidden; }
@@ -170,8 +173,15 @@ a { color: inherit; }
 `;
 
 const sampleViewerStyle = `
+:root {
+  color-scheme: light;
+  background: oklch(94% 0 0);
+  color: #111827;
+}
+
 [data-hono-decks-viewer] {
-  background: radial-gradient(circle at top, #1e2b5c, #050816 62%);
+  background: linear-gradient(145deg, oklch(99% 0 0) 0%, oklch(94% 0 0) 58%, oklch(88% 0 0) 100%);
+  color: #111827;
   padding: 16px;
 }
 
@@ -179,20 +189,33 @@ const sampleViewerStyle = `
   padding: 0;
 }
 
-.sample-viewer-control {
-  border: 1px solid rgba(148, 163, 184, .32);
+.hono-decks-viewer-controls .sample-viewer-control {
+  border: 1px solid #64748b;
   border-radius: 8px;
-  background: rgba(15, 23, 42, .78);
-  color: inherit;
+  background: #ffffff;
+  color: #111827;
   padding: 8px 10px;
   text-decoration: none;
 }
 
-.sample-viewer-control:is(a, button) {
+.hono-decks-viewer-controls .sample-viewer-control:is(a, button) {
   cursor: pointer;
 }
 
-.sample-viewer-control:is(a, button) * {
+.hono-decks-viewer-controls .sample-viewer-control:is(a, button):hover {
+  background: #f1f5f9;
+}
+
+.hono-decks-viewer-controls .sample-viewer-control:is(a, button):active {
+  background: #e2e8f0;
+}
+
+.hono-decks-viewer-controls .sample-viewer-control:is(a, button):focus-visible {
+  outline: 3px solid #0369a1;
+  outline-offset: 2px;
+}
+
+.hono-decks-viewer-controls .sample-viewer-control:is(a, button) * {
   pointer-events: none;
   cursor: pointer;
 }

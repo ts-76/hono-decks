@@ -88,6 +88,9 @@ describe("sample Worker app", () => {
     const html = await response.text();
     expect(html).toContain("<title>Hono Decks Basic</title>");
     expect(html).toContain('data-sample-layout="home"');
+    expect(html).toContain("color-scheme: light");
+    expect(html).toContain("linear-gradient(145deg, oklch(99% 0 0) 0%, oklch(94% 0 0) 58%, oklch(88% 0 0) 100%)");
+    expect(html).not.toContain("background: #050816");
     expect(html).toContain('href="/decks"');
     expect(html).toContain('href="/decks/sample/about"');
   });
@@ -106,9 +109,12 @@ describe("sample Worker app", () => {
     expect(html).not.toContain("DESIGN_WIDTH");
     expect(html).not.toContain("stage.style.transform");
     expect(html).toContain('id="hono-css"');
-    expect(html).toContain("radial-gradient(circle at top, #1e2b5c, #050816 62%)");
+    expect(html).toContain("linear-gradient(145deg, oklch(99% 0 0) 0%, oklch(94% 0 0) 58%, oklch(88% 0 0) 100%)");
+    expect(html).toContain("color: #111827");
+    expect(html).not.toContain("radial-gradient(circle at top, #1e2b5c, #050816 62%)");
     expect(html).toContain("border-radius: 8px");
-    expect(html).toContain("background: rgba(15, 23, 42, .78)");
+    expect(html).toContain("background: #ffffff");
+    expect(html).toContain("outline: 3px solid #0369a1");
     expect(html).toContain('href="/"');
     expect(html).toContain('data-sample-control="home"');
     expect(html).toContain('aria-label="Home"');
