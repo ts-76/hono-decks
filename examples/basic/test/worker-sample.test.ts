@@ -22,14 +22,15 @@ describe("sample Worker app", () => {
     expect(facadeSource).toContain("This file is safe to edit.");
     expect(facadeSource).toContain("./generated/decks");
     expect(facadeSource).toContain("decksConfig.router");
-    expect(facadeSource).toContain("viewer: {");
-    expect(facadeSource).toContain("...decksConfig.router?.viewer");
-    expect(facadeSource).toContain("...options.viewer");
-    expect(facadeSource).toContain("source: options.source ?? deckSource");
+    expect(facadeSource).toContain("mergeDecksRouterOptions");
+    expect(facadeSource).toContain("{ ...decksConfig.router, source: deckSource }");
     expect(facadeSource).toContain("export const deckSource");
     expect(facadeSource).toContain("export const deckMountPath");
     expect(facadeSource).toContain("export function createDecksRouter");
     expect(configSource).toContain("defineDecksConfig");
+    expect(configSource).toContain("defineDecksConfig<DecksConfigEnv>");
+    expect(configSource).not.toContain("as DecksConfigBindings");
+    expect(configSource).not.toContain("c.env as");
     expect(configSource).toContain('mountPath: "/decks"');
     expect(configSource).toContain("DeckBrowserRunBinding");
     expect(configSource).toContain("DECK_PRESENTER_ENABLED");
@@ -295,11 +296,14 @@ describe("sample Worker app", () => {
     expect(html).toContain('data-sample-layout="deck-embed"');
     expect(html).toContain('data-hono-decks-frame');
     expect(html).toContain('src="/decks/sample/render"');
-    expect(html).toMatch(/\.sample-embed \.hono-decks-frame-stage\s*\{[^}]*width:\s*100%;[^}]*height:\s*100%;/);
-    expect(html).toMatch(/\.sample-embed iframe\s*\{[^}]*width:\s*100%;[^}]*height:\s*100%;/);
-    expect(html).not.toMatch(/\.sample-embed \.hono-decks-frame-stage\s*\{[^}]*width:\s*1920px;/);
+    expect(html).toContain('data-hono-decks-embed="true"');
+    expect(html).toContain("data-hono-decks-embed-style");
+    expect(html).toContain("data-hono-decks-viewer-runtime");
+    expect(html).toContain('data-hono-decks-print-path="/decks/sample/print"');
+    expect(html).toContain("for (const root of roots)");
+    expect(html).not.toContain(".sample-embed .hono-decks-frame-stage");
     expect(html).not.toContain("transform: scale(.5)");
-    expect(html).not.toMatch(/\.sample-embed iframe\s*\{[^}]*width:\s*1920px;/);
+    expect(html).not.toContain(".sample-embed iframe");
     expect(html).not.toContain('data-action="previous"');
   });
 

@@ -15,18 +15,22 @@ export interface DecksConfigBindings {
   DECK_RUNTIME_DEV?: boolean | string;
 }
 
+export interface DecksConfigEnv {
+  Bindings: DecksConfigBindings;
+}
+
 const R2_CACHE_CONTROL = "public, max-age=31536000, immutable";
 
 function truthyBinding(value: unknown): boolean {
   return value === true || value === "true";
 }
 
-const decksConfig = defineDecksConfig({
+const decksConfig = defineDecksConfig<DecksConfigEnv>({
   mountPath: "/decks",
 
-  source(source: DeckSource): DeckSource {
+  source(source: DeckSource<DecksConfigEnv>): DeckSource<DecksConfigEnv> {
     const r2BackedSource = withR2Assets(source, {
-      bucket: (c) => (c.env as DecksConfigBindings | undefined)?.DECK_ASSETS,
+      bucket: (c) => c.env?.DECK_ASSETS,
       cacheControl: R2_CACHE_CONTROL,
     });
 
@@ -60,11 +64,11 @@ const decksConfig = defineDecksConfig({
 
   router: {
     dev: (c) => {
-      const value = (c.env as DecksConfigBindings | undefined)?.DECK_RUNTIME_DEV;
+      const value = c.env?.DECK_RUNTIME_DEV;
       return truthyBinding(value);
     },
     presenter: {
-      enabled: ({ c, dev }) => dev || truthyBinding((c.env as DecksConfigBindings | undefined)?.DECK_PRESENTER_ENABLED),
+      enabled: ({ c, dev }) => dev || truthyBinding(c.env?.DECK_PRESENTER_ENABLED),
       viewerControl: {
         label: "Presenter",
         icon: "presenter",
@@ -98,7 +102,7 @@ const decksConfig = defineDecksConfig({
     },
     export: {
       authorize: (c) => {
-        const token = (c.env as DecksConfigBindings | undefined)?.DECK_EXPORT_TOKEN;
+        const token = c.env?.DECK_EXPORT_TOKEN;
         if (typeof token !== "string" || token.length === 0) return false;
 
         const authorization = c.req.header("authorization");
@@ -107,7 +111,7 @@ const decksConfig = defineDecksConfig({
         const match = authorization.match(/^Bearer\s+(.+)$/i);
         return match?.[1]?.trim() === token;
       },
-      browser: (c) => (c.env as DecksConfigBindings).BROWSER,
+      browser: (c) => c.env?.BROWSER,
       pdf: true,
       png: true,
     },

@@ -1,4 +1,4 @@
-import type { Context } from "hono";
+import type { Context, Env } from "hono";
 import type { DeckRenderable, MaybePromise, SlideComponentInput } from "../renderer/compiled-render";
 import type { SlideNode } from "../shared/types";
 
@@ -120,10 +120,12 @@ export interface LocalDeckIO {
   watch?(onFileChange: (event: DeckFileChange) => void): () => void;
 }
 
-export interface DeckSource {
-  listDecks(c: Context): Promise<DeckEntry[]>;
-  getCompiledDeck(c: Context, slug: string): Promise<CompiledDeck | null>;
-  getAsset?(c: Context, slug: string, assetPath: string): Promise<Response | null>;
+export type DeckRequestContext<E extends Env = any> = Context<E>;
+
+export interface DeckSource<E extends Env = any> {
+  listDecks<RequestEnv extends E>(c: Context<RequestEnv>): Promise<DeckEntry[]>;
+  getCompiledDeck<RequestEnv extends E>(c: Context<RequestEnv>, slug: string): Promise<CompiledDeck | null>;
+  getAsset?<RequestEnv extends E>(c: Context<RequestEnv>, slug: string, assetPath: string): Promise<Response | null>;
 }
 
 export interface DeckManifest {

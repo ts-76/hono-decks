@@ -6,7 +6,7 @@ import {
   type DeckPageMeta,
   type DeckRenderable,
   type DeckTocItem,
-  type DeckViewerParts,
+  type DeckViewerEmbed,
 } from "@hono/decks";
 
 export function renderHomePage(decks: DeckEntry[]) {
@@ -98,7 +98,7 @@ export function renderDeckDetailsPage(input: {
 
 export function renderDeckEmbedPage(input: {
   meta: DeckPageMeta;
-  viewer: DeckViewerParts;
+  viewer: DeckViewerEmbed;
 }) {
   return (
     <SampleLayout title={`${input.meta.title} - Embed`} layout="deck-embed">
@@ -107,7 +107,7 @@ export function renderDeckEmbedPage(input: {
           <p class="sample-kicker">Embeddable viewer</p>
           <h1>{input.meta.title}</h1>
         </header>
-        {input.viewer.frame}
+        {input.viewer.embed}
       </section>
     </SampleLayout>
   );
@@ -166,10 +166,7 @@ a { color: inherit; }
 .sample-toc { display: grid; gap: 8px; padding-left: 1.25rem; }
 .sample-toc span { display: inline-flex; min-width: 2rem; color: #475569; }
 .sample-embed { display: grid; gap: 16px; }
-.sample-embed .hono-decks-viewer-stage { display: block; width: min(100%, 960px); }
-.sample-embed .hono-decks-viewport { width: 100%; aspect-ratio: 16 / 9; overflow: hidden; }
-.sample-embed .hono-decks-frame-stage { width: 100%; height: 100%; }
-.sample-embed iframe { width: 100%; height: 100%; border: 0; }
+.sample-embed .hono-decks-embedded-viewer { width: min(100%, 960px); }
 `;
 
 const sampleViewerStyle = `

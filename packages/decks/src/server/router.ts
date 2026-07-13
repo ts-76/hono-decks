@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import type { Context, MiddlewareHandler } from "hono";
+import type { Context, Env, MiddlewareHandler } from "hono";
 import { renderCompiledDeckPageAsync } from "../renderer/compiled-render";
 import type { MaybePromise } from "../renderer/compiled-render";
 import { renderPresenterPageAsync } from "../renderer/presentation-page";
@@ -47,8 +47,10 @@ export type {
   DeckExportOptions,
   DeckViewerExportPaths,
 } from "./browser-export";
-export { createDeckViewerParts } from "./viewer";
+export { createDeckViewerEmbed, createDeckViewerParts } from "./viewer";
 export type {
+  DeckViewerEmbed,
+  DeckViewerEmbedOptions,
   DeckViewerControlDefaults,
   DeckViewerControlItem,
   DeckViewerControlKey,
@@ -65,37 +67,38 @@ export type {
   DeckViewerRenderInput,
 } from "./viewer";
 
-export interface DecksRouterExtension {
+export interface DecksRouterExtension<E extends Env = any> {
   path: string;
-  router: Hono;
+  router: Hono<E>;
 }
 
-export interface DecksRouterOptions {
-  source: DeckSource;
-  dev?: boolean | DeckDevResolver;
-  extensions?: DecksRouterExtension[];
+export interface DecksRouterOptions<E extends Env = any> {
+  source: DeckSource<E>;
+  dev?: boolean | DeckDevResolver<E>;
+  extensions?: DecksRouterExtension<E>[];
   liveReloadPath?(slug: string, mountPath: string): string | undefined;
   style?: string;
   components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
   clientEntry?: string;
   clientEntryAsset?: string;
   clientEntryAssetPath?: string;
-  viewer?: DeckViewerOptions;
-  presenter?: false | DecksRouterPresenterOptions;
-  export?: DeckExportOptions;
+  viewer?: DeckViewerOptions<E>;
+  presenter?: false | DecksRouterPresenterOptions<E>;
+  export?: DeckExportOptions<E>;
 }
 
-export type DeckDevResolver = (c: Context) => MaybePromise<boolean>;
+export type DeckDevResolver<E extends Env = any> = (c: Context<E>) => MaybePromise<boolean>;
 
-export interface DecksRouterPresenterOptions {
-  enabled?: boolean | DeckPresenterEnabledResolver;
+export interface DecksRouterPresenterOptions<E extends Env = any> {
+  enabled?: boolean | DeckPresenterEnabledResolver<E>;
   viewerControl?: boolean | DeckPresenterViewerControlOptions;
 }
 
-export type DeckPresenterEnabledResolver = (input: DeckPresenterEnabledInput) => MaybePromise<boolean>;
+export type DeckPresenterEnabledResolver<E extends Env = any> =
+  (input: DeckPresenterEnabledInput<E>) => MaybePromise<boolean>;
 
-export interface DeckPresenterEnabledInput {
-  c: Context;
+export interface DeckPresenterEnabledInput<E extends Env = any> {
+  c: Context<E>;
   deck: CompiledDeck;
   slug: string;
   mountPath: string;
@@ -120,15 +123,15 @@ export interface DeckContextVariables {
   deckMeta: DeckPageMeta;
 }
 
-export interface DeckContextOptions {
-  source: DeckSource;
-  dev?: boolean | DeckDevResolver;
+export interface DeckContextOptions<E extends Env = any> {
+  source: DeckSource<E>;
+  dev?: boolean | DeckDevResolver<E>;
   mountPath?: string;
-  viewer?: Pick<DeckViewerOptions, "controls">;
+  viewer?: Pick<DeckViewerOptions<E>, "controls">;
 }
 
-export function decksRouter(options: DecksRouterOptions): Hono {
-  const router = new Hono();
+export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>): Hono<E> {
+  const router = new Hono<E>();
 
   if (options.clientEntryAsset) {
     router.get(normalizeClientEntryAssetPath(options.clientEntryAssetPath), serveDecksClientEntry(options.clientEntryAsset));
@@ -312,12 +315,15 @@ function nonNegativeIntegerParam(value: string | null): number | undefined {
   return Number.isInteger(parsed) && parsed >= 0 ? parsed : undefined;
 }
 
-export function deckContext(options: DeckContextOptions): MiddlewareHandler<{ Variables: DeckContextVariables }> {
+export function deckContext<E extends Env = any>(
+  options: DeckContextOptions<E>,
+): MiddlewareHandler<E & { Variables: DeckContextVariables }> {
   return async (c, next) => {
     const slug = c.req.param("slug");
     if (!slug) return c.json({ error: "Deck not found", slug: "" }, 404);
-    const deck = await options.source.getCompiledDeck(c, slug);
-    if (!deck || (!(await isDevEnabled(c, options)) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
+    const sourceContext = c as unknown as Context<E>;
+    const deck = await options.source.getCompiledDeck(sourceContext, slug);
+    if (!deck || (!(await isDevEnabled(sourceContext, options)) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
     const mountPath = options.mountPath ?? inferMountPath(c.req.path, slug);
     const viewer = await createDeckViewerParts({
       deck,
@@ -333,14 +339,17 @@ export function deckContext(options: DeckContextOptions): MiddlewareHandler<{ Va
   };
 }
 
-async function isDevEnabled(c: Context, options: Pick<DecksRouterOptions, "dev">): Promise<boolean> {
+async function isDevEnabled<E extends Env>(
+  c: Context<E>,
+  options: Pick<DecksRouterOptions<E>, "dev">,
+): Promise<boolean> {
   if (typeof options.dev === "function") return Boolean(await options.dev(c));
   return options.dev === true;
 }
 
-async function resolveViewerControls(
-  c: Context,
-  options: DecksRouterOptions,
+async function resolveViewerControls<E extends Env>(
+  c: Context<E>,
+  options: DecksRouterOptions<E>,
   deck: CompiledDeck,
   slug: string,
   mountPath: string,
@@ -363,9 +372,9 @@ async function resolveViewerControls(
   return nextControls;
 }
 
-async function resolvePresenterViewerControl(
-  c: Context,
-  options: DecksRouterOptions,
+async function resolvePresenterViewerControl<E extends Env>(
+  c: Context<E>,
+  options: DecksRouterOptions<E>,
   deck: CompiledDeck,
   slug: string,
   mountPath: string,
@@ -403,9 +412,9 @@ function mergeControlSlotItems(
   };
 }
 
-async function isPresenterEnabled(
-  c: Context,
-  options: DecksRouterOptions,
+async function isPresenterEnabled<E extends Env>(
+  c: Context<E>,
+  options: DecksRouterOptions<E>,
   deck: CompiledDeck,
   slug: string,
   mountPath: string,

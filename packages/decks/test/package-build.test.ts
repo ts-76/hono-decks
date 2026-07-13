@@ -51,4 +51,16 @@ describe("package build metadata", () => {
     expect(bin.startsWith("#!/usr/bin/env node\n")).toBe(true);
     expect(bin).toContain("runHonoDecksCli");
   });
+
+  it("ships self-contained high-level API and embedding documentation", async () => {
+    const readme = await readFile(join(packageRoot, "README.md"), "utf8");
+
+    expect(readme.length).toBeGreaterThan(5_000);
+    expect(readme).toContain("createDeckViewerEmbed()");
+    expect(readme).toContain("同じdocumentへ複数配置");
+    expect(readme).toContain("defineDecksConfig<AppEnv>");
+    expect(readme).toContain("mergeDecksRouterOptions");
+    expect(readme).toContain("viewer.render");
+    expect(readme).not.toContain("root `README.md` を参照");
+  });
 });

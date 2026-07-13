@@ -43,9 +43,9 @@ export { createPreviewEventHub } from "./runtime/preview-events";
 export type { PreviewEvent, PreviewEventHub, PreviewEventType } from "./runtime/preview-events";
 export { serveDecksClientEntry } from "./server/client-entry";
 export type { ServeDecksClientEntryOptions } from "./server/client-entry";
-export { defineDecks, defineDecksConfig } from "./server/define-decks";
+export { defineDecks, defineDecksConfig, mergeDecksRouterOptions } from "./server/define-decks";
 export type { DecksConfig, DefinedDecks, DecksOptions, DecksRouterOverrides } from "./server/define-decks";
-export { createDeckViewerParts, deckContext, decksRouter } from "./server/router";
+export { createDeckViewerEmbed, createDeckViewerParts, deckContext, decksRouter } from "./server/router";
 export type {
   DeckBrowserRunBinding,
   DeckBrowserRunPdfOptions,
@@ -70,6 +70,8 @@ export type {
   DeckViewerControlsItemsResolver,
   DeckViewerControlsOptions,
   DeckViewerExportPaths,
+  DeckViewerEmbed,
+  DeckViewerEmbedOptions,
   DeckViewerOptions,
   DeckViewerParts,
   DeckViewerRenderInput,
@@ -103,6 +105,7 @@ export type {
   DeckFileEntry,
   DeckFrontmatter,
   DeckManifest,
+  DeckRequestContext,
   DeckSource,
   LocalDeckIO,
   SlideFrontmatter,

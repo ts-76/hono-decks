@@ -1,4 +1,4 @@
-import type { Context } from "hono";
+import type { Context, Env } from "hono";
 import type { AssetRef, CompiledDeck, DeckSource } from "../deck/model";
 
 export interface R2ObjectHttpMetadataLike {
@@ -20,7 +20,9 @@ export interface R2BucketLike {
   get(key: string): Promise<R2ObjectBodyLike | null>;
 }
 
-export type R2BucketResolver = R2BucketLike | ((c: Context) => R2BucketLike | undefined | Promise<R2BucketLike | undefined>);
+export type R2BucketResolver<E extends Env = any> =
+  | R2BucketLike
+  | (<RequestEnv extends E>(c: Context<RequestEnv>) => R2BucketLike | undefined | Promise<R2BucketLike | undefined>);
 
 export interface R2AssetKeyInput {
   deck: CompiledDeck;
@@ -29,14 +31,14 @@ export interface R2AssetKeyInput {
   assetPath: string;
 }
 
-export interface R2AssetSourceOptions {
-  bucket: R2BucketResolver;
+export interface R2AssetSourceOptions<E extends Env = any> {
+  bucket: R2BucketResolver<E>;
   keyPrefix?: string;
   key?(input: R2AssetKeyInput): string;
   cacheControl?: string | false | ((input: R2AssetKeyInput) => string | false | undefined);
 }
 
-export function withR2Assets(source: DeckSource, options: R2AssetSourceOptions): DeckSource {
+export function withR2Assets<E extends Env = any>(source: DeckSource<E>, options: R2AssetSourceOptions<E>): DeckSource<E> {
   return {
     async listDecks(c) {
       return source.listDecks(c);
@@ -63,7 +65,10 @@ export function withR2Assets(source: DeckSource, options: R2AssetSourceOptions):
   };
 }
 
-async function resolveBucket(bucket: R2BucketResolver, c: Context): Promise<R2BucketLike | undefined> {
+async function resolveBucket<E extends Env, RequestEnv extends E>(
+  bucket: R2BucketResolver<E>,
+  c: Context<RequestEnv>,
+): Promise<R2BucketLike | undefined> {
   return typeof bucket === "function" ? bucket(c) : bucket;
 }
 
@@ -76,7 +81,7 @@ function findRoutableAsset(assets: AssetRef[], slug: string, assetPath: string):
   });
 }
 
-function resolveR2Key(input: R2AssetKeyInput, options: R2AssetSourceOptions): string {
+function resolveR2Key<E extends Env>(input: R2AssetKeyInput, options: R2AssetSourceOptions<E>): string {
   if (options.key) return options.key(input);
   if (input.asset.r2Key) return input.asset.r2Key;
   const key = input.asset.sourcePath || `${input.slug}/assets/${input.assetPath}`;
@@ -84,10 +89,10 @@ function resolveR2Key(input: R2AssetKeyInput, options: R2AssetSourceOptions): st
   return prefix ? `${prefix}/${key.replace(/^\/+/, "")}` : key.replace(/^\/+/, "");
 }
 
-async function responseFromR2Object(
+async function responseFromR2Object<E extends Env>(
   object: R2ObjectBodyLike,
   input: R2AssetKeyInput,
-  options: R2AssetSourceOptions,
+  options: R2AssetSourceOptions<E>,
 ): Promise<Response | null> {
   const body = object.body ?? (object.arrayBuffer ? await object.arrayBuffer() : undefined);
   if (body == null) return null;
@@ -120,7 +125,7 @@ function applyHttpMetadata(headers: Headers, metadata: R2ObjectHttpMetadataLike 
 
 function resolveCacheControl(
   input: R2AssetKeyInput,
-  options: R2AssetSourceOptions,
+  options: Pick<R2AssetSourceOptions, "cacheControl">,
 ): string | false | undefined {
   return typeof options.cacheControl === "function" ? options.cacheControl(input) : options.cacheControl;
 }

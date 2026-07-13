@@ -1,4 +1,5 @@
-import type { Context } from "hono";
+import type { Context, Env } from "hono";
+import { raw } from "hono/html";
 import { jsx } from "hono/jsx/jsx-runtime";
 import type { CompiledDeck } from "../deck/model";
 import type { DeckRenderable, MaybePromise } from "../renderer/compiled-render";
@@ -7,13 +8,15 @@ import { renderJsxValue } from "../renderer/jsx-renderer";
 import type { DeckExportOptions, DeckViewerExportPaths } from "./browser-export";
 import { resolveAuthorizedExportPaths } from "./browser-export";
 import { renderViewerScript } from "./viewer-script";
-import { baseViewerStyle } from "./viewer-style";
+import { baseViewerStyle, embeddedViewerStyle } from "./viewer-style";
 
-export interface DeckViewerOptions {
+export interface DeckViewerOptions<E extends Env = any> {
   controls?: false | DeckViewerControlsOptions;
   style?: string;
-  head?: MaybePromise<DeckRenderable>;
-  render?(input: DeckViewerRenderInput): MaybePromise<DeckRenderable>;
+  head?: MaybePromise<DeckRenderable> | ((input: DeckViewerRenderInput<E>) => MaybePromise<DeckRenderable>);
+  lang?: string | ((input: DeckViewerRenderInput<E>) => MaybePromise<string>);
+  nonce?: string | ((input: DeckViewerRenderInput<E>) => MaybePromise<string | undefined>);
+  render?(input: DeckViewerRenderInput<E>): MaybePromise<DeckRenderable>;
 }
 
 export type DeckViewerControlKey =
@@ -141,9 +144,27 @@ export interface DeckViewerParts {
   meta: DeckPageMeta;
 }
 
-export interface DeckViewerRenderInput extends DeckViewerParts {
+export interface DeckViewerRenderInput<E extends Env = any> extends DeckViewerParts {
+  c: Context<E>;
   deck: CompiledDeck;
   mountPath: string;
+}
+
+export interface DeckViewerEmbedOptions {
+  deck: CompiledDeck;
+  mountPath: string;
+  viewerStateQuery?: string;
+  controls?: false | DeckViewerControlsOptions;
+  exportPaths?: DeckViewerExportPaths;
+  style?: string;
+  toc?: boolean;
+  className?: string;
+  nonce?: string;
+}
+
+export interface DeckViewerEmbed extends DeckViewerParts {
+  embed: DeckRenderable;
+  embedHtml: string;
 }
 
 export async function createDeckViewerParts(input: {
@@ -191,13 +212,40 @@ export async function createDeckViewerParts(input: {
   };
 }
 
-export async function renderDeckViewerPage(input: {
-  c: Context;
+export async function createDeckViewerEmbed(input: DeckViewerEmbedOptions): Promise<DeckViewerEmbed> {
+  const parts = await createDeckViewerParts(input);
+  const root = jsx("section", {
+    class: ["hono-decks-embedded-viewer", input.className].filter(Boolean).join(" "),
+    "data-hono-decks-viewer": true,
+    "data-hono-decks-embed": true,
+    "data-deck-slug": parts.slug,
+    "data-hono-decks-print-path": parts.meta.printPath,
+    "aria-label": parts.title,
+    children: [
+      jsx("div", {
+        class: "hono-decks-viewer-shell",
+        children: [parts.frame, parts.controls],
+      }),
+      input.toc ? parts.toc : null,
+    ],
+  });
+  const rootHtml = await renderJsxValue(root);
+  const nonceAttribute = input.nonce ? ` nonce="${escapeHtml(input.nonce)}"` : "";
+  const embedHtml = `<style data-hono-decks-embed-style${nonceAttribute}>${embeddedViewerStyle()}${input.style ?? ""}</style>${rootHtml}${renderViewerScript(input.nonce)}`;
+  return {
+    ...parts,
+    embed: raw(embedHtml),
+    embedHtml,
+  };
+}
+
+export async function renderDeckViewerPage<E extends Env = any>(input: {
+  c: Context<E>;
   deck: CompiledDeck;
   mountPath: string;
   viewerStateQuery?: string;
-  viewer?: DeckViewerOptions;
-  exportOptions?: DeckExportOptions;
+  viewer?: DeckViewerOptions<E>;
+  exportOptions?: DeckExportOptions<E>;
 }): Promise<string> {
   const parts = await createDeckViewerParts({
     deck: input.deck,
@@ -206,17 +254,21 @@ export async function renderDeckViewerPage(input: {
     controls: input.viewer?.controls,
     exportPaths: await resolveAuthorizedExportPaths(input.c, input.deck, input.exportOptions),
   });
-  const content =
-    input.viewer?.render?.({
-      ...parts,
-      deck: input.deck,
-      mountPath: input.mountPath,
-    }) ??
-    jsx("main", {
+  const renderInput: DeckViewerRenderInput<E> = {
+    ...parts,
+    c: input.c,
+    deck: input.deck,
+    mountPath: input.mountPath,
+  };
+  const customContent = input.viewer?.render ? await input.viewer.render(renderInput) : undefined;
+  const content = jsx("main", {
       "data-hono-decks-viewer": true,
       "data-deck-slug": parts.slug,
-      "aria-labelledby": "hono-decks-viewer-title",
-      children: [
+      "data-hono-decks-print-path": parts.meta.printPath,
+      ...(customContent
+        ? { "aria-label": parts.title }
+        : { "aria-labelledby": "hono-decks-viewer-title" }),
+      children: customContent ?? [
         jsx("header", {
           class: "hono-decks-viewer-header",
           children: [
@@ -233,20 +285,27 @@ export async function renderDeckViewerPage(input: {
         }),
       ],
     });
-  const head = input.viewer?.head ? await renderJsxValue(await input.viewer.head) : "";
+  const headValue =
+    typeof input.viewer?.head === "function" ? await input.viewer.head(renderInput) : await input.viewer?.head;
+  const head = headValue ? await renderJsxValue(headValue) : "";
+  const langValue = typeof input.viewer?.lang === "function" ? await input.viewer.lang(renderInput) : input.viewer?.lang;
+  const lang = langValue?.trim() || "ja";
+  const nonceValue =
+    typeof input.viewer?.nonce === "function" ? await input.viewer.nonce(renderInput) : input.viewer?.nonce;
+  const nonceAttribute = nonceValue ? ` nonce="${escapeHtml(nonceValue)}"` : "";
 
   return `<!doctype html>
-<html lang="ja">
+<html lang="${escapeHtml(lang)}">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>${escapeHtml(parts.title)}</title>
-  <style>${baseViewerStyle()}${input.viewer?.style ?? ""}</style>
+  <style${nonceAttribute}>${baseViewerStyle()}${input.viewer?.style ?? ""}</style>
   ${head}
 </head>
 <body>
   ${await renderJsxValue(await content)}
-  ${renderViewerScript(parts.meta.printPath)}
+  ${renderViewerScript(nonceValue)}
 </body>
 </html>`;
 }

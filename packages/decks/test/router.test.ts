@@ -5,7 +5,7 @@ import type { CompiledDeck } from "../src/deck/model";
 import { defineDecks, defineDecksConfig } from "../src/server/define-decks";
 import { manifestDeckSource } from "../src/source/manifest-source";
 import { withR2Assets } from "../src/source/r2-assets";
-import { createDeckViewerParts, deckContext, decksRouter } from "../src/server/router";
+import { createDeckViewerEmbed, createDeckViewerParts, deckContext, decksRouter } from "../src/server/router";
 import type { DeckContextVariables, DeckViewerControlsOptions } from "../src/server/router";
 
 const deck = {
@@ -88,8 +88,8 @@ describe("decksRouter", () => {
     expect(html).toContain(".hono-decks-viewer-stage{display:grid;place-items:center;justify-content:center");
     expect(html).toContain("@supports (width:1cqw)");
     expect(html).not.toContain("position:fixed;left:50%;bottom:16px");
-    expect(html).toContain("root?.setAttribute(\"data-step-index\", String(message.stepIndex ?? 0))");
-    expect(html).toContain("root?.setAttribute(\"data-step-count\", String(message.stepCount ?? 0))");
+    expect(html).toContain("root.setAttribute(\"data-step-index\", String(message.stepIndex ?? 0))");
+    expect(html).toContain("root.setAttribute(\"data-step-count\", String(message.stepCount ?? 0))");
     expect(html).not.toContain('String(message.stepIndex) + " / " + String(message.stepCount)');
     expect(html).toContain("pointerdown");
     expect(html).toContain("pointerup");
@@ -99,10 +99,10 @@ describe("decksRouter", () => {
     expect(html).toContain('orientation.lock("landscape")');
     expect(html).toContain("unlockViewerOrientation()");
     expect(html).toContain('document.addEventListener("fullscreenchange"');
-    expect(html).toContain('document.querySelectorAll("[data-action=\'previous\']")');
-    expect(html).toContain('document.querySelectorAll("[data-action=\'next\']")');
-    expect(html).toContain('document.querySelectorAll("[data-action=\'fullscreen\']")');
-    expect(html).toContain('const printPath = "/slides/deck1/print"');
+    expect(html).toContain('root.querySelectorAll("[data-action=\'previous\']")');
+    expect(html).toContain('root.querySelectorAll("[data-action=\'next\']")');
+    expect(html).toContain('root.querySelectorAll("[data-action=\'fullscreen\']")');
+    expect(html).toContain('data-hono-decks-print-path="/slides/deck1/print"');
     expect(html).toContain('(event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "p"');
     expect(html).toContain('printUrl.searchParams.set("autoprint", "1")');
     expect(html).toContain("window.location.assign(printUrl)");
@@ -388,6 +388,65 @@ describe("decksRouter", () => {
     expect(parts.controlsHtml).toBeNull();
   });
 
+  it("creates a self-contained interactive embed that can coexist with other viewers", async () => {
+    const first = await createDeckViewerEmbed({ deck, mountPath: "/slides", toc: true });
+    const second = await createDeckViewerEmbed({
+      deck: { ...deck, slug: "deck2", meta: { ...deck.meta, title: "Deck Two" } },
+      mountPath: "/slides",
+      controls: false,
+      className: "product-tour",
+      nonce: "embed-nonce",
+    });
+
+    const html = `${first.embedHtml}${second.embedHtml}`;
+    expect(html).toContain("data-hono-decks-embed");
+    expect(html).toContain("data-hono-decks-embed-style");
+    expect(html).toContain("data-hono-decks-viewer-runtime");
+    expect(html).toContain('data-hono-decks-print-path="/slides/deck1/print"');
+    expect(html).toContain('class="hono-decks-embedded-viewer product-tour"');
+    expect(second.embedHtml).toContain('data-hono-decks-embed-style nonce="embed-nonce"');
+    expect(second.embedHtml).toContain('data-hono-decks-viewer-runtime nonce="embed-nonce"');
+    expect(html).toContain('src="/slides/deck2/render"');
+    expect(html).toContain("for (const root of roots)");
+    expect(html).toContain("window.__honoDecksViewerRuntime ??=");
+    expect(html).toContain("if (!runtime.globalInitialized)");
+    expect(html).toContain('root.querySelector("iframe")');
+    expect(html).toContain("event.source !== iframe?.contentWindow");
+    expect(html).toContain("event.origin !== frameOrigin");
+    expect(html).toContain("action, index }, frameOrigin");
+    expect(html).toContain('root.setAttribute("data-hono-decks-initialized", "true")');
+    expect(html).toContain("document.activeElement?.closest?.");
+    expect(first.embedHtml).toContain("data-hono-decks-toc");
+    expect(second.embedHtml).not.toContain("data-hono-decks-toc");
+  });
+
+  it("passes request context to viewer rendering and supports a request-aware document language and head", async () => {
+    type AppEnv = { Bindings: { LOCALE: string; TENANT: string; NONCE: string } };
+    const app = new Hono<AppEnv>();
+    app.route(
+      "/slides",
+      decksRouter<AppEnv>({
+        source: manifestDeckSource<AppEnv>({ decks: [deck] }),
+        viewer: {
+          lang: ({ c }) => c.env.LOCALE,
+          nonce: ({ c }) => c.env.NONCE,
+          head: ({ c }) => jsx("meta", { name: "tenant", content: c.env.TENANT }),
+          render: ({ c, frame }) => jsx("section", { "data-tenant": c.env.TENANT, children: frame }),
+        },
+      }),
+    );
+
+    const html = await (
+      await app.request("/slides/deck1", undefined, { LOCALE: "en-GB", TENANT: "docs", NONCE: "request-nonce" })
+    ).text();
+    expect(html).toContain('<html lang="en-GB">');
+    expect(html).toContain('<meta name="tenant" content="docs"/>');
+    expect(html).toContain('data-tenant="docs"');
+    expect(html).toContain('<style nonce="request-nonce">');
+    expect(html).toContain('data-hono-decks-viewer-runtime nonce="request-nonce"');
+    expect(html).toContain('data-hono-decks-print-path="/slides/deck1/print"');
+  });
+
   it("lets callers render a custom viewer layout with frame, controls, and toc parts", async () => {
     const app = new Hono();
     app.route(
@@ -417,7 +476,7 @@ describe("decksRouter", () => {
     expect(html).toContain('data-hono-decks-frame');
     expect(html).toContain('data-hono-decks-toc');
     expect(html).toContain('data-action="goTo"');
-    expect(html).toContain('action: "goTo"');
+    expect(html).toContain('sendCommand("goTo", index)');
   });
 
   it("lets callers reorder and remove default viewer control items", async () => {
@@ -727,6 +786,47 @@ describe("decksRouter", () => {
     const response = await app.request("/decks/deck1/render");
     expect(response.status).toBe(200);
     expect(await response.text()).toContain("<h1>Intro</h1>");
+  });
+
+  it("deeply composes nested router overrides without dropping unrelated defaults", async () => {
+    const decks = defineDecks({
+      manifest: { decks: [deck] },
+      viewer: {
+        lang: "en",
+        style: ".base-viewer { color: red; }",
+        controls: {
+          className: "base-controls",
+          labels: { previous: "Back" },
+        },
+      },
+      presenter: {
+        enabled: true,
+        viewerControl: { label: "Speaker", icon: "presenter" },
+      },
+    });
+    const app = new Hono();
+    app.route(
+      "/decks",
+      decks.router({
+        viewer: {
+          controls: {
+            itemClassName: "override-item",
+            labels: { next: "Forward" },
+          },
+        },
+        presenter: { viewerControl: { className: "speaker-link" } },
+      }),
+    );
+
+    const html = await (await app.request("/decks/deck1")).text();
+    expect(html).toContain('<html lang="en">');
+    expect(html).toContain(".base-viewer { color: red; }");
+    expect(html).toContain("base-controls");
+    expect(html).toContain("override-item");
+    expect(html).toContain(">Back</button>");
+    expect(html).toContain(">Forward</button>");
+    expect(html).toContain("speaker-link");
+    expect(html).toContain('aria-label="Speaker"');
   });
 
   it("defines typed deck runtime config without changing the object", () => {
@@ -1359,5 +1459,7 @@ describe("decksRouter", () => {
     expect(typeof mod.decksRouter).toBe("function");
     expect(typeof mod.deckContext).toBe("function");
     expect(typeof mod.createDeckViewerParts).toBe("function");
+    expect(typeof mod.createDeckViewerEmbed).toBe("function");
+    expect(typeof mod.mergeDecksRouterOptions).toBe("function");
   });
 });

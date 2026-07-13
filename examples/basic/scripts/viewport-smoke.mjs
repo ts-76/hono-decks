@@ -55,6 +55,8 @@ try {
     }
   }
 
+  await runEmbeddedViewerCheck();
+
   console.log(`Viewport smoke checks passed. Screenshots: ${artifactDir}`);
 } finally {
   await agent(["--session", session, "close"], { allowFailure: true });
@@ -62,6 +64,31 @@ try {
     server.kill("SIGTERM");
     await serverExit;
   }
+}
+
+async function runEmbeddedViewerCheck() {
+  await agent(["--session", session, "open", `${baseUrl}/decks/sample/embed`]);
+  await agent(["--session", session, "set", "viewport", "1280", "800"]);
+  await sleep(500);
+
+  const initial = await evalJson(embeddedViewerStateScript());
+  if (!initial.initialized || !initial.hasScopedStyle || !initial.hasRuntime || initial.ratio < 1.75 || initial.ratio > 1.8) {
+    throw new Error(`embedded viewer did not initialize: ${JSON.stringify(initial)}`);
+  }
+
+  await evalJson(`(() => {
+    const next = document.querySelector('[data-viewer-navigation="next"]');
+    if (!(next instanceof HTMLButtonElement)) throw new Error("missing embedded next navigation layer");
+    next.click();
+    return { ok: true };
+  })()`);
+
+  const advanced = await waitForEmbeddedViewerState((state) => state.slide === "2" && state.activeSlide === "1");
+  if (advanced.slide !== "2" || advanced.activeSlide !== "1") {
+    throw new Error(`embedded viewer navigation did not advance: ${JSON.stringify(advanced)}`);
+  }
+  await agent(["--session", session, "screenshot", path.join(artifactDir, "desktop-sample-embed.png")]);
+  console.log("desktop sample embedded viewer: ok");
 }
 
 async function runViewportCheck(check, slug, verifyNavigation) {
@@ -167,7 +194,12 @@ function viewportMetricsScript() {
     const style = getComputedStyle(viewport);
     if (Math.abs(ratio - 16 / 9) > 0.025) errors.push("viewport ratio is " + ratio.toFixed(3));
     if (view.width > window.innerWidth + 1 || view.height > window.innerHeight + 1) errors.push("viewport overflows window");
-    if (view.bottom > controlBounds.top + 1) errors.push("viewport overlaps controls");
+    const overlapsControls =
+      view.left < controlBounds.right - 1 &&
+      view.right > controlBounds.left + 1 &&
+      view.top < controlBounds.bottom - 1 &&
+      view.bottom > controlBounds.top + 1;
+    if (overlapsControls) errors.push("viewport overlaps controls");
     if (controlBounds.left < -1 || controlBounds.right > window.innerWidth + 1) errors.push("controls overflow window horizontally");
     if (controlBounds.top < -1 || controlBounds.bottom > window.innerHeight + 1) errors.push("controls overflow window vertically");
     if (Math.abs(frame.width - view.width) > 1 || Math.abs(frame.height - view.height) > 1) errors.push("iframe does not follow viewport size");
@@ -288,6 +320,24 @@ function motionStateScript() {
   })()`;
 }
 
+function embeddedViewerStateScript() {
+  return `(() => {
+    const root = document.querySelector("[data-hono-decks-viewer][data-hono-decks-embed]");
+    const viewport = root?.querySelector("[data-viewer-viewport]");
+    const iframe = root?.querySelector("iframe");
+    const activeSlide = iframe?.contentDocument?.querySelector(".slide:not([hidden])");
+    const bounds = viewport?.getBoundingClientRect();
+    return {
+      initialized: root?.getAttribute("data-hono-decks-initialized") === "true",
+      hasScopedStyle: Boolean(document.querySelector("[data-hono-decks-embed-style]")),
+      hasRuntime: Boolean(document.querySelector("[data-hono-decks-viewer-runtime]")),
+      ratio: bounds && bounds.height ? bounds.width / bounds.height : 0,
+      slide: new URL(window.location.href).searchParams.get("slide") ?? "",
+      activeSlide: activeSlide?.getAttribute("data-slide-index") ?? ""
+    };
+  })()`;
+}
+
 function clickNextControlScript() {
   return `(() => {
     const doc = window.top?.document ?? document;
@@ -335,6 +385,17 @@ async function waitForMotionState(predicate, label) {
     await sleep(200);
   }
   throw new Error(`${label} failed: ${JSON.stringify(result)}`);
+}
+
+async function waitForEmbeddedViewerState(predicate) {
+  const startedAt = Date.now();
+  let result;
+  while (Date.now() - startedAt < 5000) {
+    result = await evalJson(embeddedViewerStateScript());
+    if (predicate(result)) return result;
+    await sleep(200);
+  }
+  return result;
 }
 
 function assertSlideOnlyPosition(position, label) {

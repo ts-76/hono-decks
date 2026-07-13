@@ -1,11 +1,11 @@
-import type { Context } from "hono";
+import type { Env } from "hono";
 import type { AssetRef, CompiledDeck, DeckEntry, DeckManifest, DeckSource } from "../deck/model";
 
-export function manifestDeckSource(manifest: DeckManifest): DeckSource {
+export function manifestDeckSource<E extends Env = any>(manifest: DeckManifest): DeckSource<E> {
   const decks = new Map(manifest.decks.map((deck) => [deck.slug, deck]));
 
   return {
-    async listDecks(_c: Context): Promise<DeckEntry[]> {
+    async listDecks(): Promise<DeckEntry[]> {
       return manifest.decks.map((deck) => ({
         slug: deck.slug,
         title: deck.meta.title,
@@ -15,11 +15,11 @@ export function manifestDeckSource(manifest: DeckManifest): DeckSource {
       }));
     },
 
-    async getCompiledDeck(_c: Context, slug: string): Promise<CompiledDeck | null> {
+    async getCompiledDeck(_c, slug: string): Promise<CompiledDeck | null> {
       return decks.get(slug) ?? null;
     },
 
-    async getAsset(_c: Context, slug: string, assetPath: string): Promise<Response | null> {
+    async getAsset(_c, slug: string, assetPath: string): Promise<Response | null> {
       const deck = decks.get(slug);
       if (!deck) return null;
 

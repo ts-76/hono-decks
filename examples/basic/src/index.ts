@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { deckContext, type DeckContextVariables } from "@hono/decks";
-import type { DecksConfigBindings } from "./decks.config";
+import { createDeckViewerEmbed, deckContext, type DeckContextVariables } from "@hono/decks";
+import type { DecksConfigEnv } from "./decks.config";
 import { createDecksRouter, deckMountPath, deckSource } from "./decks";
 import {
   renderDeckDetailsPage,
@@ -8,8 +8,7 @@ import {
   renderHomePage,
 } from "./pages";
 
-interface Env {
-  Bindings: DecksConfigBindings;
+interface Env extends DecksConfigEnv {
   Variables: DeckContextVariables;
 }
 
@@ -29,10 +28,14 @@ app.get(
 app.get(
   `${deckMountPath}/:slug/embed`,
   deckContext({ source: deckSource, mountPath: deckMountPath, viewer: { controls: false } }),
-  (c) =>
+  async (c) =>
     c.html(renderDeckEmbedPage({
       meta: c.var.deckMeta,
-      viewer: c.var.deckViewer,
+      viewer: await createDeckViewerEmbed({
+        deck: c.var.deck,
+        mountPath: deckMountPath,
+        controls: false,
+      }),
     })),
 );
 app.route(deckMountPath, createDecksRouter());
