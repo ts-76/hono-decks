@@ -418,9 +418,55 @@ app.get(
 
 OGP metadata は package が自動生成するのではなく app-owned page で出す想定です。`examples/basic/src/pages.tsx` の details page は `deckContext()` 由来の `DeckPageMeta` を使い、`description`、`og:title`、`og:description`、`og:url`、任意の `og:image` を head に出す実装例になっています。
 
+## Examples
+
+用途別に3つのexampleを用意しています。
+
+| Example | 用途 | 起動 |
+| --- | --- | --- |
+| `examples/minimal` | 通常のHono Workerへ1つのdeck routerをmountする最小構成 | `bun run dev:minimal` |
+| `examples/honox` | HonoXのfile-based routingとdeck routerを共存させる構成 | `bun run dev:honox` |
+| `examples/basic` | R2、custom components、presenter、export、外部embedを含む総合例 | `bun run dev` |
+
+### Minimal Hono
+
+```txt
+examples/minimal/
+  decks/welcome/deck.mdx
+  src/
+    index.ts             # app.route("/decks", createDecksRouter())
+    decks.ts             # app-owned facade
+    generated/           # compile output
+```
+
+```bash
+bun run dev:minimal
+```
+
+### HonoX
+
+HonoX exampleは公式`x-basic`と同じ`app/server.ts`、`honox/vite`、Cloudflare adapter/build構成を使います。`app/routes/decks/index.ts`が生成済みHono routerをexportすることで、HonoXの通常ページとslide routesを同じfile-based appへ載せています。Vite SSRではmain entryをcompiler依存のない`@hono/decks/runtime`へ解決します。
+
+```txt
+examples/honox/
+  decks/honox/deck.mdx
+  app/
+    server.ts
+    decks.ts             # app-owned facade
+    generated/           # compile output
+    routes/
+      _renderer.tsx
+      index.tsx          # HonoX home page
+      decks/index.ts     # generated deck router mount
+```
+
+```bash
+bun run dev:honox
+```
+
 ## Basic Example
 
-`examples/basic` は directory deck を package CLI で manifest 化し、Cloudflare Workers 上で表示する最小サンプルです。
+`examples/basic` は directory deck をpackage CLIでmanifest化し、R2やcustom componentsを含めてCloudflare Workers上で表示する総合サンプルです。
 
 ```txt
 examples/basic/

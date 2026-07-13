@@ -1,0 +1,29 @@
+{
+  "name": "@hono-decks/example-honox",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "decks:compile": "bun run --cwd ../../packages/decks build && node ../../packages/decks/dist/bin.js compile --root decks --out app/generated --mount /decks",
+    "decks:compile:dev": "bun run --cwd ../../packages/decks build -- --clean=false && node ../../packages/decks/dist/bin.js compile --root decks --out app/generated --mount /decks",
+    "dev": "bun run decks:compile:dev && vite",
+    "build": "bun run decks:compile && vite build",
+    "preview": "wrangler dev",
+    "typecheck": "bun run decks:compile && tsc --noEmit",
+    "test": "bun run decks:compile && vitest run",
+    "check": "bun run typecheck && bun run test && bun run build"
+  },
+  "dependencies": {
+    "@hono/decks": "workspace:*",
+    "hono": "^4.12.30",
+    "honox": "0.1.59"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260712.1",
+    "@hono/vite-build": "^1.11.1",
+    "@hono/vite-dev-server": "^0.26.1",
+    "typescript": "^5.9.3",
+    "vite": "^8.1.4",
+    "vitest": "^4.0.14",
+    "wrangler": "^4.110.0"
+  }
+}

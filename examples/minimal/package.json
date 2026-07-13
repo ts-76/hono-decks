@@ -1,0 +1,24 @@
+{
+  "name": "@hono-decks/example-minimal",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "decks:compile": "bun run --cwd ../../packages/decks build && node ../../packages/decks/dist/bin.js compile --root decks --out src/generated --mount /decks",
+    "decks:compile:dev": "bun run --cwd ../../packages/decks build -- --clean=false && node ../../packages/decks/dist/bin.js compile --root decks --out src/generated --mount /decks",
+    "dev": "bun run decks:compile:dev && CI=1 XDG_CONFIG_HOME=.wrangler-config wrangler dev",
+    "build": "bun run decks:compile && CI=1 XDG_CONFIG_HOME=.wrangler-config wrangler deploy --dry-run --outdir dist",
+    "typecheck": "bun run decks:compile && tsc --noEmit",
+    "test": "bun run decks:compile && vitest run",
+    "check": "bun run typecheck && bun run test && bun run build"
+  },
+  "dependencies": {
+    "@hono/decks": "workspace:*",
+    "hono": "^4.12.30"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260712.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.14",
+    "wrangler": "^4.50.0"
+  }
+}

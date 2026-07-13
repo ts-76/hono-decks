@@ -38,6 +38,10 @@ describe("package build metadata", () => {
         types: "./dist/index.d.ts",
         import: "./dist/index.js",
       },
+      "./runtime": {
+        types: "./dist/runtime.d.ts",
+        import: "./dist/runtime.js",
+      },
     });
     expect(packageJson.bin).toEqual({ "hono-decks": "./dist/bin.js" });
     expect(packageJson.files).toEqual(expect.arrayContaining(["dist", "README.md"]));
@@ -52,6 +56,14 @@ describe("package build metadata", () => {
     expect(bin).toContain("runHonoDecksCli");
   });
 
+  it("keeps the runtime entry free from compiler-only dependencies", async () => {
+    const runtime = await readFile(join(packageRoot, "dist", "runtime.js"), "utf8");
+
+    expect(runtime).not.toContain("node_modules/unified/");
+    expect(runtime).not.toContain("node_modules/remark-parse/");
+    expect(runtime).not.toContain("node_modules/acorn-jsx/");
+  });
+
   it("ships self-contained high-level API and embedding documentation", async () => {
     const readme = await readFile(join(packageRoot, "README.md"), "utf8");
 
@@ -59,6 +71,8 @@ describe("package build metadata", () => {
     expect(readme).toContain("createDeckViewerEmbed()");
     expect(readme).toContain("同じdocumentへ複数配置");
     expect(readme).toContain("Embedding from an external blog");
+    expect(readme).toContain("examples/minimal");
+    expect(readme).toContain("examples/honox");
     expect(readme).toContain("frame-ancestors");
     expect(readme).toContain('allow="fullscreen"');
     expect(readme).toContain("iframe navigationにCORSは不要");

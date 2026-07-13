@@ -36,6 +36,12 @@ export default app;
 
 標準routerはdeck index、viewer、render、print、presentation、presenter、asset routeを提供します。
 
+リポジトリには用途別のexampleがあります。
+
+- `examples/minimal`: 通常のHono Workerへrouterをmountする最小構成
+- `examples/honox`: HonoXのfile-based routeからrouterをmountする構成
+- `examples/basic`: R2、custom components、presenter、export、外部embedを含む総合例
+
 ## App-owned facade
 
 `hono-decks init`が生成する`src/decks.ts`は編集してよいapp-owned facadeです。`src/generated/decks.ts`以下はcompileのたびに上書きされるため、アプリのrouteや設定から直接importせずfacadeの内側に閉じ込めます。
@@ -291,7 +297,8 @@ export: {
 
 ## Entry points
 
-- `@hono/decks`: Worker-safe public route kit、renderer、types
+- `@hono/decks`: 全公開API
+- `@hono/decks/runtime`: generated router、viewer、source adapterだけを含むSSR/Worker runtime entry
 - `@hono/decks/client`: client island hydration
 - `@hono/decks/node`: filesystem compile、local development、OGP取得
 - `@hono/decks/cli`: CLI API
@@ -306,4 +313,4 @@ bun run check
 bun pm pack --dry-run
 ```
 
-完全な実行例はrepositoryの`examples/basic`を参照してください。
+最小構成は`examples/minimal`、HonoX統合は`examples/honox`、全機能を使う構成は`examples/basic`を参照してください。
