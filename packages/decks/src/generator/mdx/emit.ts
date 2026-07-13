@@ -1,6 +1,8 @@
 import type { GeneratedModuleDeck } from "../mdx-module-generator";
+import { DECKS_RUNTIME_ENTRY } from "../package-entry";
 
 export function emitModuleDecksRouter(input: { decks: GeneratedModuleDeck[] }): string {
+  const runtimeEntry = JSON.stringify(DECKS_RUNTIME_ENTRY);
   const slideImports = input.decks
     .flatMap((deck) =>
       deck.slideModules.map(
@@ -14,8 +16,8 @@ export function emitModuleDecksRouter(input: { decks: GeneratedModuleDeck[] }): 
     .join("\n");
 
   return `// @ts-nocheck
-import { defineDecks } from "@hono/decks";
-import type { DecksRouterOverrides } from "@hono/decks";
+import { defineDecks } from ${runtimeEntry};
+import type { DecksRouterOverrides } from ${runtimeEntry};
 import { decksClientEntry } from "./client-entry";
 ${slideImports}
 ${componentImports}

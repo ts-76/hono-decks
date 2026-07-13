@@ -18,14 +18,6 @@
     "./node": {
       "types": "./dist/node.d.ts",
       "import": "./dist/node.js"
-    },
-    "./worker": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./runtime": {
-      "types": "./dist/runtime.d.ts",
-      "import": "./dist/runtime.js"
     }
   },
   "bin": {

@@ -549,7 +549,7 @@ describe("createDevDeckRuntime", () => {
   });
 
   it("exports the dev runtime from the public module", async () => {
-    const mod = await import("../src/mod");
+    const mod = await import("../src/node");
     expect(typeof mod.createDevDeckRuntime).toBe("function");
   });
 });

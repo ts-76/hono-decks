@@ -12,6 +12,12 @@ describe("sample Worker app", () => {
     const entrySource = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
     const facadeSource = await readFile(new URL("../src/decks.ts", import.meta.url), "utf8");
     const configSource = await readFile(new URL("../src/decks.config.ts", import.meta.url), "utf8");
+    const pagesSource = await readFile(new URL("../src/pages.tsx", import.meta.url), "utf8");
+
+    for (const source of [entrySource, facadeSource, configSource, pagesSource]) {
+      expect(source).toContain('from "@hono/decks"');
+      expect(source).not.toContain("@hono/decks/runtime");
+    }
 
     expect(entrySource).not.toContain("./generated/decks");
     expect(entrySource).not.toContain("DeckBrowserRunBinding");

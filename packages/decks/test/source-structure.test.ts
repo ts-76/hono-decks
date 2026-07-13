@@ -30,6 +30,7 @@ describe("source directory structure", () => {
         "component-registry.ts",
         "manifest-generator.ts",
         "mdx-module-generator.ts",
+        "package-entry.ts",
         "router-generator.ts",
       ]),
     );

@@ -1,7 +1,15 @@
+import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import app from "../src/index";
 
 describe("minimal example", () => {
+  it("imports the generated router from the runtime entry", async () => {
+    const generated = await readFile(new URL("../src/generated/decks.ts", import.meta.url), "utf8");
+
+    expect(generated).toContain('from "@hono/decks"');
+    expect(generated).not.toContain("@hono/decks/runtime");
+  });
+
   it("redirects the home page to the only deck", async () => {
     const response = await app.request("/");
 

@@ -766,7 +766,7 @@ const unclosed = true;`,
   });
 
   it("exports the compiler from the public module", async () => {
-    const mod = await import("../src/mod");
+    const mod = await import("../src/node");
     expect(typeof mod.compileMarkdown).toBe("function");
     expect(typeof mod.CompileError).toBe("function");
     expect(typeof mod.RenderError).toBe("function");

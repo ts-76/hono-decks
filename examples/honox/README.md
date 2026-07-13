@@ -1,6 +1,6 @@
 # HonoX example
 
-HonoXのfile-based routingと`@hono/decks`の生成routerを同じCloudflare Workerへ組み込む例です。公式`x-basic`構成に合わせ、`honox/vite`、Cloudflare dev adapter、Cloudflare build adapterを使用します。Vite SSRではmain entryをcompiler依存のない`@hono/decks/runtime`へ解決します。
+HonoXのfile-based routingと`@hono/decks`の生成routerを同じCloudflare Workerへ組み込む例です。公式`x-basic`構成に合わせ、`honox/vite`、Cloudflare dev adapter、Cloudflare build adapterを使用します。`@hono/decks`の標準entry自体がruntime-safeなので、HonoX固有のVite aliasやsubpath importは不要です。
 
 ```bash
 bun run --cwd examples/honox dev

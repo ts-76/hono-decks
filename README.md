@@ -54,7 +54,7 @@ const app = new Hono();
 app.route("/decks", createDecksRouter());
 ```
 
-local deck files から generated router と slide module を生成する CLI も package 側にあります。ファイル読み取りと MDX compile は build-time に閉じ、Worker runtime は生成済み module を import します。
+local deck files から generated router と slide module を生成する CLI も package 側にあります。ファイル読み取りとMDX compileは`@hono/decks/node`へ閉じ、標準entryの`@hono/decks`はruntime-safeなroute kitだけを公開します。生成されるserver moduleも標準entryをimportするため、WorkerやSSR runtimeがparser/compiler依存を解決しません。
 
 ```bash
 hono-decks init \
@@ -445,7 +445,7 @@ bun run dev:minimal
 
 ### HonoX
 
-HonoX exampleは公式`x-basic`と同じ`app/server.ts`、`honox/vite`、Cloudflare adapter/build構成を使います。`app/routes/decks/index.ts`が生成済みHono routerをexportすることで、HonoXの通常ページとslide routesを同じfile-based appへ載せています。Vite SSRではmain entryをcompiler依存のない`@hono/decks/runtime`へ解決します。
+HonoX exampleは公式`x-basic`と同じ`app/server.ts`、`honox/vite`、Cloudflare adapter/build構成を使います。`app/routes/decks/index.ts`が生成済みHono routerをexportすることで、HonoXの通常ページとslide routesを同じfile-based appへ載せています。標準entry自体がruntime-safeなので、HonoX固有のVite aliasやsubpath importは不要です。
 
 ```txt
 examples/honox/
@@ -548,36 +548,8 @@ MVP では parse と view の層を中心にしています。`deck` は domain 
 - MDX module/router generation: `packages/decks/src/generator`
 - manifest source adapter: `packages/decks/src/source`
 - file routing: `packages/decks/src/routing`
-- runtime/view: `packages/decks/src/server`, `packages/decks/src/runtime`
+- request-time route/view: `packages/decks/src/server`, `packages/decks/src/renderer`
+- build/dev runtime: `packages/decks/src/compiler`, `packages/decks/src/generator`, `packages/decks/src/runtime`
 - Node-only local I/O: `packages/decks/src/node`
 
 edit/agent 実装は MVP から外しています。後から戻しやすいように、view 側は `DeckSource` と router options を境界にしており、編集層は別 package や feature branch から差し込む想定です。
-
-## Legacy Middleware
-
-単一 deck を route middleware として扱う `deckMiddleware()` も使えます。
-
-```ts
-import { Hono } from "hono";
-import { deckMiddleware } from "@hono/decks";
-
-const app = new Hono();
-
-app.use(
-  "/deck",
-  deckMiddleware({
-    markdown: `# Hello\n\n---\n\n## Second`,
-  }),
-);
-```
-
-下流 handler で自分の API response にしたい場合は `respond: false` を使います。
-
-```ts
-app.post("/api/preview", deckMiddleware({ respond: false }), (c) => {
-  return c.json({
-    deck: c.var.slideDeck,
-    html: c.var.slideHtml,
-  });
-});
-```

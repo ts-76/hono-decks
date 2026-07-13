@@ -6,8 +6,6 @@ export default defineConfig({
     cli: "src/cli.ts",
     client: "src/client.ts",
     node: "src/node.ts",
-    index: "src/index.ts",
-    runtime: "src/runtime.ts",
     bin: "src/bin.ts",
   },
   format: ["esm"],

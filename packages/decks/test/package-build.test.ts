@@ -34,14 +34,6 @@ describe("package build metadata", () => {
         types: "./dist/node.d.ts",
         import: "./dist/node.js",
       },
-      "./worker": {
-        types: "./dist/index.d.ts",
-        import: "./dist/index.js",
-      },
-      "./runtime": {
-        types: "./dist/runtime.d.ts",
-        import: "./dist/runtime.js",
-      },
     });
     expect(packageJson.bin).toEqual({ "hono-decks": "./dist/bin.js" });
     expect(packageJson.files).toEqual(expect.arrayContaining(["dist", "README.md"]));
@@ -56,12 +48,16 @@ describe("package build metadata", () => {
     expect(bin).toContain("runHonoDecksCli");
   });
 
-  it("keeps the runtime entry free from compiler-only dependencies", async () => {
-    const runtime = await readFile(join(packageRoot, "dist", "runtime.js"), "utf8");
+  it("keeps the standard entry runtime-safe and compiler APIs in the Node entry", async () => {
+    const runtime = await readFile(join(packageRoot, "dist", "mod.js"), "utf8");
+    const node = await readFile(join(packageRoot, "dist", "node.js"), "utf8");
 
+    expect(runtime).not.toMatch(/from "(?:@mdx-js\/mdx|esbuild|remark-mdx|remark-parse|shiki|unified)"/);
     expect(runtime).not.toContain("node_modules/unified/");
     expect(runtime).not.toContain("node_modules/remark-parse/");
     expect(runtime).not.toContain("node_modules/acorn-jsx/");
+    expect(node).toContain('from "unified"');
+    expect(node).toContain('from "remark-parse"');
   });
 
   it("ships self-contained high-level API and embedding documentation", async () => {

@@ -127,7 +127,7 @@ describe("emitDeckManifestModule", () => {
 });
 
 it("exports manifest generation helpers from the public module", async () => {
-  const mod = await import("../src/mod");
+  const mod = await import("../src/node");
   expect(typeof mod.buildDeckManifest).toBe("function");
   expect(typeof mod.emitDeckManifestModule).toBe("function");
 });

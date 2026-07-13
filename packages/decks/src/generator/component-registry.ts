@@ -1,5 +1,6 @@
 import type { CompiledDeck, DeckManifest } from "../deck/model";
 import type { SlideNode } from "../shared/types";
+import { DECKS_RUNTIME_ENTRY } from "./package-entry";
 
 export interface DeckComponentExport {
   slug: string;
@@ -38,11 +39,12 @@ export function applyDeckComponentRegistry(input: ApplyDeckComponentRegistryInpu
 }
 
 export function emitDeckComponentRegistryModule(components: ResolvedDeckComponentExport[]): string {
+  const runtimeEntry = JSON.stringify(DECKS_RUNTIME_ENTRY);
   if (components.length === 0) {
-    return `import { defineSlideComponents } from "@hono/decks";\n\nexport const deckComponents = defineSlideComponents({});\n`;
+    return `import { defineSlideComponents } from ${runtimeEntry};\n\nexport const deckComponents = defineSlideComponents({});\n`;
   }
 
-  return `import { defineSlideComponents } from "@hono/decks";\n${components
+  return `import { defineSlideComponents } from ${runtimeEntry};\n${components
     .map(
       (component) =>
         `import { ${component.exportName} as ${component.internalName} } from ${JSON.stringify(component.modulePath)};`,

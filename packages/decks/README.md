@@ -46,6 +46,8 @@ export default app;
 
 `hono-decks init`が生成する`src/decks.ts`は編集してよいapp-owned facadeです。`src/generated/decks.ts`以下はcompileのたびに上書きされるため、アプリのrouteや設定から直接importせずfacadeの内側に閉じ込めます。
 
+標準entryの`@hono/decks`はruntime-safeなroute kitだけを公開し、生成されるserver moduleもこのentryを直接importします。Markdown/MDXのparser、compiler、generatorは`@hono/decks/node`へ分離され、Hono WorkerやVite SSRの依存graphには入りません。
+
 ```ts
 import type { DecksRouterOverrides } from "@hono/decks";
 import { decks } from "./generated/decks";
@@ -297,14 +299,13 @@ export: {
 
 ## Entry points
 
-- `@hono/decks`: 全公開API
-- `@hono/decks/runtime`: generated router、viewer、source adapterだけを含むSSR/Worker runtime entry
+- `@hono/decks`: generated server moduleとWorker/SSRアプリコードが使うruntime-safeなroute kit
 - `@hono/decks/client`: client island hydration
-- `@hono/decks/node`: filesystem compile、local development、OGP取得
+- `@hono/decks/node`: parser、compiler、generator、filesystem、local development、OGP取得
 - `@hono/decks/cli`: CLI API
 - `hono-decks`: command line binary
 
-Node-only処理は`@hono/decks/node`からimportし、Worker bundleと分離してください。
+Worker/SSRコードは`@hono/decks`、build-timeのNode処理は`@hono/decks/node`からimportします。
 
 ## Verification
 

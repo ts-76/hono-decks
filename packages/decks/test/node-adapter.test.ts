@@ -247,6 +247,8 @@ export function Counter() {
       expect(manifest.decks.map((deck) => deck.slug)).toEqual(["deck1", "deck2"]);
 
       const output = await readFile(join(cwd, "src", "generated", "decks.ts"), "utf8");
+      expect(output).toContain('import { defineDecks } from "@hono/decks";');
+      expect(output).not.toContain("@hono/decks/runtime");
       expect(output).toContain('import { decksClientEntry } from "./client-entry";');
       expect(output).toContain("export const decks = defineDecks({");
       expect(output).toContain("clientEntryAsset: decksClientEntry");

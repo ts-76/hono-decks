@@ -2,6 +2,7 @@ import { compileMarkdown } from "../compiler/compiler";
 import type { DeckManifest } from "../deck/model";
 import { resolveDeckFiles } from "../routing/file-routing";
 import { buildAssetRefs } from "./assets";
+import { DECKS_RUNTIME_ENTRY } from "./package-entry";
 
 export interface BuildDeckManifestInput {
   root: string;
@@ -35,7 +36,7 @@ export async function buildDeckManifest(input: BuildDeckManifestInput): Promise<
 export function emitDeckManifestModule(manifest: DeckManifest): string {
   const serializable = { decks: manifest.decks };
 
-  return `import type { DeckManifest } from "@hono/decks";\n\nexport const deckManifest = ${serializeManifestValue(
+  return `import type { DeckManifest } from ${JSON.stringify(DECKS_RUNTIME_ENTRY)};\n\nexport const deckManifest = ${serializeManifestValue(
     serializable,
     0,
   )} satisfies DeckManifest;\n\nexport const manifest = deckManifest;\n`;

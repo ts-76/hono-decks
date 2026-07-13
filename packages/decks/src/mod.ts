@@ -1,13 +1,64 @@
-export { deckMiddleware, renderDeckPage } from "./server/middleware";
-export type { DeckMiddlewareOptions } from "./server/middleware";
-export { parseDeck } from "./parser/parser";
-export { renderDeck, renderSlide } from "./renderer/render";
-export {
-  controlIconLabel,
-  renderControlIcon,
-  renderControlIconHtml,
-} from "./renderer/control-icons";
-export type { DeckControlIconName } from "./renderer/control-icons";
+export { defineDecks, defineDecksConfig, mergeDecksRouterOptions } from "./server/define-decks";
+export type {
+  DecksConfig,
+  DefinedDecks,
+  DecksOptions,
+  DecksRouterOverrides,
+} from "./server/define-decks";
+export { createDeckViewerEmbed, createDeckViewerParts, deckContext, decksRouter } from "./server/router";
+export type {
+  DeckBrowserRunBinding,
+  DeckBrowserRunPdfOptions,
+  DeckBrowserRunPngOptions,
+  DeckContextOptions,
+  DeckContextVariables,
+  DeckDevResolver,
+  DeckExportAuthorizeInput,
+  DeckExportOptions,
+  DeckPageMeta,
+  DeckPresenterEnabledInput,
+  DeckPresenterEnabledResolver,
+  DeckPresenterViewerControlOptions,
+  DeckTocItem,
+  DeckViewerControlDefaults,
+  DeckViewerControlItem,
+  DeckViewerControlItemRenderer,
+  DeckViewerControlKey,
+  DeckViewerControlRenderInput,
+  DeckViewerControlSlotItems,
+  DeckViewerControlsContext,
+  DeckViewerControlsItemsResolver,
+  DeckViewerControlsOptions,
+  DeckViewerEmbed,
+  DeckViewerEmbedOptions,
+  DeckViewerExportPaths,
+  DeckViewerOptions,
+  DeckViewerParts,
+  DeckViewerRenderInput,
+  DecksRouterExtension,
+  DecksRouterOptions,
+  DecksRouterPresenterOptions,
+} from "./server/router";
+export { serveDecksClientEntry } from "./server/client-entry";
+export type { ServeDecksClientEntryOptions } from "./server/client-entry";
+export { manifestDeckSource } from "./source/manifest-source";
+export { withR2Assets } from "./source/r2-assets";
+export type {
+  R2AssetKeyInput,
+  R2AssetSourceOptions,
+  R2BucketLike,
+  R2BucketResolver,
+  R2ObjectBodyLike,
+  R2ObjectHttpMetadataLike,
+} from "./source/r2-assets";
+export type {
+  AssetRef,
+  CompiledDeck,
+  DeckEntry,
+  DeckManifest,
+  DeckRequestContext,
+  DeckSource,
+} from "./deck/model";
 export {
   builtInSlideComponents,
   defineSlideComponents,
@@ -27,87 +78,9 @@ export type {
   SlideComponentProps,
   SlideComponentRegistry,
 } from "./renderer/compiled-render";
-export { compileMarkdown } from "./compiler/compiler";
-export { createDevDeckRuntime } from "./runtime/dev-runtime";
-export type { DevDeckRuntime, DevDeckRuntimeInput } from "./runtime/dev-runtime";
-export { buildDeckManifest, emitDeckManifestModule } from "./generator/manifest-generator";
-export type { BuildDeckManifestInput } from "./generator/manifest-generator";
-export { applyDeckComponentRegistry, emitDeckComponentRegistryModule } from "./generator/component-registry";
-export type {
-  ApplyDeckComponentRegistryInput,
-  ApplyDeckComponentRegistryResult,
-  DeckComponentExport,
-  ResolvedDeckComponentExport,
-} from "./generator/component-registry";
-export { createPreviewEventHub } from "./runtime/preview-events";
-export type { PreviewEvent, PreviewEventHub, PreviewEventType } from "./runtime/preview-events";
-export { serveDecksClientEntry } from "./server/client-entry";
-export type { ServeDecksClientEntryOptions } from "./server/client-entry";
-export { defineDecks, defineDecksConfig, mergeDecksRouterOptions } from "./server/define-decks";
-export type { DecksConfig, DefinedDecks, DecksOptions, DecksRouterOverrides } from "./server/define-decks";
-export { createDeckViewerEmbed, createDeckViewerParts, deckContext, decksRouter } from "./server/router";
-export type {
-  DeckBrowserRunBinding,
-  DeckBrowserRunPdfOptions,
-  DeckBrowserRunPngOptions,
-  DeckContextOptions,
-  DeckContextVariables,
-  DeckDevResolver,
-  DeckExportAuthorizeInput,
-  DeckExportOptions,
-  DeckPresenterEnabledInput,
-  DeckPresenterEnabledResolver,
-  DeckPresenterViewerControlOptions,
-  DeckPageMeta,
-  DeckTocItem,
-  DeckViewerControlDefaults,
-  DeckViewerControlItem,
-  DeckViewerControlKey,
-  DeckViewerControlItemRenderer,
-  DeckViewerControlRenderInput,
-  DeckViewerControlSlotItems,
-  DeckViewerControlsContext,
-  DeckViewerControlsItemsResolver,
-  DeckViewerControlsOptions,
-  DeckViewerExportPaths,
-  DeckViewerEmbed,
-  DeckViewerEmbedOptions,
-  DeckViewerOptions,
-  DeckViewerParts,
-  DeckViewerRenderInput,
-  DecksRouterExtension,
-  DecksRouterOptions,
-  DecksRouterPresenterOptions,
-} from "./server/router";
-export { manifestDeckSource } from "./source/manifest-source";
-export { withR2Assets } from "./source/r2-assets";
-export type {
-  R2AssetKeyInput,
-  R2AssetSourceOptions,
-  R2BucketLike,
-  R2BucketResolver,
-  R2ObjectBodyLike,
-  R2ObjectHttpMetadataLike,
-} from "./source/r2-assets";
-export { resolveDeckFiles } from "./routing/file-routing";
-export type { ResolvedDeckFile } from "./routing/file-routing";
-export { CompileError, RenderError } from "./deck/model";
-export type {
-  AssetRef,
-  CompileDeckInput,
-  CompiledDeck,
-  CompiledSlide,
-  ComponentPlaceholder,
-  CompileWarning,
-  DeckCompiler,
-  DeckEntry,
-  DeckFileChange,
-  DeckFileEntry,
-  DeckFrontmatter,
-  DeckManifest,
-  DeckRequestContext,
-  DeckSource,
-  LocalDeckIO,
-  SlideFrontmatter,
-} from "./deck/model";
-export type { Slide, SlideBlock, SlideDeck, SlideNode, SlidePropValue } from "./shared/types";
+export {
+  controlIconLabel,
+  renderControlIcon,
+  renderControlIconHtml,
+} from "./renderer/control-icons";
+export type { DeckControlIconName } from "./renderer/control-icons";

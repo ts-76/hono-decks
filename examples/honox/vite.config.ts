@@ -4,14 +4,6 @@ import honox from "honox/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  resolve: {
-    alias: [
-      {
-        find: /^@hono\/decks$/,
-        replacement: "@hono/decks/runtime",
-      },
-    ],
-  },
   plugins: [
     honox({
       devServer: { adapter },
