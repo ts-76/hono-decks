@@ -101,15 +101,16 @@ export function renderDeckEmbedPage(input: {
   viewer: DeckViewerEmbed;
 }) {
   return (
-    <SampleLayout title={`${input.meta.title} - Embed`} layout="deck-embed">
-      <section class="sample-embed">
-        <header>
-          <p class="sample-kicker">Embeddable viewer</p>
-          <h1>{input.meta.title}</h1>
-        </header>
-        {input.viewer.embed}
-      </section>
-    </SampleLayout>
+    <html lang="ja" data-hono-decks-external-embed-document>
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="robots" content="noindex" />
+        <title>{input.meta.title}</title>
+        <style id="hono-decks-external-embed-css">{externalEmbedPageStyle}</style>
+      </head>
+      <body>{input.viewer.embed}</body>
+    </html>
   );
 }
 
@@ -152,7 +153,7 @@ a { color: inherit; }
 .sample-page-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
 .sample-page-header nav { display: flex; gap: 12px; }
 .sample-page-section { margin: 0 0 24px; padding: 20px; border: 1px solid #94a3b8; border-radius: 8px; background: #ffffff; }
-.sample-page-section h1, .sample-page-section h2, .sample-embed h1 { margin: 0 0 12px; }
+.sample-page-section h1, .sample-page-section h2 { margin: 0 0 12px; }
 .sample-kicker { margin: 0 0 8px; color: #075985; font-size: .85rem; text-transform: uppercase; }
 .sample-actions, .sample-link-list, .sample-link-list li { display: flex; flex-wrap: wrap; gap: 10px; padding: 0; list-style: none; }
 .sample-actions a, .sample-link-list a { display: inline-flex; padding: 8px 10px; border: 1px solid #64748b; border-radius: 8px; background: #ffffff; text-decoration: none; }
@@ -165,8 +166,25 @@ a { color: inherit; }
 .sample-meta-list dd { margin: 0; overflow-wrap: anywhere; }
 .sample-toc { display: grid; gap: 8px; padding-left: 1.25rem; }
 .sample-toc span { display: inline-flex; min-width: 2rem; color: #475569; }
-.sample-embed { display: grid; gap: 16px; }
-.sample-embed .hono-decks-embedded-viewer { width: min(100%, 960px); }
+`;
+
+const externalEmbedPageStyle = `
+:root { color-scheme: dark; background: #050816; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+body { min-height: 100vh; }
+@supports (height: 100dvh) { body { min-height: 100dvh; } }
+.sample-external-deck-embed { width: 100%; height: 100%; min-height: 0; }
+.sample-external-deck-embed .hono-decks-viewer-shell { position: relative; height: 100%; grid-template-rows: minmax(0, 1fr); }
+.sample-external-deck-embed .hono-decks-viewport { width: min(100%, calc(100vh * 16 / 9)); max-height: 100%; }
+@supports (height: 100dvh) {
+  .sample-external-deck-embed .hono-decks-viewport { width: min(100%, calc(100dvh * 16 / 9)); }
+}
+.sample-external-deck-embed .hono-decks-viewer-controls {
+  position: absolute;
+  right: max(10px, env(safe-area-inset-right, 0px));
+  bottom: max(10px, env(safe-area-inset-bottom, 0px));
+  z-index: 4;
+}
 `;
 
 const sampleViewerStyle = `

@@ -58,6 +58,10 @@ describe("package build metadata", () => {
     expect(readme.length).toBeGreaterThan(5_000);
     expect(readme).toContain("createDeckViewerEmbed()");
     expect(readme).toContain("同じdocumentへ複数配置");
+    expect(readme).toContain("Embedding from an external blog");
+    expect(readme).toContain("frame-ancestors");
+    expect(readme).toContain('allow="fullscreen"');
+    expect(readme).toContain("iframe navigationにCORSは不要");
     expect(readme).toContain("defineDecksConfig<AppEnv>");
     expect(readme).toContain("mergeDecksRouterOptions");
     expect(readme).toContain("viewer.render");

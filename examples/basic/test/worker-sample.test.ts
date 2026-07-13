@@ -286,14 +286,20 @@ describe("sample Worker app", () => {
     expect(html).toContain('href="/decks/sample/render"');
   });
 
-  it("serves an embeddable deck page from shared viewer parts", async () => {
+  it("serves a minimal external iframe document with a same-origin default policy", async () => {
     const app = await sampleApp();
     const response = await app.request("/decks/sample/embed");
 
     expect(response.status).toBe(200);
+    expect(response.headers.get("content-security-policy")).toBe("frame-ancestors 'self'");
+    expect(response.headers.get("x-frame-options")).toBeNull();
+    expect(response.headers.get("access-control-allow-origin")).toBeNull();
     const html = await response.text();
-    expect(html).toContain("<title>Hono Slides - Embed</title>");
-    expect(html).toContain('data-sample-layout="deck-embed"');
+    expect(html).toContain("<title>Hono Slides</title>");
+    expect(html).toContain("data-hono-decks-external-embed-document");
+    expect(html).toContain('<meta name="robots" content="noindex"/>');
+    expect(html).toContain('id="hono-decks-external-embed-css"');
+    expect(html).toContain('class="hono-decks-embedded-viewer sample-external-deck-embed"');
     expect(html).toContain('data-hono-decks-frame');
     expect(html).toContain('src="/decks/sample/render"');
     expect(html).toContain('data-hono-decks-embed="true"');
@@ -301,10 +307,28 @@ describe("sample Worker app", () => {
     expect(html).toContain("data-hono-decks-viewer-runtime");
     expect(html).toContain('data-hono-decks-print-path="/decks/sample/print"');
     expect(html).toContain("for (const root of roots)");
-    expect(html).not.toContain(".sample-embed .hono-decks-frame-stage");
+    expect(html).toContain('data-action="fullscreen"');
+    expect(html).not.toContain('data-hono-decks-back-link');
+    expect(html).not.toContain('data-hono-decks-print="true"');
+    expect(html).not.toContain('data-sample-layout="deck-embed"');
+    expect(html).not.toContain('class="sample-page-header"');
+    expect(html).not.toContain("Embeddable viewer");
     expect(html).not.toContain("transform: scale(.5)");
-    expect(html).not.toContain(".sample-embed iframe");
-    expect(html).not.toContain('data-action="previous"');
+  });
+
+  it("allows configured blog origins to frame the embed route without enabling CORS", async () => {
+    const app = await sampleApp();
+    const response = await app.request("/decks/sample/embed", {}, {
+      DECK_EMBED_ALLOWED_ORIGINS:
+        "https://blog.example.com, https://notes.example.net/article ignored-origin javascript:alert(1)",
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-security-policy")).toBe(
+      "frame-ancestors 'self' https://blog.example.com https://notes.example.net",
+    );
+    expect(response.headers.get("x-frame-options")).toBeNull();
+    expect(response.headers.get("access-control-allow-origin")).toBeNull();
   });
 
   it("renders the sample deck with the built-in Hero instead of a placeholder warning", async () => {

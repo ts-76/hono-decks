@@ -10,6 +10,7 @@ import { renderSampleViewerHead } from "./pages";
 export interface DecksConfigBindings {
   DECK_ASSETS?: R2BucketLike;
   BROWSER?: DeckBrowserRunBinding;
+  DECK_EMBED_ALLOWED_ORIGINS?: string;
   DECK_EXPORT_TOKEN?: string;
   DECK_PRESENTER_ENABLED?: boolean | string;
   DECK_RUNTIME_DEV?: boolean | string;

@@ -392,24 +392,29 @@ export default defineDecksConfig({
 
 PDF export は Browser Run の `quickAction("pdf")` に `/decks/:slug/print` URL を渡し、既定で `format: "a4"`、`preferCSSPageSize: true`、`printBackground: true` を使います。PNG export は `quickAction("screenshot")` で同じ `/print` URL を full-page capture します。Browser Run binding が無い環境で export route にアクセスした場合は 503 を返します。binding を設定していない場合、export routes は生成されません。
 
-標準 router ではなく deck-aware な独自ページやAPIを作る場合は `deckContext()` を使います。details、embed、analytics、OGP meta などに必要な deck 情報と viewer parts を `c.var` から参照できます。
+標準 router ではなく deck-aware な独自ページやAPIを作る場合は `deckContext()` を使います。details、embed、analytics、OGP meta などに必要な deck 情報を `c.var` から参照できます。外部ブログへ埋め込む場合は、通常viewerや内部`/render`ではなく、`createDeckViewerEmbed()`だけを含む薄い`/embed` documentを公開します。
 
 ```tsx
 import { Hono } from "hono";
-import { deckContext, type DeckContextVariables } from "@hono/decks";
+import { createDeckViewerEmbed, deckContext, type DeckContextVariables } from "@hono/decks";
 import { deckSource } from "./decks";
 
 const app = new Hono<{ Variables: DeckContextVariables }>();
 
-app.get("/decks/:slug/embed", deckContext({ source: deckSource, mountPath: "/decks" }), (c) => {
-  return c.html(`
-    <main>
-      <title>${c.var.deckMeta.title}</title>
-      ${c.var.deckViewer.frameHtml}
-    </main>
-  `);
-});
+app.get(
+  "/decks/:slug/embed",
+  deckContext({ source: deckSource, mountPath: "/decks" }),
+  async (c) => {
+    const viewer = await createDeckViewerEmbed({
+      deck: c.var.deck,
+      mountPath: "/decks",
+    });
+    return c.html(<html><body>{viewer.embed}</body></html>);
+  },
+);
 ```
+
+外部iframeの許可はCORSではなく、embed routeのCSP `frame-ancestors`と`X-Frame-Options`で制御します。ブログ側のiframeには`allow="fullscreen"`を指定します。許可originをBindingsから設定する完全な例は`examples/basic/src/index.ts`、余計なsite chromeを持たないdocumentは`examples/basic/src/pages.tsx`を参照してください。
 
 OGP metadata は package が自動生成するのではなく app-owned page で出す想定です。`examples/basic/src/pages.tsx` の details page は `deckContext()` 由来の `DeckPageMeta` を使い、`description`、`og:title`、`og:description`、`og:url`、任意の `og:image` を head に出す実装例になっています。
 

@@ -68,11 +68,21 @@ try {
 
 async function runEmbeddedViewerCheck() {
   await agent(["--session", session, "open", `${baseUrl}/decks/sample/embed`]);
-  await agent(["--session", session, "set", "viewport", "1280", "800"]);
+  await agent(["--session", session, "set", "viewport", "800", "450"]);
   await sleep(500);
 
   const initial = await evalJson(embeddedViewerStateScript());
-  if (!initial.initialized || !initial.hasScopedStyle || !initial.hasRuntime || initial.ratio < 1.75 || initial.ratio > 1.8) {
+  if (
+    !initial.initialized ||
+    !initial.hasScopedStyle ||
+    !initial.hasRuntime ||
+    !initial.externalDocument ||
+    initial.hasSampleChrome ||
+    !initial.fillsViewport ||
+    initial.overflowsDocument ||
+    initial.ratio < 1.75 ||
+    initial.ratio > 1.8
+  ) {
     throw new Error(`embedded viewer did not initialize: ${JSON.stringify(initial)}`);
   }
 
@@ -327,10 +337,15 @@ function embeddedViewerStateScript() {
     const iframe = root?.querySelector("iframe");
     const activeSlide = iframe?.contentDocument?.querySelector(".slide:not([hidden])");
     const bounds = viewport?.getBoundingClientRect();
+    const rootBounds = root?.getBoundingClientRect();
     return {
       initialized: root?.getAttribute("data-hono-decks-initialized") === "true",
       hasScopedStyle: Boolean(document.querySelector("[data-hono-decks-embed-style]")),
       hasRuntime: Boolean(document.querySelector("[data-hono-decks-viewer-runtime]")),
+      externalDocument: document.documentElement.hasAttribute("data-hono-decks-external-embed-document"),
+      hasSampleChrome: Boolean(document.querySelector(".sample-page-header, [data-sample-layout]")),
+      fillsViewport: Boolean(rootBounds && Math.abs(rootBounds.width - innerWidth) <= 1 && Math.abs(rootBounds.height - innerHeight) <= 1),
+      overflowsDocument: document.documentElement.scrollWidth > innerWidth + 1 || document.documentElement.scrollHeight > innerHeight + 1,
       ratio: bounds && bounds.height ? bounds.width / bounds.height : 0,
       slide: new URL(window.location.href).searchParams.get("slide") ?? "",
       activeSlide: activeSlide?.getAttribute("data-slide-index") ?? ""

@@ -106,7 +106,7 @@ app.route("/decks", createDecksRouter({
 }));
 ```
 
-## Embedding in arbitrary pages
+## Embedding in the same document
 
 `createDeckViewerEmbed()`はiframe、controls、scoped CSS、操作runtimeをまとめた自己完結viewerを返します。同じdocumentへ複数配置でき、各viewerのcontrols、swipe、keyboard、fullscreen、TOC、slide state messageは対応するiframeだけにscopedされます。
 
@@ -135,6 +135,60 @@ app.get(
 ```
 
 文字列templateでは`viewer.embedHtml`を使えます。低レベルに組み立てたい場合は`createDeckViewerParts()`が`frame` / `frameHtml` / `controls` / `controlsHtml` / `toc` / metadataを返します。低レベルpartsだけでは操作runtimeとCSSは追加されないため、完成した埋め込みには`createDeckViewerEmbed()`を使用してください。
+
+### Embedding from an external blog
+
+別ドメインのブログからは、通常viewerや内部`/render`ではなく、`createDeckViewerEmbed()`だけを含む薄い`/embed` documentをiframeで読み込みます。外側のiframeが公開境界、内側の`/render` iframeがslideの隔離境界になります。
+
+```tsx
+import { createMiddleware } from "hono/factory";
+
+const allowBlogEmbed = createMiddleware(async (c, next) => {
+  await next();
+  c.res.headers.delete("X-Frame-Options");
+  c.res.headers.set(
+    "Content-Security-Policy",
+    "frame-ancestors 'self' https://blog.example.com",
+  );
+});
+
+app.get(
+  "/decks/:slug/embed",
+  allowBlogEmbed,
+  deckContext({ source: deckSource, mountPath: "/decks" }),
+  async (c) => {
+    const viewer = await createDeckViewerEmbed({
+      deck: c.var.deck,
+      mountPath: "/decks",
+    });
+
+    return c.html(
+      <html lang="ja">
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <title>{c.var.deckMeta.title}</title>
+          <style>{`html,body{width:100%;height:100%;margin:0;overflow:hidden}`}</style>
+        </head>
+        <body>{viewer.embed}</body>
+      </html>,
+    );
+  },
+);
+```
+
+ブログ側は生成したURLを通常のiframeとして配置します。
+
+```html
+<iframe
+  src="https://slides.example.com/decks/sample/embed"
+  title="Sample presentation"
+  loading="lazy"
+  allow="fullscreen"
+  style="width:100%;aspect-ratio:16/9;border:0"
+></iframe>
+```
+
+iframe navigationにCORSは不要です。公開可否はembed responseのCSP `frame-ancestors`と`X-Frame-Options`で制御します。ブログ側にCSPがある場合は`frame-src https://slides.example.com`も許可してください。認証付きdeckはthird-party cookie制限の影響を受けるため、公開deckまたはcookieに依存しない認証方式を推奨します。完全な実装例は`examples/basic/src/index.ts`と`examples/basic/src/pages.tsx`にあります。
 
 ## Typed Cloudflare bindings
 
