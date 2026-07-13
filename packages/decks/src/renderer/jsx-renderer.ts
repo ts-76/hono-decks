@@ -95,6 +95,7 @@ export const builtInSlideComponents = defineSlideComponents({
   },
   EmbedFrame: (props) => {
     const src = stringProp(props.src);
+    const provider = stringProp(props.provider)?.trim().toLowerCase();
     const title = stringProp(props.title) ?? "Embedded content";
     const aspectRatio = stringProp(props.aspectRatio) ?? "16 / 9";
     const loading = stringProp(props.loading) ?? "lazy";
@@ -106,16 +107,19 @@ export const builtInSlideComponents = defineSlideComponents({
     const referrerPolicy = stringProp(props.referrerPolicy ?? props.referrerpolicy) ?? "strict-origin-when-cross-origin";
     const fallbackHref = stringProp(props.fallbackHref ?? props.fallbackUrl ?? props.href) ?? src;
     const fallback = codeBlockText(props.children) || "Open embed";
+    const printPoster = provider === "youtube" ? youtubePrintPoster(src) : undefined;
 
     return jsx("figure", {
       class: "hono-decks-embed-frame",
       "data-component": "EmbedFrame",
+      ...(provider ? { "data-provider": safeToken(provider).toLowerCase() } : {}),
       children: [
         jsx("div", {
           class: "hono-decks-embed-viewport",
           style: `aspect-ratio:${safeAspectRatio(aspectRatio)}`,
-          children: src
-            ? jsx("iframe", {
+          children: [
+            src
+              ? jsx("iframe", {
                 src,
                 title,
                 loading,
@@ -124,7 +128,24 @@ export const builtInSlideComponents = defineSlideComponents({
                 ...(allow ? { allow } : {}),
                 allowfullscreen: true,
               })
-            : "",
+              : "",
+            fallbackHref
+              ? jsx("a", {
+                  class: "hono-decks-embed-print-fallback",
+                  href: fallbackHref,
+                  children: [
+                    printPoster
+                      ? jsx("img", {
+                          class: "hono-decks-embed-print-poster",
+                          src: printPoster,
+                          alt: `${title} thumbnail`,
+                        })
+                      : "",
+                    jsx("span", { children: fallback }),
+                  ],
+                })
+              : "",
+          ],
         }),
         src
           ? jsx("figcaption", {
@@ -193,6 +214,13 @@ export const builtInSlideComponents = defineSlideComponents({
               async: true,
               src: "https://platform.twitter.com/widgets.js",
               charset: "utf-8",
+            })
+          : "",
+        href
+          ? jsx("a", {
+              class: "hono-decks-tweet-print-fallback",
+              href,
+              children: label,
             })
           : "",
       ],
@@ -287,6 +315,20 @@ function safeAspectRatio(value: string): string {
   return /^\s*\d+(\.\d+)?\s*(\/|:)\s*\d+(\.\d+)?\s*$/.test(value)
     ? value.replace(":", " / ")
     : "16 / 9";
+}
+
+function youtubePrintPoster(src: string | undefined): string | undefined {
+  if (!src) return undefined;
+  try {
+    const url = new URL(src);
+    if (!["youtube.com", "www.youtube.com", "youtube-nocookie.com", "www.youtube-nocookie.com"].includes(url.hostname)) {
+      return undefined;
+    }
+    const match = url.pathname.match(/^\/embed\/([A-Za-z0-9_-]+)$/);
+    return match ? `https://i.ytimg.com/vi/${match[1]}/hqdefault.jpg` : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function codeBlockText(value: unknown): string {

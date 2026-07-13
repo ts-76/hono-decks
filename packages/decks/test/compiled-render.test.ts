@@ -308,7 +308,7 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("body:not([data-overview-mode]) .slide{position:relative}");
     expect(html).toContain(".slide.layout-cover,.slide.layout-statement{display:block}");
     expect(html).toContain(
-      ".hono-decks-slide-content{position:absolute;inset:0 auto auto 0;width:var(--hono-decks-width);height:var(--hono-decks-height);box-sizing:border-box;padding:clamp(1.2rem,3vw,3rem);transform:scale(var(--hono-decks-print-scale));transform-origin:left top;overflow:hidden}",
+      ".hono-decks-slide-content{position:absolute;inset:0 auto auto 0;width:var(--hono-decks-width);height:var(--hono-decks-height);box-sizing:border-box;padding:clamp(1.2rem,3vw,3rem);zoom:var(--hono-decks-print-scale);overflow:hidden}",
     );
     expect(html).toContain(".slide:nth-of-type(3n):not(:last-child){page-break-after:always;break-after:page}");
     expect(html).toContain("body:not([data-overview-mode]) .slide[hidden]{display:block!important}");
@@ -553,6 +553,7 @@ describe("compiled deck rendering", () => {
                 type: "component",
                 name: "EmbedFrame",
                 props: {
+                  provider: "youtube",
                   src: "https://www.youtube.com/embed/dQw4w9WgXcQ",
                   fallbackHref: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
                   title: "Demo video",
@@ -570,6 +571,7 @@ describe("compiled deck rendering", () => {
 
     expect(html).toContain('class="hono-decks-embed-frame"');
     expect(html).toContain('data-component="EmbedFrame"');
+    expect(html).toContain('data-provider="youtube"');
     expect(html).toContain(".hono-decks-embed-viewport{width:min(100%,72rem);overflow:hidden}");
     expect(html).not.toContain(".hono-decks-embed-viewport{width:min(100%,72rem);overflow:hidden;border:");
     expect(html).toContain('style="aspect-ratio:16 / 9"');
@@ -580,6 +582,13 @@ describe("compiled deck rendering", () => {
     expect(html).toContain('sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"');
     expect(html).toContain('allow="fullscreen; picture-in-picture"');
     expect(html).toContain("allowfullscreen");
+    expect(html).toContain('class="hono-decks-embed-print-fallback"');
+    expect(html).toContain('class="hono-decks-embed-print-poster"');
+    expect(html).toContain('src="https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg"');
+    expect(html).toContain("@media print");
+    expect(html).toContain(
+      ".hono-decks-embed-viewport iframe,.hono-decks-tweet-embed iframe,.hono-decks-tweet-embed .twitter-tweet{display:none!important}",
+    );
     expect(html).toContain(
       '<a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank" rel="noreferrer">Open video</a>',
     );
@@ -658,6 +667,8 @@ describe("compiled deck rendering", () => {
     expect(html).toContain('data-dnt="true"');
     expect(html).toContain(`<a href="${href}" target="_blank" rel="noreferrer">Open post on X</a>`);
     expect(html).toContain('src="https://platform.twitter.com/widgets.js"');
+    expect(html).toContain(`<a class="hono-decks-tweet-print-fallback" href="${href}">Open post on X</a>`);
+    expect(html).toContain(".hono-decks-tweet-print-fallback{display:flex");
     expect(html).toContain("async");
     expect(html).not.toContain("mdx-component");
   });

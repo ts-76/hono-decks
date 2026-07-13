@@ -62,7 +62,7 @@ try {
 async function runPdfCheck(deck) {
   const pdfPath = path.join(artifactDir, `${deck.slug}.pdf`);
   await agent(["--session", session, "open", `${baseUrl}/decks/${deck.slug}/print`]);
-  await agent(["--session", session, "wait", "500"]);
+  await agent(["--session", session, "wait", "--load", "networkidle"]);
   await agent(["--session", session, "pdf", pdfPath]);
 
   const file = await stat(pdfPath);
@@ -118,7 +118,75 @@ async function renderPdfPreview(deck, pdfPath) {
     throw new Error(`${deck.slug} PDF preview should be A4 portrait, got ${width}x${height}`);
   }
 
+  if (deck.slug === "media" && renderer === "pdftoppm") {
+    await assertMediaAssetColors(pdfPath, previewDir);
+  } else if (deck.slug === "media") {
+    console.warn("Skipping media color verification because pdftoppm is unavailable.");
+  }
+
   return { path: previewPath, width, height };
+}
+
+async function assertMediaAssetColors(pdfPath, previewDir) {
+  const prefix = path.join(previewDir, "media-colors");
+  const ppmPath = `${prefix}.ppm`;
+  await run("pdftoppm", ["-f", "1", "-singlefile", "-r", "72", pdfPath, prefix], { raw: true });
+
+  try {
+    const ppm = await readFile(ppmPath);
+    const pixelsOffset = readPpmPixelsOffset(ppm);
+    const expectedColors = [
+      { label: "local JSX image", rgb: [20, 184, 166] },
+      { label: "R2-backed image", rgb: [30, 27, 75] },
+    ];
+
+    for (const expected of expectedColors) {
+      const count = countRgbPixels(ppm, pixelsOffset, expected.rgb);
+      if (count < 1_000) {
+        throw new Error(
+          `media PDF is missing the ${expected.label}: found ${count} matching pixels for rgb(${expected.rgb.join(",")})`,
+        );
+      }
+    }
+  } finally {
+    await rm(ppmPath, { force: true });
+  }
+}
+
+function readPpmPixelsOffset(ppm) {
+  const tokens = [];
+  let offset = 0;
+
+  while (tokens.length < 4) {
+    while (offset < ppm.length && isAsciiWhitespace(ppm[offset])) offset += 1;
+    if (ppm[offset] === 35) {
+      while (offset < ppm.length && ppm[offset] !== 10) offset += 1;
+      continue;
+    }
+
+    const start = offset;
+    while (offset < ppm.length && !isAsciiWhitespace(ppm[offset])) offset += 1;
+    tokens.push(ppm.toString("ascii", start, offset));
+  }
+
+  if (tokens[0] !== "P6" || tokens[3] !== "255") {
+    throw new Error(`Unsupported PPM header: ${tokens.join(" ")}`);
+  }
+
+  while (offset < ppm.length && isAsciiWhitespace(ppm[offset])) offset += 1;
+  return offset;
+}
+
+function isAsciiWhitespace(value) {
+  return value === 9 || value === 10 || value === 13 || value === 32;
+}
+
+function countRgbPixels(buffer, offset, [red, green, blue]) {
+  let count = 0;
+  for (let index = offset; index + 2 < buffer.length; index += 3) {
+    if (buffer[index] === red && buffer[index + 1] === green && buffer[index + 2] === blue) count += 1;
+  }
+  return count;
 }
 
 async function findPdfRenderer() {
