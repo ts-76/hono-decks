@@ -4,20 +4,20 @@ import { localizedHref, t, type Locale } from "./i18n";
 
 const navigationByLocale = {
   ja: [
-    { href: "/docs/getting-started", label: "導入", detail: "追加 / 生成 / 組み込み" },
-    { href: "/docs/authoring", label: "スライドを書く", detail: "MDX / 部品 / 画像" },
-    { href: "/docs/configuration", label: "設定", detail: "設定ファイル / CLI / 上書き" },
-    { href: "/docs/routing", label: "ルートと画面", detail: "ビューアー / 発表 / 出力" },
-    { href: "/docs/security", label: "セキュリティ", detail: "CSP / nonce / 埋め込み" },
-    { href: "/api", label: "API", detail: "公開API" },
+    { href: "/docs/getting-started", label: "はじめる", detail: "最初のデッキを表示" },
+    { href: "/docs/authoring", label: "スライドを書く", detail: "MDX / 部品 / 画像 / テーマ" },
+    { href: "/docs/configuration", label: "設定する", detail: "CLI / 設定ファイル / 上書き" },
+    { href: "/docs/routing", label: "公開画面を選ぶ", detail: "閲覧 / 発表 / 印刷" },
+    { href: "/docs/security", label: "安全に公開する", detail: "言語 / CSP / 埋め込み" },
+    { href: "/api", label: "API", detail: "入口 / 使う場面 / 型" },
   ],
   en: [
-    { href: "/docs/getting-started", label: "Get started", detail: "install / compile / mount" },
-    { href: "/docs/authoring", label: "Author", detail: "MDX / components / assets" },
-    { href: "/docs/configuration", label: "Configure", detail: "config / CLI / overrides" },
-    { href: "/docs/routing", label: "Integrate", detail: "routes / viewer / presenter" },
-    { href: "/docs/security", label: "Secure", detail: "CSP / nonce / embed" },
-    { href: "/api", label: "API", detail: "public exports" },
+    { href: "/docs/getting-started", label: "Get started", detail: "render the first deck" },
+    { href: "/docs/authoring", label: "Author slides", detail: "MDX / components / assets / theme" },
+    { href: "/docs/configuration", label: "Configure", detail: "CLI / config file / overrides" },
+    { href: "/docs/routing", label: "Choose surfaces", detail: "viewer / presenter / print" },
+    { href: "/docs/security", label: "Publish safely", detail: "language / CSP / embeds" },
+    { href: "/api", label: "API", detail: "entries / use cases / types" },
   ],
 } as const;
 

@@ -35,11 +35,11 @@ describe("HonoX documentation site", () => {
   });
 
   it.each([
-    ["/docs/getting-started", "インストールしてスライドを生成する"],
-    ["/docs/authoring", "デッキごとにディレクトリを作る"],
-    ["/docs/configuration", "生成時と実行時で"],
-    ["/docs/routing", "標準で用意されるルート"],
-    ["/docs/security", "HTMLの設定を画面間で共有する"],
+    ["/docs/getting-started", "最初のデッキを作ってコンパイルする"],
+    ["/docs/authoring", "1つのデッキを1つのディレクトリに置く"],
+    ["/docs/configuration", "まず設定ファイルが必要か判断する"],
+    ["/docs/routing", "app.route()のパスをすべての画面の起点にする"],
+    ["/docs/security", "最初は公開する画面を絞る"],
     ["/api", "実行時API"],
   ])("renders %s from HonoX file routes", async (path, expected) => {
     const response = await app.request(path);
@@ -76,7 +76,7 @@ describe("HonoX documentation site", () => {
     expect(ja).toContain("defineDecksConfig");
     expect(ja).toContain("mergeDecksRouterOptions");
     expect(ja).toContain('href="/api?lang=ja#define-decks-config"');
-    expect(en).toContain("Split configuration across two timelines");
+    expect(en).toContain("First decide whether you need a config file");
     expect(en).toContain("generated defaults, app config, then call-site overrides");
   });
 
@@ -96,6 +96,8 @@ describe("HonoX documentation site", () => {
 
     expect(html).toContain('id="prerequisites"');
     expect(html).toContain('id="install"');
+    expect(html).toContain('id="deck"');
+    expect(html).toContain("decks/welcome/deck.mdx");
     expect(html).toContain("src/generated/");
     expect(html).toContain("bun run dev");
     expect(html).toContain("http://localhost:3000/decks");
@@ -112,8 +114,26 @@ describe("HonoX documentation site", () => {
     expect(html).toContain("import { defineDecks }");
     expect(html).toContain("defineDecks(options: DecksOptions): DefinedDecks");
     expect(html).toContain("packages/decks/src/server/define-decks.ts");
+    expect(html).toContain("使う場面");
+    expect(html).toContain("通常のアプリでは直接呼び出しません");
+    expect(html).toContain("通常は生成されたcreateDecksRouter()から始める");
     expect(html).toContain('class="copy-button"');
     expect(html).not.toContain("<table>");
+  });
+
+  it("guides first-time users from basic tasks to optional extensions", async () => {
+    const authoring = await (await app.request("/docs/authoring")).text();
+    const configuration = await (await app.request("/docs/configuration")).text();
+    const routing = await (await app.request("/docs/routing")).text();
+    const security = await (await app.request("/docs/security")).text();
+
+    expect(authoring).toContain("まずサーバーコンポーネントを使う");
+    expect(authoring).toContain("ブラウザ操作が必要な場合だけIslandにする");
+    expect(configuration).toContain("だけで、デッキの表示はできます");
+    expect(routing).toContain("はビューアー内部のiframe用");
+    expect(security).toContain('languageDetector');
+    expect(security).toContain("同じnonceをCSPヘッダーとHTMLへ渡す");
+    expect(security).toContain("許可していないオリジンでは拒否される");
   });
 
   it("links the Deploy to Cloudflare button to the isolated minimal example", async () => {
