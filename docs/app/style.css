@@ -225,7 +225,7 @@ button {
   display: grid;
   min-height: min(820px, calc(100svh - 68px));
   grid-template-columns: minmax(0, 0.92fr) minmax(440px, 1.08fr);
-  gap: clamp(44px, 7vw, 110px);
+  gap: clamp(48px, 7vw, 96px);
   align-items: center;
   padding: clamp(72px, 9vw, 132px) max(24px, calc((100vw - var(--content)) / 2));
 }
@@ -237,19 +237,19 @@ button {
 .hero-signal {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 0 0 26px;
+  gap: 8px;
+  margin: 0 0 24px;
   color: var(--ink-soft);
   font-size: 0.84rem;
   font-weight: 700;
 }
 
 .hero-signal span {
-  width: 9px;
-  height: 9px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 0 0 5px var(--accent-soft);
+  box-shadow: 0 0 0 4px var(--accent-soft);
 }
 
 .hero h1 {
@@ -273,7 +273,7 @@ button {
 
 .hero-lede {
   max-width: 62ch;
-  margin: 30px 0 0;
+  margin: 32px 0 0;
   color: var(--ink-soft);
   font-size: clamp(1.04rem, 1.3vw, 1.18rem);
   line-height: 1.8;
@@ -284,17 +284,17 @@ button {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin-top: 34px;
+  margin-top: 32px;
 }
 
 .button {
   display: inline-flex;
-  min-height: 46px;
+  min-height: 48px;
   align-items: center;
   justify-content: center;
-  gap: 18px;
+  gap: 16px;
   border-radius: 10px;
-  padding: 0 18px;
+  padding: 0 24px;
   font-size: 0.92rem;
   font-weight: 750;
   text-decoration: none;
@@ -325,15 +325,15 @@ button {
 
 .hero-facts {
   display: flex;
-  gap: clamp(26px, 4vw, 48px);
-  margin: 44px 0 0;
-  padding-top: 20px;
+  gap: clamp(24px, 4vw, 48px);
+  margin: 48px 0 0;
+  padding-top: 24px;
   border-top: 1px solid var(--line);
 }
 
 .hero-facts div {
   display: grid;
-  gap: 5px;
+  gap: 4px;
 }
 
 .hero-facts dt {
@@ -364,9 +364,9 @@ button {
   min-height: 48px;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
+  gap: 16px;
   border-bottom: 1px solid oklch(1 0 0 / 0.1);
-  padding: 0 18px;
+  padding: 0 16px;
   color: oklch(0.76 0.006 264);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.75rem;
@@ -411,7 +411,7 @@ button {
   justify-content: space-between;
   gap: 24px;
   border-top: 1px solid oklch(1 0 0 / 0.1);
-  padding: 14px 18px;
+  padding: 16px;
 }
 
 .demo-meta p {
@@ -1016,6 +1016,13 @@ td:first-child {
   to {
     opacity: 1;
     translate: 0;
+  }
+}
+
+@media (min-width: 1051px) {
+  :lang(ja) .hero h1 {
+    font-size: clamp(3.5rem, 5.7vw, 4.8rem);
+    line-height: 1.04;
   }
 }
 
