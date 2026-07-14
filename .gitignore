@@ -6,3 +6,4 @@ dist-dry-run/
 .env
 .DS_Store
 .superpowers/
+.impeccable/config.local.json
