@@ -4,7 +4,7 @@ import {
   type DeckBrowserRunBinding,
   type DeckSource,
   type R2BucketLike,
-} from "@hono/decks";
+} from "hono-decks";
 import { renderSampleViewerHead } from "./pages";
 
 export interface DecksConfigBindings {

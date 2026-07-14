@@ -15,8 +15,8 @@ describe("sample Worker app", () => {
     const pagesSource = await readFile(new URL("../src/pages.tsx", import.meta.url), "utf8");
 
     for (const source of [entrySource, facadeSource, configSource, pagesSource]) {
-      expect(source).toContain('from "@hono/decks"');
-      expect(source).not.toContain("@hono/decks/runtime");
+      expect(source).toContain('from "hono-decks"');
+      expect(source).not.toContain("hono-decks/runtime");
     }
 
     expect(entrySource).not.toContain("./generated/decks");

@@ -8,7 +8,7 @@ function _createMdxContent(props) {
   };
   return _jsxs(_Fragment, {
     children: [_jsx(_components.h1, {
-      children: "HonoX + @hono/decks"
+      children: "HonoX + hono-decks"
     }), "\n", _jsx(_components.p, {
       children: "File-based pages and generated slide routes in one Hono app."
     })]

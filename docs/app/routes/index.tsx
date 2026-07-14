@@ -2,7 +2,7 @@ import { createRoute } from "honox/factory";
 import { getLocale, localizedHref } from "../i18n";
 import { CodeBlock, DeployToCloudflare, RouteTable } from "../site";
 
-const installCode = `bun add @hono/decks
+const installCode = `bun add hono-decks
 bunx hono-decks init --out src/decks.ts
 bunx hono-decks compile --root decks --out src/generated --mount /decks`;
 
@@ -110,7 +110,7 @@ export default createRoute((c) => {
           <p class="section-note">One install. One generated entry. Your app stays in control.</p>
           <h2 id="quickstart-title">Start from a clean boundary.</h2>
           <p>
-            {isJa ? <>compiler dependencies は <code>@hono/decks/node</code> に閉じ、標準 entry は Worker-safe な runtime API だけを公開します。</> : <>Compiler dependencies stay in <code>@hono/decks/node</code>; the standard entry exposes Worker-safe runtime APIs only.</>}
+            {isJa ? <>compiler dependencies は <code>hono-decks/node</code> に閉じ、標準 entry は Worker-safe な runtime API だけを公開します。</> : <>Compiler dependencies stay in <code>hono-decks/node</code>; the standard entry exposes Worker-safe runtime APIs only.</>}
           </p>
           <a class="text-link" href={localizedHref("/docs/getting-started", locale)}>
             {isJa ? "setup guide を読む" : "Read the setup guide"} <span aria-hidden="true">↗</span>
@@ -142,7 +142,7 @@ export default createRoute((c) => {
     </main>,
     {
       activePath: "/",
-      description: isJa ? "MDX slide routes を既存の Hono application に組み込む @hono/decks documentation" : "Mount MDX slide routes in your existing Hono application with @hono/decks",
+      description: isJa ? "MDX slide routes を既存の Hono application に組み込む hono-decks documentation" : "Mount MDX slide routes in your existing Hono application with hono-decks",
     },
   );
 });

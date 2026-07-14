@@ -116,7 +116,7 @@ describe("emitDeckManifestModule", () => {
 
     const source = emitDeckManifestModule(manifest);
 
-    expect(source).toContain('import type { DeckManifest } from "@hono/decks";');
+    expect(source).toContain('import type { DeckManifest } from "hono-decks";');
     expect(source).toContain("export const deckManifest =");
     expect(source).toContain("export const manifest = deckManifest;");
     expect(source).toContain('"slug": "deck1"');

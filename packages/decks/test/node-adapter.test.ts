@@ -185,7 +185,7 @@ describe("Node filesystem deck adapter", () => {
       await writeDeckManifestModule({ manifest, outFile });
 
       const output = await readFile(outFile, "utf8");
-      expect(output).toContain('import type { DeckManifest } from "@hono/decks";');
+      expect(output).toContain('import type { DeckManifest } from "hono-decks";');
       expect(output).toContain("export const deckManifest =");
       expect(output).toContain('"slug": "deck1"');
       expect(output).toContain('"body": new Uint8Array([1, 2, 3])');
@@ -247,8 +247,8 @@ export function Counter() {
       expect(manifest.decks.map((deck) => deck.slug)).toEqual(["deck1", "deck2"]);
 
       const output = await readFile(join(cwd, "src", "generated", "decks.ts"), "utf8");
-      expect(output).toContain('import { defineDecks } from "@hono/decks";');
-      expect(output).not.toContain("@hono/decks/runtime");
+      expect(output).toContain('import { defineDecks } from "hono-decks";');
+      expect(output).not.toContain("hono-decks/runtime");
       expect(output).toContain('import { decksClientEntry } from "./client-entry";');
       expect(output).toContain("export const decks = defineDecks({");
       expect(output).toContain("clientEntryAsset: decksClientEntry");
@@ -897,7 +897,7 @@ The slide stays 16:9.
   });
 
   it("can import the node adapter through the package subpath", async () => {
-    const mod = await import("@hono/decks/node");
+    const mod = await import("hono-decks/node");
 
     expect(typeof mod.compileDecks).toBe("function");
     expect(typeof mod.createLocalDeckIO).toBe("function");

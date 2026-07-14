@@ -10,7 +10,7 @@ Hono and Cloudflare developers who want to author, compile, serve, present, and 
 
 ## Product Purpose
 
-Explain `@hono/decks` as a Hono route kit and give developers a direct path from installation to a production-aware integration. Success means readers can understand the runtime boundaries, copy a working configuration, and find the relevant public API without reverse-engineering the package source.
+Explain `hono-decks` as a Hono route kit and give developers a direct path from installation to a production-aware integration. Success means readers can understand the runtime boundaries, copy a working configuration, and find the relevant public API without reverse-engineering the package source.
 
 ## Brand Personality
 

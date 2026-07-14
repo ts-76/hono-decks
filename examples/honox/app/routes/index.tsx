@@ -5,7 +5,7 @@ export default createRoute((c) =>
     <main class="page">
       <section class="page-card">
         <p class="page-kicker">HonoX file-based routing</p>
-        <h1>HonoX + @hono/decks</h1>
+        <h1>HonoX + hono-decks</h1>
         <p>
           HonoXの通常ページと、build時に生成したdeck routerを同じアプリへmountする例です。
         </p>

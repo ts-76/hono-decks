@@ -15,7 +15,7 @@ describe("package build metadata", () => {
       scripts: Record<string, string>;
     };
 
-    expect(packageJson.name).toBe("@hono/decks");
+    expect(packageJson.name).toBe("hono-decks");
     expect(packageJson.private).toBeUndefined();
     expect(packageJson.exports).toEqual({
       ".": {

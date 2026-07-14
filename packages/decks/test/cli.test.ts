@@ -20,8 +20,8 @@ describe("hono-decks CLI", () => {
       expect(stdout.join("\n")).toContain("Compiled 2 decks");
 
       const output = await readFile(join(cwd, "src", "generated", "decks.ts"), "utf8");
-      expect(output).toContain('import { defineDecks } from "@hono/decks";');
-      expect(output).not.toContain("@hono/decks/runtime");
+      expect(output).toContain('import { defineDecks } from "hono-decks";');
+      expect(output).not.toContain("hono-decks/runtime");
       expect(output).toContain('import { decksClientEntry } from "./client-entry";');
       expect(output).toContain("export const decks = defineDecks({");
       expect(output).toContain("clientEntryAsset: decksClientEntry");
@@ -71,8 +71,8 @@ describe("hono-decks CLI", () => {
       expect(stdout.join("\n")).toContain("Compiled 2 decks");
 
       const routerOutput = await readFile(join(cwd, "src", "generated", "decks.ts"), "utf8");
-      expect(routerOutput).toContain('import { defineDecks } from "@hono/decks";');
-      expect(routerOutput).toContain('import type { DecksRouterOverrides } from "@hono/decks";');
+      expect(routerOutput).toContain('import { defineDecks } from "hono-decks";');
+      expect(routerOutput).toContain('import type { DecksRouterOverrides } from "hono-decks";');
       expect(routerOutput).toContain('import * as Components_intro from "../../decks/intro/components";');
       expect(routerOutput).toContain("componentRegistry: withClientComponentIds(Components_intro, {})");
       expect(routerOutput).toContain("export function decksRouter(options: DecksRouterOverrides = {})");
@@ -167,9 +167,9 @@ describe("hono-decks CLI", () => {
       expect(stdout.join("\n")).toContain("Initialized decks facade at src/decks.ts");
 
       const facade = await readFile(join(cwd, "src", "decks.ts"), "utf8");
-      expect(facade).toContain("App-owned facade for @hono/decks.");
+      expect(facade).toContain("App-owned facade for hono-decks.");
       expect(facade).toContain("This file is safe to edit.");
-      expect(facade).toContain('import type { DecksRouterOverrides } from "@hono/decks";');
+      expect(facade).toContain('import type { DecksRouterOverrides } from "hono-decks";');
       expect(facade).toContain('import { decks } from "./generated/decks";');
       expect(facade).toContain("export const deckSource = decks.source;");
       expect(facade).toContain("export function createDecksRouter");

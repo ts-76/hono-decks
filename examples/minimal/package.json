@@ -13,7 +13,7 @@
     "check": "bun run typecheck && bun run test && bun run build"
   },
   "dependencies": {
-    "@hono/decks": "file:./vendor/hono-decks-0.1.0.tgz",
+    "hono-decks": "file:./vendor/hono-decks-0.1.0.tgz",
     "hono": "^4.12.30"
   },
   "devDependencies": {

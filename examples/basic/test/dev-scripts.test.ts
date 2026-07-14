@@ -21,8 +21,8 @@ describe("development scripts", () => {
     const wranglerToml = await readFile(new URL("../wrangler.toml", import.meta.url), "utf8");
 
     expect(wranglerToml).toContain("[alias]");
-    expect(wranglerToml).toContain('"@hono/decks" = "../../packages/decks/src/mod.ts"');
-    expect(wranglerToml).toContain('"@hono/decks/client" = "../../packages/decks/src/client.ts"');
+    expect(wranglerToml).toContain('"hono-decks" = "../../packages/decks/src/mod.ts"');
+    expect(wranglerToml).toContain('"hono-decks/client" = "../../packages/decks/src/client.ts"');
   });
 
   it("starts viewport smoke wrangler with non-interactive workspace-local configuration", async () => {

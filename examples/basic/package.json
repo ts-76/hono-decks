@@ -16,6 +16,6 @@
   },
   "dependencies": {
     "hono": "^4.12.30",
-    "@hono/decks": "workspace:*"
+    "hono-decks": "workspace:*"
   }
 }

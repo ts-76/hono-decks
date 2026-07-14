@@ -7,10 +7,10 @@ describe("HonoX example", () => {
     const generated = await readFile(new URL("../app/generated/decks.ts", import.meta.url), "utf8");
     const viteConfig = await readFile(new URL("../vite.config.ts", import.meta.url), "utf8");
 
-    expect(generated).toContain('from "@hono/decks"');
-    expect(generated).not.toContain("@hono/decks/runtime");
+    expect(generated).toContain('from "hono-decks"');
+    expect(generated).not.toContain("hono-decks/runtime");
     expect(viteConfig).not.toContain("alias");
-    expect(viteConfig).not.toContain("@hono/decks");
+    expect(viteConfig).not.toContain("hono-decks");
   });
 
   it("renders the HonoX home route", async () => {
@@ -18,7 +18,7 @@ describe("HonoX example", () => {
     const html = await response.text();
 
     expect(response.status).toBe(200);
-    expect(html).toContain("HonoX + @hono/decks");
+    expect(html).toContain("HonoX + hono-decks");
     expect(html).toContain('href="/decks/honox"');
   });
 

@@ -62,7 +62,7 @@ export function SiteHeader({ activePath = "", locale }: { activePath?: string; l
     <header class="site-header">
       <a class="brand" href={localizedHref("/", locale)} aria-label="hono decks documentation home">
         <span class="brand-mark" aria-hidden="true">h</span>
-        <span>hono<span class="brand-slash">/</span>decks</span>
+        <span>hono<span class="brand-slash">-</span>decks</span>
       </a>
       <nav class="top-nav" aria-label={text.primaryNavigation}>
         <a href={localizedHref("/docs/getting-started", locale)} aria-current={activePath.startsWith("/docs") ? "page" : undefined}>

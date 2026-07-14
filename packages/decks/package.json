@@ -1,5 +1,5 @@
 {
-  "name": "@hono/decks",
+  "name": "hono-decks",
   "version": "0.1.0",
   "type": "module",
   "exports": {

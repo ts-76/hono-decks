@@ -12,10 +12,10 @@ export default jsxRenderer(({ children, title, description, activePath }, c) => 
       <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       <meta
         name="description"
-        content={description ?? (locale === "ja" ? "Hono application に MDX slide routes を組み込む @hono/decks documentation" : "Documentation for mounting MDX slide routes in a Hono application")}
+        content={description ?? (locale === "ja" ? "Hono application に MDX slide routes を組み込む hono-decks documentation" : "Documentation for mounting MDX slide routes in a Hono application")}
       />
       <meta name="theme-color" content="#161412" />
-      <title>{title ? `${title} — hono/decks` : "hono/decks — slides in your Hono app"}</title>
+      <title>{title ? `${title} — hono-decks` : "hono-decks — slides in your Hono app"}</title>
       <Link href="/app/style.css" rel="stylesheet" />
       <Script src="/app/client.ts" async />
     </head>
@@ -27,7 +27,7 @@ export default jsxRenderer(({ children, title, description, activePath }, c) => 
       <div id="main-content">{children}</div>
       <footer class="site-footer">
         <p>
-          <strong>hono/decks</strong> — {text.footerLine}
+          <strong>hono-decks</strong> — {text.footerLine}
         </p>
         <nav aria-label={text.footerNavigation}>
           <a href={localizedHref("/docs/getting-started", locale)}>{text.documentation}</a>

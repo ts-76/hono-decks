@@ -39,7 +39,7 @@ export async function emitClientEntryModule(input: {
 
   if (registrations.length === 0) return 'export const decksClientEntry = "";\n';
 
-  const entryContents = `import { hydrateSlideIslands } from "@hono/decks/client";
+  const entryContents = `import { hydrateSlideIslands } from "hono-decks/client";
 ${imports.join("\n")}
 
 hydrateSlideIslands({

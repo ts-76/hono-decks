@@ -1,11 +1,11 @@
-# @hono/decks
+# hono-decks
 
 Markdown/MDX-like slide decksをHonoアプリへ組み込むroute kitです。deckのcompileはbuild時に行い、Cloudflare Workersなどのruntimeでは生成済みHono JSX moduleを配信します。
 
 ## Install
 
 ```bash
-bun add @hono/decks
+bun add hono-decks
 bunx hono-decks init --out src/decks.ts
 ```
 
@@ -46,10 +46,10 @@ export default app;
 
 `hono-decks init`が生成する`src/decks.ts`は編集してよいapp-owned facadeです。`src/generated/decks.ts`以下はcompileのたびに上書きされるため、アプリのrouteや設定から直接importせずfacadeの内側に閉じ込めます。
 
-標準entryの`@hono/decks`はruntime-safeなroute kitだけを公開し、生成されるserver moduleもこのentryを直接importします。Markdown/MDXのparser、compiler、generatorは`@hono/decks/node`へ分離され、Hono WorkerやVite SSRの依存graphには入りません。
+標準entryの`hono-decks`はruntime-safeなroute kitだけを公開し、生成されるserver moduleもこのentryを直接importします。Markdown/MDXのparser、compiler、generatorは`hono-decks/node`へ分離され、Hono WorkerやVite SSRの依存graphには入りません。
 
 ```ts
-import type { DecksRouterOverrides } from "@hono/decks";
+import type { DecksRouterOverrides } from "hono-decks";
 import { decks } from "./generated/decks";
 
 export const deckSource = decks.source;
@@ -164,7 +164,7 @@ app.route("/decks", createDecksRouter({
 `createDeckViewerEmbed()`はiframe、controls、scoped CSS、操作runtimeをまとめた自己完結viewerを返します。同じdocumentへ複数配置でき、各viewerのcontrols、swipe、keyboard、fullscreen、TOC、slide state messageは対応するiframeだけにscopedされます。
 
 ```tsx
-import { createDeckViewerEmbed, deckContext, type DeckContextVariables } from "@hono/decks";
+import { createDeckViewerEmbed, deckContext, type DeckContextVariables } from "hono-decks";
 import { deckSource } from "./decks";
 
 const app = new Hono<{ Variables: DeckContextVariables }>();
@@ -231,7 +231,7 @@ iframe navigationにCORSは不要です。公開可否はembed responseのCSP `f
 Env genericを指定すると`DeckSource`、R2 resolver、`dev`、presenter、viewer、export callbackまでBindings型が伝播します。
 
 ```ts
-import { defineDecksConfig, type DeckSource } from "@hono/decks";
+import { defineDecksConfig, type DeckSource } from "hono-decks";
 
 interface AppEnv {
   Bindings: {
@@ -279,7 +279,7 @@ app.get("/decks/:slug/about", deckContext({ source: deckSource, mountPath: "/dec
 Runtimeは`DeckSource`だけに依存します。manifest以外のstorage、認可、cache、asset配信をdecoratorとして追加できます。
 
 ```ts
-import { withR2Assets } from "@hono/decks";
+import { withR2Assets } from "hono-decks";
 
 const source = withR2Assets(decks.source, {
   bucket: (c) => c.env.DECK_ASSETS,
@@ -327,15 +327,15 @@ export: {
 
 ## Entry points
 
-- `@hono/decks`: generated server moduleとWorker/SSRアプリコードが使うruntime-safeなroute kit
-- `@hono/decks/client`: client island hydration
-- `@hono/decks/node`: parser、compiler、generator、filesystem、local development、OGP取得
-- `@hono/decks/cli`: CLI API
+- `hono-decks`: generated server moduleとWorker/SSRアプリコードが使うruntime-safeなroute kit
+- `hono-decks/client`: client island hydration
+- `hono-decks/node`: parser、compiler、generator、filesystem、local development、OGP取得
+- `hono-decks/cli`: CLI API
 - `hono-decks`: command line binary
 
-Worker/SSRコードは`@hono/decks`、build-timeのNode処理は`@hono/decks/node`からimportします。
+Worker/SSRコードは`hono-decks`、build-timeのNode処理は`hono-decks/node`からimportします。
 
-初期版の単一Markdown middlewareを維持する場合は、Node専用の`deckMiddleware` / `renderDeckPage`を`@hono/decks/node`からimportできます。新規アプリでは`defineDecks()`と`decksRouter()`を使ってください。legacy middlewareは標準runtime entryへは含まれません。
+初期版の単一Markdown middlewareを維持する場合は、Node専用の`deckMiddleware` / `renderDeckPage`を`hono-decks/node`からimportできます。新規アプリでは`defineDecks()`と`decksRouter()`を使ってください。legacy middlewareは標準runtime entryへは含まれません。
 
 ## Verification
 

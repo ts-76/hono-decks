@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { deckContext, type DeckContextVariables } from "@hono/decks";
+import { deckContext, type DeckContextVariables } from "hono-decks";
 import type { DecksConfigEnv } from "./decks.config";
 import { createDecksRouter, deckMountPath, deckSource } from "./decks";
 import {

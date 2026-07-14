@@ -33,15 +33,15 @@
     "examples/basic": {
       "name": "@hono-decks/example-basic",
       "dependencies": {
-        "@hono/decks": "workspace:*",
         "hono": "^4.12.30",
+        "hono-decks": "workspace:*",
       },
     },
     "examples/honox": {
       "name": "@hono-decks/example-honox",
       "dependencies": {
-        "@hono/decks": "workspace:*",
         "hono": "^4.12.30",
+        "hono-decks": "workspace:*",
         "honox": "0.1.59",
       },
       "devDependencies": {
@@ -57,8 +57,8 @@
     "examples/minimal": {
       "name": "@hono-decks/example-minimal",
       "dependencies": {
-        "@hono/decks": "file:./vendor/hono-decks-0.1.0.tgz",
         "hono": "^4.12.30",
+        "hono-decks": "file:./vendor/hono-decks-0.1.0.tgz",
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^5.20260712.1",
@@ -69,7 +69,7 @@
       },
     },
     "packages/decks": {
-      "name": "@hono/decks",
+      "name": "hono-decks",
       "version": "0.1.0",
       "bin": {
         "hono-decks": "./dist/bin.js",
@@ -192,8 +192,6 @@
     "@hono-decks/example-honox": ["@hono-decks/example-honox@workspace:examples/honox"],
 
     "@hono-decks/example-minimal": ["@hono-decks/example-minimal@workspace:examples/minimal"],
-
-    "@hono/decks": ["@hono/decks@workspace:packages/decks"],
 
     "@hono/node-server": ["@hono/node-server@1.19.14", "", { "peerDependencies": { "hono": "^4" } }, "sha512-GwtvgtXxnWsucXvbQXkRgqksiH2Qed37H9xHZocE5sA3N8O8O8/8FA3uclQXxXVzc9XBZuEOMK7+r02FmSpHtw=="],
 
@@ -581,6 +579,8 @@
 
     "hono": ["hono@4.12.30", "", {}, "sha512-emn+JoJjrN9YTpRDS5it/UI2SO9BAE37T6I3d963RxcZ81G9A4pr2SZTEiiaiKbzx+NKRg5BZ89fCL7gCJCUog=="],
 
+    "hono-decks": ["hono-decks@workspace:packages/decks"],
+
     "honox": ["honox@0.1.59", "", { "dependencies": { "@babel/generator": "7.29.1", "@babel/parser": "7.29.3", "@babel/traverse": "7.29.0", "@babel/types": "7.29.0", "@hono/vite-dev-server": "^0.25.1", "jsonc-parser": "3.3.1", "precinct": "12.2.0" }, "optionalDependencies": { "@rollup/rollup-linux-x64-gnu": "^4.9.6" }, "peerDependencies": { "hono": ">=4.*" } }, "sha512-/Glbw0/CG/J3yTCrCkyS0+Xnq3H8LgnNgpGgdH3xLZpEDN4c4P4IM/Mjjx7LsKTFrUwbg3s59d/v4uD+YBFuew=="],
 
     "html-void-elements": ["html-void-elements@3.0.0", "", {}, "sha512-bEqo66MRXsUGxWHV5IP0PUiAWwoEjba4VCzg0LjFJBpchPaTfyfCKTG6bc5F8ucKec3q5y6qOdGyYTSBEvhCrg=="],
@@ -933,7 +933,7 @@
 
     "@hono-decks/example-minimal/@cloudflare/workers-types": ["@cloudflare/workers-types@5.20260713.1", "", {}, "sha512-4YZE9YIzr3iP9eRUV4ekZozLLsYQFFKxmMJfAcsteCuzKJ7RJrLqcCxm1aMzTE9uFcy+D6A89WE+cjJadF2c9g=="],
 
-    "@hono-decks/example-minimal/@hono/decks": ["@hono/decks@./vendor/hono-decks-0.1.0.tgz", { "dependencies": { "@mdx-js/mdx": "^3.1.1", "esbuild": "^0.28.1", "hono": "^4.12.30", "remark-directive": "^4.0.0", "remark-mdx": "^3.1.1", "remark-parse": "^11.0.0", "shiki": "^4.2.0", "unified": "^11.0.5" }, "bin": { "hono-decks": "./dist/bin.js" } }, "sha512-LXHmMzq8qKmuI/hl3RssdhL8Kj73buvC7KICmbytd3s0T7LU/KW5AzrrWvCjJBLNPbMAGoqS76P73rSSyLSnbg=="],
+    "@hono-decks/example-minimal/hono-decks": ["hono-decks@./vendor/hono-decks-0.1.0.tgz", { "dependencies": { "@mdx-js/mdx": "^3.1.1", "esbuild": "^0.28.1", "hono": "^4.12.30", "remark-directive": "^4.0.0", "remark-mdx": "^3.1.1", "remark-parse": "^11.0.0", "shiki": "^4.2.0", "unified": "^11.0.5" }, "bin": { "hono-decks": "./dist/bin.js" } }, "sha512-gD7m2vaWr/5VVJhhnd0FUFZ4qhAiQ9eXuZIn4lSwTBYaa4488VZ6MiHKgxm/fFx+hr7aw6ahEgqVmVRzOybxvw=="],
 
     "@hono-decks/example-minimal/wrangler": ["wrangler@4.110.0", "", { "dependencies": { "@cloudflare/kv-asset-handler": "0.5.0", "@cloudflare/unenv-preset": "2.16.1", "blake3-wasm": "2.1.5", "esbuild": "0.28.1", "miniflare": "4.20260708.1", "path-to-regexp": "6.3.0", "unenv": "2.0.0-rc.24", "workerd": "1.20260708.1" }, "optionalDependencies": { "fsevents": "2.3.3" }, "peerDependencies": { "@cloudflare/workers-types": "^5.20260708.1" }, "optionalPeers": ["@cloudflare/workers-types"], "bin": { "cf-wrangler": "bin/cf-wrangler.js", "wrangler": "bin/wrangler.js", "wrangler2": "bin/wrangler.js" } }, "sha512-xZeXKYi7hxQRF5anL+v77RkufJNpF9f3Eqeyqq2QBsETpLZgh0Agj0jJ6JPtkbgn6ukZdh8OK5egsGPWIditgg=="],
 

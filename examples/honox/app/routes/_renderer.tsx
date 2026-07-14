@@ -5,7 +5,7 @@ export default jsxRenderer(({ children }) => (
     <head>
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <title>HonoX + @hono/decks</title>
+      <title>HonoX + hono-decks</title>
       <style>{pageStyle}</style>
     </head>
     <body>{children}</body>

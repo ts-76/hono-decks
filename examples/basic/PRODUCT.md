@@ -10,7 +10,7 @@ Hono and Cloudflare developers evaluating how to compile, serve, present, and ex
 
 ## Product Purpose
 
-Provide a runnable reference application that demonstrates the public `@hono/decks` integration surface and makes each route and capability easy to inspect.
+Provide a runnable reference application that demonstrates the public `hono-decks` integration surface and makes each route and capability easy to inspect.
 
 ## Brand Personality
 

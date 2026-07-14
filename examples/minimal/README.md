@@ -1,6 +1,6 @@
 # Minimal Hono example
 
-`@hono/decks`を通常のHono Workerへ組み込む最小構成です。1つのdeckをbuild時にcompileし、生成されたrouterを`/decks`へmountします。
+`hono-decks`を通常のHono Workerへ組み込む最小構成です。1つのdeckをbuild時にcompileし、生成されたrouterを`/decks`へmountします。
 
 ## Deploy to Cloudflare
 
@@ -32,4 +32,4 @@ bun run --cwd examples/minimal dev
 
 `src/decks.ts`は編集可能なfacadeです。`src/generated`以下は`bun run decks:compile`で上書きされます。
 
-> `@hono/decks`はnpm公開前のため、現在は`vendor/hono-decks-0.1.0.tgz`を参照します。公開後は`package.json`の依存指定をnpm版へ差し替えます。
+> `hono-decks`はnpm公開前のため、現在は`vendor/hono-decks-0.1.0.tgz`を参照します。公開後は`package.json`の依存指定をnpm版へ差し替えます。

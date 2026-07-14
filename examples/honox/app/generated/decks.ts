@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { defineDecks } from "@hono/decks";
-import type { DecksRouterOverrides } from "@hono/decks";
+import { defineDecks } from "hono-decks";
+import type { DecksRouterOverrides } from "hono-decks";
 import { decksClientEntry } from "./client-entry";
 import Slide_honox_0 from "./decks/honox/slide-0";
 import Slide_honox_1 from "./decks/honox/slide-1";
@@ -31,7 +31,7 @@ export const decks = defineDecks({
       meta: {
         "meta": {},
         "title": "HonoX Deck",
-        "description": "Mounting @hono/decks from a HonoX file route"
+        "description": "Mounting hono-decks from a HonoX file route"
       },
 
       assets: [],
@@ -41,7 +41,7 @@ export const decks = defineDecks({
         {
           index: 0,
           meta: {
-            "title": "HonoX + @hono/decks",
+            "title": "HonoX + hono-decks",
             "layout": "cover",
             "meta": {}
           },

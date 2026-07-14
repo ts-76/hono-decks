@@ -10,7 +10,7 @@ export interface Guide {
   content: Child;
 }
 
-const installCode = `bun add @hono/decks
+const installCode = `bun add hono-decks
 bunx hono-decks init --out src/decks.ts
 bunx hono-decks compile \\
   --root decks \\
@@ -74,7 +74,7 @@ const gettingStarted = (locale: Locale): Guide => locale === "ja" ? {
       <dl class="troubleshooting-list">
         <div><dt><code>src/generated/decks.ts</code> がない</dt><dd><code>bunx hono-decks compile</code> を再実行し、<code>--root</code> が deck directory を指すか確認します。</dd></div>
         <div><dt><code>/decks</code> が 404</dt><dd>compile と <code>app.route()</code> の mount path、facade の import path を揃えます。</dd></div>
-        <div><dt>Worker build に Node module が混ざる</dt><dd>runtime は <code>@hono/decks</code>、compiler や filesystem API は build script だけで <code>@hono/decks/node</code> から import します。</dd></div>
+        <div><dt>Worker build に Node module が混ざる</dt><dd>runtime は <code>hono-decks</code>、compiler や filesystem API は build script だけで <code>hono-decks/node</code> から import します。</dd></div>
       </dl>
     </section>
     <section id="next">
@@ -100,7 +100,7 @@ const gettingStarted = (locale: Locale): Guide => locale === "ja" ? {
     <section id="install"><h2>Install, initialize, and compile</h2><p>Generate the app-owned facade, then compile MDX from <code>decks/</code> into Worker-safe modules.</p><CodeBlock label="Terminal" code={installCode} locale={locale} /><p>The result has a clear boundary: edit <code>src/decks.ts</code>, but let the compiler own <code>src/generated/decks.ts</code>.</p><CodeBlock label="Generated files" code={expectedFiles} locale={locale} /></section>
     <section id="mount"><h2>Mount the router</h2><CodeBlock code={mountCode} locale={locale} /><p>Keep the compile-time <code>--mount /decks</code> path aligned with <code>app.route("/decks", …)</code>.</p></section>
     <section id="verify"><h2>Verify it in the browser</h2><CodeBlock label="Terminal" code="bun run dev" locale={locale} /><p>Open <code>/decks</code> on the local URL printed by your dev server. You should see <strong>sample</strong> in the deck index and be able to open its viewer, presentation, and presenter surfaces.</p><Callout title="Expected URL"><p><code>http://localhost:3000/decks</code>. If your dev server selects another port, use the printed URL.</p></Callout></section>
-    <section id="troubleshooting"><h2>Troubleshooting</h2><dl class="troubleshooting-list"><div><dt>Missing <code>src/generated/decks.ts</code></dt><dd>Run <code>bunx hono-decks compile</code> again and confirm that <code>--root</code> points at the deck directory.</dd></div><div><dt><code>/decks</code> returns 404</dt><dd>Align the compile and <code>app.route()</code> mount paths, then check the facade import.</dd></div><div><dt>Node modules enter the Worker bundle</dt><dd>Import runtime APIs from <code>@hono/decks</code>. Keep <code>@hono/decks/node</code> in build scripts only.</dd></div></dl></section>
+    <section id="troubleshooting"><h2>Troubleshooting</h2><dl class="troubleshooting-list"><div><dt>Missing <code>src/generated/decks.ts</code></dt><dd>Run <code>bunx hono-decks compile</code> again and confirm that <code>--root</code> points at the deck directory.</dd></div><div><dt><code>/decks</code> returns 404</dt><dd>Align the compile and <code>app.route()</code> mount paths, then check the facade import.</dd></div><div><dt>Node modules enter the Worker bundle</dt><dd>Import runtime APIs from <code>hono-decks</code>. Keep <code>hono-decks/node</code> in build scripts only.</dd></div></dl></section>
     <section id="next"><h2>Choose the next step</h2><p><a class="text-link" href={localizedHref("/docs/authoring", locale)}>Author MDX and components →</a></p><p><a class="text-link" href={localizedHref("/docs/routing", locale)}>Integrate routes and UI →</a></p><DeployToCloudflare locale={locale} /></section>
   </>,
 };

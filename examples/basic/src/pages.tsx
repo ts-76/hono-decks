@@ -6,7 +6,7 @@ import {
   type DeckPageMeta,
   type DeckRenderable,
   type DeckTocItem,
-} from "@hono/decks";
+} from "hono-decks";
 
 export function renderHomePage(decks: DeckEntry[]) {
   return (

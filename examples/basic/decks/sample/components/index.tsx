@@ -1,6 +1,6 @@
 /** @jsxImportSource hono/jsx */
 
-import type { SlideComponentProps } from "@hono/decks";
+import type { SlideComponentProps } from "hono-decks";
 
 const componentStyle = `
 .sample-badge {

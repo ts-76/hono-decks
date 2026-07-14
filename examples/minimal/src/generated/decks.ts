@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { defineDecks } from "@hono/decks";
-import type { DecksRouterOverrides } from "@hono/decks";
+import { defineDecks } from "hono-decks";
+import type { DecksRouterOverrides } from "hono-decks";
 import { decksClientEntry } from "./client-entry";
 import Slide_welcome_0 from "./decks/welcome/slide-0";
 import Slide_welcome_1 from "./decks/welcome/slide-1";
@@ -31,7 +31,7 @@ export const decks = defineDecks({
       meta: {
         "meta": {},
         "title": "Minimal Hono Deck",
-        "description": "The smallest @hono/decks Worker example"
+        "description": "The smallest hono-decks Worker example"
       },
 
       assets: [],

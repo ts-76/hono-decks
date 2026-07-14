@@ -1,6 +1,6 @@
 /** @jsxImportSource hono/jsx/dom */
 import { useState } from "hono/jsx/dom";
-import type { SlideComponentProps } from "@hono/decks";
+import type { SlideComponentProps } from "hono-decks";
 
 export function Counter(props: SlideComponentProps) {
   const label = typeof props.label === "string" ? props.label : "Count";

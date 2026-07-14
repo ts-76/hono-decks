@@ -6,8 +6,8 @@ compatibility_flags = ["nodejs_compat"]
 worker_loaders = [{ binding = "LOADER" }]
 
 [alias]
-"@hono/decks" = "../../packages/decks/src/mod.ts"
-"@hono/decks/client" = "../../packages/decks/src/client.ts"
+"hono-decks" = "../../packages/decks/src/mod.ts"
+"hono-decks/client" = "../../packages/decks/src/client.ts"
 
 [browser]
 binding = "BROWSER"

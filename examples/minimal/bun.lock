@@ -5,7 +5,7 @@
     "": {
       "name": "@hono-decks/example-minimal",
       "dependencies": {
-        "@hono/decks": "file:./vendor/hono-decks-0.1.0.tgz",
+        "hono-decks": "file:./vendor/hono-decks-0.1.0.tgz",
         "hono": "^4.12.30",
       },
       "devDependencies": {
@@ -94,7 +94,7 @@
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.28.1", "", { "os": "win32", "cpu": "x64" }, "sha512-bm4Mowrv+GXMlpWX++EcXw/iLyd1o3+bJkC2DkWXYVvgZCqD/bSj9ctZeAMC3cIxgjRVR2Dufaiu4YPxr5gW1A=="],
 
-    "@hono/decks": ["@hono/decks@./vendor/hono-decks-0.1.0.tgz", { "dependencies": { "@mdx-js/mdx": "^3.1.1", "esbuild": "^0.28.1", "hono": "^4.12.30", "remark-directive": "^4.0.0", "remark-mdx": "^3.1.1", "remark-parse": "^11.0.0", "shiki": "^4.2.0", "unified": "^11.0.5" }, "bin": { "hono-decks": "./dist/bin.js" } }, "sha512-LXHmMzq8qKmuI/hl3RssdhL8Kj73buvC7KICmbytd3s0T7LU/KW5AzrrWvCjJBLNPbMAGoqS76P73rSSyLSnbg=="],
+    "hono-decks": ["hono-decks@./vendor/hono-decks-0.1.0.tgz", { "dependencies": { "@mdx-js/mdx": "^3.1.1", "esbuild": "^0.28.1", "hono": "^4.12.30", "remark-directive": "^4.0.0", "remark-mdx": "^3.1.1", "remark-parse": "^11.0.0", "shiki": "^4.2.0", "unified": "^11.0.5" }, "bin": { "hono-decks": "./dist/bin.js" } }, "sha512-gD7m2vaWr/5VVJhhnd0FUFZ4qhAiQ9eXuZIn4lSwTBYaa4488VZ6MiHKgxm/fFx+hr7aw6ahEgqVmVRzOybxvw=="],
 
     "@img/colour": ["@img/colour@1.1.0", "", {}, "sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ=="],
 

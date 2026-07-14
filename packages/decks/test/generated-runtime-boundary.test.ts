@@ -15,10 +15,10 @@ describe("generated runtime boundary", () => {
       emitDeckComponentRegistryModule([]),
     ];
 
-    expect(DECKS_RUNTIME_ENTRY).toBe("@hono/decks");
+    expect(DECKS_RUNTIME_ENTRY).toBe("hono-decks");
     for (const source of modules) {
       expect(source).toContain(`from ${runtimeEntry}`);
-      expect(source).not.toContain("@hono/decks/runtime");
+      expect(source).not.toContain("hono-decks/runtime");
     }
   });
 
