@@ -24,6 +24,34 @@ export interface PageSection {
   label: string;
 }
 
+function DisclosureButton({
+  controls,
+  label,
+  openLabel,
+  className,
+}: {
+  controls: string;
+  label: string;
+  openLabel?: string;
+  className: string;
+}) {
+  return (
+    <button
+      class={`disclosure-trigger ${className}`}
+      type="button"
+      aria-expanded="false"
+      aria-controls={controls}
+      data-disclosure-trigger
+    >
+      <span class="disclosure-label-closed">{label}</span>
+      {openLabel ? <span class="disclosure-label-open">{openLabel}</span> : null}
+      <svg class="disclosure-chevron" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+        <path d="m4 6 4 4 4-4" />
+      </svg>
+    </button>
+  );
+}
+
 function navigation(locale: Locale) {
   return navigationByLocale[locale];
 }
@@ -44,13 +72,14 @@ export function SiteHeader({ activePath = "", locale }: { activePath?: string; l
         <LanguageSwitcher locale={locale} path={activePath || "/"} />
         <a href="https://github.com/ts-76/hono-slides">GitHub ↗</a>
       </nav>
-      <details class="mobile-menu">
-        <summary>
-          <span class="menu-label-closed">{text.menu}</span>
-          <span class="menu-label-open">{text.close}</span>
-          <span class="menu-chevron" aria-hidden="true">⌄</span>
-        </summary>
-        <nav aria-label={text.mobileNavigation}>
+      <div class="mobile-menu" data-disclosure>
+        <DisclosureButton
+          className="mobile-menu-trigger"
+          controls="mobile-menu-panel"
+          label={text.menu}
+          openLabel={text.close}
+        />
+        <nav id="mobile-menu-panel" class="mobile-menu-panel" aria-label={text.mobileNavigation} data-disclosure-panel hidden>
           {navigation(locale).map((item) => (
             <a href={localizedHref(item.href, locale)} aria-current={activePath === item.href || (item.href.startsWith("/docs") && activePath === item.href) ? "page" : undefined}>
               {item.label}
@@ -59,7 +88,7 @@ export function SiteHeader({ activePath = "", locale }: { activePath?: string; l
           <div class="mobile-language"><LanguageSwitcher locale={locale} path={activePath || "/"} /></div>
           <a href="https://github.com/ts-76/hono-slides">GitHub ↗</a>
         </nav>
-      </details>
+      </div>
     </header>
   );
 }
@@ -96,16 +125,16 @@ export function DocsLayout({
     <main class="docs-layout">
       <aside class="docs-sidebar" aria-label={text.documentationSections}>
         <p class="sidebar-label">{text.documentation}</p>
-        <details class="docs-switcher">
-          <summary>{text.selectGuide}<span aria-hidden="true">⌄</span></summary>
-          <nav>
+        <div class="docs-switcher" data-disclosure>
+          <DisclosureButton className="docs-switcher-trigger" controls="docs-switcher-panel" label={text.selectGuide} />
+          <nav id="docs-switcher-panel" data-disclosure-panel hidden>
             {links.map((item) => (
               <a href={localizedHref(item.href, locale)} aria-current={activePath === item.href ? "page" : undefined}>
                 <span>{item.label}</span><small>{item.detail}</small>
               </a>
             ))}
           </nav>
-        </details>
+        </div>
         <nav class="docs-navigation">
           {links.map((item) => (
             <a href={localizedHref(item.href, locale)} aria-current={activePath === item.href ? "page" : undefined}>
@@ -120,10 +149,12 @@ export function DocsLayout({
           <h1>{title}</h1>
           <p>{description}</p>
         </header>
-        <details class="mobile-page-nav">
-          <summary>{text.onThisPage}<span aria-hidden="true">⌄</span></summary>
-          <nav>{sections.map((section) => <a href={`#${section.id}`}>{section.label}</a>)}</nav>
-        </details>
+        <div class="mobile-page-nav" data-disclosure>
+          <DisclosureButton className="mobile-page-nav-trigger" controls="mobile-page-nav-panel" label={text.onThisPage} />
+          <nav id="mobile-page-nav-panel" data-disclosure-panel hidden>
+            {sections.map((section) => <a href={`#${section.id}`}>{section.label}</a>)}
+          </nav>
+        </div>
         <div class="prose">{children}</div>
       </article>
       <aside class="docs-rail" aria-label={text.onThisPage}>

@@ -82,13 +82,18 @@ describe("HonoX documentation site", () => {
     expect(html).not.toContain("deploy.workers.cloudflare.com/?url=");
   });
 
-  it("loads the copy interaction client and exposes stateful mobile navigation labels", async () => {
+  it("uses button-controlled SP navigation without details or summary", async () => {
     const html = await (await app.request("/docs/getting-started")).text();
 
     expect(html).toContain('src="/app/client.ts"');
     expect(html).toContain('data-copy-status="true"');
-    expect(html).toContain('class="menu-label-closed"');
-    expect(html).toContain('class="menu-label-open"');
+    expect(html).toContain('class="disclosure-trigger mobile-menu-trigger"');
+    expect(html).toContain('aria-controls="mobile-menu-panel"');
+    expect(html).toContain('aria-controls="docs-switcher-panel"');
+    expect(html).toContain('aria-controls="mobile-page-nav-panel"');
+    expect(html).toContain('data-disclosure-panel="true"');
+    expect(html).not.toContain("<details");
+    expect(html).not.toContain("<summary");
     expect(html).toContain('aria-current="page"');
   });
 
