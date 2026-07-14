@@ -2,6 +2,3 @@ name = "hono-decks-minimal"
 main = "src/index.ts"
 compatibility_date = "2026-06-01"
 compatibility_flags = ["nodejs_compat"]
-
-[alias]
-"@hono/decks" = "../../packages/decks/src/mod.ts"

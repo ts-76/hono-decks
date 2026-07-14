@@ -209,9 +209,13 @@ export function RouteTable({ rows, locale = "ja" }: { rows: Array<[string, strin
 export function DeployToCloudflare({ locale }: { locale: Locale }) {
   const href = deployToCloudflareUrl();
   const label = locale === "ja" ? "Deploy to Cloudflare" : "Deploy to Cloudflare";
-  const note = locale === "ja"
-    ? "公開サンプルリポジトリを準備中です。URL は1つの定数を差し替えるだけで有効化できます。"
-    : "The public sample repository is coming soon. One configuration constant will activate this button.";
+  const note = href
+    ? locale === "ja"
+      ? "minimal example を自分のCloudflareアカウントへ複製し、Workersとしてデプロイします。"
+      : "Clone the minimal example into your Cloudflare account and deploy it as a Worker."
+    : locale === "ja"
+      ? "公開サンプルリポジトリを準備中です。"
+      : "The public sample repository is coming soon.";
   return (
     <aside class="deploy-panel" aria-labelledby="deploy-title">
       <div>

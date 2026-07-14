@@ -73,13 +73,15 @@ describe("HonoX documentation site", () => {
     expect(html).not.toContain("<table>");
   });
 
-  it("shows a safe Deploy to Cloudflare placeholder until the sample repository exists", async () => {
+  it("links the Deploy to Cloudflare button to the isolated minimal example", async () => {
     const html = await (await app.request("/")).text();
 
     expect(html).toContain("https://deploy.workers.cloudflare.com/button");
-    expect(html).toContain('aria-disabled="true"');
-    expect(html).toContain("サンプル準備中");
-    expect(html).not.toContain("deploy.workers.cloudflare.com/?url=");
+    expect(html).toContain(
+      "https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2Fts-76%2Fhono-slides%2Ftree%2Fmain%2Fexamples%2Fminimal",
+    );
+    expect(html).not.toContain('aria-disabled="true"');
+    expect(html).not.toContain("サンプル準備中");
   });
 
   it("uses button-controlled SP navigation without details or summary", async () => {

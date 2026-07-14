@@ -57,11 +57,12 @@
     "examples/minimal": {
       "name": "@hono-decks/example-minimal",
       "dependencies": {
-        "@hono/decks": "workspace:*",
+        "@hono/decks": "file:./vendor/hono-decks-0.1.0.tgz",
         "hono": "^4.12.30",
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^5.20260712.1",
+        "@types/node": "^25.9.2",
         "typescript": "^5.9.3",
         "vitest": "^4.0.14",
         "wrangler": "^4.50.0",
@@ -931,6 +932,8 @@
     "@hono-decks/example-honox/wrangler": ["wrangler@4.110.0", "", { "dependencies": { "@cloudflare/kv-asset-handler": "0.5.0", "@cloudflare/unenv-preset": "2.16.1", "blake3-wasm": "2.1.5", "esbuild": "0.28.1", "miniflare": "4.20260708.1", "path-to-regexp": "6.3.0", "unenv": "2.0.0-rc.24", "workerd": "1.20260708.1" }, "optionalDependencies": { "fsevents": "2.3.3" }, "peerDependencies": { "@cloudflare/workers-types": "^5.20260708.1" }, "optionalPeers": ["@cloudflare/workers-types"], "bin": { "cf-wrangler": "bin/cf-wrangler.js", "wrangler": "bin/wrangler.js", "wrangler2": "bin/wrangler.js" } }, "sha512-xZeXKYi7hxQRF5anL+v77RkufJNpF9f3Eqeyqq2QBsETpLZgh0Agj0jJ6JPtkbgn6ukZdh8OK5egsGPWIditgg=="],
 
     "@hono-decks/example-minimal/@cloudflare/workers-types": ["@cloudflare/workers-types@5.20260713.1", "", {}, "sha512-4YZE9YIzr3iP9eRUV4ekZozLLsYQFFKxmMJfAcsteCuzKJ7RJrLqcCxm1aMzTE9uFcy+D6A89WE+cjJadF2c9g=="],
+
+    "@hono-decks/example-minimal/@hono/decks": ["@hono/decks@./vendor/hono-decks-0.1.0.tgz", { "dependencies": { "@mdx-js/mdx": "^3.1.1", "esbuild": "^0.28.1", "hono": "^4.12.30", "remark-directive": "^4.0.0", "remark-mdx": "^3.1.1", "remark-parse": "^11.0.0", "shiki": "^4.2.0", "unified": "^11.0.5" }, "bin": { "hono-decks": "./dist/bin.js" } }, "sha512-LXHmMzq8qKmuI/hl3RssdhL8Kj73buvC7KICmbytd3s0T7LU/KW5AzrrWvCjJBLNPbMAGoqS76P73rSSyLSnbg=="],
 
     "@hono-decks/example-minimal/wrangler": ["wrangler@4.110.0", "", { "dependencies": { "@cloudflare/kv-asset-handler": "0.5.0", "@cloudflare/unenv-preset": "2.16.1", "blake3-wasm": "2.1.5", "esbuild": "0.28.1", "miniflare": "4.20260708.1", "path-to-regexp": "6.3.0", "unenv": "2.0.0-rc.24", "workerd": "1.20260708.1" }, "optionalDependencies": { "fsevents": "2.3.3" }, "peerDependencies": { "@cloudflare/workers-types": "^5.20260708.1" }, "optionalPeers": ["@cloudflare/workers-types"], "bin": { "cf-wrangler": "bin/cf-wrangler.js", "wrangler": "bin/wrangler.js", "wrangler2": "bin/wrangler.js" } }, "sha512-xZeXKYi7hxQRF5anL+v77RkufJNpF9f3Eqeyqq2QBsETpLZgh0Agj0jJ6JPtkbgn6ukZdh8OK5egsGPWIditgg=="],
 
