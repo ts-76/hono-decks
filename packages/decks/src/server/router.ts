@@ -1,10 +1,12 @@
 import { Hono } from "hono";
 import type { Context, Env, MiddlewareHandler } from "hono";
+import { raw } from "hono/html";
 import { renderCompiledDeckPageAsync } from "../renderer/compiled-render";
-import type { MaybePromise } from "../renderer/compiled-render";
+import type { DeckRenderable, MaybePromise } from "../renderer/compiled-render";
+import { renderJsxValue } from "../renderer/jsx-renderer";
 import { renderPresenterPageAsync } from "../renderer/presentation-page";
 import { RenderError } from "../deck/model";
-import type { CompiledDeck, DeckSource } from "../deck/model";
+import type { CompiledDeck, DeckEntry, DeckSource } from "../deck/model";
 import type { SlideComponentInput, SlideComponentRegistry } from "../renderer/compiled-render";
 import type { DeckControlIconName } from "../renderer/control-icons";
 import { serveDecksClientEntry } from "./client-entry";
@@ -18,6 +20,7 @@ import {
   createDeckViewerParts,
   renderDeckViewerPage,
   type DeckViewerControlDefaults,
+  type DeckViewerDefaultControlItem,
   type DeckViewerControlItem,
   type DeckViewerControlKey,
   type DeckViewerControlItemRenderer,
@@ -26,10 +29,12 @@ import {
   type DeckViewerControlsContext,
   type DeckViewerControlsItemsResolver,
   type DeckViewerControlsOptions,
+  type DeckViewerLinkControlItem,
   type DeckPageMeta,
   type DeckTocItem,
   type DeckViewerOptions,
   type DeckViewerParts,
+  type DeckViewerRenderControlItem,
 } from "./viewer";
 import {
   extractAssetPath,
@@ -70,6 +75,7 @@ export type {
   DeckViewerEmbed,
   DeckViewerEmbedOptions,
   DeckViewerControlDefaults,
+  DeckViewerDefaultControlItem,
   DeckViewerControlItem,
   DeckViewerControlKey,
   DeckViewerControlItemRenderer,
@@ -78,10 +84,12 @@ export type {
   DeckViewerControlsContext,
   DeckViewerControlsItemsResolver,
   DeckViewerControlsOptions,
+  DeckViewerLinkControlItem,
   DeckPageMeta,
   DeckTocItem,
   DeckViewerOptions,
   DeckViewerParts,
+  DeckViewerRenderControlItem,
   DeckViewerRenderInput,
 } from "./viewer";
 
@@ -101,10 +109,53 @@ export interface DecksRouterOptions<E extends Env = any> {
   clientEntryAsset?: string;
   clientEntryAssetPath?: string;
   document?: DeckDocumentOptions<E>;
+  pages?: DecksRouterPagesOptions<E>;
   embed?: false | DeckExternalEmbedOptions<E>;
   viewer?: DeckViewerOptions<E>;
   presenter?: false | DecksRouterPresenterOptions<E>;
   export?: DeckExportOptions<E>;
+}
+
+export type DeckRouteSurface = "index" | "viewer" | "render" | "print" | "presentation" | "presenter";
+
+export interface DeckRouteSurfaceInput<E extends Env = any> {
+  c: Context<E>;
+  surface: DeckRouteSurface;
+  mountPath: string;
+  dev: boolean;
+  deck?: CompiledDeck;
+  slug?: string;
+}
+
+export type DeckRouteEnabledResolver<E extends Env = any> =
+  (input: DeckRouteSurfaceInput<E>) => MaybePromise<boolean>;
+
+export type DeckRouteEnabled<E extends Env = any> = boolean | DeckRouteEnabledResolver<E>;
+
+export interface DeckIndexPageInput<E extends Env = any> extends DeckRouteSurfaceInput<E> {
+  surface: "index";
+  decks: DeckEntry[];
+}
+
+export interface DeckIndexRenderInput<E extends Env = any> extends DeckIndexPageInput<E> {
+  title: string;
+  document: ResolvedDeckDocument;
+  defaultContent: DeckRenderable;
+}
+
+export interface DeckIndexPageOptions<E extends Env = any> {
+  enabled?: DeckRouteEnabled<E>;
+  title?: string | ((input: DeckIndexPageInput<E>) => MaybePromise<string>);
+  render?(input: DeckIndexRenderInput<E>): MaybePromise<DeckRenderable>;
+}
+
+export interface DecksRouterPagesOptions<E extends Env = any> {
+  index?: false | DeckIndexPageOptions<E>;
+  viewer?: DeckRouteEnabled<E>;
+  render?: DeckRouteEnabled<E>;
+  print?: DeckRouteEnabled<E>;
+  presentation?: DeckRouteEnabled<E>;
+  presenter?: DeckRouteEnabled<E>;
 }
 
 export type DeckDevResolver<E extends Env = any> = (c: Context<E>) => MaybePromise<boolean>;
@@ -164,8 +215,20 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
   router.get("/", async (c) => {
     const dev = await isDevEnabled(c, options);
     const decks = (await options.source.listDecks(c)).filter((deck) => dev || !deck.draft);
-    const document = await resolveRouterDocument(c, options, "index", c.req.path);
-    return c.html(renderDeckIndex(decks, c.req.path, document));
+    const mountPath = c.req.path.replace(/\/$/, "");
+    const pageInput: DeckIndexPageInput<E> = { c, surface: "index", mountPath, dev, decks };
+    if (!(await isPageSurfaceEnabled(options, pageInput))) {
+      return c.json({ error: "Deck index not found" }, 404);
+    }
+    const indexOptions = options.pages?.index === false ? undefined : options.pages?.index;
+    const title = await resolveIndexTitle(indexOptions?.title, pageInput);
+    const document = await resolveRouterDocument(c, options, "index", mountPath, undefined, title);
+    const defaultContentHtml = renderDeckIndexContent(decks, mountPath);
+    const defaultContent = raw(defaultContentHtml);
+    const content = indexOptions?.render
+      ? await renderJsxValue(indexOptions.render({ ...pageInput, title, document, defaultContent }))
+      : defaultContentHtml;
+    return c.html(renderDeckIndex(content, title, document));
   });
 
   router.get("/:slug/assets/*", async (c) => {
@@ -186,6 +249,9 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
     const dev = await isDevEnabled(c, options);
     if (!deck || (!dev && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
     const mountPath = stripPathSuffix(c.req.path, `/${slug}/render`);
+    if (!(await isPageSurfaceEnabled(options, { c, surface: "render", mountPath, dev, deck, slug }))) {
+      return c.json({ error: "Deck route not found", slug, surface: "render" }, 404);
+    }
     const clientEntry = options.clientEntry ?? resolveGeneratedClientEntryUrl(options, mountPath);
     try {
       const document = await resolveRouterDocument(c, options, "render", mountPath, deck);
@@ -210,8 +276,12 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
   router.get("/:slug/print", async (c) => {
     const slug = c.req.param("slug");
     const deck = await options.source.getCompiledDeck(c, slug);
-    if (!deck || (!(await isDevEnabled(c, options)) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
+    const dev = await isDevEnabled(c, options);
+    if (!deck || (!dev && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
     const mountPath = stripPathSuffix(c.req.path, `/${slug}/print`);
+    if (!(await isPageSurfaceEnabled(options, { c, surface: "print", mountPath, dev, deck, slug }))) {
+      return c.json({ error: "Deck route not found", slug, surface: "print" }, 404);
+    }
     try {
       const document = await resolveRouterDocument(c, options, "print", mountPath, deck);
       return c.html(
@@ -266,6 +336,9 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
     const dev = await isDevEnabled(c, options);
     if (!deck || (!dev && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
     const mountPath = stripPathSuffix(c.req.path, `/${slug}/presentation`);
+    if (!(await isPageSurfaceEnabled(options, { c, surface: "presentation", mountPath, dev, deck, slug }))) {
+      return c.json({ error: "Deck route not found", slug, surface: "presentation" }, 404);
+    }
     const clientEntry = options.clientEntry ?? resolveGeneratedClientEntryUrl(options, mountPath);
     try {
       const document = await resolveRouterDocument(c, options, "presentation", mountPath, deck);
@@ -291,8 +364,12 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
   router.get("/:slug/presenter", async (c) => {
     const slug = c.req.param("slug");
     const deck = await options.source.getCompiledDeck(c, slug);
-    if (!deck || (!(await isDevEnabled(c, options)) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
+    const dev = await isDevEnabled(c, options);
+    if (!deck || (!dev && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
     const mountPath = stripPathSuffix(c.req.path, `/${slug}/presenter`);
+    if (!(await isPageSurfaceEnabled(options, { c, surface: "presenter", mountPath, dev, deck, slug }))) {
+      return c.json({ error: "Presenter route not found", slug }, 404);
+    }
     if (!(await isPresenterEnabled(c, options, deck, slug, mountPath))) {
       return c.json({ error: "Presenter route not found", slug }, 404);
     }
@@ -318,8 +395,12 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
   router.get("/:slug", async (c) => {
     const slug = c.req.param("slug");
     const deck = await options.source.getCompiledDeck(c, slug);
-    if (!deck || (!(await isDevEnabled(c, options)) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
+    const dev = await isDevEnabled(c, options);
+    if (!deck || (!dev && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
     const mountPath = stripPathSuffix(c.req.path, `/${slug}`);
+    if (!(await isPageSurfaceEnabled(options, { c, surface: "viewer", mountPath, dev, deck, slug }))) {
+      return c.json({ error: "Deck route not found", slug, surface: "viewer" }, 404);
+    }
     return c.html(
       await renderDeckViewerPage({
         c,
@@ -494,10 +575,9 @@ function presentationRoutePath(mountPath: string, slug: string): string {
   return `${mountPath.replace(/\/$/, "")}/${encodeURIComponent(slug)}/presentation`;
 }
 
-function renderDeckIndex(
+function renderDeckIndexContent(
   decks: Awaited<ReturnType<DeckSource["listDecks"]>>,
   mountPath: string,
-  document: ResolvedDeckDocument,
 ): string {
   const basePath = mountPath.replace(/\/$/, "");
   const items = decks
@@ -509,21 +589,50 @@ function renderDeckIndex(
     })
     .join("");
 
+  return `<main>
+    <h1>Hono Decks</h1>
+    <ul>${items}</ul>
+  </main>`;
+}
+
+function renderDeckIndex(
+  content: string,
+  title: string,
+  document: ResolvedDeckDocument,
+): string {
   return `<!doctype html>
 <html lang="${escapeHtml(document.lang)}">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Hono Decks</title>
+  <title>${escapeHtml(title)}</title>
   ${document.head}
 </head>
 <body>
-  <main>
-    <h1>Hono Decks</h1>
-    <ul>${items}</ul>
-  </main>
+  ${content}
 </body>
 </html>`;
+}
+
+async function resolveIndexTitle<E extends Env>(
+  title: DeckIndexPageOptions<E>["title"],
+  input: DeckIndexPageInput<E>,
+): Promise<string> {
+  const resolved = typeof title === "function" ? await title(input) : title;
+  return resolved?.trim() || "Hono Decks";
+}
+
+async function isPageSurfaceEnabled<E extends Env>(
+  options: DecksRouterOptions<E>,
+  input: DeckRouteSurfaceInput<E>,
+): Promise<boolean> {
+  const configured = input.surface === "index"
+    ? options.pages?.index === false
+      ? false
+      : options.pages?.index?.enabled
+    : options.pages?.[input.surface];
+  if (typeof configured === "function") return Boolean(await configured(input));
+  return configured !== false;
 }
 
 async function resolveRouterDocument<E extends Env>(
@@ -532,8 +641,9 @@ async function resolveRouterDocument<E extends Env>(
   surface: Parameters<typeof resolveDeckDocument<E>>[0]["surface"],
   mountPath: string,
   deck?: CompiledDeck,
+  titleOverride?: string,
 ): Promise<ResolvedDeckDocument> {
-  const title = deck?.meta.title ?? deck?.slug ?? "Hono Decks";
+  const title = titleOverride ?? deck?.meta.title ?? deck?.slug ?? "Hono Decks";
   return resolveDeckDocument(
     {
       c,

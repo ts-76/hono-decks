@@ -1,4 +1,6 @@
 export * from "./node/index";
+export { deckMiddleware, renderDeckPage } from "./server/middleware";
+export type { DeckMiddlewareOptions } from "./server/middleware";
 export { parseDeck } from "./parser/parser";
 export { renderDeck, renderSlide } from "./renderer/render";
 export { compileMarkdown } from "./compiler/compiler";

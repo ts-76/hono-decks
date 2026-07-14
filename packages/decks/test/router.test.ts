@@ -161,6 +161,63 @@ describe("decksRouter", () => {
     }
   });
 
+  it("customizes the index document with request-aware title and JSX rendering", async () => {
+    const app = new Hono();
+    app.route(
+      "/slides",
+      decksRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        pages: {
+          index: {
+            enabled: ({ c }) => c.req.header("x-index-enabled") === "1",
+            title: ({ decks }) => `${decks.length} available deck`,
+            render: ({ decks, defaultContent, title }) =>
+              jsx("main", {
+                "data-custom-index": true,
+                children: [jsx("h1", { children: title }), jsx("p", { children: decks[0]?.slug }), defaultContent],
+              }),
+          },
+        },
+      }),
+    );
+
+    expect((await app.request("/slides")).status).toBe(404);
+    const response = await app.request("/slides", { headers: { "x-index-enabled": "1" } });
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain("<title>1 available deck</title>");
+    expect(html).toContain('data-custom-index="true"');
+    expect(html).toContain("<p>deck1</p>");
+    expect(html).toContain('href="/slides/deck1"');
+  });
+
+  it("gates optional page surfaces with request-aware hooks", async () => {
+    const app = new Hono();
+    app.route(
+      "/slides",
+      decksRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        pages: {
+          viewer: ({ c, deck: routeDeck, surface }) =>
+            surface === "viewer" && routeDeck?.slug === "deck1" && c.req.header("x-viewer-enabled") === "1",
+          render: ({ c }) => c.req.header("x-render-enabled") === "1",
+          print: false,
+          presentation: false,
+          presenter: false,
+        },
+      }),
+    );
+
+    expect((await app.request("/slides/deck1")).status).toBe(404);
+    expect((await app.request("/slides/deck1", { headers: { "x-viewer-enabled": "1" } })).status).toBe(200);
+    expect((await app.request("/slides/deck1/render")).status).toBe(404);
+    expect((await app.request("/slides/deck1/render", { headers: { "x-render-enabled": "1" } })).status).toBe(200);
+    expect((await app.request("/slides/deck1/print")).status).toBe(404);
+    expect((await app.request("/slides/deck1/presentation")).status).toBe(404);
+    expect((await app.request("/slides/deck1/presenter")).status).toBe(404);
+  });
+
   it("mounts a safe request-aware external embed document from router options", async () => {
     const app = new Hono();
     app.use("/slides/*", async (c, next) => {

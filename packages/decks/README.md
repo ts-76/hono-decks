@@ -133,6 +133,32 @@ app.route("/decks", createDecksRouter({
 
 `DeckDocumentRenderInput`は`c`、`surface`、`deck`、`slug`、`mountPath`、`title`を持ちます。既存の`viewer.lang` / `viewer.nonce` / `viewer.head`は互換性のため残り、viewer surfaceでは共有`document`より優先されます。
 
+### Index and route surfaces
+
+routerの`pages`は、indexの内容とHTML routeの公開可否をapp側へ戻すためのrequest-aware contractです。未指定時は従来どおりすべて有効です。`index.render`はHono JSXまたは信頼済みHTMLを返せます。`defaultContent`を組み込めば標準deck listを残したままapp shellだけを変更できます。
+
+```tsx
+app.route("/decks", createDecksRouter({
+  pages: {
+    index: {
+      enabled: ({ c }) => c.env.DECK_INDEX_ENABLED === "true",
+      title: ({ decks }) => `${decks.length} decks`,
+      render: ({ title, defaultContent }) => (
+        <main class="app-deck-index">
+          <h1>{title}</h1>
+          {defaultContent}
+        </main>
+      ),
+    },
+    viewer: ({ c, deck }) => canReadDeck(c, deck),
+    print: false,
+    presenter: ({ c, dev }) => dev || c.env.PRESENTER_ENABLED === "true",
+  },
+}));
+```
+
+`viewer`、`render`、`print`、`presentation`、`presenter`のresolverには`c`、`surface`、`mountPath`、`dev`、`deck`、`slug`が渡ります。routeを無効にすると404になります。speaker notes固有の認可は既存の`presenter.enabled`も併用でき、両方が許可したrequestだけを表示します。外部iframe routeは専用のopt-in `embed` optionで管理します。
+
 ## Embedding in the same document
 
 `createDeckViewerEmbed()`はiframe、controls、scoped CSS、操作runtimeをまとめた自己完結viewerを返します。同じdocumentへ複数配置でき、各viewerのcontrols、swipe、keyboard、fullscreen、TOC、slide state messageは対応するiframeだけにscopedされます。
@@ -308,6 +334,8 @@ export: {
 - `hono-decks`: command line binary
 
 Worker/SSRコードは`@hono/decks`、build-timeのNode処理は`@hono/decks/node`からimportします。
+
+初期版の単一Markdown middlewareを維持する場合は、Node専用の`deckMiddleware` / `renderDeckPage`を`@hono/decks/node`からimportできます。新規アプリでは`defineDecks()`と`decksRouter()`を使ってください。legacy middlewareは標準runtime entryへは含まれません。
 
 ## Verification
 

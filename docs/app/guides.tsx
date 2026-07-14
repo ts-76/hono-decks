@@ -172,6 +172,23 @@ const routing: Guide = {
           deck-aware な app-owned route は <code>deckContext()</code> で compiled deck、viewer parts、TOC、meta
           を受け取れます。router 内へ別 Hono app を mount する場合は <code>extensions</code> を使います。
         </p>
+        <CodeBlock
+          code={`createDecksRouter({
+  pages: {
+    index: {
+      title: ({ decks }) => String(decks.length) + " decks",
+      render: ({ title, defaultContent }) => <main><h1>{title}</h1>{defaultContent}</main>,
+    },
+    print: false,
+    presenter: ({ c, dev }) => dev || c.env.PRESENTER_ENABLED === "true",
+  },
+})`}
+        />
+        <p>
+          <code>pages</code> を省略した surface は従来どおり有効です。各 resolver には Hono context、deck、slug、
+          mount path、dev state が渡り、拒否した request は 404 になります。external iframe は専用の
+          <code>embed</code> option で管理します。
+        </p>
         <Callout title="URL state">
           <p>
             viewer / presentation / presenter は <code>?slide=2&amp;step=1</code> を共有します。pagination

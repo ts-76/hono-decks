@@ -61,6 +61,7 @@ export function mergeDecksRouterOptions<E extends Env = any>(
   const viewer = mergeViewerOptions(base.viewer, overrides.viewer);
   const presenter = mergePresenterOptions(base.presenter, overrides.presenter);
   const document = mergeDocumentOptions(base.document, overrides.document);
+  const pages = mergePagesOptions(base.pages, overrides.pages);
   const embed = mergeExternalEmbedOptions(base.embed, overrides.embed);
   const exportOptions = base.export || overrides.export ? { ...base.export, ...overrides.export } : undefined;
   const components = base.components || overrides.components ? { ...base.components, ...overrides.components } : undefined;
@@ -70,10 +71,32 @@ export function mergeDecksRouterOptions<E extends Env = any>(
     ...(viewer === undefined ? {} : { viewer }),
     ...(presenter === undefined ? {} : { presenter }),
     ...(document === undefined ? {} : { document }),
+    ...(pages === undefined ? {} : { pages }),
     ...(embed === undefined ? {} : { embed }),
     ...(exportOptions === undefined ? {} : { export: exportOptions as DecksRouterOptions<E>["export"] }),
     ...(components === undefined ? {} : { components }),
     source: overrides.source ?? base.source,
+  };
+}
+
+function mergePagesOptions<E extends Env>(
+  base: DecksRouterOptions<E>["pages"],
+  override: DecksRouterOverrides<E>["pages"],
+): DecksRouterOptions<E>["pages"] {
+  if (!base) return override;
+  if (!override) return base;
+  const index =
+    override.index === false
+      ? false
+      : override.index === undefined
+        ? base.index
+        : base.index === false || base.index === undefined
+          ? override.index
+          : { ...base.index, ...override.index };
+  return {
+    ...base,
+    ...override,
+    ...(index === undefined ? {} : { index }),
   };
 }
 

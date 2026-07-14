@@ -31,6 +31,8 @@ export default createRoute((c) =>
             ["createDeckViewerParts()", "frame、controls、TOC、meta を個別に取得"],
             ["createDeckViewerEmbed()", "scoped CSS と runtime を含む埋め込み viewer"],
             ["DeckExternalEmbedOptions", "安全な外部 iframe document route を opt-in で構成"],
+            ["DecksRouterPagesOptions", "index rendering と HTML route surface を request 単位で構成"],
+            ["DeckRouteSurfaceInput", "route gate に context、deck、mount path、dev state を渡す"],
             ["withR2Assets()", "generated asset を R2-backed source で包む"],
             ["defineSlideComponents()", "built-in / app components の registry を作る"],
             ["renderCompiledDeckAsync()", "compiled deck を Hono JSX surface へ render"],
@@ -41,12 +43,14 @@ export default createRoute((c) =>
         <h2>Document and model types</h2>
         <p>
           custom source と document policy に必要な <code>CompiledDeck</code>、<code>DeckEntry</code>、
-          <code>DeckSource</code>、<code>DeckDocumentOptions</code>、<code>DeckDocumentRenderInput</code>、
-          viewer control item types は標準 entry から named import できます。
+          <code>CompiledSlide</code>、<code>DeckFrontmatter</code>、<code>DeckSource</code>、
+          <code>DeckDocumentOptions</code>、<code>DeckDocumentRenderInput</code>、viewer control item types は標準
+          entry から named import できます。
         </p>
         <p>
           local file I/O、compiler、manifest generator、CLI integration は <code>@hono/decks/node</code> を使います。
-          browser island hydration helper は <code>@hono/decks/client</code> です。
+          旧単一 Markdown API の <code>deckMiddleware</code> も Node entry だけで公開します。browser island hydration
+          helper は <code>@hono/decks/client</code> です。
         </p>
       </section>
     </DocsLayout>,

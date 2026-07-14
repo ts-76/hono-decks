@@ -321,6 +321,23 @@ app.route("/decks", createDecksRouter({
 }));
 ```
 
+indexの見た目と各HTML routeの公開可否は`pages`でrequest単位に調整できます。未指定のsurfaceは有効なままです。index rendererには標準listを保持する`defaultContent`が渡ります。
+
+```tsx
+app.route("/decks", createDecksRouter({
+  pages: {
+    index: {
+      title: ({ decks }) => `${decks.length} decks`,
+      render: ({ title, defaultContent }) => <main><h1>{title}</h1>{defaultContent}</main>,
+    },
+    print: false,
+    presenter: ({ c, dev }) => dev || c.env.PRESENTER_ENABLED === "true",
+  },
+}));
+```
+
+`pages.viewer` / `render` / `print` / `presentation` / `presenter`には`c`、`deck`、`slug`、`mountPath`、`dev`、`surface`が渡ります。外部iframeは専用のopt-in `embed` optionで管理します。
+
 標準 viewer controls は `viewer.controls` で差分カスタムできます。`before` / `after` は標準項目の前後に link や render item を追加し、`hidden` は標準項目だけを非表示にします。`labels` は標準項目の表示名だけを差し替えます。`print` は `/:slug/print` へのリンクで、PCでは標準表示されます。タッチ操作が主となる端末では、動作が安定しない `fullscreen` とPC向けの `print` を標準スタイルで非表示にします。
 
 ```ts

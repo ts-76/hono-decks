@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
-import { deckMiddleware } from "../src/server/middleware";
+import { deckMiddleware } from "../src/node";
 
 describe("deckMiddleware middleware", () => {
   it("serves a rendered slide deck from a mounted Hono route", async () => {

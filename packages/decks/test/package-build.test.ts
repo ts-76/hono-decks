@@ -58,6 +58,31 @@ describe("package build metadata", () => {
     expect(runtime).not.toContain("node_modules/acorn-jsx/");
     expect(node).toContain('from "unified"');
     expect(node).toContain('from "remark-parse"');
+    expect(node).toContain("deckMiddleware");
+    expect(runtime).not.toContain("deckMiddleware");
+  });
+
+  it("keeps the deliberate public runtime type surface in generated declarations", async () => {
+    const runtimeTypes = await readFile(join(packageRoot, "dist", "mod.d.ts"), "utf8");
+    const nodeTypes = await readFile(join(packageRoot, "dist", "node.d.ts"), "utf8");
+
+    for (const name of [
+      "CompileWarning",
+      "CompiledSlide",
+      "ComponentPlaceholder",
+      "DeckFrontmatter",
+      "DeckIndexRenderInput",
+      "DeckRouteSurfaceInput",
+      "DeckViewerDefaultControlItem",
+      "DeckViewerLinkControlItem",
+      "DeckViewerRenderControlItem",
+      "SlideFrontmatter",
+    ]) {
+      expect(runtimeTypes, name).toContain(name);
+    }
+    expect(runtimeTypes).toContain("SLIDE_TRANSITIONS");
+    expect(nodeTypes).toContain("DeckMiddlewareOptions");
+    expect(nodeTypes).toContain("deckMiddleware");
   });
 
   it("ships self-contained high-level API and embedding documentation", async () => {
