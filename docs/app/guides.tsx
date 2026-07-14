@@ -63,9 +63,22 @@ src/
 const buildScriptsCode = `{
   "scripts": {
     "decks:compile": "hono-decks compile",
-    "decks:watch": "hono-decks compile --watch",
-    "dev": "bun run decks:compile && vite",
-    "build": "bun run decks:compile && vite build"
+    "dev": "vite",
+    "build": "vite build"
+  }
+}`;
+
+const viteDecksCode = `import { honoDecks } from "hono-decks/vite"
+import { defineConfig } from "vite"
+
+export default defineConfig({
+  plugins: [honoDecks()],
+})`;
+
+const wranglerDecksCode = `{
+  "build": {
+    "command": "hono-decks compile",
+    "watch_dir": ["decks"]
   }
 }`;
 
@@ -214,9 +227,12 @@ const gettingStarted = (locale: Locale): Guide => locale === "ja" ? {
       <p><code>decks.mountPath</code>はconfigの値から生成されるため、compileとrouteの公開パスがずれません。</p>
     </section>
     <section id="scripts">
-      <h2>開発とビルドの前に必ずコンパイルする</h2>
-      <p>MDXの変更が生成物へ反映されるように、アプリの<code>dev</code>と<code>build</code>より先に<code>decks:compile</code>を実行します。下の<code>vite</code>部分は、既存アプリのコマンドへ置き換えてください。</p>
+      <h2>既存のdevコマンドへコンパイルを統合する</h2>
+      <p>HonoXやViteではpluginを同じVite configへ追加します。Vite起動前の初回compileと、MDX変更時の再生成が自動で行われます。</p>
+      <CodeBlock label="vite.config.ts" code={viteDecksCode} locale={locale} />
       <CodeBlock label="package.json" code={buildScriptsCode} locale={locale} />
+      <p>Wranglerを直接使うCloudflare Workerでは、<code>wrangler.jsonc</code>のcustom buildへ登録します。通常の<code>wrangler dev</code>がdeck rootも監視します。</p>
+      <CodeBlock label="wrangler.jsonc" code={wranglerDecksCode} locale={locale} />
     </section>
     <section id="verify">
       <h2>ブラウザで表示を確認する</h2>
@@ -256,7 +272,7 @@ const gettingStarted = (locale: Locale): Guide => locale === "ja" ? {
     <section id="install"><h2>Install the package and create the config</h2><p><code>init</code> creates the shared <code>hono-decks.config.ts</code> and the app-owned <code>src/decks.ts</code> facade. It refuses to overwrite existing files.</p><CodeBlock label="Terminal" code={installCode} locale={locale} /></section>
     <section id="deck"><h2>Create and compile the first deck</h2><p>Create <code>decks/welcome/deck.mdx</code>. The first frontmatter block describes the whole deck; the next <code>---</code> starts slide one.</p><CodeBlock label="decks/welcome/deck.mdx" code={firstDeckCode} locale={locale} /><p>Compile the MDX into Hono JSX modules. A successful run creates <code>src/generated/</code>.</p><CodeBlock label="Terminal" code={compileCode} locale={locale} /><CodeBlock label="Generated files" code={expectedFiles(locale)} locale={locale} /><p>Edit <code>src/decks.ts</code> and <code>deck.mdx</code> as needed. Never edit <code>src/generated/</code>; each compile replaces it.</p></section>
     <section id="mount"><h2>Mount the router</h2><p>Add the configured router to the existing Hono app.</p><CodeBlock code={mountCode} locale={locale} /><p><code>decks.mountPath</code> comes from the shared config, so compile-time assets and runtime routes stay aligned.</p></section>
-    <section id="scripts"><h2>Compile before development and builds</h2><p>Run <code>decks:compile</code> before the app's <code>dev</code> and <code>build</code> commands so MDX changes reach the generated modules. Replace <code>vite</code> below with the existing commands in your app.</p><CodeBlock label="package.json" code={buildScriptsCode} locale={locale} /></section>
+    <section id="scripts"><h2>Integrate compilation with the existing dev command</h2><p>For HonoX or Vite, add the plugin to the existing Vite config. It compiles before Vite starts and regenerates modules when MDX changes.</p><CodeBlock label="vite.config.ts" code={viteDecksCode} locale={locale} /><CodeBlock label="package.json" code={buildScriptsCode} locale={locale} /><p>For a Cloudflare Worker that runs Wrangler directly, register the compiler as a custom build. The ordinary <code>wrangler dev</code> command then watches the deck root.</p><CodeBlock label="wrangler.jsonc" code={wranglerDecksCode} locale={locale} /></section>
     <section id="verify"><h2>Verify it in the browser</h2><CodeBlock label="Terminal" code="bun run dev" locale={locale} /><p>Open <code>/decks/welcome</code> on the local URL printed by the dev server. The setup works when the Welcome slide appears and the controls or arrow keys move to slide two.</p><Callout title="Expected URL"><p><code>http://localhost:3000/decks/welcome</code>. If your dev server selects another port, use the printed URL.</p></Callout></section>
     <section id="troubleshooting"><h2>Troubleshooting</h2><dl class="troubleshooting-list"><div><dt>Missing <code>src/generated/decks.ts</code></dt><dd>Run <code>bunx hono-decks compile</code> again and check <code>build.root</code> and <code>build.outDir</code> in the config.</dd></div><div><dt><code>/decks</code> returns 404</dt><dd>Mount <code>decks.router()</code> at <code>decks.mountPath</code>.</dd></div><div><dt>Node modules enter the Worker bundle</dt><dd>Import runtime APIs from <code>hono-decks</code>. Keep <code>hono-decks/node</code> in build scripts only.</dd></div></dl></section>
     <section id="next"><h2>Choose the next step</h2><p>Continue with <a class="text-link" href={localizedHref("/docs/authoring", locale)}>authoring slides</a>. Open <a class="text-link" href={localizedHref("/docs/configuration", locale)}>configuration</a> or <a class="text-link" href={localizedHref("/docs/routing", locale)}>routes and UI</a> only when you need environment bindings or different public surfaces.</p><DeployToCloudflare locale={locale} /></section>
@@ -400,7 +416,7 @@ const configuration = (locale: Locale): Guide => {
         <h2>{isJa ? "共有configの責任範囲を確認する" : "Understand the shared config"}</h2>
         <p>{isJa ? <><code>hono-decks init</code>は必須の<code>hono-decks.config.ts</code>と<code>src/decks.ts</code>を作ります。build input、公開path、runtime policyをこのconfigで一元管理します。</> : <><code>hono-decks init</code> creates the required <code>hono-decks.config.ts</code> and <code>src/decks.ts</code>. Build input, public paths, and runtime policy live in this one config.</>}</p>
         <dl class="configuration-map">
-          <div><dt><code>package.json</code></dt><dd>{isJa ? "compileとwatchの引数なしコマンドを登録します。" : "Registers zero-argument compile and watch commands."}</dd></div>
+          <div><dt><code>package.json</code></dt><dd>{isJa ? "既存のViteまたはWranglerのdevコマンドを実行します。" : "Runs the existing Vite or Wrangler development command."}</dd></div>
           <div><dt><code>hono-decks.config.ts</code></dt><dd>{isJa ? "CLIとruntimeが共有する必須設定です。" : "Required configuration shared by the CLI and runtime."}</dd></div>
           <div><dt><code>decks.ts</code></dt><dd>{isJa ? "生成物とアプリの設定を読み込み、ルーターを作成します。" : "A stable facade that combines the generated source, config, and call-site overrides."}</dd></div>
           <div><dt><code>generated/</code></dt><dd>{isJa ? "コンパイラーが生成するマニフェストとスライドのモジュールです。" : "Compiler-owned manifest and slide modules."}</dd></div>
@@ -408,8 +424,9 @@ const configuration = (locale: Locale): Guide => {
         <Callout title={isJa ? "設定は1ファイル" : "One config file"}><p>{isJa ? <>CLIは<code>build</code>を、runtimeは<code>mountPath</code>と<code>router</code>を同じconfigから読みます。</> : <>The CLI reads <code>build</code>; runtime reads <code>mountPath</code> and <code>router</code> from the same config.</>}</p></Callout>
       </section>
       <section id="compile">
-        <h2>{isJa ? "コンパイル設定をスクリプトに書く" : "Pin compile settings in scripts"}</h2>
-        <p>{isJa ? <>通常は引数なしで実行します。<code>build.root</code>、<code>build.outDir</code>、<code>mountPath</code>は共有configから読み込みます。</> : <>Run without path flags. The CLI reads <code>build.root</code>, <code>build.outDir</code>, and <code>mountPath</code> from the shared config.</>}</p>
+        <h2>{isJa ? "コンパイラーをdevライフサイクルへ接続する" : "Connect the compiler to the dev lifecycle"}</h2>
+        <p>{isJa ? <>Viteでは<code>honoDecks()</code>を追加し、Wranglerではcustom buildへ<code>hono-decks compile</code>を登録します。<code>build.root</code>、<code>build.outDir</code>、<code>mountPath</code>は共有configから読み込みます。</> : <>Add <code>honoDecks()</code> to Vite, or register <code>hono-decks compile</code> as a Wrangler custom build. The shared config supplies <code>build.root</code>, <code>build.outDir</code>, and <code>mountPath</code>.</>}</p>
+        <CodeBlock label="vite.config.ts" code={viteDecksCode} locale={locale} />
         <CodeBlock label="package.json" code={buildScriptsCode} locale={locale} />
         <p>{isJa ? <>LinkCard cacheは<code>build.ogpCacheFile</code>へ設定します。<code>--refresh-ogp</code>は保存済みデータを意図的に更新するときだけ使います。</> : <>Set LinkCard cache at <code>build.ogpCacheFile</code>. Use <code>--refresh-ogp</code> only for an intentional refresh.</>}</p>
       </section>

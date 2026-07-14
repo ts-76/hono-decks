@@ -8,19 +8,21 @@ describe("development scripts", () => {
     };
 
     expect(packageJson.scripts["decks:compile"]).toMatch(/bin\.js compile$/);
-    expect(packageJson.scripts["decks:compile:dev"]).toMatch(/bin\.js compile$/);
-    expect(packageJson.scripts["decks:watch"]).toContain("compile --watch");
-    expect(packageJson.scripts["decks:compile:dev"]).toContain("--clean=false");
-    expect(packageJson.scripts.dev).toContain("bun run decks:compile:dev");
+    expect(packageJson.scripts["decks:compile:hook"]).toMatch(/bin\.js compile$/);
+    expect(packageJson.scripts["decks:watch"]).toBeUndefined();
+    expect(packageJson.scripts.dev).not.toContain("decks:compile");
+    expect(packageJson.scripts.dev).toContain("build -- --clean=false");
     expect(packageJson.scripts.dev).toContain("CI=1");
     expect(packageJson.scripts.dev).toContain("XDG_CONFIG_HOME=.wrangler-config");
     expect(packageJson.scripts.dev).toContain("wrangler dev");
     expect(packageJson.scripts.dev).not.toContain("--alias");
   });
 
-  it("configures Wrangler module aliases for stable reloads", async () => {
+  it("uses Wrangler's custom build watcher for deck authoring", async () => {
     const wranglerJson = await readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8");
 
+    expect(wranglerJson).toContain('"command": "bun run decks:compile:hook"');
+    expect(wranglerJson).toContain('"watch_dir": ["decks"]');
     expect(wranglerJson).toContain('"alias"');
     expect(wranglerJson).toContain('"hono-decks": "../../packages/decks/src/mod.ts"');
     expect(wranglerJson).toContain('"hono-decks/advanced": "../../packages/decks/src/advanced.ts"');

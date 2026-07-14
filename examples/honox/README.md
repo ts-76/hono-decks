@@ -13,4 +13,4 @@ bun run --cwd examples/honox dev
 - `/decks/honox` — viewer
 - `/decks/honox/render` — slide renderer
 
-`hono-decks.config.ts`がcompileとmount pathの共通設定です。`app/decks.ts`は編集可能なfacade、`app/generated`以下は`bun run decks:compile`で上書きされます。MDXを継続編集するときは別terminalで`bun run decks:watch`を実行できます。
+`hono-decks.config.ts`がcompileとmount pathの共通設定です。`app/decks.ts`は編集可能なfacade、`app/generated`以下は自動生成です。`bun run dev`を起動するとVite pluginが初回compileとMDX変更の監視を行います。

@@ -1,6 +1,6 @@
 {
   "name": "hono-decks",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Slide decks for Hono and Cloudflare Workers",
   "license": "MIT",
   "repository": {
@@ -31,6 +31,10 @@
     "./node": {
       "types": "./dist/node.d.ts",
       "import": "./dist/node.js"
+    },
+    "./vite": {
+      "types": "./dist/vite.d.ts",
+      "import": "./dist/vite.js"
     }
   },
   "bin": {
@@ -58,9 +62,16 @@
     "unified": "^11.0.5"
   },
   "peerDependencies": {
-    "hono": "^4.12.30"
+    "hono": "^4.12.30",
+    "vite": "^6.0.0 || ^7.0.0 || ^8.0.0"
+  },
+  "peerDependenciesMeta": {
+    "vite": {
+      "optional": true
+    }
   },
   "devDependencies": {
-    "hono": "^4.12.30"
+    "hono": "^4.12.30",
+    "vite": "^8.1.4"
   }
 }

@@ -7,6 +7,7 @@ export default defineConfig({
     cli: "src/cli.ts",
     client: "src/client.ts",
     node: "src/node.ts",
+    vite: "src/vite.ts",
     bin: "src/bin.ts",
   },
   format: ["esm"],

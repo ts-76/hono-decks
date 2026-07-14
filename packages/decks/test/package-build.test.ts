@@ -14,6 +14,7 @@ describe("package build metadata", () => {
       files: string[];
       scripts: Record<string, string>;
       peerDependencies: Record<string, string>;
+      peerDependenciesMeta: Record<string, { optional?: boolean }>;
     };
 
     expect(packageJson.name).toBe("hono-decks");
@@ -39,12 +40,18 @@ describe("package build metadata", () => {
         types: "./dist/node.d.ts",
         import: "./dist/node.js",
       },
+      "./vite": {
+        types: "./dist/vite.d.ts",
+        import: "./dist/vite.js",
+      },
     });
     expect(packageJson.bin).toEqual({ "hono-decks": "./dist/bin.js" });
     expect(packageJson.files).toEqual(expect.arrayContaining(["dist", "README.md"]));
     expect(packageJson.scripts.build).toBe("tsup");
     expect(packageJson.scripts.prepack).toBe("bun run build");
     expect(packageJson.peerDependencies.hono).toBe("^4.12.30");
+    expect(packageJson.peerDependencies.vite).toContain("^8.0.0");
+    expect(packageJson.peerDependenciesMeta.vite?.optional).toBe(true);
   });
 
   it("builds the CLI bin with a Node shebang", async () => {
@@ -58,6 +65,7 @@ describe("package build metadata", () => {
     const runtime = await readFile(join(packageRoot, "dist", "mod.js"), "utf8");
     const advanced = await readFile(join(packageRoot, "dist", "advanced.js"), "utf8");
     const node = await readFile(join(packageRoot, "dist", "node.js"), "utf8");
+    const vite = await readFile(join(packageRoot, "dist", "vite.js"), "utf8");
 
     expect(runtime).not.toMatch(/from "(?:@mdx-js\/mdx|esbuild|remark-mdx|remark-parse|shiki|unified)"/);
     expect(runtime).not.toContain("node_modules/unified/");
@@ -69,6 +77,7 @@ describe("package build metadata", () => {
     expect(runtime).not.toContain("deckMiddleware");
     expect(runtime).not.toContain("function decksRouter");
     expect(advanced).toContain("function decksRouter");
+    expect(vite).toContain("function honoDecks");
   });
 
   it("keeps the deliberate public runtime type surface in generated declarations", async () => {

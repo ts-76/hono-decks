@@ -59,7 +59,7 @@
       "name": "@hono-decks/example-minimal",
       "dependencies": {
         "hono": "^4.12.30",
-        "hono-decks": "file:./vendor/hono-decks-0.2.1.tgz",
+        "hono-decks": "file:./vendor/hono-decks-0.2.2.tgz",
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^5.20260714.1",
@@ -71,7 +71,7 @@
     },
     "packages/decks": {
       "name": "hono-decks",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "bin": {
         "hono-decks": "./dist/bin.js",
       },
@@ -86,10 +86,15 @@
       },
       "devDependencies": {
         "hono": "^4.12.30",
+        "vite": "^8.1.4",
       },
       "peerDependencies": {
         "hono": "^4.12.30",
+        "vite": "^6.0.0 || ^7.0.0 || ^8.0.0",
       },
+      "optionalPeers": [
+        "vite",
+      ],
     },
   },
   "packages": {
@@ -933,7 +938,7 @@
 
     "@hono-decks/example-honox/wrangler": ["wrangler@4.110.0", "", { "dependencies": { "@cloudflare/kv-asset-handler": "0.5.0", "@cloudflare/unenv-preset": "2.16.1", "blake3-wasm": "2.1.5", "esbuild": "0.28.1", "miniflare": "4.20260708.1", "path-to-regexp": "6.3.0", "unenv": "2.0.0-rc.24", "workerd": "1.20260708.1" }, "optionalDependencies": { "fsevents": "2.3.3" }, "peerDependencies": { "@cloudflare/workers-types": "^5.20260708.1" }, "optionalPeers": ["@cloudflare/workers-types"], "bin": { "cf-wrangler": "bin/cf-wrangler.js", "wrangler": "bin/wrangler.js", "wrangler2": "bin/wrangler.js" } }, "sha512-xZeXKYi7hxQRF5anL+v77RkufJNpF9f3Eqeyqq2QBsETpLZgh0Agj0jJ6JPtkbgn6ukZdh8OK5egsGPWIditgg=="],
 
-    "@hono-decks/example-minimal/hono-decks": ["hono-decks@./vendor/hono-decks-0.2.1.tgz", { "dependencies": { "@mdx-js/mdx": "^3.1.1", "esbuild": "^0.28.1", "remark-directive": "^4.0.0", "remark-mdx": "^3.1.1", "remark-parse": "^11.0.0", "shiki": "^4.2.0", "unified": "^11.0.5" }, "peerDependencies": { "hono": "^4.12.30" }, "bin": { "hono-decks": "./dist/bin.js" } }, "sha512-lKjAGwti4nX8dO0Zr5b5OKZSjhroaLcM2Ogsaq00/DJnouhRbaLmRpybKhwqeoV6SPWN182sATJ53crEgitfwg=="],
+    "@hono-decks/example-minimal/hono-decks": ["hono-decks@./vendor/hono-decks-0.2.2.tgz", { "dependencies": { "@mdx-js/mdx": "^3.1.1", "esbuild": "^0.28.1", "remark-directive": "^4.0.0", "remark-mdx": "^3.1.1", "remark-parse": "^11.0.0", "shiki": "^4.2.0", "unified": "^11.0.5" }, "peerDependencies": { "hono": "^4.12.30", "vite": "^6.0.0 || ^7.0.0 || ^8.0.0" }, "optionalPeers": ["vite"], "bin": { "hono-decks": "./dist/bin.js" } }, "sha512-dTYkK+XHkSNY3epf0zjBU6401JIg7qlSgJZclU09NseMAQk+zq2TP2WydQwK8coWix+ZGadTsHr+ugwjadIZgg=="],
 
     "@hono-decks/example-minimal/wrangler": ["wrangler@4.110.0", "", { "dependencies": { "@cloudflare/kv-asset-handler": "0.5.0", "@cloudflare/unenv-preset": "2.16.1", "blake3-wasm": "2.1.5", "esbuild": "0.28.1", "miniflare": "4.20260708.1", "path-to-regexp": "6.3.0", "unenv": "2.0.0-rc.24", "workerd": "1.20260708.1" }, "optionalDependencies": { "fsevents": "2.3.3" }, "peerDependencies": { "@cloudflare/workers-types": "^5.20260708.1" }, "optionalPeers": ["@cloudflare/workers-types"], "bin": { "cf-wrangler": "bin/cf-wrangler.js", "wrangler": "bin/wrangler.js", "wrangler2": "bin/wrangler.js" } }, "sha512-xZeXKYi7hxQRF5anL+v77RkufJNpF9f3Eqeyqq2QBsETpLZgh0Agj0jJ6JPtkbgn6ukZdh8OK5egsGPWIditgg=="],
 

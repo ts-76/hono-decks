@@ -5,6 +5,10 @@
   "account_id": "d8c5d2da42e8c9f7c416d5d34fc7530c",
   "compatibility_date": "2026-07-14",
   "compatibility_flags": ["nodejs_compat"],
+  "build": {
+    "command": "bun run decks:compile:hook",
+    "watch_dir": ["decks"]
+  },
   "alias": {
     "hono-decks": "../../packages/decks/src/mod.ts",
     "hono-decks/advanced": "../../packages/decks/src/advanced.ts",

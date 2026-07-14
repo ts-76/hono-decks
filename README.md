@@ -90,23 +90,32 @@ router: {
 }
 ```
 
-## Watch
+## Dev integration
 
-```bash
-bunx hono-decks compile --watch
-```
+通常の `dev` コマンドへ生成処理を統合します。Cloudflare WorkersではWranglerのcustom buildを使います。
 
-初回 compile の後、deck root と config file を監視して再生成します。Wrangler / Vite は別 terminal で起動します。
-
-```json
+```jsonc
+// wrangler.jsonc
 {
-  "scripts": {
-    "decks:compile": "hono-decks compile",
-    "decks:watch": "hono-decks compile --watch",
-    "dev": "wrangler dev"
+  "build": {
+    "command": "hono-decks compile",
+    "watch_dir": ["decks"]
   }
 }
 ```
+
+これで `wrangler dev` の起動前とdeck変更時に自動compileされます。HonoXやViteを使う場合は同じVite configへpluginを追加します。
+
+```ts
+import { honoDecks } from "hono-decks/vite";
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  plugins: [honoDecks()],
+});
+```
+
+どちらも利用者が実行するコマンドは既存の `bun run dev` だけです。`hono-decks compile --watch` は独自ツールへ組み込む場合の低レベルな選択肢として残しています。
 
 config を別名にした場合だけ `hono-decks compile --config path/to/config.ts` を使います。`root`、`outDir`、`mountPath` は config の `build` と top-level に置きます。
 

@@ -4,9 +4,8 @@
   "type": "module",
   "scripts": {
     "decks:compile": "bun run --cwd ../packages/decks build -- --clean=false && hono-decks compile",
-    "decks:watch": "hono-decks compile --watch",
-    "dev": "bun run decks:compile && vite",
-    "build": "bun run decks:compile && vite build --mode client && vite build",
+    "dev": "bun run --cwd ../packages/decks build -- --clean=false && vite",
+    "build": "bun run --cwd ../packages/decks build && vite build --mode client && vite build",
     "preview": "wrangler dev",
     "typecheck": "bun run decks:compile && tsc --noEmit",
     "test": "bun run decks:compile && vitest run",

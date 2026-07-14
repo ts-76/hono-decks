@@ -89,23 +89,34 @@ export default defineDecksConfig({
 });
 ```
 
-## Development watch
+## Development integration
 
-```bash
-bunx hono-decks compile --watch
-```
+Cloudflare Workersでは、deck compilerをWranglerのcustom buildへ登録します。
 
-初回 compile 後、deck root と config file を監視します。MDX、deck-local component、asset、theme CSS の変更で再生成されます。別 terminal で `wrangler dev` や Vite を動かしてください。config の場所を変える場合だけ `--config path/to/config.ts` を指定します。
-
-```json
+```jsonc
+// wrangler.jsonc
 {
-  "scripts": {
-    "decks:compile": "hono-decks compile",
-    "decks:watch": "hono-decks compile --watch",
-    "dev": "wrangler dev"
+  "build": {
+    "command": "hono-decks compile",
+    "watch_dir": ["decks"]
   }
 }
 ```
+
+`wrangler dev`が初回compileとMDX、deck-local component、asset、theme CSSの変更監視を担当します。deploy時にも同じbuild commandが実行されます。
+
+HonoXまたはViteでは、既存のVite configへpluginを追加します。
+
+```ts
+import { honoDecks } from "hono-decks/vite";
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  plugins: [honoDecks()],
+});
+```
+
+pluginはVite起動前にcompileし、deck rootと`hono-decks.config.ts`をVite watcherへ登録します。どちらの構成でも通常の`bun run dev`だけでauthoringできます。
 
 ## Runtime configuration
 

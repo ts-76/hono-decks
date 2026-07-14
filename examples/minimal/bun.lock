@@ -6,7 +6,7 @@
       "name": "@hono-decks/example-minimal",
       "dependencies": {
         "hono": "^4.12.30",
-        "hono-decks": "file:./vendor/hono-decks-0.2.1.tgz",
+        "hono-decks": "file:./vendor/hono-decks-0.2.2.tgz",
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^5.20260714.1",
@@ -340,7 +340,7 @@
 
     "hono": ["hono@4.12.30", "", {}, "sha512-emn+JoJjrN9YTpRDS5it/UI2SO9BAE37T6I3d963RxcZ81G9A4pr2SZTEiiaiKbzx+NKRg5BZ89fCL7gCJCUog=="],
 
-    "hono-decks": ["hono-decks@./vendor/hono-decks-0.2.1.tgz", { "dependencies": { "@mdx-js/mdx": "^3.1.1", "esbuild": "^0.28.1", "remark-directive": "^4.0.0", "remark-mdx": "^3.1.1", "remark-parse": "^11.0.0", "shiki": "^4.2.0", "unified": "^11.0.5" }, "peerDependencies": { "hono": "^4.12.30" }, "bin": { "hono-decks": "./dist/bin.js" } }, "sha512-lKjAGwti4nX8dO0Zr5b5OKZSjhroaLcM2Ogsaq00/DJnouhRbaLmRpybKhwqeoV6SPWN182sATJ53crEgitfwg=="],
+    "hono-decks": ["hono-decks@./vendor/hono-decks-0.2.2.tgz", { "dependencies": { "@mdx-js/mdx": "^3.1.1", "esbuild": "^0.28.1", "remark-directive": "^4.0.0", "remark-mdx": "^3.1.1", "remark-parse": "^11.0.0", "shiki": "^4.2.0", "unified": "^11.0.5" }, "peerDependencies": { "hono": "^4.12.30", "vite": "^6.0.0 || ^7.0.0 || ^8.0.0" }, "optionalPeers": ["vite"], "bin": { "hono-decks": "./dist/bin.js" } }, "sha512-dTYkK+XHkSNY3epf0zjBU6401JIg7qlSgJZclU09NseMAQk+zq2TP2WydQwK8coWix+ZGadTsHr+ugwjadIZgg=="],
 
     "html-void-elements": ["html-void-elements@3.0.0", "", {}, "sha512-bEqo66MRXsUGxWHV5IP0PUiAWwoEjba4VCzg0LjFJBpchPaTfyfCKTG6bc5F8ucKec3q5y6qOdGyYTSBEvhCrg=="],
 

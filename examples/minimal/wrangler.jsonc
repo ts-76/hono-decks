@@ -3,5 +3,9 @@
   "name": "hono-decks-minimal",
   "main": "src/index.ts",
   "compatibility_date": "2026-07-14",
-  "compatibility_flags": ["nodejs_compat"]
+  "compatibility_flags": ["nodejs_compat"],
+  "build": {
+    "command": "bun run decks:compile",
+    "watch_dir": ["decks"]
+  }
 }
