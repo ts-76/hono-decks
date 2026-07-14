@@ -46,6 +46,7 @@ describe("decksRouter", () => {
     expect(html).toContain('title="Deck One"');
     expect(html).toContain(".hono-decks-viewport{width:min(100%,calc((100vh - 58px) * 16 / 9));aspect-ratio:16/9");
     expect(html).toContain(".hono-decks-viewport:focus-visible");
+    expect(html).toContain("*:focus-visible{outline:none}");
     expect(html).toContain(".hono-decks-frame-stage{width:100%;height:100%");
     expect(html).toContain(".hono-decks-frame-stage iframe{width:100%;height:100%");
     expect(html).not.toContain(".hono-decks-frame-stage iframe{width:100%;height:100%;border:0;display:block;background:");
@@ -401,6 +402,7 @@ describe("decksRouter", () => {
     const html = `${first.embedHtml}${second.embedHtml}`;
     expect(html).toContain("data-hono-decks-embed");
     expect(html).toContain("data-hono-decks-embed-style");
+    expect(html).toContain('[data-hono-decks-viewer][data-hono-decks-embed] *:focus-visible{outline:none}');
     expect(html).toContain("data-hono-decks-viewer-runtime");
     expect(html).toContain('data-hono-decks-print-path="/slides/deck1/print"');
     expect(html).toContain('class="hono-decks-embedded-viewer product-tour"');

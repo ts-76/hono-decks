@@ -12,6 +12,7 @@ export function baseViewerStyle(): string {
 html,body{margin:0;width:100%;height:100%;min-height:100vh}
 @supports (height:100dvh){html,body{height:100dvh;min-height:100dvh}}
 body{overflow:hidden}
+*:focus-visible{outline:none}
 [data-hono-decks-viewer]{width:100%;height:100vh;min-height:0;display:grid;place-items:center;box-sizing:border-box;overflow:hidden}
 @supports (height:100dvh){[data-hono-decks-viewer]{height:100dvh}}
 .hono-decks-viewer-header{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
@@ -44,6 +45,7 @@ ${viewerViewportRule()}
 export function embeddedViewerStyle(): string {
   const root = '[data-hono-decks-viewer][data-hono-decks-embed]';
   return `${root}{color-scheme:dark;background:#050816;color:#eef2ff;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:grid;gap:12px;width:100%;min-width:0;box-sizing:border-box}
+${root} *:focus-visible{outline:none}
 ${root} .hono-decks-viewer-shell{display:grid;grid-template-rows:minmax(0,1fr) auto;place-items:center;gap:12px;width:100%;min-width:0;min-height:0;box-sizing:border-box}
 ${root} .hono-decks-viewer-stage{display:grid;place-items:center;width:100%;min-width:0;min-height:0;container-type:inline-size}
 ${root} .hono-decks-viewport{width:100%;aspect-ratio:${VIEWER_ASPECT_RATIO};position:relative;overflow:hidden;touch-action:pan-y}

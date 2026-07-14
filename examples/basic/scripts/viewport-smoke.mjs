@@ -78,6 +78,7 @@ async function runEmbeddedViewerCheck() {
     !initial.hasRuntime ||
     !initial.externalDocument ||
     initial.hasSampleChrome ||
+    !initial.navigationOutlineSuppressed ||
     !initial.fillsViewport ||
     initial.overflowsDocument ||
     initial.ratio < 1.75 ||
@@ -192,16 +193,21 @@ function viewportMetricsScript() {
     const viewport = document.querySelector("[data-viewer-viewport]");
     const iframe = document.querySelector("iframe");
     const controls = document.querySelector("[data-hono-decks-viewer-controls]");
+    const navigationLayer = document.querySelector('[data-viewer-navigation="next"]');
     const errors = [];
     if (!(viewport instanceof HTMLElement)) errors.push("missing viewport");
     if (!(iframe instanceof HTMLIFrameElement)) errors.push("missing iframe");
     if (!(controls instanceof HTMLElement)) errors.push("missing controls");
+    if (!(navigationLayer instanceof HTMLButtonElement)) errors.push("missing navigation layer");
     if (errors.length) return { ok: false, errors };
     const view = viewport.getBoundingClientRect();
     const frame = iframe.getBoundingClientRect();
     const controlBounds = controls.getBoundingClientRect();
     const ratio = view.width / view.height;
     const style = getComputedStyle(viewport);
+    navigationLayer.focus();
+    const navigationStyle = getComputedStyle(navigationLayer);
+    if (navigationStyle.outlineStyle !== "none") errors.push("navigation layer outline is " + navigationStyle.outlineStyle);
     if (Math.abs(ratio - 16 / 9) > 0.025) errors.push("viewport ratio is " + ratio.toFixed(3));
     if (view.width > window.innerWidth + 1 || view.height > window.innerHeight + 1) errors.push("viewport overflows window");
     const overlapsControls =
@@ -336,6 +342,8 @@ function embeddedViewerStateScript() {
     const viewport = root?.querySelector("[data-viewer-viewport]");
     const iframe = root?.querySelector("iframe");
     const activeSlide = iframe?.contentDocument?.querySelector(".slide:not([hidden])");
+    const navigationLayer = root?.querySelector('[data-viewer-navigation="next"]');
+    navigationLayer?.focus();
     const bounds = viewport?.getBoundingClientRect();
     const rootBounds = root?.getBoundingClientRect();
     return {
@@ -344,6 +352,7 @@ function embeddedViewerStateScript() {
       hasRuntime: Boolean(document.querySelector("[data-hono-decks-viewer-runtime]")),
       externalDocument: document.documentElement.hasAttribute("data-hono-decks-external-embed-document"),
       hasSampleChrome: Boolean(document.querySelector(".sample-page-header, [data-sample-layout]")),
+      navigationOutlineSuppressed: navigationLayer instanceof HTMLButtonElement && getComputedStyle(navigationLayer).outlineStyle === "none",
       fillsViewport: Boolean(rootBounds && Math.abs(rootBounds.width - innerWidth) <= 1 && Math.abs(rootBounds.height - innerHeight) <= 1),
       overflowsDocument: document.documentElement.scrollWidth > innerWidth + 1 || document.documentElement.scrollHeight > innerHeight + 1,
       ratio: bounds && bounds.height ? bounds.width / bounds.height : 0,
