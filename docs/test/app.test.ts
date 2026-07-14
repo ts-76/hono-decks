@@ -12,8 +12,9 @@ describe("HonoX documentation site", () => {
     expect(html).toContain("Slides belong in");
     expect(html).toContain("A route kit, not another runtime.");
     expect(html).toContain('href="/docs/getting-started?lang=ja"');
+    expect(html).toContain('src="/demo/product/embed"');
     expect(html).toContain('href="/api?lang=ja"');
-    expect(html).toContain("app.route(&quot;/decks&quot;");
+    expect(html).toContain("MDXから生成し、このHonoX appにmountしています。");
   });
 
   it("uses query, cookie, and Accept-Language detection with Japanese fallback", async () => {
@@ -35,6 +36,7 @@ describe("HonoX documentation site", () => {
   it.each([
     ["/docs/getting-started", "前提を確認する"],
     ["/docs/authoring", "deck は directory 単位"],
+    ["/docs/configuration", "設定を2つの時間軸に分ける"],
     ["/docs/routing", "既定 route surface"],
     ["/docs/security", "共通 document policy"],
     ["/api", "Runtime entry"],
@@ -46,6 +48,35 @@ describe("HonoX documentation site", () => {
     expect(html).toContain(expected);
     expect(html).toContain('class="docs-layout"');
     expect(html).toContain('class="mobile-page-nav"');
+  });
+
+  it("serves the homepage demo from a compiled hono-decks embed route", async () => {
+    const embed = await app.request("/demo/product/embed");
+    const embedHtml = await embed.text();
+    const render = await app.request("/demo/product/render");
+    const renderHtml = await render.text();
+    const viewer = await app.request("/demo/product");
+
+    expect(embed.status).toBe(200);
+    expect(embed.headers.get("content-security-policy")).toContain("frame-ancestors 'self'");
+    expect(embedHtml).toContain("data-hono-decks-external-embed-document");
+    expect(embedHtml).toContain('/demo/product/render');
+    expect(render.status).toBe(200);
+    expect(renderHtml).toContain("Slides belong in your Hono app.");
+    expect(viewer.status).toBe(404);
+  });
+
+  it("documents config ownership, compile flags, runtime resolvers, and override precedence in both languages", async () => {
+    const ja = await (await app.request("/docs/configuration")).text();
+    const en = await (await app.request("/docs/configuration?lang=en")).text();
+
+    expect(ja).toContain("decks.config.ts");
+    expect(ja).toContain("--ogp-cache");
+    expect(ja).toContain("defineDecksConfig");
+    expect(ja).toContain("mergeDecksRouterOptions");
+    expect(ja).toContain('href="/api?lang=ja#define-decks-config"');
+    expect(en).toContain("Split configuration across two timelines");
+    expect(en).toContain("generated defaults, app config, then call-site overrides");
   });
 
   it("documents the complete first-run success and recovery path", async () => {

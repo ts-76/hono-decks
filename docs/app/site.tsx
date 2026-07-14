@@ -6,6 +6,7 @@ const navigationByLocale = {
   ja: [
     { href: "/docs/getting-started", label: "はじめる", detail: "導入 / compile / mount" },
     { href: "/docs/authoring", label: "書く", detail: "MDX / components / assets" },
+    { href: "/docs/configuration", label: "設定する", detail: "config / CLI / overrides" },
     { href: "/docs/routing", label: "組み込む", detail: "routes / viewer / presenter" },
     { href: "/docs/security", label: "守る", detail: "CSP / nonce / embed" },
     { href: "/api", label: "API", detail: "公開 exports" },
@@ -13,6 +14,7 @@ const navigationByLocale = {
   en: [
     { href: "/docs/getting-started", label: "Get started", detail: "install / compile / mount" },
     { href: "/docs/authoring", label: "Author", detail: "MDX / components / assets" },
+    { href: "/docs/configuration", label: "Configure", detail: "config / CLI / overrides" },
     { href: "/docs/routing", label: "Integrate", detail: "routes / viewer / presenter" },
     { href: "/docs/security", label: "Secure", detail: "CSP / nonce / embed" },
     { href: "/api", label: "API", detail: "public exports" },

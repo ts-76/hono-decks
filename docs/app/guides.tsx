@@ -34,6 +34,51 @@ src/
 └── generated/
     └── decks.ts          # generated; do not edit`;
 
+const buildScriptsCode = `{
+  "scripts": {
+    "decks:compile": "hono-decks compile --root decks --out src/generated --mount /decks",
+    "dev": "bun run decks:compile && vite",
+    "build": "bun run decks:compile && vite build"
+  }
+}`;
+
+const configCode = `// src/decks.config.ts
+import { defineDecksConfig } from "hono-decks"
+import type { AppEnv } from "./env"
+
+export default defineDecksConfig<AppEnv>({
+  mountPath: "/decks",
+  router: {
+    dev: (c) => c.env.ENVIRONMENT !== "production",
+    document: {
+      lang: ({ c }) => c.req.header("accept-language")?.startsWith("en") ? "en" : "ja",
+    },
+    presenter: {
+      enabled: ({ c, dev }) => dev || c.env.PRESENTER_ENABLED === "true",
+    },
+    pages: {
+      print: ({ c }) => c.env.PRINT_ENABLED === "true",
+    },
+  },
+})`;
+
+const facadeCode = `// src/decks.ts
+import { mergeDecksRouterOptions, type DecksRouterOverrides } from "hono-decks"
+import config from "./decks.config"
+import { decks } from "./generated/decks"
+
+export const deckMountPath = config.mountPath ?? "/decks"
+export const deckSource = config.source?.(decks.source) ?? decks.source
+
+export function createDecksRouter(overrides: DecksRouterOverrides = {}) {
+  return decks.router(
+    mergeDecksRouterOptions(
+      { ...config.router, source: deckSource },
+      overrides,
+    ),
+  )
+}`;
+
 const gettingStarted = (locale: Locale): Guide => locale === "ja" ? {
   title: "はじめる",
   description: "MDX deck を compile し、generated router を既存の Hono application に mount して、ブラウザで確認します。",
@@ -80,6 +125,7 @@ const gettingStarted = (locale: Locale): Guide => locale === "ja" ? {
     <section id="next">
       <h2>次の一手</h2>
       <p><a class="text-link" href={localizedHref("/docs/authoring", locale)}>MDX と component を書く →</a></p>
+      <p><a class="text-link" href={localizedHref("/docs/configuration", locale)}>設定ファイルを整える →</a></p>
       <p><a class="text-link" href={localizedHref("/docs/routing", locale)}>route と UI を組み込む →</a></p>
       <DeployToCloudflare locale={locale} />
     </section>
@@ -101,7 +147,7 @@ const gettingStarted = (locale: Locale): Guide => locale === "ja" ? {
     <section id="mount"><h2>Mount the router</h2><CodeBlock code={mountCode} locale={locale} /><p>Keep the compile-time <code>--mount /decks</code> path aligned with <code>app.route("/decks", …)</code>.</p></section>
     <section id="verify"><h2>Verify it in the browser</h2><CodeBlock label="Terminal" code="bun run dev" locale={locale} /><p>Open <code>/decks</code> on the local URL printed by your dev server. You should see <strong>sample</strong> in the deck index and be able to open its viewer, presentation, and presenter surfaces.</p><Callout title="Expected URL"><p><code>http://localhost:3000/decks</code>. If your dev server selects another port, use the printed URL.</p></Callout></section>
     <section id="troubleshooting"><h2>Troubleshooting</h2><dl class="troubleshooting-list"><div><dt>Missing <code>src/generated/decks.ts</code></dt><dd>Run <code>bunx hono-decks compile</code> again and confirm that <code>--root</code> points at the deck directory.</dd></div><div><dt><code>/decks</code> returns 404</dt><dd>Align the compile and <code>app.route()</code> mount paths, then check the facade import.</dd></div><div><dt>Node modules enter the Worker bundle</dt><dd>Import runtime APIs from <code>hono-decks</code>. Keep <code>hono-decks/node</code> in build scripts only.</dd></div></dl></section>
-    <section id="next"><h2>Choose the next step</h2><p><a class="text-link" href={localizedHref("/docs/authoring", locale)}>Author MDX and components →</a></p><p><a class="text-link" href={localizedHref("/docs/routing", locale)}>Integrate routes and UI →</a></p><DeployToCloudflare locale={locale} /></section>
+    <section id="next"><h2>Choose the next step</h2><p><a class="text-link" href={localizedHref("/docs/authoring", locale)}>Author MDX and components →</a></p><p><a class="text-link" href={localizedHref("/docs/configuration", locale)}>Configure the application boundary →</a></p><p><a class="text-link" href={localizedHref("/docs/routing", locale)}>Integrate routes and UI →</a></p><DeployToCloudflare locale={locale} /></section>
   </>,
 };
 
@@ -193,6 +239,70 @@ const routing = (locale: Locale): Guide => {
   };
 };
 
+const configuration = (locale: Locale): Guide => {
+  const isJa = locale === "ja";
+  return {
+    title: isJa ? "設定ファイル" : "Configuration",
+    description: isJa
+      ? "compile時の入力と、app-ownedなdecks.config.ts、request-awareなrouter optionの責任範囲を整理します。"
+      : "Separate compile-time inputs, the app-owned decks.config.ts file, and request-aware router options.",
+    sections: isJa
+      ? [
+          { id: "files", label: "ファイルの責任" },
+          { id: "compile", label: "compile設定" },
+          { id: "runtime", label: "runtime設定" },
+          { id: "facade", label: "facadeと上書き" },
+          { id: "reference", label: "設定項目" },
+        ]
+      : [
+          { id: "files", label: "File ownership" },
+          { id: "compile", label: "Compile settings" },
+          { id: "runtime", label: "Runtime settings" },
+          { id: "facade", label: "Facade and overrides" },
+          { id: "reference", label: "Configuration map" },
+        ],
+    content: <>
+      <section id="files">
+        <h2>{isJa ? "設定を2つの時間軸に分ける" : "Split configuration across two timelines"}</h2>
+        <p>{isJa ? <>CLI optionはMDXをどう生成するかを決め、<code>src/decks.config.ts</code>は生成済みdeckをrequest時にどう公開するかを決めます。生成物の<code>src/generated/</code>は直接編集しません。</> : <>CLI options decide how MDX is generated. <code>src/decks.config.ts</code> decides how compiled decks are exposed at request time. Never edit <code>src/generated/</code> directly.</>}</p>
+        <dl class="configuration-map">
+          <div><dt><code>package.json</code></dt><dd>{isJa ? "compileのroot、出力先、mount pathを固定します。" : "Pins the compile root, output directory, and mount path."}</dd></div>
+          <div><dt><code>decks.config.ts</code></dt><dd>{isJa ? "任意のapp-owned設定。sourceとrouter optionを環境に接続します。" : "Optional app-owned configuration that connects the source and router options to your environment."}</dd></div>
+          <div><dt><code>decks.ts</code></dt><dd>{isJa ? "generated source、config、呼び出し時overrideを合成する安定したfacadeです。" : "A stable facade that combines the generated source, config, and call-site overrides."}</dd></div>
+          <div><dt><code>generated/</code></dt><dd>{isJa ? "compileが所有するmanifestとslide moduleです。" : "Compiler-owned manifest and slide modules."}</dd></div>
+        </dl>
+        <Callout title={isJa ? "設定ファイルは任意" : "The config file is optional"}><p>{isJa ? <><code>hono-decks init</code>が作る<code>decks.ts</code>だけでも動きます。環境変数、R2、CSP、export、独自UIが必要になった時点でconfigを分離してください。</> : <>The <code>decks.ts</code> facade generated by <code>hono-decks init</code> works on its own. Split out a config file when you need environment bindings, R2, CSP, exports, or custom UI.</>}</p></Callout>
+      </section>
+      <section id="compile">
+        <h2>{isJa ? "compile設定をscriptへ固定する" : "Pin compile settings in scripts"}</h2>
+        <p>{isJa ? <><code>--root</code>と<code>--out</code>は必須です。<code>--mount</code>はasset URLの基準になるため、Honoの<code>app.route()</code>と同じpathにします。</> : <><code>--root</code> and <code>--out</code> are required. <code>--mount</code> becomes the base for asset URLs, so keep it aligned with the Hono <code>app.route()</code> path.</>}</p>
+        <CodeBlock label="package.json" code={buildScriptsCode} locale={locale} />
+        <p>{isJa ? <><code>--ogp-cache</code>はLinkCard metadataを再現可能にし、<code>--refresh-ogp</code>は明示的にnetworkから更新するときだけ使います。</> : <><code>--ogp-cache</code> makes LinkCard metadata reproducible. Use <code>--refresh-ogp</code> only when intentionally refreshing it from the network.</>}</p>
+      </section>
+      <section id="runtime">
+        <h2>{isJa ? "request-awareな値をconfigへ置く" : "Keep request-aware values in config"}</h2>
+        <p>{isJa ? <>runtime設定は<code>defineDecksConfig()</code>で型を保ちます。<code>dev</code>はdev serverから暗黙に渡らないため、bindingやrequest contextから明示的に解決します。</> : <>Use <code>defineDecksConfig()</code> to preserve runtime types. <code>dev</code> is never inferred from the dev server; resolve it explicitly from bindings or request context.</>}</p>
+        <CodeBlock code={configCode} locale={locale} />
+      </section>
+      <section id="facade">
+        <h2>{isJa ? "facadeで合成順序を固定する" : "Make precedence explicit in the facade"}</h2>
+        <p>{isJa ? <>基本順序はgenerated defaults、app config、呼び出し時overrideです。<code>mergeDecksRouterOptions()</code>は<code>viewer</code>、<code>presenter</code>、<code>document</code>などのnested optionも保ったまま合成します。</> : <>The precedence is generated defaults, app config, then call-site overrides. <code>mergeDecksRouterOptions()</code> preserves nested options such as <code>viewer</code>, <code>presenter</code>, and <code>document</code>.</>}</p>
+        <CodeBlock code={facadeCode} locale={locale} />
+        <Callout title={isJa ? "mount pathは1つ" : "One mount path"}><p>{isJa ? <>compileの<code>--mount</code>、configの<code>mountPath</code>、<code>app.route()</code>を一致させます。不一致はasset URLやcanonical pathの破損につながります。</> : <>Keep compile-time <code>--mount</code>, config <code>mountPath</code>, and <code>app.route()</code> identical. A mismatch breaks asset URLs and canonical paths.</>}</p></Callout>
+      </section>
+      <section id="reference">
+        <h2>{isJa ? "どの設定をどこへ置くか" : "Choose the right configuration boundary"}</h2>
+        <dl class="configuration-map">
+          <div><dt><code>mountPath</code></dt><dd>{isJa ? "facadeとapp側が共有する公開path。" : "The public path shared by the facade and app."}</dd></div>
+          <div><dt><code>source(source)</code></dt><dd>{isJa ? "generated sourceをR2、cache、独自asset取得でwrapします。" : "Wraps the generated source with R2, caching, or custom asset loading."}</dd></div>
+          <div><dt><code>router</code></dt><dd>{isJa ? "document、pages、viewer、presenter、embed、exportなどのruntime optionです。" : "Runtime options for document, pages, viewer, presenter, embed, export, and more."}</dd></div>
+        </dl>
+        <p><a class="text-link" href={localizedHref("/api#define-decks-config", locale)}>{isJa ? "defineDecksConfig APIを見る" : "Open the defineDecksConfig API"} →</a></p>
+      </section>
+    </>,
+  };
+};
+
 const security = (locale: Locale): Guide => {
   const isJa = locale === "ja";
   return {
@@ -221,6 +331,6 @@ const security = (locale: Locale): Guide => {
 };
 
 export function getGuide(slug: string, locale: Locale): Guide | undefined {
-  const factories: Record<string, (locale: Locale) => Guide> = { "getting-started": gettingStarted, authoring, routing, security };
+  const factories: Record<string, (locale: Locale) => Guide> = { "getting-started": gettingStarted, authoring, configuration, routing, security };
   return factories[slug]?.(locale);
 }

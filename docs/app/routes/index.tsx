@@ -6,14 +6,6 @@ const installCode = `bun add hono-decks
 bunx hono-decks init --out src/decks.ts
 bunx hono-decks compile --root decks --out src/generated --mount /decks`;
 
-const routeCode = `import { Hono } from "hono"
-import { createDecksRouter } from "./decks"
-
-const app = new Hono()
-app.route("/decks", createDecksRouter())
-
-export default app`;
-
 export default createRoute((c) => {
   const locale = getLocale(c);
   const isJa = locale === "ja";
@@ -53,26 +45,22 @@ export default createRoute((c) => {
             </div>
           </dl>
         </div>
-        <div class="hero-artifact" aria-label="Example Hono deck integration">
-          <div class="artifact-tabbar" aria-hidden="true">
-            <span class="artifact-dot"></span>
-            <span>src/index.ts</span>
-            <span class="artifact-status">route mounted</span>
+        <div class="hero-demo" aria-label={isJa ? "操作できるhono-decksのデモ" : "Interactive hono-decks demo"}>
+          <div class="demo-toolbar">
+            <span class="demo-live"><i aria-hidden="true"></i>{isJa ? "実際のdeck" : "Live deck"}</span>
+            <code>GET /demo/product/embed</code>
           </div>
-          <CodeBlock code={routeCode} label="Hono" locale={locale} copy={false} />
-          <div class="route-stack" aria-label="Generated deck routes">
-            <div>
-              <code>GET /decks</code>
-              <span>index</span>
-            </div>
-            <div>
-              <code>GET /decks/:slug</code>
-              <span>viewer</span>
-            </div>
-            <div>
-              <code>GET /decks/:slug/presenter</code>
-              <span>presenter</span>
-            </div>
+          <iframe
+            src="/demo/product/embed"
+            title={isJa ? "hono-decks 製品紹介スライド" : "hono-decks product tour"}
+            loading="eager"
+            allow="fullscreen"
+          ></iframe>
+          <div class="demo-meta">
+            <p>{isJa ? "MDXから生成し、このHonoX appにmountしています。左右クリックまたは矢印キーで操作できます。" : "Compiled from MDX and mounted in this HonoX app. Use the slide halves or arrow keys to navigate."}</p>
+            <a href="/demo/product/embed" target="_blank" rel="noreferrer">
+              {isJa ? "大きく表示" : "Open full size"} <span aria-hidden="true">↗</span>
+            </a>
           </div>
         </div>
       </section>

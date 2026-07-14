@@ -342,22 +342,24 @@ button {
   font-weight: 700;
 }
 
-.hero-artifact {
+.hero-demo {
   position: relative;
   width: min(100%, 640px);
   justify-self: end;
+  overflow: hidden;
   border-radius: 16px;
   background: var(--dark);
   box-shadow: 20px 24px 0 var(--accent-soft);
   color: var(--on-dark);
-  animation: artifact-in 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: demo-in 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.artifact-tabbar {
+.demo-toolbar {
   display: flex;
   min-height: 48px;
   align-items: center;
-  gap: 9px;
+  justify-content: space-between;
+  gap: 18px;
   border-bottom: 1px solid oklch(1 0 0 / 0.1);
   padding: 0 18px;
   color: oklch(0.76 0.006 264);
@@ -365,61 +367,62 @@ button {
   font-size: 0.75rem;
 }
 
-.artifact-dot {
+.demo-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--on-dark);
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-weight: 750;
+}
+
+.demo-live i {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: var(--accent);
+  box-shadow: 0 0 0 4px oklch(0.68 0.19 43 / 0.16);
 }
 
-.artifact-status {
-  margin-left: auto;
+.demo-toolbar code {
+  overflow: hidden;
   color: var(--code-green);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.hero-artifact .code-block {
+.hero-demo iframe {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
   border: 0;
-  border-radius: 0;
-  background: transparent;
+  background: var(--dark);
 }
 
-.hero-artifact .code-block figcaption {
-  display: none;
-}
-
-.hero-artifact .code-block pre {
-  min-height: 292px;
-  padding: 34px;
-  font-size: clamp(0.77rem, 1.1vw, 0.91rem);
-}
-
-.route-stack {
-  display: grid;
-  border-top: 1px solid oklch(1 0 0 / 0.1);
-}
-
-.route-stack div {
+.demo-meta {
   display: flex;
-  min-height: 48px;
+  min-height: 72px;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding: 0 20px;
-  border-bottom: 1px solid oklch(1 0 0 / 0.07);
+  border-top: 1px solid oklch(1 0 0 / 0.1);
+  padding: 14px 18px;
 }
 
-.route-stack div:last-child {
-  border-bottom: 0;
+.demo-meta p {
+  max-width: 52ch;
+  margin: 0;
+  color: oklch(0.76 0.006 264);
+  font-size: 0.75rem;
+  line-height: 1.55;
 }
 
-.route-stack code {
+.demo-meta a {
+  flex: 0 0 auto;
   color: var(--on-dark);
   font-size: 0.76rem;
-}
-
-.route-stack span {
-  color: oklch(0.7 0.006 264);
-  font-size: 0.75rem;
+  font-weight: 760;
+  text-underline-offset: 4px;
 }
 
 .boundary-section,
@@ -872,6 +875,30 @@ button {
   line-height: 1.7;
 }
 
+.configuration-map {
+  display: grid;
+  margin: 30px 0;
+  border-top: 1px solid var(--line);
+}
+
+.configuration-map > div {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.34fr) 1fr;
+  gap: 28px;
+  border-bottom: 1px solid var(--line);
+  padding: 20px 0;
+}
+
+.configuration-map dt {
+  font-weight: 750;
+}
+
+.configuration-map dd {
+  margin: 0;
+  color: var(--ink-soft);
+  line-height: 1.7;
+}
+
 .version-note {
   display: flex;
   flex-wrap: wrap;
@@ -976,7 +1003,7 @@ td:first-child {
   width: 42%;
 }
 
-@keyframes artifact-in {
+@keyframes demo-in {
   from {
     opacity: 0;
     translate: 36px 0;
@@ -996,7 +1023,7 @@ td:first-child {
     max-width: 760px;
   }
 
-  .hero-artifact {
+  .hero-demo {
     width: min(100%, 760px);
     justify-self: start;
   }
@@ -1110,17 +1137,12 @@ td:first-child {
     gap: 16px;
   }
 
-  .hero-artifact {
+  .hero-demo {
     box-shadow: 10px 12px 0 var(--accent-soft);
   }
 
-  .artifact-status {
-    display: none;
-  }
-
-  .hero-artifact .code-block pre {
-    min-height: 250px;
-    padding: 24px 18px;
+  .demo-toolbar code {
+    max-width: 54%;
   }
 
   .section-intro,
@@ -1178,7 +1200,8 @@ td:first-child {
     gap: 10px;
   }
 
-  .troubleshooting-list div {
+  .troubleshooting-list div,
+  .configuration-map > div {
     grid-template-columns: 1fr;
     gap: 8px;
   }
