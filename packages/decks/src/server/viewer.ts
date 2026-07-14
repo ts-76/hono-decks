@@ -9,6 +9,11 @@ import type { DeckExportOptions, DeckViewerExportPaths } from "./browser-export"
 import { resolveAuthorizedExportPaths } from "./browser-export";
 import { renderViewerScript } from "./viewer-script";
 import { baseViewerStyle, embeddedViewerStyle } from "./viewer-style";
+import {
+  documentNonceAttribute,
+  resolveDeckDocument,
+  type DeckDocumentOptions,
+} from "./document";
 
 export interface DeckViewerOptions<E extends Env = any> {
   controls?: false | DeckViewerControlsOptions;
@@ -246,6 +251,7 @@ export async function renderDeckViewerPage<E extends Env = any>(input: {
   viewerStateQuery?: string;
   viewer?: DeckViewerOptions<E>;
   exportOptions?: DeckExportOptions<E>;
+  document?: DeckDocumentOptions<E>;
 }): Promise<string> {
   const parts = await createDeckViewerParts({
     deck: input.deck,
@@ -285,27 +291,37 @@ export async function renderDeckViewerPage<E extends Env = any>(input: {
         }),
       ],
     });
-  const headValue =
+  const viewerHead =
     typeof input.viewer?.head === "function" ? await input.viewer.head(renderInput) : await input.viewer?.head;
-  const head = headValue ? await renderJsxValue(headValue) : "";
-  const langValue = typeof input.viewer?.lang === "function" ? await input.viewer.lang(renderInput) : input.viewer?.lang;
-  const lang = langValue?.trim() || "ja";
-  const nonceValue =
+  const viewerLang = typeof input.viewer?.lang === "function" ? await input.viewer.lang(renderInput) : input.viewer?.lang;
+  const viewerNonce =
     typeof input.viewer?.nonce === "function" ? await input.viewer.nonce(renderInput) : input.viewer?.nonce;
-  const nonceAttribute = nonceValue ? ` nonce="${escapeHtml(nonceValue)}"` : "";
+  const document = await resolveDeckDocument(
+    {
+      c: input.c,
+      surface: "viewer",
+      deck: input.deck,
+      slug: input.deck.slug,
+      mountPath: input.mountPath,
+      title: parts.title,
+    },
+    input.document,
+    { head: viewerHead, lang: viewerLang, nonce: viewerNonce },
+  );
+  const nonceAttribute = documentNonceAttribute(document.nonce);
 
   return `<!doctype html>
-<html lang="${escapeHtml(lang)}">
+<html lang="${escapeHtml(document.lang)}">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>${escapeHtml(parts.title)}</title>
   <style${nonceAttribute}>${baseViewerStyle()}${input.viewer?.style ?? ""}</style>
-  ${head}
+  ${document.head}
 </head>
 <body>
   ${await renderJsxValue(await content)}
-  ${renderViewerScript(nonceValue)}
+  ${renderViewerScript(document.nonce)}
 </body>
 </html>`;
 }

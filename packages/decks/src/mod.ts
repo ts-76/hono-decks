@@ -13,6 +13,10 @@ export type {
   DeckContextOptions,
   DeckContextVariables,
   DeckDevResolver,
+  DeckDocumentOptions,
+  DeckDocumentPageOptions,
+  DeckDocumentRenderInput,
+  DeckDocumentSurface,
   DeckExportAuthorizeInput,
   DeckExportOptions,
   DeckPageMeta,
@@ -38,6 +42,7 @@ export type {
   DecksRouterExtension,
   DecksRouterOptions,
   DecksRouterPresenterOptions,
+  ResolvedDeckDocument,
 } from "./server/router";
 export { serveDecksClientEntry } from "./server/client-entry";
 export type { ServeDecksClientEntryOptions } from "./server/client-entry";

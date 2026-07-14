@@ -38,6 +38,7 @@ import {
   resolveGeneratedClientEntryUrl,
   stripPathSuffix,
 } from "./path-utils";
+import { resolveDeckDocument, type DeckDocumentOptions, type ResolvedDeckDocument } from "./document";
 
 export type {
   DeckBrowserRunBinding,
@@ -47,6 +48,13 @@ export type {
   DeckExportOptions,
   DeckViewerExportPaths,
 } from "./browser-export";
+export type {
+  DeckDocumentOptions,
+  DeckDocumentPageOptions,
+  DeckDocumentRenderInput,
+  DeckDocumentSurface,
+  ResolvedDeckDocument,
+} from "./document";
 export { createDeckViewerEmbed, createDeckViewerParts } from "./viewer";
 export type {
   DeckViewerEmbed,
@@ -82,6 +90,7 @@ export interface DecksRouterOptions<E extends Env = any> {
   clientEntry?: string;
   clientEntryAsset?: string;
   clientEntryAssetPath?: string;
+  document?: DeckDocumentOptions<E>;
   viewer?: DeckViewerOptions<E>;
   presenter?: false | DecksRouterPresenterOptions<E>;
   export?: DeckExportOptions<E>;
@@ -144,7 +153,8 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
   router.get("/", async (c) => {
     const dev = await isDevEnabled(c, options);
     const decks = (await options.source.listDecks(c)).filter((deck) => dev || !deck.draft);
-    return c.html(renderDeckIndex(decks, c.req.path));
+    const document = await resolveRouterDocument(c, options, "index", c.req.path);
+    return c.html(renderDeckIndex(decks, c.req.path, document));
   });
 
   router.get("/:slug/assets/*", async (c) => {
@@ -167,6 +177,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
     const mountPath = stripPathSuffix(c.req.path, `/${slug}/render`);
     const clientEntry = options.clientEntry ?? resolveGeneratedClientEntryUrl(options, mountPath);
     try {
+      const document = await resolveRouterDocument(c, options, "render", mountPath, deck);
       return c.html(
         await renderCompiledDeckPageAsync({
           deck,
@@ -175,6 +186,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
           components: options.components,
           clientEntry,
           liveReloadPath: dev ? options.liveReloadPath?.(slug, mountPath) : undefined,
+          document,
         }),
       );
     } catch (error) {
@@ -190,6 +202,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
     if (!deck || (!(await isDevEnabled(c, options)) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
     const mountPath = stripPathSuffix(c.req.path, `/${slug}/print`);
     try {
+      const document = await resolveRouterDocument(c, options, "print", mountPath, deck);
       return c.html(
         await renderCompiledDeckPageAsync({
           deck,
@@ -197,6 +210,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
           style: options.style,
           components: options.components,
           printPreview: true,
+          document,
         }),
       );
     } catch (error) {
@@ -226,6 +240,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
     const mountPath = stripPathSuffix(c.req.path, `/${slug}/presentation`);
     const clientEntry = options.clientEntry ?? resolveGeneratedClientEntryUrl(options, mountPath);
     try {
+      const document = await resolveRouterDocument(c, options, "presentation", mountPath, deck);
       return c.html(
         await renderCompiledDeckPageAsync({
           deck,
@@ -235,6 +250,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
           clientEntry,
           speakerNotes: false,
           liveReloadPath: dev ? options.liveReloadPath?.(slug, mountPath) : undefined,
+          document,
         }),
       );
     } catch (error) {
@@ -253,6 +269,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
       return c.json({ error: "Presenter route not found", slug }, 404);
     }
     try {
+      const document = await resolveRouterDocument(c, options, "presenter", mountPath, deck);
       return c.html(
         await renderPresenterPageAsync({
           deck,
@@ -260,6 +277,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
           presenterStateQuery: paginationQueryFromRequest(c),
           style: options.style,
           components: options.components,
+          document,
         }),
       );
     } catch (error) {
@@ -285,6 +303,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
           controls: await resolveViewerControls(c, options, deck, slug, mountPath),
         },
         exportOptions: options.export,
+        document: options.document,
       }),
     );
   });
@@ -447,7 +466,11 @@ function presentationRoutePath(mountPath: string, slug: string): string {
   return `${mountPath.replace(/\/$/, "")}/${encodeURIComponent(slug)}/presentation`;
 }
 
-function renderDeckIndex(decks: Awaited<ReturnType<DeckSource["listDecks"]>>, mountPath: string): string {
+function renderDeckIndex(
+  decks: Awaited<ReturnType<DeckSource["listDecks"]>>,
+  mountPath: string,
+  document: ResolvedDeckDocument,
+): string {
   const basePath = mountPath.replace(/\/$/, "");
   const items = decks
     .map((deck) => {
@@ -459,11 +482,12 @@ function renderDeckIndex(decks: Awaited<ReturnType<DeckSource["listDecks"]>>, mo
     .join("");
 
   return `<!doctype html>
-<html lang="ja">
+<html lang="${escapeHtml(document.lang)}">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Hono Decks</title>
+  ${document.head}
 </head>
 <body>
   <main>
@@ -472,6 +496,27 @@ function renderDeckIndex(decks: Awaited<ReturnType<DeckSource["listDecks"]>>, mo
   </main>
 </body>
 </html>`;
+}
+
+async function resolveRouterDocument<E extends Env>(
+  c: Context<E>,
+  options: DecksRouterOptions<E>,
+  surface: Parameters<typeof resolveDeckDocument<E>>[0]["surface"],
+  mountPath: string,
+  deck?: CompiledDeck,
+): Promise<ResolvedDeckDocument> {
+  const title = deck?.meta.title ?? deck?.slug ?? "Hono Decks";
+  return resolveDeckDocument(
+    {
+      c,
+      surface,
+      deck,
+      slug: deck?.slug,
+      mountPath,
+      title: surface === "presenter" ? `${title} - Presenter` : title,
+    },
+    options.document,
+  );
 }
 
 function escapeHtml(value: string): string {

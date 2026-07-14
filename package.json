@@ -4,20 +4,23 @@
   "type": "module",
   "workspaces": [
     "packages/*",
-    "examples/*"
+    "examples/*",
+    "docs"
   ],
   "scripts": {
     "build": "bun run --cwd packages/decks build",
     "dev": "bun run --cwd examples/basic dev",
     "dev:minimal": "bun run --cwd examples/minimal dev",
     "dev:honox": "bun run --cwd examples/honox dev",
+    "dev:docs": "bun run --cwd docs dev",
+    "build:docs": "bun run --cwd docs build",
     "deploy:basic": "bun run --cwd examples/basic deploy",
     "decks:compile": "bun run --cwd packages/decks decks:compile",
     "smoke:pdf": "bun run --cwd examples/basic smoke:pdf",
     "smoke:viewport": "bun run --cwd examples/basic smoke:viewport",
-    "typecheck": "bun run --cwd packages/decks typecheck && bun run --cwd examples/basic typecheck && bun run --cwd examples/minimal typecheck && bun run --cwd examples/honox typecheck",
-    "test": "bun run --cwd packages/decks test && bun run --cwd examples/basic test && bun run --cwd examples/minimal test && bun run --cwd examples/honox test",
-    "check": "bun run typecheck && bun run test"
+    "typecheck": "bun run --cwd packages/decks typecheck && bun run --cwd examples/basic typecheck && bun run --cwd examples/minimal typecheck && bun run --cwd examples/honox typecheck && bun run --cwd docs typecheck",
+    "test": "bun run --cwd packages/decks test && bun run --cwd examples/basic test && bun run --cwd examples/minimal test && bun run --cwd examples/honox test && bun run --cwd docs test",
+    "check": "bun run typecheck && bun run test && bun run build:docs"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.16.12",

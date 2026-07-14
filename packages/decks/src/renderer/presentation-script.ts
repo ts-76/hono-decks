@@ -1,5 +1,7 @@
-export function renderLiveReloadScript(eventsPath: string): string {
-  return `<script>
+import { documentNonceAttribute } from "../server/document";
+
+export function renderLiveReloadScript(eventsPath: string, nonce?: string): string {
+  return `<script${documentNonceAttribute(nonce)}>
 (() => {
   const eventsUrl = ${JSON.stringify(eventsPath)};
   const events = new EventSource(eventsUrl);
@@ -8,12 +10,12 @@ export function renderLiveReloadScript(eventsPath: string): string {
 </script>`;
 }
 
-export function renderClientEntryScript(clientEntry: string): string {
-  return `<script type="module" src="${escapeHtml(clientEntry)}"></script>`;
+export function renderClientEntryScript(clientEntry: string, nonce?: string): string {
+  return `<script type="module" src="${escapeHtml(clientEntry)}"${documentNonceAttribute(nonce)}></script>`;
 }
 
-export function renderPresentationScript(): string {
-  return `<script>
+export function renderPresentationScript(nonce?: string): string {
+  return `<script${documentNonceAttribute(nonce)}>
 (() => {
   const slides = Array.from(document.querySelectorAll(".slide"));
   const stage = document.querySelector("[data-hono-decks-stage]");

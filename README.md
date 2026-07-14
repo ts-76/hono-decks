@@ -17,12 +17,14 @@ examples/
 bun install
 bun run check
 bun run dev
+bun run dev:docs
 ```
 
 - `bun run dev` は `examples/basic` の Worker sample を起動します。
 - `bun run check` は package と sample の typecheck/test をまとめて実行します。
 - package だけ確認する場合は `bun run --cwd packages/decks check` を使います。
 - sample だけ確認する場合は `bun run --cwd examples/basic check` を使います。
+- `bun run dev:docs` は HonoX 製のドキュメントサイトを起動します。
 
 ## Package
 
@@ -304,6 +306,21 @@ app.route("/decks", createDecksRouter({
 }));
 ```
 
+index、viewer、render、print、presentation、presenterに共通のlanguage/CSP/head policyを適用する場合はrouterの`document`を使います。resolverにはHono `Context`とsurface名が渡り、`surfaces`で個別上書きできます。解決したnonceはpackageが生成するすべてのinline style/scriptへ付与されます。CSP header自体はapp側middlewareの責任です。
+
+```tsx
+app.route("/decks", createDecksRouter({
+  document: {
+    lang: ({ c }) => c.env.LOCALE,
+    nonce: ({ c }) => c.get("secureHeadersNonce"),
+    head: ({ surface }) => <meta name="deck-surface" content={surface} />,
+    surfaces: {
+      presenter: { lang: "en" },
+    },
+  },
+}));
+```
+
 標準 viewer controls は `viewer.controls` で差分カスタムできます。`before` / `after` は標準項目の前後に link や render item を追加し、`hidden` は標準項目だけを非表示にします。`labels` は標準項目の表示名だけを差し替えます。`print` は `/:slug/print` へのリンクで、PCでは標準表示されます。タッチ操作が主となる端末では、動作が安定しない `fullscreen` とPC向けの `print` を標準スタイルで非表示にします。
 
 ```ts
@@ -419,6 +436,8 @@ app.get(
 OGP metadata は package が自動生成するのではなく app-owned page で出す想定です。`examples/basic/src/pages.tsx` の details page は `deckContext()` 由来の `DeckPageMeta` を使い、`description`、`og:title`、`og:description`、`og:url`、任意の `og:image` を head に出す実装例になっています。
 
 ## Examples
+
+HonoXで実装した利用者向けドキュメントサイトは`docs/`にあります。`bun run dev:docs`で起動し、`bun run build:docs`でCloudflare Workers向けproduction buildを生成します。
 
 用途別に3つのexampleを用意しています。
 

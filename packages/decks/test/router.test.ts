@@ -112,6 +112,55 @@ describe("decksRouter", () => {
     expect(html).not.toContain("/apply");
   });
 
+  it("applies request-aware document policy and strict CSP nonces to every router HTML surface", async () => {
+    const app = new Hono();
+    const nonce = "request-nonce";
+    app.use("/slides/*", async (c, next) => {
+      await next();
+      c.header(
+        "content-security-policy",
+        `default-src 'none'; style-src 'nonce-${nonce}'; script-src 'nonce-${nonce}'`,
+      );
+    });
+    app.route(
+      "/slides",
+      decksRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        document: {
+          lang: ({ surface }) => (surface === "index" ? "en" : "ja"),
+          nonce: ({ c }) => c.req.header("x-document-nonce"),
+          head: ({ surface }) => jsx("meta", { "data-document-surface": surface }),
+          surfaces: {
+            presenter: { lang: "en-GB" },
+          },
+        },
+        viewer: { lang: "fr" },
+      }),
+    );
+
+    const routes = [
+      ["index", "/slides", "en"],
+      ["viewer", "/slides/deck1", "fr"],
+      ["render", "/slides/deck1/render", "ja"],
+      ["print", "/slides/deck1/print", "ja"],
+      ["presentation", "/slides/deck1/presentation", "ja"],
+      ["presenter", "/slides/deck1/presenter", "en-GB"],
+    ] as const;
+
+    for (const [surface, path, lang] of routes) {
+      const response = await app.request(path, { headers: { "x-document-nonce": nonce } });
+      const html = await response.text();
+      expect(response.status, surface).toBe(200);
+      expect(response.headers.get("content-security-policy"), surface).toContain(`'nonce-${nonce}'`);
+      expect(html, surface).toContain(`<html lang="${lang}"`);
+      expect(html, surface).toContain(`data-document-surface="${surface}"`);
+
+      for (const tag of html.match(/<(?:style|script)\b[^>]*>/g) ?? []) {
+        expect(tag, `${surface}: ${tag}`).toContain(`nonce="${nonce}"`);
+      }
+    }
+  });
+
   it("keeps viewer pagination in query parameters", async () => {
     const app = new Hono();
     app.route("/slides", decksRouter({ source: manifestDeckSource({ decks: [deck] }) }));
@@ -805,6 +854,13 @@ describe("decksRouter", () => {
         enabled: true,
         viewerControl: { label: "Speaker", icon: "presenter" },
       },
+      document: {
+        lang: "ja",
+        head: jsx("meta", { name: "document-base", content: "base" }),
+        surfaces: {
+          render: { lang: "fr" },
+        },
+      },
     });
     const app = new Hono();
     app.route(
@@ -817,10 +873,17 @@ describe("decksRouter", () => {
           },
         },
         presenter: { viewerControl: { className: "speaker-link" } },
+        document: {
+          nonce: "merged-nonce",
+          surfaces: {
+            viewer: { head: jsx("meta", { name: "viewer-override", content: "viewer" }) },
+          },
+        },
       }),
     );
 
     const html = await (await app.request("/decks/deck1")).text();
+    const renderHtml = await (await app.request("/decks/deck1/render")).text();
     expect(html).toContain('<html lang="en">');
     expect(html).toContain(".base-viewer { color: red; }");
     expect(html).toContain("base-controls");
@@ -829,6 +892,11 @@ describe("decksRouter", () => {
     expect(html).toContain(">Forward</button>");
     expect(html).toContain("speaker-link");
     expect(html).toContain('aria-label="Speaker"');
+    expect(html).toContain('<meta name="viewer-override" content="viewer"/>');
+    expect(html).toContain('<style nonce="merged-nonce">');
+    expect(renderHtml).toContain('<html lang="fr">');
+    expect(renderHtml).toContain('<meta name="document-base" content="base"/>');
+    expect(renderHtml).toContain('<style nonce="merged-nonce">');
   });
 
   it("defines typed deck runtime config without changing the object", () => {

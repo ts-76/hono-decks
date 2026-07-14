@@ -114,6 +114,25 @@ app.route("/decks", createDecksRouter({
 }));
 ```
 
+### Shared document policy
+
+index、viewer、render、print、presentation、presenterを同じlanguage/CSP policyで揃える場合はrouterの`document`を使います。`lang`、`nonce`、`head`はrequest-aware resolverにでき、`surfaces`で特定pageだけを上書きできます。解決したnonceはpackageが生成するすべてのinline `<style>` / `<script>`へ付与されます。CSP header自体はapp側のHono middlewareで設定してください。
+
+```tsx
+app.route("/decks", createDecksRouter({
+  document: {
+    lang: ({ c }) => c.env.LOCALE,
+    nonce: ({ c }) => c.get("secureHeadersNonce"),
+    head: ({ surface }) => <meta name="deck-surface" content={surface} />,
+    surfaces: {
+      presenter: { lang: "en" },
+    },
+  },
+}));
+```
+
+`DeckDocumentRenderInput`は`c`、`surface`、`deck`、`slug`、`mountPath`、`title`を持ちます。既存の`viewer.lang` / `viewer.nonce` / `viewer.head`は互換性のため残り、viewer surfaceでは共有`document`より優先されます。
+
 ## Embedding in the same document
 
 `createDeckViewerEmbed()`はiframe、controls、scoped CSS、操作runtimeをまとめた自己完結viewerを返します。同じdocumentへ複数配置でき、各viewerのcontrols、swipe、keyboard、fullscreen、TOC、slide state messageは対応するiframeだけにscopedされます。

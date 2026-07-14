@@ -4,6 +4,8 @@ import { renderCompiledDeck, renderCompiledDeckAsync, renderCompiledSlideAsync }
 import { renderControlIconHtml } from "./control-icons";
 import { renderClientEntryScript, renderLiveReloadScript, renderPresentationScript } from "./presentation-script";
 import { basePresentationStyle } from "./presentation-style";
+import { documentNonceAttribute } from "../server/document";
+import type { ResolvedDeckDocument } from "../server/document";
 
 export function presentationPageTitle(deck: Pick<CompiledDeck, "slug" | "meta">): string {
   return deck.meta.title ?? deck.slug;
@@ -18,8 +20,11 @@ export function renderCompiledDeckPage(input: {
   clientEntry?: string;
   printPreview?: boolean;
   speakerNotes?: boolean;
+  document?: ResolvedDeckDocument;
 }): string {
   const { deck } = input;
+  const document = input.document ?? { lang: "ja", head: "" };
+  const nonceAttribute = documentNonceAttribute(document.nonce);
   const warnings = renderWarnings(deck);
   const htmlAttrs = input.printPreview ? ' data-hono-decks-print-preview="true"' : "";
   const bodyAttrs = [
@@ -28,12 +33,13 @@ export function renderCompiledDeckPage(input: {
   ].filter(Boolean);
 
   return `<!doctype html>
-<html lang="ja"${htmlAttrs}>
+<html lang="${escapeHtml(document.lang)}"${htmlAttrs}>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapeHtml(presentationPageTitle(deck))}</title>
-  <style>${basePresentationStyle()}${deck.themeStyle ?? ""}${input.style ?? ""}</style>
+  <style${nonceAttribute}>${basePresentationStyle()}${deck.themeStyle ?? ""}${input.style ?? ""}</style>
+  ${document.head}
 </head>
 <body${bodyAttrs.length ? ` ${bodyAttrs.join(" ")}` : ""}>
   ${warnings}
@@ -41,9 +47,9 @@ export function renderCompiledDeckPage(input: {
     components: mergeComponentInputs(deck.componentRegistry, input.components),
     speakerNotes: input.speakerNotes,
   })}
-  ${input.printPreview ? renderPrintPreviewScript() : renderPresentationScript()}
-  ${!input.printPreview && input.liveReloadPath ? renderLiveReloadScript(input.liveReloadPath) : ""}
-  ${!input.printPreview && input.clientEntry ? renderClientEntryScript(input.clientEntry) : ""}
+  ${input.printPreview ? renderPrintPreviewScript(document.nonce) : renderPresentationScript(document.nonce)}
+  ${!input.printPreview && input.liveReloadPath ? renderLiveReloadScript(input.liveReloadPath, document.nonce) : ""}
+  ${!input.printPreview && input.clientEntry ? renderClientEntryScript(input.clientEntry, document.nonce) : ""}
 </body>
 </html>`;
 }
@@ -57,8 +63,11 @@ export async function renderCompiledDeckPageAsync(input: {
   clientEntry?: string;
   printPreview?: boolean;
   speakerNotes?: boolean;
+  document?: ResolvedDeckDocument;
 }): Promise<string> {
   const { deck } = input;
+  const document = input.document ?? { lang: "ja", head: "" };
+  const nonceAttribute = documentNonceAttribute(document.nonce);
   const warnings = renderWarnings(deck);
   const htmlAttrs = input.printPreview ? ' data-hono-decks-print-preview="true"' : "";
   const bodyAttrs = [
@@ -67,12 +76,13 @@ export async function renderCompiledDeckPageAsync(input: {
   ].filter(Boolean);
 
   return `<!doctype html>
-<html lang="ja"${htmlAttrs}>
+<html lang="${escapeHtml(document.lang)}"${htmlAttrs}>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapeHtml(presentationPageTitle(deck))}</title>
-  <style>${basePresentationStyle()}${deck.themeStyle ?? ""}${input.style ?? ""}</style>
+  <style${nonceAttribute}>${basePresentationStyle()}${deck.themeStyle ?? ""}${input.style ?? ""}</style>
+  ${document.head}
 </head>
 <body${bodyAttrs.length ? ` ${bodyAttrs.join(" ")}` : ""}>
   ${warnings}
@@ -80,9 +90,9 @@ export async function renderCompiledDeckPageAsync(input: {
     components: mergeComponentInputs(deck.componentRegistry, input.components),
     speakerNotes: input.speakerNotes,
   })}
-  ${input.printPreview ? renderPrintPreviewScript() : renderPresentationScript()}
-  ${!input.printPreview && input.liveReloadPath ? renderLiveReloadScript(input.liveReloadPath) : ""}
-  ${!input.printPreview && input.clientEntry ? renderClientEntryScript(input.clientEntry) : ""}
+  ${input.printPreview ? renderPrintPreviewScript(document.nonce) : renderPresentationScript(document.nonce)}
+  ${!input.printPreview && input.liveReloadPath ? renderLiveReloadScript(input.liveReloadPath, document.nonce) : ""}
+  ${!input.printPreview && input.clientEntry ? renderClientEntryScript(input.clientEntry, document.nonce) : ""}
 </body>
 </html>`;
 }
@@ -93,8 +103,11 @@ export async function renderPresenterPageAsync(input: {
   presenterStateQuery?: string;
   style?: string;
   components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
+  document?: ResolvedDeckDocument;
 }): Promise<string> {
   const { deck } = input;
+  const document = input.document ?? { lang: "ja", head: "" };
+  const nonceAttribute = documentNonceAttribute(document.nonce);
   const components = mergeComponentInputs(deck.componentRegistry, input.components);
   const mountPath = input.mountPath.replace(/\/$/, "") || "/";
   const deckPath = `${mountPath === "/" ? "" : mountPath}/${encodeURIComponent(deck.slug)}`;
@@ -109,12 +122,13 @@ export async function renderPresenterPageAsync(input: {
   const notes = deck.slides.map((slide) => slide.notes ?? slide.meta.notes);
 
   return `<!doctype html>
-<html lang="ja">
+<html lang="${escapeHtml(document.lang)}">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapeHtml(presentationPageTitle(deck))} - Presenter</title>
-  <style>${basePresenterStyle()}${deck.themeStyle ?? ""}${input.style ?? ""}</style>
+  <style${nonceAttribute}>${basePresenterStyle()}${deck.themeStyle ?? ""}${input.style ?? ""}</style>
+  ${document.head}
 </head>
 <body>
   <main class="hono-decks-presenter" data-hono-decks-presenter data-slide-index="0">
@@ -154,7 +168,7 @@ export async function renderPresenterPageAsync(input: {
       </section>
     </aside>
   </main>
-  ${renderPresenterScript(deck.slides.length)}
+  ${renderPresenterScript(deck.slides.length, document.nonce)}
 </body>
 </html>`;
 }
@@ -165,8 +179,8 @@ function renderWarnings(deck: CompiledDeck): string {
     : "";
 }
 
-function renderPrintPreviewScript(): string {
-  return `<script>
+function renderPrintPreviewScript(nonce?: string): string {
+  return `<script${documentNonceAttribute(nonce)}>
 (() => {
   const params = new URLSearchParams(window.location.search);
   if (params.get("autoprint") !== "1") return;
@@ -209,8 +223,8 @@ body:not([data-overview-mode]) .hono-decks-presenter-preview .slide{position:abs
 @media (max-width:900px){.hono-decks-presenter{grid-template-columns:1fr}.hono-decks-presenter-panel{grid-template-rows:auto auto}}`;
 }
 
-function renderPresenterScript(slideCount: number): string {
-  return `<script>
+function renderPresenterScript(slideCount: number, nonce?: string): string {
+  return `<script${documentNonceAttribute(nonce)}>
 (() => {
   const root = document.querySelector("[data-hono-decks-presenter]");
   const frame = document.querySelector("[data-hono-decks-presenter-current] iframe");
