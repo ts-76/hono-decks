@@ -61,6 +61,7 @@ export function mergeDecksRouterOptions<E extends Env = any>(
   const viewer = mergeViewerOptions(base.viewer, overrides.viewer);
   const presenter = mergePresenterOptions(base.presenter, overrides.presenter);
   const document = mergeDocumentOptions(base.document, overrides.document);
+  const embed = mergeExternalEmbedOptions(base.embed, overrides.embed);
   const exportOptions = base.export || overrides.export ? { ...base.export, ...overrides.export } : undefined;
   const components = base.components || overrides.components ? { ...base.components, ...overrides.components } : undefined;
   return {
@@ -69,9 +70,31 @@ export function mergeDecksRouterOptions<E extends Env = any>(
     ...(viewer === undefined ? {} : { viewer }),
     ...(presenter === undefined ? {} : { presenter }),
     ...(document === undefined ? {} : { document }),
+    ...(embed === undefined ? {} : { embed }),
     ...(exportOptions === undefined ? {} : { export: exportOptions as DecksRouterOptions<E>["export"] }),
     ...(components === undefined ? {} : { components }),
     source: overrides.source ?? base.source,
+  };
+}
+
+function mergeExternalEmbedOptions<E extends Env>(
+  base: DecksRouterOptions<E>["embed"],
+  override: DecksRouterOverrides<E>["embed"],
+): DecksRouterOptions<E>["embed"] {
+  if (override === false) return false;
+  if (override === undefined) return base;
+  if (base === false || base === undefined) return override;
+  const viewer =
+    typeof base.viewer === "object" && typeof override.viewer === "object"
+      ? { ...base.viewer, ...override.viewer }
+      : (override.viewer ?? base.viewer);
+  const document =
+    base.document || override.document ? { ...base.document, ...override.document } : undefined;
+  return {
+    ...base,
+    ...override,
+    ...(viewer === undefined ? {} : { viewer }),
+    ...(document === undefined ? {} : { document }),
   };
 }
 

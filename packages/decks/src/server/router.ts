@@ -39,6 +39,10 @@ import {
   stripPathSuffix,
 } from "./path-utils";
 import { resolveDeckDocument, type DeckDocumentOptions, type ResolvedDeckDocument } from "./document";
+import {
+  renderDeckExternalEmbedResponse,
+  type DeckExternalEmbedOptions,
+} from "./external-embed";
 
 export type {
   DeckBrowserRunBinding,
@@ -55,6 +59,12 @@ export type {
   DeckDocumentSurface,
   ResolvedDeckDocument,
 } from "./document";
+export type {
+  DeckExternalEmbedContext,
+  DeckExternalEmbedOptions,
+  DeckExternalEmbedRenderInput,
+  DeckExternalEmbedViewerOptions,
+} from "./external-embed";
 export { createDeckViewerEmbed, createDeckViewerParts } from "./viewer";
 export type {
   DeckViewerEmbed,
@@ -91,6 +101,7 @@ export interface DecksRouterOptions<E extends Env = any> {
   clientEntryAsset?: string;
   clientEntryAssetPath?: string;
   document?: DeckDocumentOptions<E>;
+  embed?: false | DeckExternalEmbedOptions<E>;
   viewer?: DeckViewerOptions<E>;
   presenter?: false | DecksRouterPresenterOptions<E>;
   export?: DeckExportOptions<E>;
@@ -230,6 +241,23 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
     router.get("/:slug/export.png", async (c) =>
       renderDeckBrowserExport(c, { ...options, dev: await isDevEnabled(c, options) }, "png"),
     );
+  }
+
+  const embedOptions = options.embed;
+  if (embedOptions) {
+    router.get("/:slug/embed", async (c) => {
+      const slug = c.req.param("slug");
+      const deck = await options.source.getCompiledDeck(c, slug);
+      if (!deck || (!(await isDevEnabled(c, options)) && deck.meta.draft)) {
+        return c.json({ error: "Deck not found", slug }, 404);
+      }
+      const mountPath = stripPathSuffix(c.req.path, `/${slug}/embed`);
+      return renderDeckExternalEmbedResponse({
+        context: { c, deck, slug, mountPath },
+        options: embedOptions,
+        document: options.document,
+      });
+    });
   }
 
   router.get("/:slug/presentation", async (c) => {

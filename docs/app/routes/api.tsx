@@ -30,6 +30,7 @@ export default createRoute((c) =>
           rows={[
             ["createDeckViewerParts()", "frame、controls、TOC、meta を個別に取得"],
             ["createDeckViewerEmbed()", "scoped CSS と runtime を含む埋め込み viewer"],
+            ["DeckExternalEmbedOptions", "安全な外部 iframe document route を opt-in で構成"],
             ["withR2Assets()", "generated asset を R2-backed source で包む"],
             ["defineSlideComponents()", "built-in / app components の registry を作る"],
             ["renderCompiledDeckAsync()", "compiled deck を Hono JSX surface へ render"],

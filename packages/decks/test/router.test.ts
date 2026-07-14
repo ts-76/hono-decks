@@ -161,6 +161,80 @@ describe("decksRouter", () => {
     }
   });
 
+  it("mounts a safe request-aware external embed document from router options", async () => {
+    const app = new Hono();
+    app.use("/slides/*", async (c, next) => {
+      c.header("content-security-policy", "default-src 'none'; frame-ancestors https://old.example.com");
+      c.header("x-frame-options", "DENY");
+      await next();
+    });
+    app.route(
+      "/slides",
+      decksRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        embed: {
+          frameAncestors: ({ c }) => c.req.header("x-frame-ancestors"),
+          document: {
+            lang: "en",
+            nonce: "embed-nonce",
+            head: jsx("meta", { name: "embed-tenant", content: "docs" }),
+          },
+          viewer: {
+            className: "product-tour",
+            controls: false,
+          },
+          pageStyle: ".product-tour{isolation:isolate}",
+          render: ({ viewer }) => jsx("main", { "data-custom-embed": true, children: viewer.embed }),
+        },
+      }),
+    );
+
+    const response = await app.request("/slides/deck1/embed", {
+      headers: {
+        "x-frame-ancestors":
+          "https://blog.example.com, https://notes.example.net/article javascript:alert(1)",
+      },
+    });
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-security-policy")).toBe(
+      "default-src 'none'; frame-ancestors 'self' https://blog.example.com https://notes.example.net",
+    );
+    expect(response.headers.get("x-frame-options")).toBeNull();
+    expect(response.headers.get("access-control-allow-origin")).toBeNull();
+    expect(html).toContain('<html lang="en" data-hono-decks-external-embed-document>');
+    expect(html).toContain('<meta name="embed-tenant" content="docs"/>');
+    expect(html).toContain('data-custom-embed="true"');
+    expect(html).toContain('class="hono-decks-embedded-viewer product-tour"');
+    expect(html).toContain(".product-tour{isolation:isolate}");
+    expect(html).not.toContain("data-hono-decks-viewer-controls");
+    for (const tag of html.match(/<(?:style|script)\b[^>]*>/g) ?? []) {
+      expect(tag).toContain('nonce="embed-nonce"');
+    }
+  });
+
+  it("keeps external embedding opt-in, same-origin by default, and request-disableable", async () => {
+    const source = manifestDeckSource({ decks: [deck] });
+    const withoutEmbed = new Hono();
+    withoutEmbed.route("/slides", decksRouter({ source }));
+    expect((await withoutEmbed.request("/slides/deck1/embed")).status).toBe(404);
+
+    const withEmbed = new Hono();
+    withEmbed.route(
+      "/slides",
+      decksRouter({
+        source,
+        embed: { enabled: ({ c }) => c.req.header("x-embed-enabled") === "1" },
+      }),
+    );
+    expect((await withEmbed.request("/slides/deck1/embed")).status).toBe(404);
+
+    const enabled = await withEmbed.request("/slides/deck1/embed", { headers: { "x-embed-enabled": "1" } });
+    expect(enabled.status).toBe(200);
+    expect(enabled.headers.get("content-security-policy")).toBe("frame-ancestors 'self'");
+  });
+
   it("keeps viewer pagination in query parameters", async () => {
     const app = new Hono();
     app.route("/slides", decksRouter({ source: manifestDeckSource({ decks: [deck] }) }));

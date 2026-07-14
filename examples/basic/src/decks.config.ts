@@ -76,6 +76,20 @@ const decksConfig = defineDecksConfig<DecksConfigEnv>({
         attributes: { "data-sample-control": "presenter" },
       },
     },
+    embed: {
+      frameAncestors: ({ c }) => c.env?.DECK_EMBED_ALLOWED_ORIGINS,
+      viewer: {
+        className: "sample-external-deck-embed",
+        controls: {
+          items: (controls) => [
+            controls.previous,
+            controls.position,
+            controls.next,
+            controls.fullscreen,
+          ],
+        },
+      },
+    },
     viewer: {
       head: renderSampleViewerHead(),
       controls: {

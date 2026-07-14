@@ -6,7 +6,6 @@ import {
   type DeckPageMeta,
   type DeckRenderable,
   type DeckTocItem,
-  type DeckViewerEmbed,
 } from "@hono/decks";
 
 export function renderHomePage(decks: DeckEntry[]) {
@@ -96,24 +95,6 @@ export function renderDeckDetailsPage(input: {
   );
 }
 
-export function renderDeckEmbedPage(input: {
-  meta: DeckPageMeta;
-  viewer: DeckViewerEmbed;
-}) {
-  return (
-    <html lang="ja" data-hono-decks-external-embed-document>
-      <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <meta name="robots" content="noindex" />
-        <title>{input.meta.title}</title>
-        <style id="hono-decks-external-embed-css">{externalEmbedPageStyle}</style>
-      </head>
-      <body>{input.viewer.embed}</body>
-    </html>
-  );
-}
-
 function SampleLayout(props: {
   title: string;
   layout: string;
@@ -166,25 +147,6 @@ a { color: inherit; }
 .sample-meta-list dd { margin: 0; overflow-wrap: anywhere; }
 .sample-toc { display: grid; gap: 8px; padding-left: 1.25rem; }
 .sample-toc span { display: inline-flex; min-width: 2rem; color: #475569; }
-`;
-
-const externalEmbedPageStyle = `
-:root { color-scheme: dark; background: #050816; }
-html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
-body { min-height: 100vh; }
-@supports (height: 100dvh) { body { min-height: 100dvh; } }
-.sample-external-deck-embed { width: 100%; height: 100%; min-height: 0; }
-.sample-external-deck-embed .hono-decks-viewer-shell { position: relative; height: 100%; grid-template-rows: minmax(0, 1fr); }
-.sample-external-deck-embed .hono-decks-viewport { width: min(100%, calc(100vh * 16 / 9)); max-height: 100%; }
-@supports (height: 100dvh) {
-  .sample-external-deck-embed .hono-decks-viewport { width: min(100%, calc(100dvh * 16 / 9)); }
-}
-.sample-external-deck-embed .hono-decks-viewer-controls {
-  position: absolute;
-  right: max(10px, env(safe-area-inset-right, 0px));
-  bottom: max(10px, env(safe-area-inset-bottom, 0px));
-  z-index: 4;
-}
 `;
 
 const sampleViewerStyle = `

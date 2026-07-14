@@ -409,7 +409,24 @@ export default defineDecksConfig({
 
 PDF export は Browser Run の `quickAction("pdf")` に `/decks/:slug/print` URL を渡し、既定で `format: "a4"`、`preferCSSPageSize: true`、`printBackground: true` を使います。PNG export は `quickAction("screenshot")` で同じ `/print` URL を full-page capture します。Browser Run binding が無い環境で export route にアクセスした場合は 503 を返します。binding を設定していない場合、export routes は生成されません。
 
-標準 router ではなく deck-aware な独自ページやAPIを作る場合は `deckContext()` を使います。details、embed、analytics、OGP meta などに必要な deck 情報を `c.var` から参照できます。外部ブログへ埋め込む場合は、通常viewerや内部`/render`ではなく、`createDeckViewerEmbed()`だけを含む薄い`/embed` documentを公開します。
+標準 router ではなく deck-aware な独自ページやAPIを作る場合は `deckContext()` を使います。details、analytics、OGP meta などに必要な deck 情報を `c.var` から参照できます。外部ブログへ埋め込む場合はrouterの`embed` optionを有効にし、same-origin既定の`/:slug/embed` documentと明示的な`frameAncestors` policyを使います。
+
+```tsx
+app.route("/decks", createDecksRouter({
+  embed: {
+    frameAncestors: ({ c }) => c.env.DECK_EMBED_ALLOWED_ORIGINS,
+    document: {
+      nonce: ({ c }) => c.get("secureHeadersNonce"),
+    },
+    viewer: {
+      controls: false,
+      className: "article-deck",
+    },
+  },
+}));
+```
+
+同一document内へviewer markupを置く場合や、独自documentを完全に所有したい場合は低レベルの`createDeckViewerEmbed()`と`deckContext()`を組み合わせられます。
 
 ```tsx
 import { Hono } from "hono";

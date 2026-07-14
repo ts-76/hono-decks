@@ -217,14 +217,23 @@ const security: Guide = {
       <section id="notes">
         <h2>external iframe embed</h2>
         <p>
-          外部 blog から埋め込む場合、公開境界は CORS ではなく embed response の CSP
-          <code>frame-ancestors</code> です。許可 origin を明示し、<code>X-Frame-Options</code> を同じ route
-          で矛盾なく扱います。
+          router の <code>embed</code> option は <code>/:slug/embed</code> document、viewer sizing、CSP
+          <code>frame-ancestors</code>、<code>X-Frame-Options</code> 除去をまとめて扱います。外部 blog
+          への公開境界は CORS ではなく、明示した許可 origin です。
         </p>
+        <CodeBlock
+          code={`createDecksRouter({
+  embed: {
+    frameAncestors: ["https://blog.example.com"],
+    document: { nonce: ({ c }) => c.get("secureHeadersNonce") },
+    viewer: { controls: false },
+  },
+})`}
+        />
         <Callout title="Safe default">
           <p>
-            通常 viewer や内部 <code>/render</code> を直接公開せず、<code>createDeckViewerEmbed()</code>
-            だけを含む薄い document を app 側で返してください。
+            <code>embed</code> は opt-in です。許可 origin を省略した場合も
+            <code>frame-ancestors 'self'</code> から広がりません。invalid URL は無視されます。
           </p>
         </Callout>
       </section>

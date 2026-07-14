@@ -165,43 +165,26 @@ app.get(
 
 ### Embedding from an external blog
 
-別ドメインのブログからは、通常viewerや内部`/render`ではなく、`createDeckViewerEmbed()`だけを含む薄い`/embed` documentをiframeで読み込みます。外側のiframeが公開境界、内側の`/render` iframeがslideの隔離境界になります。
+別ドメインのブログからは、通常viewerや内部`/render`ではなく、routerの`embed` optionが生成する薄い`/:slug/embed` documentをiframeで読み込みます。外側のiframeが公開境界、内側の`/render` iframeがslideの隔離境界になります。`embed`はopt-inで、許可originを省略した場合も`frame-ancestors 'self'`から広がりません。
 
 ```tsx
-import { createMiddleware } from "hono/factory";
-
-const allowBlogEmbed = createMiddleware(async (c, next) => {
-  await next();
-  c.res.headers.delete("X-Frame-Options");
-  c.res.headers.set(
-    "Content-Security-Policy",
-    "frame-ancestors 'self' https://blog.example.com",
-  );
-});
-
-app.get(
-  "/decks/:slug/embed",
-  allowBlogEmbed,
-  deckContext({ source: deckSource, mountPath: "/decks" }),
-  async (c) => {
-    const viewer = await createDeckViewerEmbed({
-      deck: c.var.deck,
-      mountPath: "/decks",
-    });
-
-    return c.html(
-      <html lang="ja">
-        <head>
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <title>{c.var.deckMeta.title}</title>
-          <style>{`html,body{width:100%;height:100%;margin:0;overflow:hidden}`}</style>
-        </head>
-        <body>{viewer.embed}</body>
-      </html>,
-    );
+app.route("/decks", createDecksRouter({
+  embed: {
+    frameAncestors: ["https://blog.example.com"],
+    document: {
+      lang: "ja",
+      nonce: ({ c }) => c.get("secureHeadersNonce"),
+      head: <meta name="robots" content="noindex" />,
+    },
+    viewer: {
+      controls: false,
+      className: "article-deck",
+    },
   },
-);
+}));
 ```
+
+`frameAncestors`、`enabled`、`viewer`はrequest-aware resolverにできます。`frameAncestors`のURLはHTTP(S) originへ正規化され、invalid valueは無視されます。generated responseは既存CSPの他directiveを維持しながら`frame-ancestors`を置き換え、矛盾する`X-Frame-Options`を除去します。`pageStyle`、`robots`、`document.head`、`render({ viewer })`でdocumentを調整できます。nonceはouter documentと埋め込みviewer内のすべてのinline style/scriptへ適用されます。
 
 ブログ側は生成したURLを通常のiframeとして配置します。
 
@@ -215,7 +198,7 @@ app.get(
 ></iframe>
 ```
 
-iframe navigationにCORSは不要です。公開可否はembed responseのCSP `frame-ancestors`と`X-Frame-Options`で制御します。ブログ側にCSPがある場合は`frame-src https://slides.example.com`も許可してください。認証付きdeckはthird-party cookie制限の影響を受けるため、公開deckまたはcookieに依存しない認証方式を推奨します。完全な実装例は`examples/basic/src/index.ts`と`examples/basic/src/pages.tsx`にあります。
+iframe navigationにCORSは不要です。公開可否はembed responseのCSP `frame-ancestors`で制御します。ブログ側にCSPがある場合は`frame-src https://slides.example.com`も許可してください。認証付きdeckはthird-party cookie制限の影響を受けるため、公開deckまたはcookieに依存しない認証方式を推奨します。完全な設定例は`examples/basic/src/decks.config.ts`にあります。
 
 ## Typed Cloudflare bindings
 
