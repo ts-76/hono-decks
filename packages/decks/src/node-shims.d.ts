@@ -31,10 +31,15 @@ declare module "node:fs" {
 declare module "node:path" {
   export function join(...paths: string[]): string;
   export function relative(from: string, to: string): string;
+  export function resolve(...paths: string[]): string;
 }
 
 declare module "node:os" {
   export function tmpdir(): string;
+}
+
+declare module "node:url" {
+  export function fileURLToPath(url: URL): string;
 }
 
 declare const process: {

@@ -37,8 +37,8 @@ describe("HonoX documentation site", () => {
   it.each([
     ["/docs/getting-started", "最初のデッキを作ってコンパイルする"],
     ["/docs/authoring", "1つのデッキを1つのディレクトリに置く"],
-    ["/docs/configuration", "まず設定ファイルが必要か判断する"],
-    ["/docs/routing", "app.route()のパスをすべての画面の起点にする"],
+    ["/docs/configuration", "共有configの責任範囲を確認する"],
+    ["/docs/routing", "configのmountPathをすべての画面の起点にする"],
     ["/docs/security", "最初は公開する画面を絞る"],
     ["/api", "実行時API"],
   ])("renders %s from HonoX file routes", async (path, expected) => {
@@ -71,13 +71,13 @@ describe("HonoX documentation site", () => {
     const ja = await (await app.request("/docs/configuration")).text();
     const en = await (await app.request("/docs/configuration?lang=en")).text();
 
-    expect(ja).toContain("decks.config.ts");
-    expect(ja).toContain("--ogp-cache");
+    expect(ja).toContain("hono-decks.config.ts");
+    expect(ja).toContain("build.ogpCacheFile");
     expect(ja).toContain("defineDecksConfig");
-    expect(ja).toContain("mergeDecksRouterOptions");
+    expect(ja).toContain("decks.router(overrides)");
     expect(ja).toContain('href="/api?lang=ja#define-decks-config"');
-    expect(en).toContain("First decide whether you need a config file");
-    expect(en).toContain("generated defaults, app config, then call-site overrides");
+    expect(en).toContain("Understand the shared config");
+    expect(en).toContain("Generated defaults, app config");
   });
 
   it("uses concise Japanese instead of internal architecture jargon", async () => {
@@ -108,15 +108,15 @@ describe("HonoX documentation site", () => {
   it("renders anchored API definitions with imports, signatures, guide links, and source links", async () => {
     const html = await (await app.request("/api")).text();
 
-    expect(html).toContain('id="define-decks"');
+    expect(html).toContain('id="configured-decks"');
     expect(html).toContain('id="deck-document-options"');
     expect(html).toContain('id="compile-decks"');
-    expect(html).toContain("import { defineDecks }");
-    expect(html).toContain("defineDecks(options: DecksOptions): DefinedDecks");
+    expect(html).toContain("import type { ConfiguredDecks }");
+    expect(html).toContain("interface ConfiguredDecks");
     expect(html).toContain("packages/decks/src/server/define-decks.ts");
     expect(html).toContain("使う場面");
-    expect(html).toContain("通常のアプリでは直接呼び出しません");
-    expect(html).toContain("通常は生成されたcreateDecksRouter()から始める");
+    expect(html).toContain("generated workflowを使わず独自pipelineを作るとき");
+    expect(html).toContain("通常は生成されたcreateDecks(config)から始める");
     expect(html).toContain('class="copy-button"');
     expect(html).not.toContain("<table>");
   });
@@ -129,7 +129,7 @@ describe("HonoX documentation site", () => {
 
     expect(authoring).toContain("まずサーバーコンポーネントを使う");
     expect(authoring).toContain("ブラウザ操作が必要な場合だけIslandにする");
-    expect(configuration).toContain("だけで、デッキの表示はできます");
+    expect(configuration).toContain("build input、公開path、runtime policy");
     expect(routing).toContain("はビューアー内部のiframe用");
     expect(security).toContain('languageDetector');
     expect(security).toContain("同じnonceをCSPヘッダーとHTMLへ渡す");

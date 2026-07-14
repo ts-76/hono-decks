@@ -59,13 +59,13 @@ describe("deployed R2 cache smoke helpers", () => {
   });
 
   it("documents the deployed R2 binding in the sample Wrangler config", async () => {
-    const config = await readFile(new URL("../wrangler.toml", import.meta.url), "utf8");
+    const config = await readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8");
 
-    expect(config).toContain("[[r2_buckets]]");
-    expect(config).toContain('binding = "DECK_ASSETS"');
-    expect(config).toContain('bucket_name = "hono-decks-basic-assets"');
-    expect(config).toContain("[[routes]]");
-    expect(config).toContain('pattern = "hono-decks-basic.tslab.app"');
-    expect(config).toContain("custom_domain = true");
+    expect(config).toContain('"r2_buckets"');
+    expect(config).toContain('"binding": "DECK_ASSETS"');
+    expect(config).toContain('"bucket_name": "hono-decks-basic-assets"');
+    expect(config).toContain('"routes"');
+    expect(config).toContain('"pattern": "hono-decks-basic.tslab.app"');
+    expect(config).toContain('"custom_domain": true');
   });
 });

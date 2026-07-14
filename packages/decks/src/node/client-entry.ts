@@ -1,5 +1,7 @@
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { build as buildBrowserBundle } from "esbuild";
 
 export interface ClientEntryModule {
@@ -63,6 +65,7 @@ hydrateSlideIslands({
     jsx: "automatic",
     jsxImportSource: "hono/jsx/dom",
     nodePaths: nodeModuleFallbackPaths(input.cwd),
+    alias: { "hono-decks/client": resolveClientRuntimeEntry() },
     sourcemap: false,
     minify: false,
   });
@@ -70,6 +73,12 @@ hydrateSlideIslands({
   if (!output) throw new Error("Client entry did not produce output.");
 
   return `export const decksClientEntry = ${JSON.stringify(output.text)};\n`;
+}
+
+function resolveClientRuntimeEntry(): string {
+  const built = fileURLToPath(new URL("./client.js", import.meta.url));
+  if (existsSync(built)) return built;
+  return fileURLToPath(new URL("../client.ts", import.meta.url));
 }
 
 export function extractComponentExportNames(source: string): string[] {

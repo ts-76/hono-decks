@@ -3,8 +3,8 @@ import { getLocale, localizedHref } from "../i18n";
 import { CodeBlock, DeployToCloudflare, RouteTable } from "../site";
 
 const installCode = `bun add hono-decks
-bunx hono-decks init --out src/decks.ts
-bunx hono-decks compile --root decks --out src/generated --mount /decks`;
+bunx hono-decks init
+bunx hono-decks compile`;
 
 export default createRoute((c) => {
   const locale = getLocale(c);

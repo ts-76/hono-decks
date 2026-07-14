@@ -30,6 +30,6 @@ bun run --cwd examples/minimal dev
 - `/decks/welcome` — viewer
 - `/decks/welcome/render` — slide renderer
 
-`src/decks.ts`は編集可能なfacadeです。`src/generated`以下は`bun run decks:compile`で上書きされます。
+`hono-decks.config.ts`がcompileとmount pathの共通設定です。`src/decks.ts`は編集可能なfacade、`src/generated`以下は`bun run decks:compile`で上書きされます。MDXを継続編集するときは別terminalで`bun run decks:watch`を実行できます。
 
-> `hono-decks`はnpm公開前のため、現在は`vendor/hono-decks-0.1.0.tgz`を参照します。公開後は`package.json`の依存指定をnpm版へ差し替えます。
+> `hono-decks`はnpm公開前のため、現在は`vendor/hono-decks-0.2.1.tgz`を参照します。公開後は`package.json`の依存指定をnpm版へ差し替えます。

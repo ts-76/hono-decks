@@ -1,14 +1,22 @@
-import { existsSync } from "node:fs";
+import { existsSync, watch } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
-import { DECKS_RUNTIME_ENTRY } from "../generator/package-entry";
+import { join, relative } from "node:path";
 import { compileDecks } from "./index";
+import { DEFAULT_DECKS_CONFIG_FILE, loadDecksConfig } from "./config";
 
 export interface RunHonoDecksCliInput {
   argv: string[];
   cwd: string;
   stdout?: (line: string) => void;
   stderr?: (line: string) => void;
+  /** Stops a long-running `compile --watch` command. */
+  signal?: AbortSignal;
+  /** Test/tooling hook for filesystem watching. */
+  watchFileSystem?(
+    path: string,
+    options: { recursive: boolean },
+    listener: (eventType: "rename" | "change", filename: string | null) => void,
+  ): { close(): void };
 }
 
 export interface RunHonoDecksCliResult {
@@ -16,33 +24,31 @@ export interface RunHonoDecksCliResult {
 }
 
 interface CompileCommandOptions {
-  root?: string;
-  out?: string;
-  mountPath?: string;
-  ogpCacheFile?: string;
+  configFile?: string;
+  watch?: boolean;
   refreshOgp?: boolean;
 }
 
 interface InitCommandOptions {
+  configFile?: string;
   out?: string;
   generated?: string;
 }
 
 const USAGE = `Usage:
-  hono-decks compile --root decks --out src/generated [--mount /slides] [--ogp-cache decks/ogp-cache.json] [--refresh-ogp]
-  hono-decks init --out src/decks.ts [--generated ./generated/decks]
+  hono-decks init [--config hono-decks.config.ts] [--out src/decks.ts]
+  hono-decks compile [--config hono-decks.config.ts] [--watch] [--refresh-ogp]
 
 Commands:
-  compile, build   Compile local deck files into a generated manifest module.
-  init             Create an app-owned decks facade file.
+  init             Create a shared config and app-owned decks facade.
+  compile, build   Compile decks using the shared config.
 
 Options:
-  --root <path>            Deck root directory relative to the current working directory.
-  --out <path>             Output directory for generated deck modules.
-  --mount <path>           Public mount path used for local asset URLs.
-  --ogp-cache <path>       JSON cache file for deterministic LinkCard OGP metadata.
+  --config <path>          Config file. Default: hono-decks.config.ts
+  --out <path>             Facade output for init. Default: src/decks.ts
+  --generated <path>       Generated module import for init. Default: ./generated/decks
+  --watch                  Recompile when deck files change.
   --refresh-ogp            Refresh OGP cache entries from the network.
-  --generated <path>       Generated decks module import path for init.
   -h, --help               Show this help.`;
 
 export async function runHonoDecksCli(input: RunHonoDecksCliInput): Promise<RunHonoDecksCliResult> {
@@ -55,10 +61,7 @@ export async function runHonoDecksCli(input: RunHonoDecksCliInput): Promise<RunH
     return { exitCode: 0 };
   }
 
-  if (command === "init") {
-    return runInitCommand(input, args, stdout, stderr);
-  }
-
+  if (command === "init") return runInitCommand(input, args, stdout, stderr);
   if (command !== "compile" && command !== "build") {
     stderr(`Unknown command: ${command}`);
     stderr(USAGE);
@@ -76,34 +79,81 @@ export async function runHonoDecksCli(input: RunHonoDecksCliInput): Promise<RunH
     return { exitCode: 1 };
   }
 
-  const root = parsed.options.root;
-  const out = parsed.options.out;
-  if (!root) {
-    stderr("Missing required option: --root");
-    stderr(USAGE);
-    return { exitCode: 1 };
-  }
-  if (!out) {
-    stderr("Missing required option: --out");
-    stderr(USAGE);
-    return { exitCode: 1 };
-  }
-
-  try {
+  const compile = async (): Promise<{ root: string; configPath: string }> => {
+    const loaded = await loadDecksConfig({ cwd: input.cwd, configFile: parsed.options.configFile });
     const manifest = await compileDecks({
       cwd: input.cwd,
-      root,
-      out,
-      mountPath: parsed.options.mountPath,
-      ogpCacheFile: parsed.options.ogpCacheFile,
+      root: loaded.root,
+      out: loaded.outDir,
+      mountPath: loaded.config.mountPath,
+      ogpCacheFile: loaded.ogpCacheFile,
       refreshOgp: parsed.options.refreshOgp,
     });
-    stdout(`Compiled ${manifest.decks.length} decks to ${out}`);
+    stdout(`Compiled ${manifest.decks.length} decks to ${loaded.outDir}`);
+    return { root: loaded.root, configPath: loaded.path };
+  };
+
+  try {
+    const initial = await compile();
+    if (!parsed.options.watch) return { exitCode: 0 };
+    stdout(`Watching ${initial.root} and ${relative(input.cwd, initial.configPath)}`);
+    await watchAndCompile({ ...input, root: initial.root, configPath: initial.configPath, compile, stderr });
     return { exitCode: 0 };
   } catch (error) {
     stderr(error instanceof Error ? error.message : String(error));
     return { exitCode: 1 };
   }
+}
+
+async function watchAndCompile(input: RunHonoDecksCliInput & {
+  root: string;
+  configPath: string;
+  compile(): Promise<{ root: string; configPath: string }>;
+  stderr(line: string): void;
+}): Promise<void> {
+  const watchFileSystem = input.watchFileSystem ?? watch;
+  let watchedRoot = input.root;
+  let deckWatcher: { close(): void };
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let compiling = false;
+  let queued = false;
+  const run = async () => {
+    if (compiling) {
+      queued = true;
+      return;
+    }
+    compiling = true;
+    try {
+      const next = await input.compile();
+      if (next.root !== watchedRoot) {
+        deckWatcher.close();
+        watchedRoot = next.root;
+        deckWatcher = watchFileSystem(join(input.cwd, watchedRoot), { recursive: true }, schedule);
+      }
+    } catch (error) {
+      input.stderr(error instanceof Error ? error.message : String(error));
+    } finally {
+      compiling = false;
+      if (queued) {
+        queued = false;
+        await run();
+      }
+    }
+  };
+  const schedule = () => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => void run(), 75);
+  };
+  deckWatcher = watchFileSystem(join(input.cwd, watchedRoot), { recursive: true }, schedule);
+  const configWatcher = watchFileSystem(input.configPath, { recursive: false }, schedule);
+
+  await new Promise<void>((resolve) => {
+    if (input.signal?.aborted) return resolve();
+    input.signal?.addEventListener("abort", () => resolve(), { once: true });
+  });
+  if (timer) clearTimeout(timer);
+  deckWatcher.close();
+  configWatcher.close();
 }
 
 async function runInitCommand(
@@ -123,20 +173,16 @@ async function runInitCommand(
     return { exitCode: 1 };
   }
 
-  const out = parsed.options.out;
-  if (!out) {
-    stderr("Missing required option: --out");
-    stderr(USAGE);
-    return { exitCode: 1 };
-  }
-
+  const configFile = normalizeOutputFile(parsed.options.configFile ?? DEFAULT_DECKS_CONFIG_FILE);
+  const out = normalizeOutputFile(parsed.options.out ?? "src/decks.ts");
   try {
-    await writeDecksFacade({
+    await writeInitialFiles({
       cwd: input.cwd,
+      configFile,
       out,
       generated: parsed.options.generated ?? "./generated/decks",
     });
-    stdout(`Initialized decks facade at ${out}`);
+    stdout(`Initialized ${configFile} and ${out}`);
     return { exitCode: 0 };
   } catch (error) {
     stderr(error instanceof Error ? error.message : String(error));
@@ -146,84 +192,98 @@ async function runInitCommand(
 
 function parseCompileArgs(args: string[]): { options: CompileCommandOptions; error?: string; help?: boolean } {
   const options: CompileCommandOptions = {};
-
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     if (arg === "--help" || arg === "-h") return { options, help: true };
-
+    if (arg === "--watch") {
+      options.watch = true;
+      continue;
+    }
     if (arg === "--refresh-ogp") {
       options.refreshOgp = true;
       continue;
     }
-
-    if (arg === "--root" || arg === "--out" || arg === "--mount" || arg === "--ogp-cache") {
+    if (arg === "--config") {
       const value = args[index + 1];
       if (!value || value.startsWith("--")) return { options, error: `Missing value for ${arg}` };
+      options.configFile = value;
       index += 1;
-      if (arg === "--root") options.root = value;
-      if (arg === "--out") options.out = value;
-      if (arg === "--mount") options.mountPath = value;
-      if (arg === "--ogp-cache") options.ogpCacheFile = value;
       continue;
     }
-
     return { options, error: `Unknown option: ${arg}` };
   }
-
   return { options };
 }
 
 function parseInitArgs(args: string[]): { options: InitCommandOptions; error?: string; help?: boolean } {
   const options: InitCommandOptions = {};
-
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     if (arg === "--help" || arg === "-h") return { options, help: true };
-
-    if (arg === "--out" || arg === "--generated") {
+    if (arg === "--config" || arg === "--out" || arg === "--generated") {
       const value = args[index + 1];
       if (!value || value.startsWith("--")) return { options, error: `Missing value for ${arg}` };
-      index += 1;
+      if (arg === "--config") options.configFile = value;
       if (arg === "--out") options.out = value;
       if (arg === "--generated") options.generated = value;
+      index += 1;
       continue;
     }
-
     return { options, error: `Unknown option: ${arg}` };
   }
-
   return { options };
 }
 
-async function writeDecksFacade(input: { cwd: string; out: string; generated: string }): Promise<void> {
-  const out = normalizeOutputFile(input.out);
-  const fullPath = join(input.cwd, out);
-
-  if (await fileExists(fullPath)) {
-    throw new Error(`Refusing to overwrite existing file: ${out}`);
+async function writeInitialFiles(input: {
+  cwd: string;
+  configFile: string;
+  out: string;
+  generated: string;
+}): Promise<void> {
+  for (const path of [input.configFile, input.out]) {
+    if (existsSync(join(input.cwd, path))) throw new Error(`Refusing to overwrite existing file: ${path}`);
   }
-
-  await mkdir(dirname(fullPath), { recursive: true });
-  await writeFile(fullPath, emitDecksFacade(input.generated), "utf8");
+  const configPath = join(input.cwd, input.configFile);
+  const facadePath = join(input.cwd, input.out);
+  await mkdir(dirname(configPath), { recursive: true });
+  await mkdir(dirname(facadePath), { recursive: true });
+  await writeFile(configPath, emitDecksConfig(), "utf8");
+  await writeFile(facadePath, emitDecksFacade(input.generated, relativeImport(input.out, input.configFile)), "utf8");
 }
 
-async function fileExists(path: string): Promise<boolean> {
-  return existsSync(path);
+function emitDecksConfig(): string {
+  return `import { defineDecksConfig } from "hono-decks";
+
+export default defineDecksConfig({
+  mountPath: "/decks",
+  build: {
+    root: "decks",
+    outDir: "src/generated",
+  },
+});
+`;
+}
+
+function emitDecksFacade(generated: string, configImport: string): string {
+  return `// App-owned facade. Files under the generated directory are overwritten.
+import config from ${JSON.stringify(configImport)};
+import { createDecks } from ${JSON.stringify(generated)};
+
+export const decks = createDecks(config);
+`;
+}
+
+function relativeImport(fromFile: string, toFile: string): string {
+  const path = normalizePath(relative(dirname(fromFile), toFile)).replace(/\.(?:[cm]?[jt]sx?)$/, "");
+  return path.startsWith(".") ? path : `./${path}`;
 }
 
 function normalizeOutputFile(path: string): string {
   const normalized = normalizePath(path).replace(/\/$/, "");
   const segments = normalized.split("/");
-
-  if (
-    normalized === "" ||
-    normalized.startsWith("/") ||
-    /^[A-Za-z]:\//.test(normalized) ||
-    segments.includes("..")
-  ) {
-    throw new Error("Output file must be a relative path inside the current working directory");
+  if (!normalized || normalized.startsWith("/") || /^[A-Za-z]:\//.test(normalized) || segments.includes("..")) {
+    throw new Error("File must be a relative path inside the current working directory");
   }
-
   return normalized;
 }
 
@@ -234,23 +294,6 @@ function normalizePath(path: string): string {
 function dirname(path: string): string {
   const normalized = normalizePath(path);
   return normalized.includes("/") ? normalized.slice(0, normalized.lastIndexOf("/")) : ".";
-}
-
-function emitDecksFacade(generated: string): string {
-  return `// App-owned facade for hono-decks.
-// This file is safe to edit. \`src/generated/decks.ts\` is generated by \`hono-decks compile\`.
-import type { DecksRouterOverrides } from ${JSON.stringify(DECKS_RUNTIME_ENTRY)};
-import { decks } from ${JSON.stringify(generated)};
-
-export const deckSource = decks.source;
-
-export function createDecksRouter(options: DecksRouterOverrides = {}) {
-  return decks.router({
-    source: deckSource,
-    ...options,
-  });
-}
-`;
 }
 
 declare const process:

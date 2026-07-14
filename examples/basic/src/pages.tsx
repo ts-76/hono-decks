@@ -54,7 +54,7 @@ export function renderDeckDetailsPage(input: {
           {description ? <meta name="description" content={description} /> : null}
           <meta property="og:title" content={input.meta.title} />
           {description ? <meta property="og:description" content={description} /> : null}
-          <meta property="og:url" content={input.meta.canonicalPath} />
+          <meta property="og:url" content={input.meta.paths.viewer} />
           {input.meta.imagePath ? <meta property="og:image" content={input.meta.imagePath} /> : null}
         </>
       }
@@ -74,10 +74,10 @@ export function renderDeckDetailsPage(input: {
           </div>
         </dl>
         <nav class="sample-actions" aria-label="Deck actions">
-          <a href={input.meta.canonicalPath}>Open viewer</a>
-          <a href={input.meta.renderPath}>Open render page</a>
-          <a href={input.meta.printPath}>Open print page</a>
-          <a href={`${input.meta.canonicalPath}/embed`}>Embed view</a>
+          <a href={input.meta.paths.viewer}>Open viewer</a>
+          <a href={input.meta.paths.render}>Open render page</a>
+          <a href={input.meta.paths.print}>Open print page</a>
+          <a href={input.meta.paths.embed}>Embed view</a>
         </nav>
       </section>
       <section class="sample-page-section">

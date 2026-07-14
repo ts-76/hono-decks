@@ -9,6 +9,7 @@ import type { DeckExportOptions, DeckViewerExportPaths } from "./browser-export"
 import { resolveAuthorizedExportPaths } from "./browser-export";
 import { renderViewerScript } from "./viewer-script";
 import { baseViewerStyle, embeddedViewerStyle } from "./viewer-style";
+import { createDeckPaths, type DeckPaths } from "./paths";
 import {
   documentNonceAttribute,
   resolveDeckDocument,
@@ -124,14 +125,12 @@ export interface DeckTocItem {
   label: string;
 }
 
+/** Metadata and complete public route map for a viewer page. */
 export interface DeckPageMeta {
   title: string;
   description?: string;
-  canonicalPath: string;
-  renderPath: string;
-  printPath: string;
-  exportPdfPath?: string;
-  exportPngPath?: string;
+  paths: DeckPaths;
+  availableExports: DeckViewerExportPaths;
   imagePath?: string;
 }
 
@@ -139,14 +138,17 @@ export interface DeckViewerParts {
   slug: string;
   title: string;
   renderUrl: string;
-  frame: DeckRenderable;
-  frameHtml: string;
-  controls: DeckRenderable | null;
-  controlsHtml: string | null;
-  toc: DeckRenderable;
-  tocHtml: string;
+  frame: DeckViewerPart;
+  controls: DeckViewerPart | null;
+  toc: DeckViewerPart;
   slides: DeckTocItem[];
   meta: DeckPageMeta;
+}
+
+/** One viewer part in both composable JSX form and pre-rendered HTML form. */
+export interface DeckViewerPart {
+  content: DeckRenderable;
+  html: string;
 }
 
 export interface DeckViewerRenderInput<E extends Env = any> extends DeckViewerParts {
@@ -182,20 +184,14 @@ export async function createDeckViewerParts(input: {
   const slug = input.deck.slug;
   const title = input.deck.meta.title ?? slug;
   const basePath = input.mountPath.replace(/\/$/, "");
-  const canonicalPath = `${basePath}/${encodeURIComponent(slug)}`;
-  const renderUrl = `${canonicalPath}/render${input.viewerStateQuery ?? ""}`;
-  const printPath = `${canonicalPath}/print`;
-  const exportPdfPath = input.exportPaths?.pdf ? `${canonicalPath}/export.pdf` : undefined;
-  const exportPngPath = input.exportPaths?.png ? `${canonicalPath}/export.png` : undefined;
+  const paths = createDeckPaths(basePath, slug);
+  const renderUrl = `${paths.render}${input.viewerStateQuery ?? ""}`;
   const slides = createDeckToc(input.deck);
   const meta: DeckPageMeta = {
     title,
     description: input.deck.meta.description,
-    canonicalPath,
-    renderPath: renderUrl,
-    printPath,
-    exportPdfPath,
-    exportPngPath,
+    paths,
+    availableExports: input.exportPaths ?? {},
   };
   const controlsInput = input.controls === false ? false : input.controls ?? {};
   const controlsContext: DeckViewerControlsContext = { slug, title, mountPath: basePath, meta, slides };
@@ -206,12 +202,12 @@ export async function createDeckViewerParts(input: {
     slug,
     title,
     renderUrl,
-    frame: renderViewerFrame({ title, renderUrl }),
-    frameHtml: renderViewerFrameHtml({ title, renderUrl }),
-    controls,
-    controlsHtml: controls ? await renderJsxValue(controls) : null,
-    toc: renderViewerToc(slides),
-    tocHtml: renderViewerTocHtml(slides),
+    frame: {
+      content: renderViewerFrame({ title, renderUrl }),
+      html: renderViewerFrameHtml({ title, renderUrl }),
+    },
+    controls: controls ? { content: controls, html: await renderJsxValue(controls) } : null,
+    toc: { content: renderViewerToc(slides), html: renderViewerTocHtml(slides) },
     slides,
     meta,
   };
@@ -224,14 +220,14 @@ export async function createDeckViewerEmbed(input: DeckViewerEmbedOptions): Prom
     "data-hono-decks-viewer": true,
     "data-hono-decks-embed": true,
     "data-deck-slug": parts.slug,
-    "data-hono-decks-print-path": parts.meta.printPath,
+    "data-hono-decks-print-path": parts.meta.paths.print,
     "aria-label": parts.title,
     children: [
       jsx("div", {
         class: "hono-decks-viewer-shell",
-        children: [parts.frame, parts.controls],
+        children: [parts.frame.content, parts.controls?.content],
       }),
-      input.toc ? parts.toc : null,
+      input.toc ? parts.toc.content : null,
     ],
   });
   const rootHtml = await renderJsxValue(root);
@@ -250,7 +246,7 @@ export async function renderDeckViewerPage<E extends Env = any>(input: {
   mountPath: string;
   viewerStateQuery?: string;
   viewer?: DeckViewerOptions<E>;
-  exportOptions?: DeckExportOptions<E>;
+  exportOptions?: false | DeckExportOptions<E>;
   document?: DeckDocumentOptions<E>;
 }): Promise<string> {
   const parts = await createDeckViewerParts({
@@ -258,7 +254,7 @@ export async function renderDeckViewerPage<E extends Env = any>(input: {
     mountPath: input.mountPath,
     viewerStateQuery: input.viewerStateQuery,
     controls: input.viewer?.controls,
-    exportPaths: await resolveAuthorizedExportPaths(input.c, input.deck, input.exportOptions),
+    exportPaths: await resolveAuthorizedExportPaths(input.c, input.deck, input.mountPath, input.exportOptions),
   });
   const renderInput: DeckViewerRenderInput<E> = {
     ...parts,
@@ -270,7 +266,7 @@ export async function renderDeckViewerPage<E extends Env = any>(input: {
   const content = jsx("main", {
       "data-hono-decks-viewer": true,
       "data-deck-slug": parts.slug,
-      "data-hono-decks-print-path": parts.meta.printPath,
+      "data-hono-decks-print-path": parts.meta.paths.print,
       ...(customContent
         ? { "aria-label": parts.title }
         : { "aria-labelledby": "hono-decks-viewer-title" }),
@@ -287,7 +283,7 @@ export async function renderDeckViewerPage<E extends Env = any>(input: {
         }),
         jsx("div", {
           class: "hono-decks-viewer-shell",
-          children: [parts.frame, parts.controls],
+          children: [parts.frame.content, parts.controls?.content],
         }),
       ],
     });
@@ -432,8 +428,8 @@ function buildViewerControlDefaults(context: DeckViewerControlsContext): DeckVie
     next: { type: "default", key: "next" },
     fullscreen: { type: "default", key: "fullscreen" },
     print: { type: "default", key: "print" },
-    exportPdf: context.meta.exportPdfPath ? { type: "default", key: "exportPdf" } : null,
-    exportPng: context.meta.exportPngPath ? { type: "default", key: "exportPng" } : null,
+    exportPdf: context.meta.availableExports.pdf ? { type: "default", key: "exportPdf" } : null,
+    exportPng: context.meta.availableExports.png ? { type: "default", key: "exportPng" } : null,
   };
 }
 
@@ -532,7 +528,7 @@ function renderDefaultViewerControlItem(
     case "print":
       return jsx("a", {
         ...itemProps,
-        href: context.meta.printPath,
+        href: context.meta.paths.print,
         "data-hono-decks-print": true,
         ...(item.label === undefined ? { "aria-label": controlIconLabel("print"), title: controlIconLabel("print") } : {}),
         children: item.label ?? renderControlIcon("print"),
@@ -540,7 +536,7 @@ function renderDefaultViewerControlItem(
     case "exportPdf":
       return jsx("a", {
         ...itemProps,
-        href: context.meta.exportPdfPath ?? "",
+        href: context.meta.paths.exportPdf,
         download: `${safeFilename(context.meta.title)}.pdf`,
         "data-hono-decks-export": "pdf",
         ...(item.label === undefined ? { "aria-label": controlIconLabel("export-pdf"), title: controlIconLabel("export-pdf") } : {}),
@@ -549,7 +545,7 @@ function renderDefaultViewerControlItem(
     case "exportPng":
       return jsx("a", {
         ...itemProps,
-        href: context.meta.exportPngPath ?? "",
+        href: context.meta.paths.exportPng,
         download: `${safeFilename(context.meta.title)}.png`,
         "data-hono-decks-export": "png",
         ...(item.label === undefined ? { "aria-label": controlIconLabel("export-png"), title: controlIconLabel("export-png") } : {}),

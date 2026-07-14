@@ -1,6 +1,7 @@
 // @ts-nocheck
-import { defineDecks } from "hono-decks";
-import type { DecksRouterOverrides } from "hono-decks";
+import { configureDecks, defineDecks } from "hono-decks/advanced";
+import type { ConfiguredDecks, DecksConfig } from "hono-decks";
+import type { Env } from "hono";
 import { decksClientEntry } from "./client-entry";
 import Slide_honox_0 from "./decks/honox/slide-0";
 import Slide_honox_1 from "./decks/honox/slide-1";
@@ -21,7 +22,7 @@ function withClientComponentIds(module, clientIds) {
   return registry;
 }
 
-export const decks = defineDecks({
+const generatedDecks = defineDecks({
   clientEntryAsset: decksClientEntry,
   decks: [
     {
@@ -67,6 +68,10 @@ export const decks = defineDecks({
   ]
 });
 
-export function decksRouter(options: DecksRouterOverrides = {}) {
-  return decks.router(options);
+export function createDecks<E extends Env = any>(config: DecksConfig<E>): ConfiguredDecks<E> {
+  return configureDecks(definedDecksFor<E>(), config);
+}
+
+function definedDecksFor<E extends Env>() {
+  return generatedDecks;
 }

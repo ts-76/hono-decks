@@ -2,6 +2,7 @@ import type { Context, Env } from "hono";
 import type { CompiledDeck, DeckSource } from "../deck/model";
 import type { MaybePromise } from "../renderer/compiled-render";
 import { stripPathSuffix } from "./path-utils";
+import { createDeckPaths, type DeckPaths } from "./paths";
 
 export interface DeckBrowserRunBinding {
   quickAction(action: "pdf" | "screenshot", input: Record<string, unknown>): MaybePromise<Response>;
@@ -17,14 +18,19 @@ export interface DeckBrowserRunPngOptions {
   request?: Record<string, unknown>;
 }
 
-export interface DeckExportAuthorizeInput {
+/** Request data passed to Browser Rendering binding and authorization resolvers. */
+export interface DeckExportResolverInput<E extends Env = any> {
+  c: Context<E>;
   deck: CompiledDeck;
+  slug: string;
+  mountPath: string;
+  paths: DeckPaths;
   format: "pdf" | "png";
 }
 
 export interface DeckExportOptions<E extends Env = any> {
-  browser(c: Context<E>): MaybePromise<DeckBrowserRunBinding | null | undefined>;
-  authorize?(c: Context<E>, input: DeckExportAuthorizeInput): MaybePromise<boolean>;
+  browser(input: DeckExportResolverInput<E>): MaybePromise<DeckBrowserRunBinding | null | undefined>;
+  authorize?(input: DeckExportResolverInput<E>): MaybePromise<boolean>;
   pdf?: boolean | DeckBrowserRunPdfOptions;
   png?: boolean | DeckBrowserRunPngOptions;
 }
@@ -37,7 +43,7 @@ export interface DeckViewerExportPaths {
 export interface BrowserExportRouterOptions<E extends Env = any> {
   source: DeckSource<E>;
   dev?: boolean;
-  export?: DeckExportOptions<E>;
+  export?: false | DeckExportOptions<E>;
 }
 
 export async function renderDeckBrowserExport<E extends Env = any>(
@@ -52,14 +58,22 @@ export async function renderDeckBrowserExport<E extends Env = any>(
 
   const exportOptions = options.export;
   if (!exportOptions) return c.json({ error: "Browser export not configured", slug, format }, 503);
-  if (!(await isBrowserExportAuthorized(c, exportOptions, deck, format))) {
+  const mountPath = stripPathSuffix(c.req.path, `/${slug}/export.${format}`);
+  const resolverInput: DeckExportResolverInput<E> = {
+    c,
+    deck,
+    slug,
+    mountPath,
+    paths: createDeckPaths(mountPath, slug),
+    format,
+  };
+  if (!(await isBrowserExportAuthorized(exportOptions, resolverInput))) {
     return c.json({ error: "Browser export not authorized", slug, format }, 403);
   }
-  const browser = await exportOptions.browser(c);
+  const browser = await exportOptions.browser(resolverInput);
   if (!browser) return c.json({ error: "Browser export not configured", slug, format }, 503);
 
-  const mountPath = stripPathSuffix(c.req.path, `/${slug}/export.${format}`);
-  const printUrl = new URL(`${mountPath}/${encodeURIComponent(slug)}/print`, c.req.url).toString();
+  const printUrl = new URL(resolverInput.paths.print, c.req.url).toString();
   const action = format === "pdf" ? "pdf" : "screenshot";
   const response = await browser.quickAction(action, createBrowserRunExportRequest(exportOptions, printUrl, format));
   const headers = new Headers(response.headers);
@@ -72,32 +86,33 @@ export async function renderDeckBrowserExport<E extends Env = any>(
   });
 }
 
-export function isPdfExportEnabled<E extends Env = any>(options: DeckExportOptions<E> | undefined): boolean {
-  return options?.pdf !== undefined && options.pdf !== false;
+export function isPdfExportEnabled<E extends Env = any>(options: false | DeckExportOptions<E> | undefined): boolean {
+  return Boolean(options && options.pdf !== undefined && options.pdf !== false);
 }
 
-export function isPngExportEnabled<E extends Env = any>(options: DeckExportOptions<E> | undefined): boolean {
-  return options?.png !== undefined && options.png !== false;
+export function isPngExportEnabled<E extends Env = any>(options: false | DeckExportOptions<E> | undefined): boolean {
+  return Boolean(options && options.png !== undefined && options.png !== false);
 }
 
 export async function resolveAuthorizedExportPaths<E extends Env = any>(
   c: Context<E>,
   deck: CompiledDeck,
-  options: DeckExportOptions<E> | undefined,
+  mountPath: string,
+  options: false | DeckExportOptions<E> | undefined,
 ): Promise<DeckViewerExportPaths> {
   if (!options) return {};
-  const pdf = isPdfExportEnabled(options) && (await isBrowserExportAuthorized(c, options, deck, "pdf"));
-  const png = isPngExportEnabled(options) && (await isBrowserExportAuthorized(c, options, deck, "png"));
+  const slug = deck.slug;
+  const paths = createDeckPaths(mountPath, slug);
+  const pdf = isPdfExportEnabled(options) && (await isBrowserExportAuthorized(options, { c, deck, slug, mountPath, paths, format: "pdf" }));
+  const png = isPngExportEnabled(options) && (await isBrowserExportAuthorized(options, { c, deck, slug, mountPath, paths, format: "png" }));
   return { pdf, png };
 }
 
 async function isBrowserExportAuthorized<E extends Env = any>(
-  c: Context<E>,
   options: DeckExportOptions<E>,
-  deck: CompiledDeck,
-  format: "pdf" | "png",
+  input: DeckExportResolverInput<E>,
 ): Promise<boolean> {
-  return options.authorize ? options.authorize(c, { deck, format }) : true;
+  return options.authorize ? options.authorize(input) : true;
 }
 
 function createBrowserRunExportRequest(

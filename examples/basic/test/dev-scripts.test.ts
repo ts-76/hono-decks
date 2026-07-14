@@ -7,8 +7,9 @@ describe("development scripts", () => {
       scripts: Record<string, string>;
     };
 
-    expect(packageJson.scripts["decks:compile"]).toContain("--ogp-cache decks/ogp-cache.json");
-    expect(packageJson.scripts["decks:compile:dev"]).toContain("--ogp-cache decks/ogp-cache.json");
+    expect(packageJson.scripts["decks:compile"]).toMatch(/bin\.js compile$/);
+    expect(packageJson.scripts["decks:compile:dev"]).toMatch(/bin\.js compile$/);
+    expect(packageJson.scripts["decks:watch"]).toContain("compile --watch");
     expect(packageJson.scripts["decks:compile:dev"]).toContain("--clean=false");
     expect(packageJson.scripts.dev).toContain("bun run decks:compile:dev");
     expect(packageJson.scripts.dev).toContain("CI=1");
@@ -18,11 +19,12 @@ describe("development scripts", () => {
   });
 
   it("configures Wrangler module aliases for stable reloads", async () => {
-    const wranglerToml = await readFile(new URL("../wrangler.toml", import.meta.url), "utf8");
+    const wranglerJson = await readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8");
 
-    expect(wranglerToml).toContain("[alias]");
-    expect(wranglerToml).toContain('"hono-decks" = "../../packages/decks/src/mod.ts"');
-    expect(wranglerToml).toContain('"hono-decks/client" = "../../packages/decks/src/client.ts"');
+    expect(wranglerJson).toContain('"alias"');
+    expect(wranglerJson).toContain('"hono-decks": "../../packages/decks/src/mod.ts"');
+    expect(wranglerJson).toContain('"hono-decks/advanced": "../../packages/decks/src/advanced.ts"');
+    expect(wranglerJson).toContain('"hono-decks/client": "../../packages/decks/src/client.ts"');
   });
 
   it("starts viewport smoke wrangler with non-interactive workspace-local configuration", async () => {

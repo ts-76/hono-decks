@@ -1,9 +1,11 @@
-import type { Env, Hono } from "hono";
+import type { Env, Hono, MiddlewareHandler } from "hono";
 import type { CompiledDeck, DeckManifest, DeckSource } from "../deck/model";
 import type { SlideComponentInput, SlideComponentRegistry } from "../renderer/compiled-render";
 import { manifestDeckSource } from "../source/manifest-source";
-import { decksRouter } from "./router";
-import type { DecksRouterOptions } from "./router";
+import { deckContext, decksRouter } from "./router";
+import type { DeckContextVariables, DecksRouterOptions } from "./router";
+import { createDeckPaths, normalizeMountPath, type DeckPaths } from "./paths";
+import type { DeckViewerControlSlotItems } from "./viewer";
 
 export type DecksOptions<E extends Env = any> = Omit<DecksRouterOptions<E>, "source"> &
   (
@@ -17,19 +19,47 @@ export type DecksOptions<E extends Env = any> = Omit<DecksRouterOptions<E>, "sou
       }
   );
 
+/** Per-mount overrides merged on top of generated defaults and app config. */
 export type DecksRouterOverrides<E extends Env = any> = Partial<Omit<DecksRouterOptions<E>, "components" | "clientEntryAsset">> & {
   components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
 };
+
+/** Runtime options that keep the configured kit on its single transformed source. */
+export type DecksRouterConfig<E extends Env = any> = Omit<DecksRouterOverrides<E>, "source">;
 
 export interface DefinedDecks<E extends Env = any> {
   source: DeckSource<E>;
   router(overrides?: DecksRouterOverrides<E>): Hono<E>;
 }
 
+/** File-system settings consumed by the CLI. */
+export interface DecksBuildConfig {
+  /** Deck source directory. @default "decks" */
+  root?: string;
+  /** Generated module directory. @default "src/generated" */
+  outDir?: string;
+  /** Optional deterministic Open Graph metadata cache. */
+  ogpCacheFile?: string;
+}
+
+/** Shared configuration consumed by both the CLI and the generated runtime kit. */
 export interface DecksConfig<E extends Env = any> {
-  mountPath?: string;
+  /** Public route where the configured router is mounted. */
+  mountPath: string;
+  build?: DecksBuildConfig;
   source?(source: DeckSource<E>): DeckSource<E>;
-  router?: DecksRouterOverrides<E>;
+  router?: DecksRouterConfig<E>;
+}
+
+/** A generated deck collection configured for one application. */
+export interface ConfiguredDecks<E extends Env = any> {
+  mountPath: string;
+  source: DeckSource<E>;
+  router(overrides?: DecksRouterConfig<E>): Hono<E>;
+  context(
+    overrides?: Pick<DecksRouterOptions<E>, "dev" | "viewer">,
+  ): MiddlewareHandler<E & { Variables: DeckContextVariables }>;
+  paths(slug: string): DeckPaths;
 }
 
 export function defineDecks<E extends Env = any>(options: DecksOptions<E>): DefinedDecks<E> {
@@ -50,8 +80,42 @@ export function defineDecks<E extends Env = any>(options: DecksOptions<E>): Defi
   };
 }
 
+/** Defines the single configuration consumed by the CLI and runtime. */
 export function defineDecksConfig<E extends Env = any>(config: DecksConfig<E>): DecksConfig<E> {
   return config;
+}
+
+/** Applies app configuration to generated decks and returns the primary runtime API. */
+export function configureDecks<E extends Env = any>(
+  defined: DefinedDecks<E>,
+  config: DecksConfig<E>,
+): ConfiguredDecks<E> {
+  const mountPath = normalizeMountPath(config.mountPath);
+  const source = config.source?.(defined.source) ?? defined.source;
+  const configuredRouter = mergeDecksRouterOptions(
+    { source, ...config.router },
+    { source },
+  );
+
+  return {
+    mountPath,
+    source,
+    router(overrides = {}) {
+      return defined.router(mergeDecksRouterOptions(configuredRouter, overrides));
+    },
+    context(overrides = {}) {
+      const merged = mergeDecksRouterOptions(configuredRouter, overrides);
+      return deckContext({
+        source,
+        mountPath,
+        dev: merged.dev,
+        viewer: merged.viewer,
+      });
+    },
+    paths(slug) {
+      return createDeckPaths(mountPath, slug);
+    },
+  };
 }
 
 export function mergeDecksRouterOptions<E extends Env = any>(
@@ -63,7 +127,13 @@ export function mergeDecksRouterOptions<E extends Env = any>(
   const document = mergeDocumentOptions(base.document, overrides.document);
   const pages = mergePagesOptions(base.pages, overrides.pages);
   const embed = mergeExternalEmbedOptions(base.embed, overrides.embed);
-  const exportOptions = base.export || overrides.export ? { ...base.export, ...overrides.export } : undefined;
+  const exportOptions = overrides.export === false
+    ? false
+    : base.export === false
+      ? overrides.export
+      : base.export || overrides.export
+        ? { ...base.export, ...overrides.export }
+        : undefined;
   const components = base.components || overrides.components ? { ...base.components, ...overrides.components } : undefined;
   return {
     ...base,
@@ -156,7 +226,20 @@ function mergeControls(
     attributes:
       base.attributes || override.attributes ? { ...base.attributes, ...override.attributes } : undefined,
     labels: base.labels || override.labels ? { ...base.labels, ...override.labels } : undefined,
+    hidden: base.hidden || override.hidden ? [...new Set([...(base.hidden ?? []), ...(override.hidden ?? [])])] : undefined,
+    before: mergeControlSlots(base.before, override.before),
+    after: mergeControlSlots(base.after, override.after),
   };
+}
+
+function mergeControlSlots(
+  base: DeckViewerControlSlotItems | undefined,
+  override: DeckViewerControlSlotItems | undefined,
+): DeckViewerControlSlotItems | undefined {
+  if (override === undefined) return base;
+  if (base === undefined) return override;
+  if (Array.isArray(base) && Array.isArray(override)) return [...base, ...override];
+  return override;
 }
 
 function mergePresenterOptions<E extends Env>(

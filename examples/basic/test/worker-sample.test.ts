@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import { Badge } from "../decks/sample/components";
-import { createDecksRouter, deckSource } from "../src/decks";
+import { decks } from "../src/decks";
 
 async function sampleApp() {
   return (await import("../src/index")).default;
@@ -11,10 +11,10 @@ describe("sample Worker app", () => {
   it("keeps generated deck imports behind a sample facade", async () => {
     const entrySource = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
     const facadeSource = await readFile(new URL("../src/decks.ts", import.meta.url), "utf8");
-    const configSource = await readFile(new URL("../src/decks.config.ts", import.meta.url), "utf8");
+    const configSource = await readFile(new URL("../hono-decks.config.ts", import.meta.url), "utf8");
     const pagesSource = await readFile(new URL("../src/pages.tsx", import.meta.url), "utf8");
 
-    for (const source of [entrySource, facadeSource, configSource, pagesSource]) {
+    for (const source of [entrySource, configSource, pagesSource]) {
       expect(source).toContain('from "hono-decks"');
       expect(source).not.toContain("hono-decks/runtime");
     }
@@ -24,20 +24,16 @@ describe("sample Worker app", () => {
     expect(entrySource).not.toContain("pdf: true");
     expect(entrySource).not.toContain("data-sample-control");
     expect(entrySource).not.toContain("renderSampleViewerHead");
-    expect(entrySource).toContain("deckMountPath");
-    expect(facadeSource).toContain("This file is safe to edit.");
+    expect(entrySource).toContain("decks.mountPath");
     expect(facadeSource).toContain("./generated/decks");
-    expect(facadeSource).toContain("decksConfig.router");
-    expect(facadeSource).toContain("mergeDecksRouterOptions");
-    expect(facadeSource).toContain("{ ...decksConfig.router, source: deckSource }");
-    expect(facadeSource).toContain("export const deckSource");
-    expect(facadeSource).toContain("export const deckMountPath");
-    expect(facadeSource).toContain("export function createDecksRouter");
+    expect(facadeSource).toContain('import config from "../hono-decks.config"');
+    expect(facadeSource).toContain("export const decks = createDecks(config)");
     expect(configSource).toContain("defineDecksConfig");
     expect(configSource).toContain("defineDecksConfig<DecksConfigEnv>");
     expect(configSource).not.toContain("as DecksConfigBindings");
     expect(configSource).not.toContain("c.env as");
     expect(configSource).toContain('mountPath: "/decks"');
+    expect(configSource).toContain('ogpCacheFile: "decks/ogp-cache.json"');
     expect(configSource).toContain("DeckBrowserRunBinding");
     expect(configSource).toContain("DECK_PRESENTER_ENABLED");
     expect(configSource).toContain("DECK_RUNTIME_DEV");
@@ -57,8 +53,8 @@ describe("sample Worker app", () => {
   });
 
   it("uses a generated module-backed deck source", async () => {
-    const entries = await deckSource.listDecks({} as never);
-    const sampleDeck = await deckSource.getCompiledDeck({} as never, "sample");
+    const entries = await decks.source.listDecks({} as never);
+    const sampleDeck = await decks.source.getCompiledDeck({} as never, "sample");
 
     expect(entries).toHaveLength(4);
     expect(entries[0]).toMatchObject({
@@ -79,12 +75,12 @@ describe("sample Worker app", () => {
     });
     expect(sampleDeck?.slides[0]?.notes).toContain("Introduce the clean projection route for talks.");
     expect(sampleDeck?.slides[1]?.notes).toContain("Use the presenter route for notes and next-slide preview.");
-    expect(typeof createDecksRouter).toBe("function");
+    expect(typeof decks.router).toBe("function");
   });
 
   it("exports slide components from the sample deck directory", () => {
     expect(typeof Badge).toBe("function");
-    expect(typeof createDecksRouter).toBe("function");
+    expect(typeof decks.router).toBe("function");
   });
 
   it("serves a sample home page with the shared layout", async () => {

@@ -1,9 +1,9 @@
 import { Hono } from "hono";
-import { createDecksRouter } from "./decks";
+import { decks } from "./decks";
 
 const app = new Hono();
 
-app.get("/", (c) => c.redirect("/decks/welcome"));
-app.route("/decks", createDecksRouter());
+app.get("/", (c) => c.redirect(decks.paths("welcome").viewer));
+app.route(decks.mountPath, decks.router());
 
 export default app;

@@ -33,6 +33,7 @@ import {
   type DeckPageMeta,
   type DeckTocItem,
   type DeckViewerOptions,
+  type DeckViewerPart,
   type DeckViewerParts,
   type DeckViewerRenderControlItem,
 } from "./viewer";
@@ -43,6 +44,7 @@ import {
   resolveGeneratedClientEntryUrl,
   stripPathSuffix,
 } from "./path-utils";
+import { createDeckPaths } from "./paths";
 import { resolveDeckDocument, type DeckDocumentOptions, type ResolvedDeckDocument } from "./document";
 import {
   renderDeckExternalEmbedResponse,
@@ -53,7 +55,7 @@ export type {
   DeckBrowserRunBinding,
   DeckBrowserRunPdfOptions,
   DeckBrowserRunPngOptions,
-  DeckExportAuthorizeInput,
+  DeckExportResolverInput,
   DeckExportOptions,
   DeckViewerExportPaths,
 } from "./browser-export";
@@ -88,6 +90,7 @@ export type {
   DeckPageMeta,
   DeckTocItem,
   DeckViewerOptions,
+  DeckViewerPart,
   DeckViewerParts,
   DeckViewerRenderControlItem,
   DeckViewerRenderInput,
@@ -113,7 +116,7 @@ export interface DecksRouterOptions<E extends Env = any> {
   embed?: false | DeckExternalEmbedOptions<E>;
   viewer?: DeckViewerOptions<E>;
   presenter?: false | DecksRouterPresenterOptions<E>;
-  export?: DeckExportOptions<E>;
+  export?: false | DeckExportOptions<E>;
 }
 
 export type DeckRouteSurface = "index" | "viewer" | "render" | "print" | "presentation" | "presenter";
@@ -158,7 +161,12 @@ export interface DecksRouterPagesOptions<E extends Env = any> {
   presenter?: DeckRouteEnabled<E>;
 }
 
-export type DeckDevResolver<E extends Env = any> = (c: Context<E>) => MaybePromise<boolean>;
+/** Request data passed to the development-mode resolver. */
+export interface DeckDevResolverInput<E extends Env = any> {
+  c: Context<E>;
+}
+
+export type DeckDevResolver<E extends Env = any> = (input: DeckDevResolverInput<E>) => MaybePromise<boolean>;
 
 export interface DecksRouterPresenterOptions<E extends Env = any> {
   enabled?: boolean | DeckPresenterEnabledResolver<E>;
@@ -471,7 +479,7 @@ async function isDevEnabled<E extends Env>(
   c: Context<E>,
   options: Pick<DecksRouterOptions<E>, "dev">,
 ): Promise<boolean> {
-  if (typeof options.dev === "function") return Boolean(await options.dev(c));
+  if (typeof options.dev === "function") return Boolean(await options.dev({ c }));
   return options.dev === true;
 }
 
@@ -512,7 +520,7 @@ async function resolvePresenterViewerControl<E extends Env>(
   if (!(await isPresenterEnabled(c, options, deck, slug, mountPath))) return null;
 
   const control = presenter.viewerControl === true ? {} : presenter.viewerControl;
-  const presenterPath = presenterRoutePath(mountPath, slug);
+  const presenterPath = createDeckPaths(mountPath, slug).presenter;
   return {
     item: {
       type: "link",
@@ -561,18 +569,10 @@ async function isPresenterEnabled<E extends Env>(
       slug,
       mountPath: mountPath.replace(/\/$/, ""),
       dev: await isDevEnabled(c, options),
-      presenterPath: presenterRoutePath(mountPath, slug),
-      presentationPath: presentationRoutePath(mountPath, slug),
+      presenterPath: createDeckPaths(mountPath, slug).presenter,
+      presentationPath: createDeckPaths(mountPath, slug).presentation,
     }),
   );
-}
-
-function presenterRoutePath(mountPath: string, slug: string): string {
-  return `${mountPath.replace(/\/$/, "")}/${encodeURIComponent(slug)}/presenter`;
-}
-
-function presentationRoutePath(mountPath: string, slug: string): string {
-  return `${mountPath.replace(/\/$/, "")}/${encodeURIComponent(slug)}/presentation`;
 }
 
 function renderDeckIndexContent(

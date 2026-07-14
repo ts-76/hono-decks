@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import { deckContext, type DeckContextVariables } from "hono-decks";
-import type { DecksConfigEnv } from "./decks.config";
-import { createDecksRouter, deckMountPath, deckSource } from "./decks";
+import type { DeckContextVariables } from "hono-decks";
+import type { DecksConfigEnv } from "../hono-decks.config";
+import { decks } from "./decks";
 import {
   renderDeckDetailsPage,
   renderHomePage,
@@ -13,10 +13,10 @@ interface Env extends DecksConfigEnv {
 
 const app = new Hono<Env>();
 
-app.get("/", async (c) => c.html(renderHomePage(await deckSource.listDecks(c))));
+app.get("/", async (c) => c.html(renderHomePage(await decks.source.listDecks(c))));
 app.get(
-  `${deckMountPath}/:slug/about`,
-  deckContext({ source: deckSource, mountPath: deckMountPath }),
+  `${decks.mountPath}/:slug/about`,
+  decks.context(),
   (c) =>
     c.html(renderDeckDetailsPage({
       deck: c.var.deck,
@@ -24,7 +24,7 @@ app.get(
       toc: c.var.deckToc,
     })),
 );
-app.route(deckMountPath, createDecksRouter());
+app.route(decks.mountPath, decks.router());
 
 app.notFound((c) => c.json({ error: "Not found" }, 404));
 

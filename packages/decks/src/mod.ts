@@ -1,23 +1,25 @@
-export { defineDecks, defineDecksConfig, mergeDecksRouterOptions } from "./server/define-decks";
+export { defineDecksConfig } from "./server/define-decks";
 export type {
+  ConfiguredDecks,
+  DecksBuildConfig,
   DecksConfig,
-  DefinedDecks,
-  DecksOptions,
-  DecksRouterOverrides,
+  DecksRouterConfig,
 } from "./server/define-decks";
-export { createDeckViewerEmbed, createDeckViewerParts, deckContext, decksRouter } from "./server/router";
+export { createDeckPaths } from "./server/paths";
+export type { DeckPaths } from "./server/paths";
+export { createDeckViewerEmbed } from "./server/router";
 export type {
   DeckBrowserRunBinding,
   DeckBrowserRunPdfOptions,
   DeckBrowserRunPngOptions,
-  DeckContextOptions,
   DeckContextVariables,
   DeckDevResolver,
+  DeckDevResolverInput,
   DeckDocumentOptions,
   DeckDocumentPageOptions,
   DeckDocumentRenderInput,
   DeckDocumentSurface,
-  DeckExportAuthorizeInput,
+  DeckExportResolverInput,
   DeckExportOptions,
   DeckExternalEmbedContext,
   DeckExternalEmbedOptions,
@@ -50,6 +52,7 @@ export type {
   DeckViewerExportPaths,
   DeckViewerLinkControlItem,
   DeckViewerOptions,
+  DeckViewerPart,
   DeckViewerParts,
   DeckViewerRenderControlItem,
   DeckViewerRenderInput,
@@ -59,9 +62,6 @@ export type {
   DecksRouterPresenterOptions,
   ResolvedDeckDocument,
 } from "./server/router";
-export { serveDecksClientEntry } from "./server/client-entry";
-export type { ServeDecksClientEntryOptions } from "./server/client-entry";
-export { manifestDeckSource } from "./source/manifest-source";
 export { withR2Assets } from "./source/r2-assets";
 export type {
   R2AssetKeyInput,
@@ -88,16 +88,7 @@ export type {
   SlideTransition,
 } from "./deck/model";
 export { SLIDE_TRANSITIONS } from "./deck/model";
-export {
-  builtInSlideComponents,
-  defineSlideComponents,
-  renderCompiledDeck,
-  renderCompiledDeckAsync,
-  renderCompiledDeckPage,
-  renderCompiledDeckPageAsync,
-  renderCompiledSlide,
-  renderCompiledSlideAsync,
-} from "./renderer/compiled-render";
+export { defineSlideComponents } from "./renderer/compiled-render";
 export type {
   DeckRenderable,
   MaybePromise,
@@ -107,9 +98,4 @@ export type {
   SlideComponentProps,
   SlideComponentRegistry,
 } from "./renderer/compiled-render";
-export {
-  controlIconLabel,
-  renderControlIcon,
-  renderControlIconHtml,
-} from "./renderer/control-icons";
 export type { DeckControlIconName } from "./renderer/control-icons";

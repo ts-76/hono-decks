@@ -1,8 +1,9 @@
 import type { GeneratedModuleDeck } from "../mdx-module-generator";
-import { DECKS_RUNTIME_ENTRY } from "../package-entry";
+import { DECKS_ADVANCED_ENTRY, DECKS_RUNTIME_ENTRY } from "../package-entry";
 
 export function emitModuleDecksRouter(input: { decks: GeneratedModuleDeck[] }): string {
   const runtimeEntry = JSON.stringify(DECKS_RUNTIME_ENTRY);
+  const advancedEntry = JSON.stringify(DECKS_ADVANCED_ENTRY);
   const slideImports = input.decks
     .flatMap((deck) =>
       deck.slideModules.map(
@@ -16,8 +17,9 @@ export function emitModuleDecksRouter(input: { decks: GeneratedModuleDeck[] }): 
     .join("\n");
 
   return `// @ts-nocheck
-import { defineDecks } from ${runtimeEntry};
-import type { DecksRouterOverrides } from ${runtimeEntry};
+import { configureDecks, defineDecks } from ${advancedEntry};
+import type { ConfiguredDecks, DecksConfig } from ${runtimeEntry};
+import type { Env } from "hono";
 import { decksClientEntry } from "./client-entry";
 ${slideImports}
 ${componentImports}
@@ -37,15 +39,19 @@ function withClientComponentIds(module, clientIds) {
   return registry;
 }
 
-export const decks = defineDecks({
+const generatedDecks = defineDecks({
   clientEntryAsset: decksClientEntry,
   decks: [
 ${input.decks.map(emitDeckObject).join(",\n")}
   ]
 });
 
-export function decksRouter(options: DecksRouterOverrides = {}) {
-  return decks.router(options);
+export function createDecks<E extends Env = any>(config: DecksConfig<E>): ConfiguredDecks<E> {
+  return configureDecks(definedDecksFor<E>(), config);
+}
+
+function definedDecksFor<E extends Env>() {
+  return generatedDecks;
 }
 `;
 }

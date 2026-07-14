@@ -1,8 +1,4 @@
-// App-owned facade. Files under src/generated are overwritten by decks:compile.
-import { decks } from "./generated/decks";
+import config from "../hono-decks.config";
+import { createDecks } from "./generated/decks";
 
-export const deckSource = decks.source;
-
-export function createDecksRouter() {
-  return decks.router();
-}
+export const decks = createDecks(config);

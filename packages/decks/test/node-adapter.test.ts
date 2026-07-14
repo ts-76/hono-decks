@@ -247,10 +247,11 @@ export function Counter() {
       expect(manifest.decks.map((deck) => deck.slug)).toEqual(["deck1", "deck2"]);
 
       const output = await readFile(join(cwd, "src", "generated", "decks.ts"), "utf8");
-      expect(output).toContain('import { defineDecks } from "hono-decks";');
+      expect(output).toContain('import { configureDecks, defineDecks } from "hono-decks/advanced";');
       expect(output).not.toContain("hono-decks/runtime");
       expect(output).toContain('import { decksClientEntry } from "./client-entry";');
-      expect(output).toContain("export const decks = defineDecks({");
+      expect(output).toContain("const generatedDecks = defineDecks({");
+      expect(output).toContain("export function createDecks");
       expect(output).toContain("clientEntryAsset: decksClientEntry");
       expect(output).toContain('"publicPath": "/slides/deck1/assets/my%20image%231.svg"');
       expect(output).toContain('"publicPath": "/slides/deck1/assets/plain.svg"');

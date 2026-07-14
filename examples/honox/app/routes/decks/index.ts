@@ -1,3 +1,3 @@
-import { createDecksRouter } from "../../decks";
+import { decks } from "../../decks";
 
-export default createDecksRouter();
+export default decks.router();

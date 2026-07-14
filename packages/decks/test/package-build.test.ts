@@ -13,6 +13,7 @@ describe("package build metadata", () => {
       bin: Record<string, string>;
       files: string[];
       scripts: Record<string, string>;
+      peerDependencies: Record<string, string>;
     };
 
     expect(packageJson.name).toBe("hono-decks");
@@ -21,6 +22,10 @@ describe("package build metadata", () => {
       ".": {
         types: "./dist/mod.d.ts",
         import: "./dist/mod.js",
+      },
+      "./advanced": {
+        types: "./dist/advanced.d.ts",
+        import: "./dist/advanced.js",
       },
       "./cli": {
         types: "./dist/cli.d.ts",
@@ -39,6 +44,7 @@ describe("package build metadata", () => {
     expect(packageJson.files).toEqual(expect.arrayContaining(["dist", "README.md"]));
     expect(packageJson.scripts.build).toBe("tsup");
     expect(packageJson.scripts.prepack).toBe("bun run build");
+    expect(packageJson.peerDependencies.hono).toBe("^4.12.30");
   });
 
   it("builds the CLI bin with a Node shebang", async () => {
@@ -50,6 +56,7 @@ describe("package build metadata", () => {
 
   it("keeps the standard entry runtime-safe and compiler APIs in the Node entry", async () => {
     const runtime = await readFile(join(packageRoot, "dist", "mod.js"), "utf8");
+    const advanced = await readFile(join(packageRoot, "dist", "advanced.js"), "utf8");
     const node = await readFile(join(packageRoot, "dist", "node.js"), "utf8");
 
     expect(runtime).not.toMatch(/from "(?:@mdx-js\/mdx|esbuild|remark-mdx|remark-parse|shiki|unified)"/);
@@ -60,6 +67,8 @@ describe("package build metadata", () => {
     expect(node).toContain('from "remark-parse"');
     expect(node).toContain("deckMiddleware");
     expect(runtime).not.toContain("deckMiddleware");
+    expect(runtime).not.toContain("function decksRouter");
+    expect(advanced).toContain("function decksRouter");
   });
 
   it("keeps the deliberate public runtime type surface in generated declarations", async () => {
@@ -98,7 +107,7 @@ describe("package build metadata", () => {
     expect(readme).toContain('allow="fullscreen"');
     expect(readme).toContain("iframe navigationにCORSは不要");
     expect(readme).toContain("defineDecksConfig<AppEnv>");
-    expect(readme).toContain("mergeDecksRouterOptions");
+    expect(readme).toContain("createDecks(config)");
     expect(readme).toContain("viewer.render");
     expect(readme).not.toContain("root `README.md` を参照");
   });

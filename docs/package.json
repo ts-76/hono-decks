@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "decks:compile": "bun run --cwd ../packages/decks build -- --clean=false && hono-decks compile --root decks --out app/generated --mount /demo",
+    "decks:compile": "bun run --cwd ../packages/decks build -- --clean=false && hono-decks compile",
+    "decks:watch": "hono-decks compile --watch",
     "dev": "bun run decks:compile && vite",
     "build": "bun run decks:compile && vite build --mode client && vite build",
     "preview": "wrangler dev",
@@ -17,7 +18,7 @@
     "honox": "0.1.59"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20260712.1",
+    "@cloudflare/workers-types": "^5.20260714.1",
     "@hono/vite-build": "^1.11.1",
     "@hono/vite-dev-server": "^0.26.1",
     "typescript": "^5.9.3",

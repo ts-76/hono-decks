@@ -1,11 +1,24 @@
 {
   "name": "hono-decks",
-  "version": "0.1.0",
+  "version": "0.2.1",
+  "description": "Slide decks for Hono and Cloudflare Workers",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ts-76/hono-slides.git",
+    "directory": "packages/decks"
+  },
+  "keywords": ["hono", "slides", "mdx", "cloudflare-workers"],
+  "sideEffects": false,
   "type": "module",
   "exports": {
     ".": {
       "types": "./dist/mod.d.ts",
       "import": "./dist/mod.js"
+    },
+    "./advanced": {
+      "types": "./dist/advanced.d.ts",
+      "import": "./dist/advanced.js"
     },
     "./cli": {
       "types": "./dist/cli.d.ts",
@@ -38,11 +51,16 @@
   "dependencies": {
     "@mdx-js/mdx": "^3.1.1",
     "esbuild": "^0.28.1",
-    "hono": "^4.12.30",
     "remark-directive": "^4.0.0",
     "remark-mdx": "^3.1.1",
     "remark-parse": "^11.0.0",
     "shiki": "^4.2.0",
     "unified": "^11.0.5"
+  },
+  "peerDependencies": {
+    "hono": "^4.12.30"
+  },
+  "devDependencies": {
+    "hono": "^4.12.30"
   }
 }
