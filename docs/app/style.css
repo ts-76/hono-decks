@@ -266,6 +266,11 @@ button {
   font-style: normal;
 }
 
+.line-unit {
+  display: inline-block;
+  white-space: nowrap;
+}
+
 .hero-lede {
   max-width: 62ch;
   margin: 30px 0 0;

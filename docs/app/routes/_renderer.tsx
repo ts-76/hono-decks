@@ -12,7 +12,7 @@ export default jsxRenderer(({ children, title, description, activePath }, c) => 
       <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       <meta
         name="description"
-        content={description ?? (locale === "ja" ? "Hono application に MDX slide routes を組み込む hono-decks documentation" : "Documentation for mounting MDX slide routes in a Hono application")}
+        content={description ?? (locale === "ja" ? "MDXのスライドをHonoアプリへ組み込むためのhono-decksドキュメント" : "Documentation for mounting MDX slide routes in a Hono application")}
       />
       <meta name="theme-color" content="#161412" />
       <title>{title ? `${title} — hono-decks` : "hono-decks — slides in your Hono app"}</title>

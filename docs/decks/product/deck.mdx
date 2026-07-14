@@ -1,6 +1,6 @@
 ---
-title: hono-decks product tour
-description: MDX slides mounted as ordinary Hono routes
+title: hono-decks overview
+description: Compile MDX and serve the generated routes with Hono
 transition: fade
 ---
 
@@ -8,9 +8,9 @@ transition: fade
 layout: cover
 ---
 
-# Slides belong in your Hono app.
+# MDX slides, served by Hono.
 
-Build-time MDX. Runtime Hono routes.
+Compile before deployment. Serve with your existing app.
 
 `hono-decks`
 
@@ -18,16 +18,16 @@ Build-time MDX. Runtime Hono routes.
 layout: statement
 ---
 
-## One app. Every surface.
+## Routes included
 
-viewer → presentation → presenter → export
+viewer · presentation · presenter · print
 
 ---
 layout: default
 ---
 
-## Keep the boundary visible
+## Node.js stays in the build
 
-- Node or Bun compiles local MDX
-- generated modules stay Worker-safe
-- Hono owns routing, policy, and deployment
+- Compile local MDX with Node.js or Bun
+- Import generated modules in the Worker
+- Configure routing and security in Hono

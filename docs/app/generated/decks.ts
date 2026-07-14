@@ -31,8 +31,8 @@ export const decks = defineDecks({
       kind: "directory",
       meta: {
         "meta": {},
-        "title": "hono-decks product tour",
-        "description": "MDX slides mounted as ordinary Hono routes",
+        "title": "hono-decks overview",
+        "description": "Compile MDX and serve the generated routes with Hono",
         "transition": "fade"
       },
       "themeStyle": ":root {\n  --hono-decks-color: #f7f7f8;\n  --hono-decks-muted-color: #b9bbc2;\n  --hono-decks-accent-color: #ff641f;\n  --hono-decks-border-color: rgba(255, 255, 255, 0.16);\n  --hono-decks-inline-code-background: rgba(255, 255, 255, 0.1);\n  --hono-decks-code-background: #090a0c;\n}\n\n.slide {\n  background: #111216;\n  color: var(--hono-decks-color);\n}\n\n.slide::before {\n  position: absolute;\n  inset: 0 0 auto;\n  height: 10px;\n  background: var(--hono-decks-accent-color);\n  content: \"\";\n}\n\n.slide .hono-decks-slide-content {\n  padding: clamp(2rem, 5vw, 4.5rem);\n}\n\n.slide h1,\n.slide h2 {\n  max-width: 12ch;\n  margin: 0;\n  letter-spacing: -0.04em;\n  line-height: 0.98;\n  text-wrap: balance;\n}\n\n.slide h1 {\n  font-size: clamp(3rem, 7.5vw, 6rem);\n}\n\n.slide h2 {\n  font-size: clamp(2.4rem, 6vw, 4.8rem);\n}\n\n.slide p,\n.slide li {\n  color: var(--hono-decks-muted-color);\n  font-size: clamp(1.1rem, 2.25vw, 1.7rem);\n  line-height: 1.55;\n}\n\n.slide code {\n  color: var(--hono-decks-accent-color);\n}\n\n.slide ul {\n  display: grid;\n  gap: 0.7rem;\n  max-width: 28ch;\n  padding-left: 1.2em;\n}\n",
@@ -45,7 +45,7 @@ export const decks = defineDecks({
         {
           index: 0,
           meta: {
-            "title": "Slides belong in your Hono app.",
+            "title": "MDX slides, served by Hono.",
             "layout": "cover",
             "transition": "fade",
             "meta": {}
@@ -58,7 +58,7 @@ export const decks = defineDecks({
         {
           index: 1,
           meta: {
-            "title": "One app. Every surface.",
+            "title": "Routes included",
             "layout": "statement",
             "transition": "fade",
             "meta": {}
@@ -71,7 +71,7 @@ export const decks = defineDecks({
         {
           index: 2,
           meta: {
-            "title": "Keep the boundary visible",
+            "title": "Node.js stays in the build",
             "layout": "default",
             "transition": "fade",
             "meta": {}

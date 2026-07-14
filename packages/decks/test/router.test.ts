@@ -582,6 +582,7 @@ describe("decksRouter", () => {
     const html = `${first.embedHtml}${second.embedHtml}`;
     expect(html).toContain("data-hono-decks-embed");
     expect(html).toContain("data-hono-decks-embed-style");
+    expect(html).not.toMatch(/\.hono-decks-viewer-shell\{[^}]*gap:12px/);
     expect(html).toContain('[data-hono-decks-viewer][data-hono-decks-embed] *:focus-visible{outline:none}');
     expect(html).toContain("data-hono-decks-viewer-runtime");
     expect(html).toContain('data-hono-decks-print-path="/slides/deck1/print"');

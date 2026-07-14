@@ -9,9 +9,9 @@ function _createMdxContent(props) {
   };
   return _jsxs(_Fragment, {
     children: [_jsx(_components.h1, {
-      children: "Slides belong in your Hono app."
+      children: "MDX slides, served by Hono."
     }), "\n", _jsx(_components.p, {
-      children: "Build-time MDX. Runtime Hono routes."
+      children: "Compile before deployment. Serve with your existing app."
     }), "\n", _jsx(_components.p, {
       children: _jsx(_components.code, {
         children: "hono-decks"

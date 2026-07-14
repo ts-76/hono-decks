@@ -9,12 +9,13 @@ describe("HonoX documentation site", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/html");
     expect(html).toContain('<html lang="ja">');
-    expect(html).toContain("Slides belong in");
-    expect(html).toContain("A route kit, not another runtime.");
+    expect(html).toContain("Honoアプリ");
+    expect(html).toContain("Node.jsで生成し、");
+    expect(html).toContain("Honoで配信する");
     expect(html).toContain('href="/docs/getting-started?lang=ja"');
     expect(html).toContain('src="/demo/product/embed"');
     expect(html).toContain('href="/api?lang=ja"');
-    expect(html).toContain("MDXから生成し、このHonoX appにmountしています。");
+    expect(html).toContain("このHonoXアプリでMDXから生成しています。");
   });
 
   it("uses query, cookie, and Accept-Language detection with Japanese fallback", async () => {
@@ -34,12 +35,12 @@ describe("HonoX documentation site", () => {
   });
 
   it.each([
-    ["/docs/getting-started", "前提を確認する"],
-    ["/docs/authoring", "deck は directory 単位"],
-    ["/docs/configuration", "設定を2つの時間軸に分ける"],
-    ["/docs/routing", "既定 route surface"],
-    ["/docs/security", "共通 document policy"],
-    ["/api", "Runtime entry"],
+    ["/docs/getting-started", "インストールしてスライドを生成する"],
+    ["/docs/authoring", "デッキごとにディレクトリを作る"],
+    ["/docs/configuration", "生成時と実行時で"],
+    ["/docs/routing", "標準で用意されるルート"],
+    ["/docs/security", "HTMLの設定を画面間で共有する"],
+    ["/api", "実行時API"],
   ])("renders %s from HonoX file routes", async (path, expected) => {
     const response = await app.request(path);
     const html = await response.text();
@@ -62,7 +63,7 @@ describe("HonoX documentation site", () => {
     expect(embedHtml).toContain("data-hono-decks-external-embed-document");
     expect(embedHtml).toContain('/demo/product/render');
     expect(render.status).toBe(200);
-    expect(renderHtml).toContain("Slides belong in your Hono app.");
+    expect(renderHtml).toContain("MDX slides, served by Hono.");
     expect(viewer.status).toBe(404);
   });
 
@@ -77,6 +78,17 @@ describe("HonoX documentation site", () => {
     expect(ja).toContain('href="/api?lang=ja#define-decks-config"');
     expect(en).toContain("Split configuration across two timelines");
     expect(en).toContain("generated defaults, app config, then call-site overrides");
+  });
+
+  it("uses concise Japanese instead of internal architecture jargon", async () => {
+    const paths = ["/", "/docs/getting-started", "/docs/authoring", "/docs/configuration", "/docs/routing", "/docs/security", "/api"];
+
+    for (const path of paths) {
+      const html = await (await app.request(path)).text();
+      expect(html).not.toContain("request-aware");
+      expect(html).not.toContain("route surface");
+      expect(html).not.toContain("次の一手");
+    }
   });
 
   it("documents the complete first-run success and recovery path", async () => {

@@ -9,14 +9,14 @@ function _createMdxContent(props) {
   };
   return _jsxs(_Fragment, {
     children: [_jsx(_components.h2, {
-      children: "Keep the boundary visible"
+      children: "Node.js stays in the build"
     }), "\n", _jsxs(_components.ul, {
       children: ["\n", _jsx(_components.li, {
-        children: "Node or Bun compiles local MDX"
+        children: "Compile local MDX with Node.js or Bun"
       }), "\n", _jsx(_components.li, {
-        children: "generated modules stay Worker-safe"
+        children: "Import generated modules in the Worker"
       }), "\n", _jsx(_components.li, {
-        children: "Hono owns routing, policy, and deployment"
+        children: "Configure routing and security in Hono"
       }), "\n"]
     })]
   });

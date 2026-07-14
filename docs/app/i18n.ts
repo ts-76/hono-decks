@@ -34,7 +34,7 @@ export const messages = {
     route: "Route / API",
     role: "役割",
     language: "言語",
-    footerLine: "build-time MDX、runtime Hono routes。",
+    footerLine: "MDXからHonoのスライドルートを生成します。",
   },
   en: {
     guides: "Guides",

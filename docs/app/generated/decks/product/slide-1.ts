@@ -8,9 +8,9 @@ function _createMdxContent(props) {
   };
   return _jsxs(_Fragment, {
     children: [_jsx(_components.h2, {
-      children: "One app. Every surface."
+      children: "Routes included"
     }), "\n", _jsx(_components.p, {
-      children: "viewer → presentation → presenter → export"
+      children: "viewer · presentation · presenter · print"
     })]
   });
 }

@@ -18,7 +18,7 @@ body{overflow:hidden}
 .hono-decks-viewer-header{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .hono-decks-viewer-title{margin:0;font-size:1rem;line-height:1.25}
 .hono-decks-viewer-meta{margin:.2rem 0 0;color:#cbd5e1;font-size:.82rem}
-.hono-decks-viewer-shell{display:grid;grid-template-rows:minmax(0,1fr) auto;place-items:center;gap:12px;width:100%;height:100%;min-width:0;min-height:0;box-sizing:border-box;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
+.hono-decks-viewer-shell{display:grid;grid-template-rows:minmax(0,1fr) auto;place-items:center;width:100%;height:100%;min-width:0;min-height:0;box-sizing:border-box;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
 .hono-decks-viewer-stage{display:grid;place-items:center;justify-content:center;width:100%;height:100%;min-width:0;min-height:0;container-type:size}
 ${viewerViewportRule()}
 .hono-decks-viewport:focus-visible{outline:2px solid currentColor;outline-offset:4px}
@@ -46,7 +46,7 @@ export function embeddedViewerStyle(): string {
   const root = '[data-hono-decks-viewer][data-hono-decks-embed]';
   return `${root}{color-scheme:dark;background:#050816;color:#eef2ff;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:grid;gap:12px;width:100%;min-width:0;box-sizing:border-box}
 ${root} *:focus-visible{outline:none}
-${root} .hono-decks-viewer-shell{display:grid;grid-template-rows:minmax(0,1fr) auto;place-items:center;gap:12px;width:100%;min-width:0;min-height:0;box-sizing:border-box}
+${root} .hono-decks-viewer-shell{display:grid;grid-template-rows:minmax(0,1fr) auto;place-items:center;width:100%;min-width:0;min-height:0;box-sizing:border-box}
 ${root} .hono-decks-viewer-stage{display:grid;place-items:center;width:100%;min-width:0;min-height:0;container-type:inline-size}
 ${root} .hono-decks-viewport{width:100%;aspect-ratio:${VIEWER_ASPECT_RATIO};position:relative;overflow:hidden;touch-action:pan-y}
 ${root} .hono-decks-viewport:focus-visible{outline:2px solid currentColor;outline-offset:4px}
