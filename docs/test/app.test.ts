@@ -175,6 +175,8 @@ describe("HonoX documentation site", () => {
     expect(routing).toContain("はビューアー内のiframeが読み込むURL");
     expect(routing).toContain("slide</code>は1から始まるスライド番号");
     expect(routing).toContain("step=0</code>は段階表示がまだ発火していない状態");
+    expect(routing).toContain("標準ビューアーと外部埋め込みの印刷ボタンも表示されません");
+    expect(routing).toContain("ブラウザ本来の印刷として動作します");
     expect(security).toContain('languageDetector');
     expect(security).toContain("hono-decks独自の認証は付きません");
     expect(security).toContain("同じnonceをCSPヘッダーとHTMLへ渡す");

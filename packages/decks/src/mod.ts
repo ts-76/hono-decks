@@ -38,6 +38,7 @@ export type {
   DeckRouteSurface,
   DeckRouteSurfaceInput,
   DeckViewerControlDefaults,
+  DeckViewerAvailablePages,
   DeckViewerDefaultControlItem,
   DeckViewerControlItem,
   DeckViewerControlItemRenderer,

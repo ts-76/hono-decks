@@ -20,6 +20,7 @@ import {
   createDeckViewerParts,
   renderDeckViewerPage,
   type DeckViewerControlDefaults,
+  type DeckViewerAvailablePages,
   type DeckViewerDefaultControlItem,
   type DeckViewerControlItem,
   type DeckViewerControlKey,
@@ -78,6 +79,7 @@ export { createDeckViewerEmbed, createDeckViewerParts } from "./viewer";
 export type {
   DeckViewerEmbed,
   DeckViewerEmbedOptions,
+  DeckViewerAvailablePages,
   DeckViewerControlDefaults,
   DeckViewerDefaultControlItem,
   DeckViewerControlItem,
@@ -215,6 +217,7 @@ export interface DeckContextOptions<E extends Env = any> {
   source: DeckSource<E>;
   dev?: boolean | DeckDevResolver<E>;
   mountPath?: string;
+  pages?: Pick<DecksRouterPagesOptions<E>, "print">;
   viewer?: Pick<DeckViewerOptions<E>, "controls" | "openGraph">;
 }
 
@@ -335,14 +338,17 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
     router.get("/:slug/embed", async (c) => {
       const slug = c.req.param("slug");
       const deck = await options.source.getCompiledDeck(c, slug);
-      if (!deck || (!(await isDevEnabled(c, options)) && deck.meta.draft)) {
+      const dev = await isDevEnabled(c, options);
+      if (!deck || (!dev && deck.meta.draft)) {
         return c.json({ error: "Deck not found", slug }, 404);
       }
       const mountPath = stripPathSuffix(c.req.path, `/${slug}/embed`);
+      const availablePages = await resolveViewerAvailablePages(c, options, deck, slug, mountPath, dev);
       return renderDeckExternalEmbedResponse({
         context: { c, deck, slug, mountPath },
         options: embedOptions,
         document: options.document,
+        availablePages,
       });
     });
   }
@@ -418,6 +424,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
     if (!(await isPageSurfaceEnabled(options, { c, surface: "viewer", mountPath, dev, deck, slug }))) {
       return c.json({ error: "Deck route not found", slug, surface: "viewer" }, 404);
     }
+    const availablePages = await resolveViewerAvailablePages(c, options, deck, slug, mountPath, dev);
     return c.html(
       await renderDeckViewerPage({
         c,
@@ -428,6 +435,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
           ...options.viewer,
           controls: await resolveViewerControls(c, options, deck, slug, mountPath),
         },
+        availablePages,
         exportOptions: options.export,
         document: options.document,
       }),
@@ -468,13 +476,16 @@ export function deckContext<E extends Env = any>(
     if (!slug) return c.json({ error: "Deck not found", slug: "" }, 404);
     const sourceContext = c as unknown as Context<E>;
     const deck = await options.source.getCompiledDeck(sourceContext, slug);
-    if (!deck || (!(await isDevEnabled(sourceContext, options)) && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
+    const dev = await isDevEnabled(sourceContext, options);
+    if (!deck || (!dev && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
     const mountPath = options.mountPath ?? inferMountPath(c.req.path, slug);
+    const availablePages = await resolveViewerAvailablePages(sourceContext, options, deck, slug, mountPath, dev);
     const viewer = await createDeckViewerParts({
       deck,
       mountPath,
       controls: options.viewer?.controls,
       openGraph: options.viewer?.openGraph,
+      availablePages,
     });
 
     c.set("deck", deck);
@@ -482,6 +493,19 @@ export function deckContext<E extends Env = any>(
     c.set("deckToc", viewer.slides);
     c.set("deckMeta", viewer.meta);
     await next();
+  };
+}
+
+async function resolveViewerAvailablePages<E extends Env>(
+  c: Context<E>,
+  options: Pick<DecksRouterOptions<E>, "pages">,
+  deck: CompiledDeck,
+  slug: string,
+  mountPath: string,
+  dev: boolean,
+): Promise<DeckViewerAvailablePages> {
+  return {
+    print: await isPageSurfaceEnabled(options, { c, surface: "print", mountPath, dev, deck, slug }),
   };
 }
 
@@ -642,7 +666,7 @@ async function resolveIndexTitle<E extends Env>(
 }
 
 async function isPageSurfaceEnabled<E extends Env>(
-  options: DecksRouterOptions<E>,
+  options: Pick<DecksRouterOptions<E>, "pages">,
   input: DeckRouteSurfaceInput<E>,
 ): Promise<boolean> {
   const configured = input.surface === "index"

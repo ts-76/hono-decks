@@ -216,12 +216,49 @@ describe("decksRouter", () => {
     );
 
     expect((await app.request("/slides/deck1")).status).toBe(404);
-    expect((await app.request("/slides/deck1", { headers: { "x-viewer-enabled": "1" } })).status).toBe(200);
+    const viewer = await app.request("/slides/deck1", { headers: { "x-viewer-enabled": "1" } });
+    const viewerHtml = await viewer.text();
+    expect(viewer.status).toBe(200);
+    expect(viewerHtml).not.toContain('data-hono-decks-print="true"');
+    expect(viewerHtml).not.toContain('data-hono-decks-print-path="/slides/deck1/print"');
     expect((await app.request("/slides/deck1/render")).status).toBe(404);
     expect((await app.request("/slides/deck1/render", { headers: { "x-render-enabled": "1" } })).status).toBe(200);
     expect((await app.request("/slides/deck1/print")).status).toBe(404);
     expect((await app.request("/slides/deck1/presentation")).status).toBe(404);
     expect((await app.request("/slides/deck1/presenter")).status).toBe(404);
+  });
+
+  it("keeps the print control aligned with a request-aware print resolver", async () => {
+    const app = new Hono();
+    app.route(
+      "/slides",
+      decksRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        pages: { print: ({ c }) => c.req.header("x-print-enabled") === "1" },
+        embed: {},
+      }),
+    );
+
+    const disabledViewer = await (await app.request("/slides/deck1")).text();
+    const enabledViewer = await (
+      await app.request("/slides/deck1", { headers: { "x-print-enabled": "1" } })
+    ).text();
+
+    expect(disabledViewer).not.toContain('data-hono-decks-print="true"');
+    expect(disabledViewer).not.toContain(' data-hono-decks-print-path="');
+    expect(enabledViewer).toContain('href="/slides/deck1/print"');
+    expect(enabledViewer).toContain('data-hono-decks-print="true"');
+    expect(enabledViewer).toContain('data-hono-decks-print-path="/slides/deck1/print"');
+    const disabledEmbed = await (await app.request("/slides/deck1/embed")).text();
+    const enabledEmbed = await (
+      await app.request("/slides/deck1/embed", { headers: { "x-print-enabled": "1" } })
+    ).text();
+    expect(disabledEmbed).not.toContain('data-hono-decks-print="true"');
+    expect(disabledEmbed).not.toContain(' data-hono-decks-print-path="');
+    expect(enabledEmbed).toContain('data-hono-decks-print="true"');
+    expect(enabledEmbed).toContain('data-hono-decks-print-path="/slides/deck1/print"');
+    expect((await app.request("/slides/deck1/print")).status).toBe(404);
+    expect((await app.request("/slides/deck1/print", { headers: { "x-print-enabled": "1" } })).status).toBe(200);
   });
 
   it("mounts a safe request-aware external embed document from router options", async () => {
@@ -1069,10 +1106,16 @@ describe("decksRouter", () => {
   it("creates one configured kit for routes, context, source, and paths", async () => {
     const configured = configureDecks(
       defineDecks({ manifest: { decks: [deck] } }),
-      defineDecksConfig({ mountPath: "/slides/", router: { pages: { index: false } } }),
+      defineDecksConfig({ mountPath: "/slides/", router: { pages: { index: false, print: false } } }),
     );
     const app = new Hono<{ Variables: DeckContextVariables }>();
-    app.get(`${configured.mountPath}/:slug/about`, configured.context(), (c) => c.json(c.var.deckMeta.paths));
+    app.get(`${configured.mountPath}/:slug/about`, configured.context(), (c) =>
+      c.json({
+        paths: c.var.deckMeta.paths,
+        availablePages: c.var.deckMeta.availablePages,
+        controlsHtml: c.var.deckViewer.controls?.html,
+      }),
+    );
     app.route(configured.mountPath, configured.router());
 
     expect(configured.mountPath).toBe("/slides");
@@ -1085,10 +1128,14 @@ describe("decksRouter", () => {
     });
     expect((await app.request("/slides")).status).toBe(404);
     expect((await app.request("/slides/deck1/render")).status).toBe(200);
-    expect(await (await app.request("/slides/deck1/about")).json()).toMatchObject({
-      viewer: "/slides/deck1",
-      print: "/slides/deck1/print",
-    });
+    const about = await (await app.request("/slides/deck1/about")).json<{
+      paths: { viewer: string; print: string };
+      availablePages: { print: boolean };
+      controlsHtml: string;
+    }>();
+    expect(about.paths).toMatchObject({ viewer: "/slides/deck1", print: "/slides/deck1/print" });
+    expect(about.availablePages.print).toBe(false);
+    expect(about.controlsHtml).not.toContain('data-hono-decks-print="true"');
   });
 
   it("keeps root-mounted paths canonical", () => {
@@ -1718,6 +1765,25 @@ describe("decksRouter", () => {
     expect(exportedHtml.indexOf('data-hono-decks-export="png"')).toBeLessThan(
       exportedHtml.indexOf("data-slide-position"),
     );
+  });
+
+  it("omits the unavailable default print item while preserving explicit custom links", async () => {
+    const parts = await createDeckViewerParts({
+      deck,
+      mountPath: "/slides",
+      availablePages: { print: false },
+      controls: {
+        items: (defaults, context) => [
+          defaults.print,
+          { type: "link", href: context.meta.paths.print, label: "Custom print" },
+        ],
+      },
+    });
+
+    expect(parts.meta.availablePages.print).toBe(false);
+    expect(parts.controls?.html).not.toContain('data-hono-decks-print="true"');
+    expect(parts.controls?.html).toContain('href="/slides/deck1/print"');
+    expect(parts.controls?.html).toContain("Custom print");
   });
 
   it("lets deckContext target a public mount path from custom admin routes", async () => {

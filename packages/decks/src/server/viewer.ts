@@ -84,9 +84,13 @@ export interface DeckViewerControlDefaults {
   position: DeckViewerDefaultControlItem;
   next: DeckViewerDefaultControlItem;
   fullscreen: DeckViewerDefaultControlItem;
-  print: DeckViewerDefaultControlItem;
+  print: DeckViewerDefaultControlItem | null;
   exportPdf: DeckViewerDefaultControlItem | null;
   exportPng: DeckViewerDefaultControlItem | null;
+}
+
+export interface DeckViewerAvailablePages {
+  print: boolean;
 }
 
 export interface DeckViewerControlsContext {
@@ -141,6 +145,7 @@ export interface DeckPageMeta {
   title: string;
   description?: string;
   paths: DeckPaths;
+  availablePages: DeckViewerAvailablePages;
   availableExports: DeckViewerExportPaths;
   imagePath?: string;
 }
@@ -173,6 +178,7 @@ export interface DeckViewerEmbedOptions {
   mountPath: string;
   viewerStateQuery?: string;
   controls?: false | DeckViewerControlsOptions;
+  availablePages?: Partial<DeckViewerAvailablePages>;
   exportPaths?: DeckViewerExportPaths;
   style?: string;
   toc?: boolean;
@@ -191,6 +197,7 @@ export async function createDeckViewerParts(input: {
   viewerStateQuery?: string;
   controls?: false | DeckViewerControlsOptions;
   openGraph?: boolean | DeckViewerOpenGraphOptions;
+  availablePages?: Partial<DeckViewerAvailablePages>;
   exportPaths?: DeckViewerExportPaths;
 }): Promise<DeckViewerParts> {
   const slug = input.deck.slug;
@@ -204,6 +211,7 @@ export async function createDeckViewerParts(input: {
     title,
     description: input.deck.meta.description,
     paths,
+    availablePages: { print: input.availablePages?.print !== false },
     availableExports: input.exportPaths ?? {},
     ...(imagePath ? { imagePath } : {}),
   };
@@ -234,7 +242,7 @@ export async function createDeckViewerEmbed(input: DeckViewerEmbedOptions): Prom
     "data-hono-decks-viewer": true,
     "data-hono-decks-embed": true,
     "data-deck-slug": parts.slug,
-    "data-hono-decks-print-path": parts.meta.paths.print,
+    ...(parts.meta.availablePages.print ? { "data-hono-decks-print-path": parts.meta.paths.print } : {}),
     "aria-label": parts.title,
     children: [
       jsx("div", {
@@ -260,6 +268,7 @@ export async function renderDeckViewerPage<E extends Env = any>(input: {
   mountPath: string;
   viewerStateQuery?: string;
   viewer?: DeckViewerOptions<E>;
+  availablePages?: Partial<DeckViewerAvailablePages>;
   exportOptions?: false | DeckExportOptions<E>;
   document?: DeckDocumentOptions<E>;
 }): Promise<string> {
@@ -269,6 +278,7 @@ export async function renderDeckViewerPage<E extends Env = any>(input: {
     viewerStateQuery: input.viewerStateQuery,
     controls: input.viewer?.controls,
     openGraph: input.viewer?.openGraph,
+    availablePages: input.availablePages,
     exportPaths: await resolveAuthorizedExportPaths(input.c, input.deck, input.mountPath, input.exportOptions),
   });
   const renderInput: DeckViewerRenderInput<E> = {
@@ -281,7 +291,7 @@ export async function renderDeckViewerPage<E extends Env = any>(input: {
   const content = jsx("main", {
       "data-hono-decks-viewer": true,
       "data-deck-slug": parts.slug,
-      "data-hono-decks-print-path": parts.meta.paths.print,
+      ...(parts.meta.availablePages.print ? { "data-hono-decks-print-path": parts.meta.paths.print } : {}),
       ...(customContent
         ? { "aria-label": parts.title }
         : { "aria-labelledby": "hono-decks-viewer-title" }),
@@ -474,7 +484,7 @@ function buildViewerControlDefaults(context: DeckViewerControlsContext): DeckVie
     position: { type: "default", key: "position" },
     next: { type: "default", key: "next" },
     fullscreen: { type: "default", key: "fullscreen" },
-    print: { type: "default", key: "print" },
+    print: context.meta.availablePages.print ? { type: "default", key: "print" } : null,
     exportPdf: context.meta.availableExports.pdf ? { type: "default", key: "exportPdf" } : null,
     exportPng: context.meta.availableExports.png ? { type: "default", key: "exportPng" } : null,
   };

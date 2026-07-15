@@ -57,7 +57,7 @@ export interface ConfiguredDecks<E extends Env = any> {
   source: DeckSource<E>;
   router(overrides?: DecksRouterConfig<E>): Hono<E>;
   context(
-    overrides?: Pick<DecksRouterOptions<E>, "dev" | "viewer">,
+    overrides?: Pick<DecksRouterOptions<E>, "dev" | "pages" | "viewer">,
   ): MiddlewareHandler<E & { Variables: DeckContextVariables }>;
   paths(slug: string): DeckPaths;
 }
@@ -109,6 +109,7 @@ export function configureDecks<E extends Env = any>(
         source,
         mountPath,
         dev: merged.dev,
+        pages: merged.pages,
         viewer: merged.viewer,
       });
     },

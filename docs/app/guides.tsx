@@ -555,7 +555,7 @@ const routing = (locale: Locale): Guide => {
       presenter: ({ dev }) => dev,
     },
   },
-})`} /><p>{isJa ? "関数を指定した項目はリクエストごとに評価されるため、認証状態や環境変数による制御にも使えます。" : "Resolver functions run per request, so they can also check authentication or environment bindings."}</p></section>
+})`} /><p>{isJa ? "関数を指定した項目はリクエストごとに評価されるため、認証状態や環境変数による制御にも使えます。" : "Resolver functions run per request, so they can also check authentication or environment bindings."}</p><p>{isJa ? <><code>print</code>を無効にすると、標準ビューアーと外部埋め込みの印刷ボタンも表示されません。ビューアーのCmd / Ctrl + Pは専用ルートへ移動せず、ブラウザ本来の印刷として動作します。独自に追加したリンクは自動では削除されません。</> : <>Disabling <code>print</code> also removes the print button from the default viewer and external embed. Cmd / Ctrl + P then uses the browser's native print behavior instead of opening the dedicated route. Links added explicitly by your application are left unchanged.</>}</p></section>
       <section id="custom"><h2>{isJa ? "標準UIを調整する、または独自画面を作る" : "Customize the default UI or build an app-owned page"}</h2><p>{isJa ? <><code>pages.index.render</code>は、デッキ一覧の見た目だけを変える場合に使います。共通設定は<code>hono-decks.config.ts</code>に置きます。次の<code>decks.router(overrides)</code>は、特定の登録箇所だけを上書きする例です。</> : <>Use <code>pages.index.render</code> to change only the deck index. Keep shared behavior in <code>hono-decks.config.ts</code>; the following <code>decks.router(overrides)</code> example changes one mount point only.</>}</p><CodeBlock locale={locale} code={`decks.router({
   pages: {
     index: {

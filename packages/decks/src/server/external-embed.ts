@@ -11,6 +11,7 @@ import {
 } from "./document";
 import {
   createDeckViewerEmbed,
+  type DeckViewerAvailablePages,
   type DeckViewerEmbed,
   type DeckViewerEmbedOptions,
 } from "./viewer";
@@ -48,6 +49,7 @@ export async function renderDeckExternalEmbedResponse<E extends Env>(input: {
   context: DeckExternalEmbedContext<E>;
   options: DeckExternalEmbedOptions<E>;
   document?: DeckDocumentOptions<E>;
+  availablePages?: Partial<DeckViewerAvailablePages>;
 }): Promise<Response> {
   const { c, deck, slug, mountPath } = input.context;
   const enabled = input.options.enabled;
@@ -73,6 +75,7 @@ export async function renderDeckExternalEmbedResponse<E extends Env>(input: {
     deck,
     mountPath,
     ...viewerOptions,
+    availablePages: input.availablePages,
     nonce: document.nonce,
   });
   const renderInput = { ...input.context, viewer, document };

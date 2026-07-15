@@ -172,3 +172,4 @@
 {"id":"int-b95d0e47","kind":"field_change","created_at":"2026-07-15T14:57:52.442548Z","actor":"ts-76","issue_id":"hono-slides-5xu","extra":{"field":"status","new_value":"in_progress","old_value":"closed"}}
 {"id":"int-5b735569","kind":"field_change","created_at":"2026-07-15T15:00:10.282975Z","actor":"ts-76","issue_id":"hono-slides-5xu","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"スワイプ抑止の残留を解消し、透明オーバーレイクリック後のフォーカスをviewportへ戻して後続キー操作も統一。実ブラウザーでstep=1とviewportフォーカスを確認し、全check成功。"}}
 {"id":"int-190551dd","kind":"field_change","created_at":"2026-07-15T15:13:39.991218Z","actor":"ts-76","issue_id":"hono-slides-5xu","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"Closed"}}
+{"id":"int-8a64c2e7","kind":"field_change","created_at":"2026-07-15T23:56:23.924811Z","actor":"ts-76","issue_id":"hono-slides-srl","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"Closed"}}
