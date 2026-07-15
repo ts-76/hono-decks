@@ -24,7 +24,6 @@ function _createMdxContent(props) {
         }), _jsxs("p", {
           children: ["CSS animation stays inside the fixed 16", ":9", " slide and respects reduced motion."]
         }), _jsxs(Fire, {
-          order: "1",
           effect: "fade-up",
           children: [_jsx(_components.p, {
             children: "The reveal state is owned by the presentation iframe."

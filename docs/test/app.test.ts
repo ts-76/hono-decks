@@ -158,7 +158,11 @@ describe("HonoX documentation site", () => {
     expect(ja).toContain(":::fire");
     expect(ja).toContain('each=&quot;item&quot;');
     expect(ja).toContain('data-fire-effect=&quot;blur-in&quot;');
-    expect(ja).toContain("--hono-decks-fire-hidden-filter");
+    expect(ja).toContain("--fire-filter");
+    expect(ja).toContain("https://sli.dev/guide/animations");
+    expect(ja).toContain("at");
+    expect(ja).toContain("depth");
+    expect(ja).not.toContain("--hono-decks-fire-");
     expect(ja).not.toContain("$fire");
     expect(ja).not.toContain("fragments: list");
     expect(ja).toContain("@[x]");

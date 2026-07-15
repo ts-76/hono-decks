@@ -37,7 +37,7 @@ function transformDeckSyntaxChildren(
   const children: MarkdownNode[] = [];
   for (const child of node.children) {
     transformDeckSyntaxChildren(child, input);
-    rejectFireProp(child);
+    rejectRemovedFireAuthoring(child);
     children.push(
       zennEmbedNode(child, input) ??
       plainUrlLinkNode(child) ??
@@ -49,11 +49,15 @@ function transformDeckSyntaxChildren(
   node.children = children;
 }
 
-function rejectFireProp(node: MarkdownNode): void {
+function rejectRemovedFireAuthoring(node: MarkdownNode): void {
   if (node.type !== "mdxJsxFlowElement" && node.type !== "mdxJsxTextElement") return;
   if (!Array.isArray(node.attributes)) return;
-  if (!node.attributes.some((attribute) => attribute.name === "$fire")) return;
-  throw new Error('The "$fire" prop is not supported. Wrap the content with <Fire>...</Fire>.');
+  if (node.attributes.some((attribute) => attribute.name === "$fire")) {
+    throw new Error('The "$fire" prop is not supported. Wrap the content with <Fire>...</Fire>.');
+  }
+  if (node.name === "Fire" && node.attributes.some((attribute) => attribute.name === "order")) {
+    throw new Error('The Fire "order" prop is not supported. Fires reveal in source order.');
+  }
 }
 
 function zennEmbedNode(
@@ -146,9 +150,11 @@ function isHttpUrl(value: string): boolean {
 function fireDirectiveNode(node: MarkdownNode): MarkdownNode | undefined {
   if (node.type !== "containerDirective" || node.name !== "fire") return undefined;
   const attributes = directiveAttributes(node);
+  if (attributes.order !== undefined) {
+    throw new Error('The fire "order" attribute is not supported. Fires reveal in source order.');
+  }
   if (attributes.each !== undefined) return fireEachItemNode(node, attributes);
   const fireAttributes = [
-    ...(typeof attributes.order === "string" ? [mdxAttribute("order", attributes.order)] : []),
     ...(typeof attributes.effect === "string" ? [mdxAttribute("effect", attributes.effect)] : []),
   ];
   return mdxElement("Fire", fireAttributes, node.children ?? []);
@@ -158,10 +164,6 @@ function fireEachItemNode(node: MarkdownNode, attributes: Record<string, string>
   if (attributes.each !== "item") {
     throw new Error('The fire "each" attribute only accepts "item".');
   }
-  if (attributes.order !== undefined) {
-    throw new Error('The fire "order" attribute cannot be combined with each="item". Items use source order.');
-  }
-
   const children = node.children ?? [];
   const list = children.length === 1 && children[0]?.type === "list" ? children[0] : undefined;
   if (!list) {

@@ -13,7 +13,6 @@ function _createMdxContent(props) {
     }), "\n", _jsx(_components.p, {
       children: "Rapid commands during a slide transition are folded into the latest pending navigation."
     }), "\n", _jsx(Fire, {
-      order: "1",
       effect: "fade-up",
       children: _jsx(_components.p, {
         children: "The outgoing slide keeps sliding with the incoming slide's transition timing."

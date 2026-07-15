@@ -84,7 +84,7 @@ describe("compiled deck rendering", () => {
               {
                 type: "component",
                 name: "Fire",
-                props: { order: 2 },
+                props: {},
                 children: [{ type: "text", value: "Second reveal" }],
               },
             ],
@@ -94,9 +94,33 @@ describe("compiled deck rendering", () => {
       mountPath: "/slides",
     });
 
-    expect(html).toContain("data-hono-decks-fire");
-    expect(html).toContain('data-fire-order="2"');
+    expect(html).toContain("<div data-hono-decks-fire");
+    expect(html).not.toContain("data-fire-order");
     expect(html).toContain("Second reveal");
+  });
+
+  it("rejects Fire ordering in programmatic slide nodes", async () => {
+    await expect(
+      renderCompiledDeckPageAsync({
+        deck: {
+          ...deck,
+          slides: [
+            {
+              ...deck.slides[0],
+              nodes: [
+                {
+                  type: "component",
+                  name: "Fire",
+                  props: { order: 2 },
+                  children: [{ type: "text", value: "Second reveal" }],
+                },
+              ],
+            },
+          ],
+        },
+        mountPath: "/slides",
+      }),
+    ).rejects.toThrow('The Fire "order" prop is not supported. Fires reveal in source order.');
   });
 
   it("renders Fire effects as stable reveal metadata", async () => {
@@ -110,7 +134,7 @@ describe("compiled deck rendering", () => {
               {
                 type: "component",
                 name: "Fire",
-                props: { order: 2, effect: "fade-up" },
+                props: { effect: "fade-up" },
                 children: [{ type: "text", value: "Animated reveal" }],
               },
             ],
@@ -121,9 +145,8 @@ describe("compiled deck rendering", () => {
     });
 
     expect(html).toContain("data-hono-decks-fire");
-    expect(html).toContain('data-fire-order="2"');
     expect(html).toContain('data-fire-effect="fade-up"');
-    expect(html).toContain("[data-fire-effect=fade-up]{--hono-decks-fire-hidden-transform:translateY(.85rem)}");
+    expect(html).toContain("[data-fire-effect=fade-up]{--fire-transform:translateY(.85rem)}");
     expect(html).toContain("@media (prefers-reduced-motion: reduce)");
   });
 
@@ -132,7 +155,7 @@ describe("compiled deck rendering", () => {
       deck: {
         ...deck,
         themeStyle:
-          '[data-fire-effect="blur-in"]{--hono-decks-fire-hidden-filter:blur(12px);--hono-decks-fire-duration:.32s}',
+          '[data-fire-effect="blur-in"]{--fire-filter:blur(12px);--fire-duration:.32s}',
         slides: [
           {
             ...deck.slides[0],
@@ -151,9 +174,9 @@ describe("compiled deck rendering", () => {
     });
 
     expect(html).toContain('data-fire-effect="blur-in"');
-    expect(html).toContain("--hono-decks-fire-hidden-filter:blur(12px)");
-    expect(html).toContain("--hono-decks-fire-duration:.32s");
-    expect(html).toContain("filter var(--hono-decks-fire-duration,.18s)");
+    expect(html).toContain("--fire-filter:blur(12px)");
+    expect(html).toContain("--fire-duration:.32s");
+    expect(html).toContain("filter var(--fire-duration) var(--fire-easing)");
   });
 
   it("renders a full page as a clean presentation surface with warnings", () => {
@@ -221,7 +244,7 @@ describe("compiled deck rendering", () => {
               {
                 type: "component",
                 name: "Fire",
-                props: { order: 1 },
+                props: {},
                 children: [{ type: "text", value: "First reveal" }],
               },
             ],
@@ -236,6 +259,8 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("data-fire-hidden");
     expect(html).toContain("let stepIndex = 0");
     expect(html).toContain("let stepCount = 0");
+    expect(html).toContain("const visible = fireIndex < stepIndex");
+    expect(html).not.toContain("function fireOrder");
     expect(html).toContain("function readInitialState()");
     expect(html).toContain("function writePaginationState()");
     expect(html).toContain('params.set("slide", String(index + 1))');

@@ -62,12 +62,7 @@ export function renderPresentationScript(nonce?: string): string {
   }
 
   function slideFires(slide) {
-    return Array.from(slide?.querySelectorAll("[data-hono-decks-fire]") ?? []).sort((a, b) => fireOrder(a, 0) - fireOrder(b, 0));
-  }
-
-  function fireOrder(fire, fallback) {
-    const order = Number(fire.getAttribute("data-fire-order"));
-    return Number.isFinite(order) && order > 0 ? order : fallback;
+    return Array.from(slide?.querySelectorAll("[data-hono-decks-fire]") ?? []);
   }
 
   function fireCountForSlide(slideIndex) {
@@ -86,7 +81,7 @@ export function renderPresentationScript(nonce?: string): string {
     stepCount = fires.length;
     stepIndex = Math.max(0, Math.min(stepCount, nextStepIndex));
     fires.forEach((fire, fireIndex) => {
-      const visible = fireOrder(fire, fireIndex + 1) <= stepIndex;
+      const visible = fireIndex < stepIndex;
       fire.toggleAttribute("data-fire-hidden", !visible);
       fire.setAttribute("aria-hidden", visible ? "false" : "true");
     });

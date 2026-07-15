@@ -59,11 +59,12 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden}
 .mdx-hero h1{margin:0;font-size:clamp(2.2rem,5vw,5rem);line-height:1.02}
 .mdx-hero-subtitle{margin:1rem 0 0;font-size:clamp(1rem,1.8vw,1.5rem);line-height:1.45;color:var(--hono-decks-muted-color)}
 .mdx-hero-image{width:100%;height:auto;max-height:70vh;object-fit:contain;border-radius:8px}
-[data-hono-decks-fire]{opacity:var(--hono-decks-fire-visible-opacity,1);transform:var(--hono-decks-fire-visible-transform,none);filter:var(--hono-decks-fire-visible-filter,none);transition:opacity var(--hono-decks-fire-duration,.18s) var(--hono-decks-fire-easing,ease),transform var(--hono-decks-fire-duration,.18s) var(--hono-decks-fire-easing,ease),filter var(--hono-decks-fire-duration,.18s) var(--hono-decks-fire-easing,ease)}
-[data-hono-decks-fire][data-fire-hidden]{visibility:hidden;opacity:var(--hono-decks-fire-hidden-opacity,0);transform:var(--hono-decks-fire-hidden-transform,translateY(.35rem));filter:var(--hono-decks-fire-hidden-filter,none)}
-[data-fire-effect=none],[data-fire-effect=fade]{--hono-decks-fire-hidden-transform:none}
-[data-fire-effect=fade-up]{--hono-decks-fire-hidden-transform:translateY(.85rem)}
-[data-fire-effect=scale]{--hono-decks-fire-hidden-transform:scale(.96)}
+[data-hono-decks-fire]{--fire-duration:.18s;--fire-easing:ease;--fire-opacity:0;--fire-transform:translateY(.35rem);--fire-filter:none;opacity:1;transform:none;filter:none;transition:opacity var(--fire-duration) var(--fire-easing),transform var(--fire-duration) var(--fire-easing),filter var(--fire-duration) var(--fire-easing)}
+[data-hono-decks-fire][data-fire-hidden]{visibility:hidden;opacity:var(--fire-opacity);transform:var(--fire-transform);filter:var(--fire-filter)}
+[data-fire-effect=none]{--fire-duration:0s;--fire-transform:none}
+[data-fire-effect=fade]{--fire-transform:none}
+[data-fire-effect=fade-up]{--fire-transform:translateY(.85rem)}
+[data-fire-effect=scale]{--fire-transform:scale(.96)}
 body:not([data-overview-mode]) .hono-decks-deck{position:relative}
 body:not([data-overview-mode]) .slide{position:absolute;inset:0;width:100%;height:100%}
 .slide[data-active-transition]{transition:opacity var(--hono-decks-active-transition-duration,var(--hono-decks-slide-transition-duration,var(--hono-decks-transition-duration))) var(--hono-decks-active-transition-easing,var(--hono-decks-slide-transition-easing,var(--hono-decks-transition-easing))),transform var(--hono-decks-active-transition-duration,var(--hono-decks-slide-transition-duration,var(--hono-decks-transition-duration))) var(--hono-decks-active-transition-easing,var(--hono-decks-slide-transition-easing,var(--hono-decks-transition-easing)));will-change:opacity,transform}

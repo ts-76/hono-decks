@@ -862,6 +862,64 @@ title: Deck One
     }
   });
 
+  it("rejects explicit Fire ordering in favor of source order", async () => {
+    const cwd = await createFixture();
+
+    try {
+      await writeFile(
+        join(cwd, "decks", "deck1", "deck.mdx"),
+        `---
+title: Deck One
+---
+
+<Fire order={2}>Reveal</Fire>
+`,
+        "utf8",
+      );
+
+      await expect(
+        compileDecks({
+          cwd,
+          root: "decks",
+          out: "src/generated",
+          mountPath: "/slides",
+        }),
+      ).rejects.toThrow('The Fire "order" prop is not supported. Fires reveal in source order.');
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects fire directive ordering in favor of source order", async () => {
+    const cwd = await createFixture();
+
+    try {
+      await writeFile(
+        join(cwd, "decks", "deck1", "deck.mdx"),
+        `---
+title: Deck One
+---
+
+:::fire{order="2"}
+Reveal
+:::
+`,
+        "utf8",
+      );
+
+      await expect(
+        compileDecks({
+          cwd,
+          root: "decks",
+          out: "src/generated",
+          mountPath: "/slides",
+        }),
+      ).rejects.toThrow('The fire "order" attribute is not supported. Fires reveal in source order.');
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("compiles Zenn-style embeds and fire reveal authoring syntax", async () => {
     const cwd = await createFixture();
 
@@ -904,7 +962,7 @@ Markdown reveal
 
 <Fire effect="blur-in">Direct JSX reveal</Fire>
 
-<Fire order={2} effect="fade-up"><Badge>JSX reveal</Badge></Fire>
+<Fire effect="fade-up"><Badge>JSX reveal</Badge></Fire>
 
 The slide stays 16:9.
 `,
@@ -953,7 +1011,6 @@ The slide stays 16:9.
       expect(slideOutput).toContain('effect: "blur-in"');
       expect(slideOutput).toContain("16");
       expect(slideOutput).toContain(":9");
-      expect(slideOutput).toContain("order: 2");
       expect(slideOutput).toContain('effect: "fade-up"');
       expect(slideOutput).not.toContain("_components.div");
       expect(slideOutput.match(/_jsx\(LinkCard/g)?.length).toBe(1);

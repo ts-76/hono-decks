@@ -31,14 +31,13 @@ export type SlideComponentRegistry = Record<string, SlideComponentDefinition>;
 
 export const builtInSlideComponents = defineSlideComponents({
   Fire: (props) => {
-    const order =
-      typeof props.order === "number" || typeof props.order === "string" ? Number(props.order) : undefined;
-    const fireOrder = order !== undefined && Number.isFinite(order) ? String(order) : undefined;
+    if (props.order !== undefined) {
+      throw new Error('The Fire "order" prop is not supported. Fires reveal in source order.');
+    }
     const effect = stringProp(props.effect);
 
-    return jsx("span", {
+    return jsx("div", {
       "data-hono-decks-fire": true,
-      ...(fireOrder ? { "data-fire-order": fireOrder } : {}),
       ...(effect ? { "data-fire-effect": safeToken(effect).toLowerCase() } : {}),
       children: props.children,
     });

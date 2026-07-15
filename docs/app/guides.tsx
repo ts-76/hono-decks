@@ -228,10 +228,10 @@ Second reveal
 </Fire>`;
 
 const customFireEffectCode = `[data-fire-effect="blur-in"] {
-  --hono-decks-fire-hidden-transform: scale(.98);
-  --hono-decks-fire-hidden-filter: blur(12px);
-  --hono-decks-fire-duration: .32s;
-  --hono-decks-fire-easing: ease-out;
+  --fire-transform: scale(.98);
+  --fire-filter: blur(12px);
+  --fire-duration: .32s;
+  --fire-easing: ease-out;
 }`;
 
 const speakerNotesCode = `---
@@ -464,10 +464,11 @@ Node for I/O. Hono for routes.`} />
 
       <section id="fire">
         <h2>{isJa ? "fireでクリックごとに内容を発火する" : "Fire content one step at a time"}</h2>
-        <p>{isJa ? <><code>&lt;Fire&gt;</code>がJSXにおける基本形で、Slidevの<code>&lt;v-click&gt;</code>に相当します。Markdownのまとまりには<code>:::fire</code>、1つのリストを項目ごとに発火する場合は<code>:::fire&#123;each=&quot;item&quot;&#125;</code>を使います。通常は記述順に発火するため<code>order</code>は不要です。</> : <><code>&lt;Fire&gt;</code> is the primary JSX form and corresponds to Slidev's <code>&lt;v-click&gt;</code>. Use <code>:::fire</code> for Markdown blocks and <code>:::fire&#123;each=&quot;item&quot;&#125;</code> to reveal items within one list. Reveals normally follow source order, so add <code>order</code> only when you need an explicit sequence.</>}</p>
+        <p>{isJa ? <><code>&lt;Fire&gt;</code>がJSXの基本形です。Markdownのまとまりには<code>:::fire</code>、1つのリストを項目ごとに発火する場合は<code>:::fire&#123;each=&quot;item&quot;&#125;</code>を使います。すべて記述順に発火します。</> : <><code>&lt;Fire&gt;</code> is the primary JSX form. Use <code>:::fire</code> for Markdown blocks and <code>:::fire&#123;each=&quot;item&quot;&#125;</code> to reveal the direct items of one list. Every Fire follows source order.</>}</p>
         <CodeBlock label="MDX" locale={locale} code={fireSyntaxCode} />
+        <Callout title={isJa ? "Slidevとの対応範囲" : "How this maps to Slidev"}><p>{isJa ? <>記述順の<code>&lt;Fire&gt;</code>は、位置を指定しないSlidevの<code>&lt;v-click&gt;</code>または<code>v-click</code>に相当します。<code>each=&quot;item&quot;</code>は基本的な<code>&lt;v-clicks&gt;</code>相当です。Slidevの<code>at</code>、<code>depth</code>、<code>every</code>、<code>v-after</code>、<code>hide</code>にはまだ対応していません。詳しくは<a href="https://sli.dev/guide/animations">SlidevのAnimationガイド</a>を参照してください。</> : <>Source-ordered <code>&lt;Fire&gt;</code> maps to Slidev's <code>&lt;v-click&gt;</code> component or <code>v-click</code> directive without a position. <code>each=&quot;item&quot;</code> covers the basic <code>&lt;v-clicks&gt;</code> list case. Slidev's <code>at</code>, <code>depth</code>, <code>every</code>, <code>v-after</code>, and <code>hide</code> are not supported yet. See the <a href="https://sli.dev/guide/animations">Slidev Animation guide</a> for its full model.</>}</p></Callout>
         <h3>{isJa ? "effectをテーマで追加する" : "Add an effect in the theme"}</h3>
-        <p>{isJa ? <><code>none</code>、<code>fade</code>、<code>fade-up</code>、<code>scale</code>は組み込みです。それ以外の名前も<code>effect</code>へ指定でき、<code>data-fire-effect</code>と<code>--hono-decks-fire-*</code>変数を使って<code>theme.css</code>で動きを定義できます。</> : <><code>none</code>, <code>fade</code>, <code>fade-up</code>, and <code>scale</code> are built in. Any other <code>effect</code> name is exposed through <code>data-fire-effect</code>; define its motion in <code>theme.css</code> with the <code>--hono-decks-fire-*</code> variables.</>}</p>
+        <p>{isJa ? <><code>none</code>、<code>fade</code>、<code>fade-up</code>、<code>scale</code>は組み込みです。それ以外の名前も<code>effect</code>へ指定でき、<code>data-fire-effect</code>と<code>--fire-duration</code>、<code>--fire-easing</code>、<code>--fire-opacity</code>、<code>--fire-transform</code>、<code>--fire-filter</code>を使って<code>theme.css</code>で動きを定義できます。</> : <><code>none</code>, <code>fade</code>, <code>fade-up</code>, and <code>scale</code> are built in. Any other <code>effect</code> name is exposed through <code>data-fire-effect</code>. Define it in <code>theme.css</code> with <code>--fire-duration</code>, <code>--fire-easing</code>, <code>--fire-opacity</code>, <code>--fire-transform</code>, and <code>--fire-filter</code>.</>}</p>
         <CodeBlock label="theme.css" lang="css" locale={locale} code={customFireEffectCode} />
       </section>
 
