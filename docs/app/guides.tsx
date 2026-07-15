@@ -185,6 +185,48 @@ const themeCode = `/* decks/welcome/theme.css */
   text-wrap: balance;
 }`;
 
+const markdownSyntaxCode = [
+  "# Runtime boundary",
+  "",
+  "Use **bold**, *emphasis*, `inline code`, and [links](https://hono.dev/).",
+  "",
+  "- Node for build-time I/O",
+  "- Hono for runtime routes",
+  "",
+  "> Keep the Worker bundle filesystem-free.",
+  "",
+  "```ts",
+  "const runtime = \"Hono\"",
+  "```",
+].join("\n");
+
+const fragmentSyntaxCode = `<Fragment order={1} effect="fade-up">
+  First reveal
+</Fragment>
+
+:::fire{order="2" effect="fade-up"}
+Second reveal
+:::
+
+<Metric $fire={3} effect="scale" value="18 ms" />`;
+
+const speakerNotesCode = `---
+notes: |
+  Explain why generation runs before deployment.
+---
+
+# Build once, serve anywhere
+
+{/* Mention the generated module boundary. */}`;
+
+const embedSyntaxCode = `![Architecture](./assets/runtime-boundary.svg)
+
+@[youtube](https://www.youtube.com/watch?v=VIDEO_ID)
+@[x](https://x.com/honojs/status/POST_ID)
+@[card](https://hono.dev/docs/)
+@[embed](https://example.com/demo)
+@[iframe](https://example.com/demo)`;
+
 const languageMiddlewareCode = `import { languageDetector } from "hono/language"
 
 app.use(languageDetector({
@@ -321,12 +363,44 @@ const gettingStarted = (locale: Locale): Guide => locale === "ja" ? {
   </>,
 };
 
-const authoring = (locale: Locale): Guide => locale === "ja" ? {
-  title: "MDXでスライドを書く",
-  description: "スライドの追加から、段階表示、コンポーネント、画像、テーマまでを必要な順に説明します。",
-  sections: [{ id: "structure", label: "デッキとスライド" }, { id: "metadata", label: "フロントマター" }, { id: "fragments", label: "段階表示" }, { id: "components", label: "コンポーネント" }, { id: "assets", label: "画像と埋め込み" }, { id: "theme", label: "テーマ" }, { id: "verify", label: "確認と次の手順" }],
-  content: <>
-    <section id="structure"><h2>1つのデッキを1つのディレクトリに置く</h2><p><code>decks/&lt;slug&gt;/deck.mdx</code>が基本形です。ディレクトリ名がURLの<code>:slug</code>になります。たとえば<code>decks/launch/deck.mdx</code>は<code>/decks/launch</code>で表示されます。</p><p>ファイル先頭の<code>---</code>はデッキ情報、その後の<code>---</code>は新しいスライドの開始を表します。</p><CodeBlock label="decks/launch/deck.mdx" locale={locale} code={`---
+const authoring = (locale: Locale): Guide => {
+  const isJa = locale === "ja";
+  const sections = isJa
+    ? [
+        { id: "structure", label: "デッキとスライド" },
+        { id: "syntax", label: "本文の記法" },
+        { id: "metadata", label: "フロントマター" },
+        { id: "fragments", label: "段階表示" },
+        { id: "notes", label: "発表者ノート" },
+        { id: "components", label: "コンポーネント" },
+        { id: "assets", label: "画像と埋め込み" },
+        { id: "theme", label: "テーマ" },
+        { id: "verify", label: "確認と次の手順" },
+      ]
+    : [
+        { id: "structure", label: "Decks and slides" },
+        { id: "syntax", label: "Content syntax" },
+        { id: "metadata", label: "Frontmatter" },
+        { id: "fragments", label: "Staged content" },
+        { id: "notes", label: "Speaker notes" },
+        { id: "components", label: "Components" },
+        { id: "assets", label: "Assets and embeds" },
+        { id: "theme", label: "Theme" },
+        { id: "verify", label: "Verify and continue" },
+      ];
+
+  return {
+    title: isJa ? "MDXでスライドを書く" : "Author an MDX deck",
+    description: isJa
+      ? "使えるMarkdownとMDX、スライド固有の記法を、コンパイラが扱う範囲に絞って説明します。"
+      : "Use the Markdown, MDX, and deck-specific syntax supported by the compiler.",
+    sections,
+    content: <>
+      <section id="structure">
+        <h2>{isJa ? "1つのデッキを1つのディレクトリに置く" : "Keep each deck in its own directory"}</h2>
+        <p>{isJa ? <><code>decks/&lt;slug&gt;/deck.mdx</code>が基本形です。ディレクトリ名がURLの<code>:slug</code>になります。たとえば<code>decks/launch/deck.mdx</code>は<code>/decks/launch</code>で表示されます。</> : <>Use <code>decks/&lt;slug&gt;/deck.mdx</code>. The directory name becomes the URL slug, so <code>decks/launch/deck.mdx</code> appears at <code>/decks/launch</code>.</>}</p>
+        <p>{isJa ? <>ファイル先頭の<code>---</code>ブロックはデッキ情報、その後の区切り線は新しいスライドの開始を表します。スライド内の水平線として単独の<code>---</code>は使えません。</> : <>The opening <code>---</code> block contains deck metadata. Later separators start new slides, so a bare <code>---</code> cannot be used as a thematic break inside a slide.</>}</p>
+        <CodeBlock label="decks/launch/deck.mdx" locale={locale} code={`---
 title: Hono at the edge
 transition: fade
 ---
@@ -338,59 +412,75 @@ title: Runtime boundary
 layout: statement
 ---
 
-Node for I/O. Hono for routes.`} /></section>
-    <section id="metadata"><h2>デッキ全体と各スライドの設定を分ける</h2><p>ファイル先頭では<code>title</code>、<code>description</code>、既定の<code>transition</code>などを指定します。各スライドの直前では、そのスライドだけの<code>title</code>や<code>layout</code>を指定できます。設定が不要なスライドはフロントマターを省略できます。</p><Callout title="最初に必要なのはtitleだけ"><p>見た目やトランジションは後から追加できます。まず本文を書き、必要なスライドにだけ<code>layout</code>を指定すると把握しやすくなります。</p></Callout></section>
-    <section id="fragments"><h2>クリックごとに内容を表示する</h2><p><code>&lt;Fragment&gt;</code>で囲んだ内容は段階表示になります。<code>order</code>は同じスライド内の表示順です。通常の箇条書きを一項目ずつ出す場合は<code>fragments: list</code>をスライドのフロントマターに指定します。</p><CodeBlock label="MDX" locale={locale} code={`---
-fragments: list
----
+Node for I/O. Hono for routes.`} />
+      </section>
 
-- First point
-- Second point
+      <section id="syntax">
+        <h2>{isJa ? "本文はCommonMarkとMDXで書く" : "Write slide content with CommonMark and MDX"}</h2>
+        <p>{isJa ? "見出し、段落、強調、箇条書き、引用、リンク、画像、インラインコード、コードフェンスを使えます。MDXとしてJSX要素や式も記述できます。" : "Use headings, paragraphs, emphasis, lists, blockquotes, links, images, inline code, and fenced code blocks. MDX also accepts JSX elements and expressions."}</p>
+        <CodeBlock label="MDX" locale={locale} code={markdownSyntaxCode} />
+        <dl class="configuration-map">
+          <div><dt>{isJa ? "コードフェンス" : "Fenced code"}</dt><dd>{isJa ? <>開始行に<code>ts</code>、<code>tsx</code>、<code>css</code>などの言語名を付けると、スライド内でシンタックスハイライトされます。</> : <>Add a language such as <code>ts</code>, <code>tsx</code>, or <code>css</code> after the opening fence to enable syntax highlighting in the slide.</>}</dd></div>
+          <div><dt>MDX</dt><dd>{isJa ? <>JSXコンポーネント、props、式を使えます。<code>import</code>と<code>export</code>はファイル先頭にまとめます。</> : <>Use JSX components, props, and expressions. Keep <code>import</code> and <code>export</code> statements at the top of the file.</>}</dd></div>
+          <div><dt>{isJa ? "GFM拡張" : "GFM extensions"}</dt><dd>{isJa ? "標準構成ではテーブル、タスクリスト、打ち消し線を有効にしていません。必要な表現はコンポーネントで追加します。" : "Tables, task lists, and strikethrough are not enabled by default. Add a component when a deck needs those structures."}</dd></div>
+        </dl>
+      </section>
 
-<Fragment order={3}>Final note</Fragment>`} /></section>
-    <section id="components"><h2>まずサーバーコンポーネントを使う</h2><p><code>components/index.tsx</code>の名前付きエクスポートは、同じデッキのMDXからタグとして使えます。デッキごとに登録されるため、別のデッキと同じ名前でも衝突しません。</p><CodeBlock locale={locale} code={componentCode} /><CodeBlock label="MDX" locale={locale} code={componentUsageCode} /><h3>ブラウザ操作が必要な場合だけIslandにする</h3><p>クリックや状態管理が必要な部品は<code>components/client/index.tsx</code>へ置きます。クライアント用コードは自動生成されるため、通常は配信用ルートを追加する必要はありません。</p><CodeBlock locale={locale} code={clientComponentCode} /></section>
-    <section id="assets"><h2>画像はデッキからの相対パスで指定する</h2><p>画像を<code>decks/launch/assets/</code>に置き、<code>deck.mdx</code>から相対パスで参照します。コンパイル時に配信用URLへ変換されます。YouTubeやリンクカードは、URLだけの行ではなく明示的な記法を使います。</p><CodeBlock label="MDX" locale={locale} code={`![Architecture](./assets/runtime-boundary.svg)
+      <section id="metadata">
+        <h2>{isJa ? "デッキ全体と各スライドの設定を分ける" : "Separate deck and slide metadata"}</h2>
+        <p>{isJa ? "ファイル先頭のフロントマターはデッキ全体に、区切り線の直後に置いたフロントマターは次の1枚だけに適用されます。未定義のキーはmetaに残りますが、警告が出ます。" : "Opening frontmatter applies to the deck. Frontmatter immediately after a slide separator applies only to that slide. Unknown keys remain in meta but produce a warning."}</p>
+        <dl class="configuration-map">
+          <div><dt>{isJa ? "デッキ" : "Deck"}</dt><dd><code>title</code>, <code>description</code>, <code>author</code>, <code>tags</code>, <code>date</code>, <code>theme</code>, <code>transition</code>, <code>transitionDuration</code>, <code>transitionEasing</code>, <code>draft</code>, <code>assets</code>, <code>presenter</code></dd></div>
+          <div><dt>{isJa ? "スライド" : "Slide"}</dt><dd><code>title</code>, <code>layout</code>, <code>class</code>, <code>notes</code>, <code>background</code>, <code>transition</code>, <code>transitionDuration</code>, <code>transitionEasing</code>, <code>fragments</code></dd></div>
+          <div><dt>{isJa ? "トランジション" : "Transitions"}</dt><dd><code>none</code>, <code>fade</code>, <code>fade-out</code>, <code>slide-left</code>, <code>slide-right</code>, <code>slide-up</code>, <code>slide-down</code>, <code>view-transition</code></dd></div>
+          <div><dt>{isJa ? "レイアウト" : "Layouts"}</dt><dd>{isJa ? <><code>default</code>、中央配置の<code>cover</code>と<code>statement</code>が標準です。独自名は<code>layout-&lt;name&gt;</code>クラスとして<code>theme.css</code>から指定できます。</> : <><code>default</code>, centered <code>cover</code>, and centered <code>statement</code> are built in. A custom name becomes a <code>layout-&lt;name&gt;</code> class that can be styled in <code>theme.css</code>.</>}</dd></div>
+        </dl>
+        <Callout title={isJa ? "最初に必要なのはtitleだけ" : "Start with title only"}><p>{isJa ? <>本文を先に書き、必要なスライドにだけ<code>layout</code>や<code>transition</code>を追加すると設定を追いやすくなります。</> : <>Write the content first, then add <code>layout</code> or <code>transition</code> only where they clarify the presentation.</>}</p></Callout>
+      </section>
 
-@[youtube](https://www.youtube.com/watch?v=dQw4w9WgXcQ)
-@[card](https://hono.dev/docs/)`} /><p>画像をR2から配信する場合は、MDXを変えずに<code>withR2Assets()</code>で取得元を差し替えます。これは最初のデッキには不要です。</p></section>
-    <section id="theme"><h2>デッキ単位でテーマを追加する</h2><p><code>deck.mdx</code>と同じディレクトリに<code>theme.css</code>を置くと、そのデッキだけに適用されます。まずCSS変数で色を調整し、必要な部分だけ通常のセレクターを追加します。</p><CodeBlock label="decks/welcome/theme.css" locale={locale} code={themeCode} /></section>
-    <section id="verify"><h2>コンパイルして変更を確認する</h2><CodeBlock label="Terminal" code="bun run decks:compile" locale={locale} /><p>コンパイルエラーには対象ファイルとスライド番号が表示されます。表示を確認したら、公開画面を変える場合は<a class="text-link" href={localizedHref("/docs/routing", locale)}>ルートと画面</a>、環境変数やR2を使う場合は<a class="text-link" href={localizedHref("/docs/configuration", locale)}>設定</a>へ進みます。</p></section>
-  </>,
-} : {
-  title: "Author an MDX deck",
-  description: "Add slides, staged content, components, assets, and a deck-local theme in the order you need them.",
-  sections: [{ id: "structure", label: "Decks and slides" }, { id: "metadata", label: "Frontmatter" }, { id: "fragments", label: "Staged content" }, { id: "components", label: "Components" }, { id: "assets", label: "Assets and embeds" }, { id: "theme", label: "Theme" }, { id: "verify", label: "Verify and continue" }],
-  content: <>
-    <section id="structure"><h2>Keep each deck in its own directory</h2><p>Use <code>decks/&lt;slug&gt;/deck.mdx</code>. The directory name becomes the URL slug, so <code>decks/launch/deck.mdx</code> appears at <code>/decks/launch</code>.</p><p>The opening <code>---</code> block contains deck metadata. Later separators start new slides.</p><CodeBlock label="decks/launch/deck.mdx" locale={locale} code={`---
-title: Hono at the edge
-transition: fade
----
+      <section id="fragments">
+        <h2>{isJa ? "クリックごとに内容を表示する" : "Reveal content one step at a time"}</h2>
+        <p>{isJa ? <><code>Fragment</code>、<code>:::fire</code>、JSXの<code>$fire</code>はいずれも段階表示になります。<code>order</code>は同じスライド内の順番、<code>effect</code>は<code>none</code>、<code>fade</code>、<code>fade-up</code>、<code>scale</code>から選びます。</> : <><code>Fragment</code>, <code>:::fire</code>, and the JSX <code>$fire</code> prop all create staged content. <code>order</code> controls sequence; <code>effect</code> accepts <code>none</code>, <code>fade</code>, <code>fade-up</code>, or <code>scale</code>.</>}</p>
+        <CodeBlock label="MDX" locale={locale} code={fragmentSyntaxCode} />
+        <p>{isJa ? <>箇条書きを一項目ずつ出す場合は、スライドのフロントマターに<code>fragments: list</code>を指定します。手動指定だけに戻す場合は<code>manual</code>、段階表示を止める場合は<code>none</code>です。</> : <>Set <code>fragments: list</code> in slide frontmatter to reveal top-level list items separately. Use <code>manual</code> for explicit fragments only or <code>none</code> to disable staged content.</>}</p>
+      </section>
 
-# Hono at the edge
+      <section id="notes">
+        <h2>{isJa ? "発表者だけに見せるノートを書く" : "Add notes for the presenter"}</h2>
+        <p>{isJa ? <><code>notes: |</code>の複数行テキストとMDXコメントは発表者ノートへまとめられ、スライド本文には出ません。通常のコードコメントとして書いたMDXコメントもノートとして扱われます。</> : <>Multiline <code>notes: |</code> text and MDX comments are combined as presenter notes and omitted from slide content. Any MDX comment is treated as a note, not as an ordinary source comment.</>}</p>
+        <CodeBlock label="MDX" locale={locale} code={speakerNotesCode} />
+      </section>
 
----
-title: Runtime boundary
-layout: statement
----
+      <section id="components">
+        <h2>{isJa ? "まずサーバーコンポーネントを使う" : "Start with server components"}</h2>
+        <p>{isJa ? <><code>components/index.tsx</code>の名前付きエクスポートは、同じデッキのMDXからタグとして使えます。デッキごとに登録されるため、別のデッキと同じ名前でも衝突しません。</> : <>Named exports from <code>components/index.tsx</code> are available as tags in that deck's MDX. Registries are deck-local, so the same component name can exist in another deck.</>}</p>
+        <CodeBlock lang="tsx" locale={locale} code={componentCode} />
+        <CodeBlock label="MDX" locale={locale} code={componentUsageCode} />
+        <h3>{isJa ? "ブラウザ操作が必要な場合だけIslandにする" : "Use an island only for browser interaction"}</h3>
+        <p>{isJa ? <><code>components/client/index.tsx</code>はクリックや状態管理が必要な部品だけに使います。クライアント用コードは自動生成されるため、通常は配信用ルートを追加する必要はありません。</> : <>Use <code>components/client/index.tsx</code> only for components that need clicks or local state. The compiler generates and serves the client entry, so ordinary applications do not add a separate asset route.</>}</p>
+        <CodeBlock lang="tsx" locale={locale} code={clientComponentCode} />
+      </section>
 
-Node for I/O. Hono for routes.`} /></section>
-    <section id="metadata"><h2>Separate deck and slide metadata</h2><p>The opening block can define the deck <code>title</code>, <code>description</code>, and default <code>transition</code>. A block immediately before a slide can define that slide's <code>title</code> or <code>layout</code>. Omit slide frontmatter when no override is needed.</p><Callout title="Start with title only"><p>Write the content first. Add layouts and transitions only where they make the presentation easier to follow.</p></Callout></section>
-    <section id="fragments"><h2>Reveal content one step at a time</h2><p>Wrap content in <code>&lt;Fragment&gt;</code> for staged display. <code>order</code> controls the reveal order within a slide. Use <code>fragments: list</code> when every list item should appear separately.</p><CodeBlock label="MDX" locale={locale} code={`---
-fragments: list
----
+      <section id="assets">
+        <h2>{isJa ? "画像と外部コンテンツを明示して埋め込む" : "Reference assets and embeds explicitly"}</h2>
+        <p>{isJa ? <><code>decks/launch/assets/</code>に置いた画像は、<code>deck.mdx</code>からの相対パスで指定します。<code>youtube</code>、<code>x</code>、<code>card</code>、<code>embed</code>、<code>iframe</code>は専用記法を使います。</> : <>Reference images under <code>decks/launch/assets/</code> with paths relative to <code>deck.mdx</code>. Explicit directives are available for <code>youtube</code>, <code>x</code>, <code>card</code>, <code>embed</code>, and <code>iframe</code>.</>}</p>
+        <CodeBlock label="MDX" locale={locale} code={embedSyntaxCode} />
+        <p>{isJa ? <>URLだけの行は通常のリンクになります。外部iframeを公開する前に<a class="text-link" href={localizedHref("/docs/security", locale)}>CSPと許可オリジン</a>を設定してください。R2配信へ変える場合は、MDXを変えずに<code>withR2Assets()</code>で取得元を差し替えます。</> : <>A bare URL on its own line becomes a normal link. Configure <a class="text-link" href={localizedHref("/docs/security", locale)}>CSP and allowed origins</a> before publishing external iframes. To serve assets from R2, use <code>withR2Assets()</code> without changing MDX paths.</>}</p>
+      </section>
 
-- First point
-- Second point
+      <section id="theme">
+        <h2>{isJa ? "デッキ単位でテーマを追加する" : "Add a deck-local theme"}</h2>
+        <p>{isJa ? <><code>deck.mdx</code>と同じディレクトリに<code>theme.css</code>を置くと、そのデッキだけに適用されます。まずCSS変数で色を調整し、必要な部分だけ通常のセレクターを追加します。</> : <>Place <code>theme.css</code> beside <code>deck.mdx</code> to style only that deck. Start with the provided CSS variables, then add selectors for specific content.</>}</p>
+        <CodeBlock label="decks/welcome/theme.css" locale={locale} code={themeCode} />
+      </section>
 
-<Fragment order={3}>Final note</Fragment>`} /></section>
-    <section id="components"><h2>Start with server components</h2><p>Named exports from <code>components/index.tsx</code> are available as tags in that deck's MDX. Registries are deck-local, so the same component name can exist in another deck.</p><CodeBlock locale={locale} code={componentCode} /><CodeBlock label="MDX" locale={locale} code={componentUsageCode} /><h3>Use an island only for browser interaction</h3><p>Put components that need clicks or local state in <code>components/client/index.tsx</code>. The compiler generates and serves the client entry, so ordinary applications do not add a separate asset route.</p><CodeBlock locale={locale} code={clientComponentCode} /></section>
-    <section id="assets"><h2>Reference images relative to the deck</h2><p>Place images under <code>decks/launch/assets/</code> and reference them from <code>deck.mdx</code>. Compilation converts them to served asset URLs. Use explicit syntax for YouTube and link cards; a bare URL remains a link.</p><CodeBlock label="MDX" locale={locale} code={`![Architecture](./assets/runtime-boundary.svg)
-
-@[youtube](https://www.youtube.com/watch?v=dQw4w9WgXcQ)
-@[card](https://hono.dev/docs/)`} /><p>For R2 delivery, wrap the source with <code>withR2Assets()</code> without changing MDX paths. The first deck does not need this.</p></section>
-    <section id="theme"><h2>Add a deck-local theme</h2><p>Place <code>theme.css</code> beside <code>deck.mdx</code> to style only that deck. Start with the provided CSS variables, then add selectors for specific content.</p><CodeBlock label="decks/welcome/theme.css" locale={locale} code={themeCode} /></section>
-    <section id="verify"><h2>Compile and verify the change</h2><CodeBlock label="Terminal" code="bun run decks:compile" locale={locale} /><p>Compile errors identify the source file and slide number. After the deck renders, continue to <a class="text-link" href={localizedHref("/docs/routing", locale)}>routes and UI</a> for public surfaces or <a class="text-link" href={localizedHref("/docs/configuration", locale)}>configuration</a> for bindings and R2.</p></section>
-  </>,
+      <section id="verify">
+        <h2>{isJa ? "コンパイルして変更を確認する" : "Compile and verify the change"}</h2>
+        <CodeBlock label="Terminal" code="bun run decks:compile" locale={locale} />
+        <p>{isJa ? <>コンパイルエラーには対象ファイルとスライド番号が表示されます。表示を確認したら、公開画面を変える場合は<a class="text-link" href={localizedHref("/docs/routing", locale)}>ルートと画面</a>、環境変数やR2を使う場合は<a class="text-link" href={localizedHref("/docs/configuration", locale)}>設定</a>へ進みます。</> : <>Compile errors identify the source file and slide number. After the deck renders, continue to <a class="text-link" href={localizedHref("/docs/routing", locale)}>routes and UI</a> for public surfaces or <a class="text-link" href={localizedHref("/docs/configuration", locale)}>configuration</a> for bindings and R2.</>}</p>
+      </section>
+    </>,
+  };
 };
 
 const routing = (locale: Locale): Guide => {

@@ -1,4 +1,13 @@
 import type { Child } from "hono/jsx";
+import { createHighlighterCoreSync } from "shiki/core";
+import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
+import bash from "shiki/langs/bash.mjs";
+import css from "shiki/langs/css.mjs";
+import jsonc from "shiki/langs/jsonc.mjs";
+import mdx from "shiki/langs/mdx.mjs";
+import tsx from "shiki/langs/tsx.mjs";
+import typescript from "shiki/langs/typescript.mjs";
+import githubDarkHighContrast from "shiki/themes/github-dark-high-contrast.mjs";
 import { deployToCloudflareUrl } from "./deploy";
 import { localizedHref, t, type Locale } from "./i18n";
 
@@ -173,9 +182,52 @@ function codeId(code: string) {
   return `code-${hash.toString(36)}`;
 }
 
-export function CodeBlock({ code, label = "TypeScript", locale = "ja", copy = true }: { code: string; label?: string; locale?: Locale; copy?: boolean }) {
+type DocsCodeLanguage = "bash" | "css" | "jsonc" | "mdx" | "text" | "tsx" | "typescript";
+
+const codeTheme = "github-dark-high-contrast";
+const codeHighlighter = createHighlighterCoreSync({
+  themes: [githubDarkHighContrast],
+  langs: [bash, css, jsonc, mdx, tsx, typescript],
+  engine: createJavaScriptRegexEngine(),
+});
+
+function codeLanguage(label: string, lang?: DocsCodeLanguage): DocsCodeLanguage {
+  if (lang) return lang;
+  const normalized = label.toLowerCase();
+  if (normalized === "terminal") return "bash";
+  if (normalized === "mdx" || normalized.endsWith(".mdx")) return "mdx";
+  if (normalized.endsWith(".tsx")) return "tsx";
+  if (normalized.endsWith(".css")) return "css";
+  if (normalized.endsWith(".json") || normalized.endsWith(".jsonc")) return "jsonc";
+  if (normalized === "generated files") return "text";
+  return "typescript";
+}
+
+function tokenStyle(color: string | undefined, fontStyle: number | undefined): string {
+  const styles = color ? [`color:${color}`] : [];
+  if ((fontStyle ?? 0) & 1) styles.push("font-style:italic");
+  if ((fontStyle ?? 0) & 2) styles.push("font-weight:700");
+  if ((fontStyle ?? 0) & 4) styles.push("text-decoration:underline");
+  return styles.join(";");
+}
+
+export function CodeBlock({
+  code,
+  label = "TypeScript",
+  lang,
+  locale = "ja",
+  copy = true,
+}: {
+  code: string;
+  label?: string;
+  lang?: DocsCodeLanguage;
+  locale?: Locale;
+  copy?: boolean;
+}) {
   const text = t(locale);
   const id = codeId(code);
+  const language = codeLanguage(label, lang);
+  const highlighted = codeHighlighter.codeToTokens(code, { lang: language, theme: codeTheme });
   return (
     <figure class="code-block">
       <figcaption>
@@ -187,7 +239,10 @@ export function CodeBlock({ code, label = "TypeScript", locale = "ja", copy = tr
           </button>
         ) : null}
       </figcaption>
-      <pre><code id={id}>{code}</code></pre>
+      <pre><code id={id} class={`language-${language}`} data-language={language} data-source={code}>{highlighted.tokens.map((line, lineIndex) => <>{line.map((token) => {
+        const style = tokenStyle(token.color, token.fontStyle);
+        return <span style={style || undefined}>{token.content}</span>;
+      })}{lineIndex < highlighted.tokens.length - 1 ? "\n" : null}</>)}</code></pre>
     </figure>
   );
 }

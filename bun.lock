@@ -20,6 +20,7 @@
         "hono": "^4.12.30",
         "hono-decks": "workspace:*",
         "honox": "0.1.59",
+        "shiki": "^4.2.0",
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^5.20260714.1",

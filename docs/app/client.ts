@@ -47,7 +47,7 @@ document.addEventListener("click", async (event) => {
 
   const idleLabel = status.dataset.idle ?? status.textContent ?? "Copy";
   try {
-    const value = copyTarget.textContent ?? "";
+    const value = copyTarget.dataset.source ?? copyTarget.textContent ?? "";
     try {
       await navigator.clipboard.writeText(value);
     } catch {

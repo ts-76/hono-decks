@@ -146,6 +146,38 @@ describe("HonoX documentation site", () => {
     expect(security).toContain("許可していないオリジンでは拒否される");
   });
 
+  it("documents the supported authoring syntax and its default boundaries", async () => {
+    const ja = await (await app.request("/docs/authoring")).text();
+    const en = await (await app.request("/docs/authoring?lang=en")).text();
+
+    expect(ja).toContain('id="syntax"');
+    expect(ja).toContain('id="notes"');
+    expect(ja).toContain("CommonMarkとMDX");
+    expect(ja).toContain("テーブル、タスクリスト、打ち消し線を有効にしていません");
+    expect(ja).toContain(":::fire");
+    expect(ja).toContain("$fire");
+    expect(ja).toContain("@[x]");
+    expect(ja).toContain("@[embed]");
+    expect(ja).toContain("@[iframe]");
+    expect(ja).toContain("通常のコードコメントとして書いたMDXコメントもノートとして扱われます");
+    expect(ja).toContain("view-transition");
+    expect(en).toContain("Write slide content with CommonMark and MDX");
+    expect(en).toContain("Tables, task lists, and strikethrough are not enabled by default");
+    expect(en).toContain("Any MDX comment is treated as a note");
+  });
+
+  it("renders language-aware syntax highlighting while preserving copy controls", async () => {
+    const gettingStarted = await (await app.request("/docs/getting-started")).text();
+    const authoring = await (await app.request("/docs/authoring")).text();
+
+    expect(gettingStarted).toContain('class="language-bash"');
+    expect(gettingStarted).toContain('class="language-jsonc"');
+    expect(authoring).toContain('class="language-mdx"');
+    expect(authoring).toContain('class="language-tsx"');
+    expect(authoring).toMatch(/<span style="color:#[A-Fa-f0-9]{6}/);
+    expect(authoring).toContain('class="copy-button"');
+  });
+
   it("links the Deploy to Cloudflare button to the isolated minimal example", async () => {
     const html = await (await app.request("/")).text();
 
