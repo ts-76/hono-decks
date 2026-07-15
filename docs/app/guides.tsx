@@ -10,10 +10,27 @@ export interface Guide {
   content: Child;
 }
 
-const installCode = `bun add hono-decks
-bunx hono-decks init`;
+const installCode = `npm install hono-decks
+npx hono-decks init`;
 
-const compileCode = `bunx hono-decks compile`;
+const compileCode = `npx hono-decks compile`;
+
+const packageManagerCommands = [
+  { name: "npm", install: "npm install hono-decks", cli: "npx hono-decks <command>" },
+  { name: "pnpm", install: "pnpm add hono-decks", cli: "pnpm exec hono-decks <command>" },
+  { name: "Yarn", install: "yarn add hono-decks", cli: "yarn hono-decks <command>" },
+  { name: "Bun", install: "bun add hono-decks", cli: "bunx hono-decks <command>" },
+] as const;
+
+function PackageManagerTable({ locale }: { locale: Locale }) {
+  const isJa = locale === "ja";
+  return <div class="table-wrap">
+    <table>
+      <thead><tr><th>{isJa ? "パッケージマネージャー" : "Package manager"}</th><th>{isJa ? "インストール" : "Install"}</th><th>{isJa ? "CLIの実行" : "Run the CLI"}</th></tr></thead>
+      <tbody>{packageManagerCommands.map((command) => <tr><td>{command.name}</td><td><code>{command.install}</code></td><td><code>{command.cli}</code></td></tr>)}</tbody>
+    </table>
+  </div>;
+}
 
 const firstDeckCode = `---
 title: Welcome
@@ -44,7 +61,7 @@ app.route(decks.mountPath, decks.router())
 
 export default app`;
 
-const expectedFiles = (locale: Locale) => locale === "ja" ? `hono-decks.config.ts   # CLIとruntimeの共通設定
+const expectedFiles = (locale: Locale) => locale === "ja" ? `hono-decks.config.ts   # CLIと実行時の共通設定
 decks/
 └── welcome/
     └── deck.mdx
@@ -305,7 +322,7 @@ const documentPolicyCode = `decks.router({
 
 const gettingStarted = (locale: Locale): Guide => locale === "ja" ? {
   title: "導入",
-  description: "MDXのスライドをコンパイルし、生成されたルーターを既存のHonoアプリに組み込みます。",
+  description: "パッケージの追加から、最初のデッキをHonoアプリで表示するところまでを説明します。",
   sections: [
     { id: "prerequisites", label: "必要なもの" },
     { id: "install", label: "インストール" },
@@ -319,13 +336,15 @@ const gettingStarted = (locale: Locale): Guide => locale === "ja" ? {
   content: <>
     <section id="prerequisites">
       <h2>必要なもの</h2>
-      <p>Bun 1.2以降と、起動できるHono 4のアプリを用意します。この手順では約5分で、2枚のスライドを<code>/decks/welcome</code>に表示します。</p>
-      <Callout title="先に知っておくこと"><p>MDXの変換は開発・ビルド時にBunで行います。Honoアプリは生成済みのモジュールを読み込むだけなので、Cloudflare Workersでファイルシステムを使う必要はありません。</p></Callout>
+      <p>npm、pnpm、Yarn、Bunのいずれかが使える環境と、起動できるHono 4のアプリを用意します。この手順では、2枚のスライドを<code>/decks/welcome</code>に表示します。</p>
+      <Callout title="コンパイルと配信は分かれています"><p>MDXの変換はローカルの開発・ビルド環境で行います。Honoアプリは生成済みモジュールを読み込むため、Cloudflare Workers上でファイルシステムへアクセスする必要はありません。</p></Callout>
     </section>
     <section id="install">
-      <h2>パッケージと接続用ファイルを用意する</h2>
-      <p><code>init</code>は、CLIとruntimeが共有する<code>hono-decks.config.ts</code>と、生成物をアプリにつなぐ<code>src/decks.ts</code>を作ります。既存ファイルは上書きしません。</p>
+      <h2>パッケージを追加し、設定ファイルを作る</h2>
+      <p>以下ではnpmを使います。<code>init</code>は、CLIと実行時で共有する<code>hono-decks.config.ts</code>と、生成コードをアプリにつなぐ<code>src/decks.ts</code>を作ります。既存ファイルは上書きしません。</p>
       <CodeBlock label="Terminal" code={installCode} locale={locale} />
+      <PackageManagerTable locale={locale} />
+      <p><code>&lt;command&gt;</code>には<code>init</code>や<code>compile</code>を指定します。以降の例も、利用中のパッケージマネージャーに合わせて読み替えてください。</p>
     </section>
     <section id="deck">
       <h2>最初のデッキを作ってコンパイルする</h2>
@@ -340,27 +359,27 @@ const gettingStarted = (locale: Locale): Guide => locale === "ja" ? {
       <h2>ルーターを登録する</h2>
       <p>既存のHonoアプリへ、生成済みルーターを<code>/decks</code>配下として追加します。</p>
       <CodeBlock code={mountCode} locale={locale} />
-      <p><code>decks.mountPath</code>はconfigの値から生成されるため、compileとrouteの公開パスがずれません。</p>
+      <p><code>decks.mountPath</code>は設定ファイルの値から生成されるため、コンパイル時と実行時で公開パスがずれません。</p>
     </section>
     <section id="scripts">
-      <h2>既存のdevコマンドへコンパイルを統合する</h2>
-      <p>HonoXやViteではpluginを同じVite configへ追加します。Vite起動前の初回compileと、MDX変更時の再生成、成功後のブラウザ更新が自動で行われます。</p>
+      <h2>普段の開発コマンドにコンパイルを組み込む</h2>
+      <p>HonoXやViteでは、既存のVite設定へプラグインを追加します。Viteの起動前に初回コンパイルを行い、MDXの変更を検知して再生成した後、ブラウザを更新します。</p>
       <CodeBlock label="vite.config.ts" code={viteDecksCode} locale={locale} />
       <CodeBlock label="package.json" code={buildScriptsCode} locale={locale} />
-      <p>Wranglerを直接使うCloudflare Workerでは、<code>wrangler.jsonc</code>のcustom buildへ登録します。<code>--live-reload</code>により、通常のdevコマンドだけでdeck rootの監視とブラウザ更新まで行います。</p>
+      <p>Wranglerを直接使うCloudflare Workerでは、<code>wrangler.jsonc</code>のカスタムビルドへ登録します。<code>--live-reload</code>を付けると、普段の開発コマンドだけでデッキの変更監視とブラウザ更新まで行えます。</p>
       <CodeBlock label="wrangler.jsonc" code={wranglerDecksCode} locale={locale} />
       <CodeBlock label="package.json" code={wranglerDevCode} locale={locale} />
     </section>
     <section id="verify">
       <h2>ブラウザで表示を確認する</h2>
-      <CodeBlock label="Terminal" code={`bun run dev`} locale={locale} />
+      <CodeBlock label="Terminal" code={`npm run dev`} locale={locale} />
       <p>開発サーバーが表示したURLの<code>/decks/welcome</code>を開きます。Welcomeスライドが表示され、左右の操作または矢印キーで2枚目へ移動できれば導入は完了です。</p>
       <Callout title="URLの例"><p><code>http://localhost:3000/decks/welcome</code>。別のポートが表示された場合は、開発サーバーのURLを使ってください。</p></Callout>
     </section>
     <section id="troubleshooting">
       <h2>うまくいかないとき</h2>
       <dl class="troubleshooting-list">
-        <div><dt><code>src/generated/decks.ts</code>がない</dt><dd><code>bunx hono-decks compile</code>を再実行し、configの<code>build.root</code>と<code>build.outDir</code>を確認します。</dd></div>
+        <div><dt><code>src/generated/decks.ts</code>がない</dt><dd><code>npx hono-decks compile</code>を再実行し、設定ファイルの<code>build.root</code>と<code>build.outDir</code>を確認します。</dd></div>
         <div><dt><code>/decks</code>が404になる</dt><dd><code>app.route(decks.mountPath, decks.router())</code>になっているか確認します。</dd></div>
         <div><dt>WorkerのビルドにNode.js用モジュールが含まれる</dt><dd>実行時APIは<code>hono-decks</code>から読み込みます。<code>hono-decks/node</code>はコンパイル用スクリプトだけで使用してください。</dd></div>
       </dl>
@@ -385,13 +404,13 @@ const gettingStarted = (locale: Locale): Guide => locale === "ja" ? {
     { id: "next", label: "Next steps" },
   ],
   content: <>
-    <section id="prerequisites"><h2>Check the prerequisites</h2><p>Start with Bun 1.2 or later and a working Hono 4 application. In about five minutes, this guide will serve a two-slide deck at <code>/decks/welcome</code>.</p><Callout title="What runs where"><p>Bun compiles MDX during development and builds. The Hono application only imports generated modules, so a deployed Worker never needs filesystem access.</p></Callout></section>
-    <section id="install"><h2>Install the package and create the config</h2><p><code>init</code> creates the shared <code>hono-decks.config.ts</code> and the app-owned <code>src/decks.ts</code> facade. It refuses to overwrite existing files.</p><CodeBlock label="Terminal" code={installCode} locale={locale} /></section>
+    <section id="prerequisites"><h2>Check the prerequisites</h2><p>Use npm, pnpm, Yarn, or Bun with a working Hono 4 application. This guide serves a two-slide deck at <code>/decks/welcome</code>.</p><Callout title="Compilation and delivery are separate"><p>Compile MDX in your local development or build environment. The Hono application imports generated modules, so a deployed Worker never needs filesystem access.</p></Callout></section>
+    <section id="install"><h2>Install the package and create the config</h2><p>The example uses npm. <code>init</code> creates the shared <code>hono-decks.config.ts</code> and the app-owned <code>src/decks.ts</code> facade. It refuses to overwrite existing files.</p><CodeBlock label="Terminal" code={installCode} locale={locale} /><PackageManagerTable locale={locale} /><p>Replace <code>&lt;command&gt;</code> with <code>init</code> or <code>compile</code>, and use the same package manager for the remaining examples.</p></section>
     <section id="deck"><h2>Create and compile the first deck</h2><p>Create <code>decks/welcome/deck.mdx</code>. The first frontmatter block describes the whole deck; the next <code>---</code> starts slide one.</p><CodeBlock label="decks/welcome/deck.mdx" code={firstDeckCode} locale={locale} /><p>Compile the MDX into Hono JSX modules. A successful run creates <code>src/generated/</code>.</p><CodeBlock label="Terminal" code={compileCode} locale={locale} /><CodeBlock label="Generated files" code={expectedFiles(locale)} locale={locale} /><p>Edit <code>src/decks.ts</code> and <code>deck.mdx</code> as needed. Never edit <code>src/generated/</code>; each compile replaces it.</p></section>
     <section id="mount"><h2>Mount the router</h2><p>Add the configured router to the existing Hono app.</p><CodeBlock code={mountCode} locale={locale} /><p><code>decks.mountPath</code> comes from the shared config, so compile-time assets and runtime routes stay aligned.</p></section>
     <section id="scripts"><h2>Integrate compilation with the existing dev command</h2><p>For HonoX or Vite, add the plugin to the existing Vite config. It compiles before Vite starts, regenerates modules when MDX changes, and reloads the browser after a successful compile.</p><CodeBlock label="vite.config.ts" code={viteDecksCode} locale={locale} /><CodeBlock label="package.json" code={buildScriptsCode} locale={locale} /><p>For a Cloudflare Worker that runs Wrangler directly, register the compiler as a custom build. The <code>--live-reload</code> flag lets the ordinary dev command watch the deck root and refresh the browser.</p><CodeBlock label="wrangler.jsonc" code={wranglerDecksCode} locale={locale} /><CodeBlock label="package.json" code={wranglerDevCode} locale={locale} /></section>
-    <section id="verify"><h2>Verify it in the browser</h2><CodeBlock label="Terminal" code="bun run dev" locale={locale} /><p>Open <code>/decks/welcome</code> on the local URL printed by the dev server. The setup works when the Welcome slide appears and the controls or arrow keys move to slide two.</p><Callout title="Expected URL"><p><code>http://localhost:3000/decks/welcome</code>. If your dev server selects another port, use the printed URL.</p></Callout></section>
-    <section id="troubleshooting"><h2>Troubleshooting</h2><dl class="troubleshooting-list"><div><dt>Missing <code>src/generated/decks.ts</code></dt><dd>Run <code>bunx hono-decks compile</code> again and check <code>build.root</code> and <code>build.outDir</code> in the config.</dd></div><div><dt><code>/decks</code> returns 404</dt><dd>Mount <code>decks.router()</code> at <code>decks.mountPath</code>.</dd></div><div><dt>Node modules enter the Worker bundle</dt><dd>Import runtime APIs from <code>hono-decks</code>. Keep <code>hono-decks/node</code> in build scripts only.</dd></div></dl></section>
+    <section id="verify"><h2>Verify it in the browser</h2><CodeBlock label="Terminal" code="npm run dev" locale={locale} /><p>Open <code>/decks/welcome</code> on the local URL printed by the dev server. The setup works when the Welcome slide appears and the controls or arrow keys move to slide two.</p><Callout title="Expected URL"><p><code>http://localhost:3000/decks/welcome</code>. If your dev server selects another port, use the printed URL.</p></Callout></section>
+    <section id="troubleshooting"><h2>Troubleshooting</h2><dl class="troubleshooting-list"><div><dt>Missing <code>src/generated/decks.ts</code></dt><dd>Run <code>npx hono-decks compile</code> again and check <code>build.root</code> and <code>build.outDir</code> in the config.</dd></div><div><dt><code>/decks</code> returns 404</dt><dd>Mount <code>decks.router()</code> at <code>decks.mountPath</code>.</dd></div><div><dt>Node modules enter the Worker bundle</dt><dd>Import runtime APIs from <code>hono-decks</code>. Keep <code>hono-decks/node</code> in build scripts only.</dd></div></dl></section>
     <section id="next"><h2>Choose the next step</h2><p>Continue with <a class="text-link" href={localizedHref("/docs/authoring", locale)}>authoring slides</a>. Open <a class="text-link" href={localizedHref("/docs/configuration", locale)}>configuration</a> or <a class="text-link" href={localizedHref("/docs/routing", locale)}>routes and UI</a> only when you need environment bindings or different public surfaces.</p><DeployToCloudflare locale={locale} /></section>
   </>,
 };
@@ -425,12 +444,12 @@ const authoring = (locale: Locale): Guide => {
   return {
     title: isJa ? "MDXでスライドを書く" : "Author an MDX deck",
     description: isJa
-      ? "使えるMarkdownとMDX、スライド固有の記法を、コンパイラが扱う範囲に絞って説明します。"
+      ? "利用できるMarkdown、MDX、hono-decks独自の記法をまとめています。"
       : "Use the Markdown, MDX, and deck-specific syntax supported by the compiler.",
     sections,
     content: <>
       <section id="structure">
-        <h2>{isJa ? "1つのデッキを1つのディレクトリに置く" : "Keep each deck in its own directory"}</h2>
+        <h2>{isJa ? "デッキごとにディレクトリを分ける" : "Keep each deck in its own directory"}</h2>
         <p>{isJa ? <><code>decks/&lt;slug&gt;/deck.mdx</code>が基本形です。ディレクトリ名がURLの<code>:slug</code>になります。たとえば<code>decks/launch/deck.mdx</code>は<code>/decks/launch</code>で表示されます。</> : <>Use <code>decks/&lt;slug&gt;/deck.mdx</code>. The directory name becomes the URL slug, so <code>decks/launch/deck.mdx</code> appears at <code>/decks/launch</code>.</>}</p>
         <p>{isJa ? <>ファイル先頭の<code>---</code>ブロックはデッキ情報、その後の区切り線は新しいスライドの開始を表します。スライド内の水平線として単独の<code>---</code>は使えません。</> : <>The opening <code>---</code> block contains deck metadata. Later separators start new slides, so a bare <code>---</code> cannot be used as a thematic break inside a slide.</>}</p>
         <CodeBlock label="decks/launch/deck.mdx" locale={locale} code={`---
@@ -460,29 +479,29 @@ Node for I/O. Hono for routes.`} />
 
       <section id="metadata">
         <h2>{isJa ? "デッキ全体と各スライドの設定を分ける" : "Separate deck and slide metadata"}</h2>
-        <p>{isJa ? "ファイル先頭のフロントマターはデッキ全体に、区切り線の直後に置いたフロントマターは次の1枚だけに適用されます。未定義のキーはmetaに残りますが、警告が出ます。" : "Opening frontmatter applies to the deck. Frontmatter immediately after a slide separator applies only to that slide. Unknown keys remain in meta but produce a warning."}</p>
+        <p>{isJa ? "ファイル先頭のフロントマターはデッキ全体に適用されます。区切り線の直後に置いたフロントマターは、そのスライドだけに適用されます。未定義のキーはmetaに残り、コンパイル時に警告が表示されます。" : "Opening frontmatter applies to the deck. Frontmatter immediately after a slide separator applies only to that slide. Unknown keys remain in meta but produce a warning."}</p>
         <dl class="configuration-map">
           <div><dt>{isJa ? "デッキ" : "Deck"}</dt><dd><code>title</code>, <code>description</code>, <code>author</code>, <code>tags</code>, <code>date</code>, <code>theme</code>, <code>transition</code>, <code>transitionDuration</code>, <code>transitionEasing</code>, <code>draft</code>, <code>assets</code>, <code>presenter</code></dd></div>
           <div><dt>{isJa ? "スライド" : "Slide"}</dt><dd><code>title</code>, <code>layout</code>, <code>class</code>, <code>notes</code>, <code>background</code>, <code>transition</code>, <code>transitionDuration</code>, <code>transitionEasing</code></dd></div>
           <div><dt>{isJa ? "トランジション" : "Transitions"}</dt><dd><code>none</code>, <code>fade</code>, <code>fade-out</code>, <code>slide-left</code>, <code>slide-right</code>, <code>slide-up</code>, <code>slide-down</code>, <code>view-transition</code></dd></div>
           <div><dt>{isJa ? "レイアウト" : "Layouts"}</dt><dd>{isJa ? <><code>default</code>、中央配置の<code>cover</code>と<code>statement</code>が標準です。独自名は<code>layout-&lt;name&gt;</code>クラスとして<code>theme.css</code>から指定できます。</> : <><code>default</code>, centered <code>cover</code>, and centered <code>statement</code> are built in. A custom name becomes a <code>layout-&lt;name&gt;</code> class that can be styled in <code>theme.css</code>.</>}</dd></div>
         </dl>
-        <Callout title={isJa ? "最初に必要なのはtitleだけ" : "Start with title only"}><p>{isJa ? <>本文を先に書き、必要なスライドにだけ<code>layout</code>や<code>transition</code>を追加すると設定を追いやすくなります。</> : <>Write the content first, then add <code>layout</code> or <code>transition</code> only where they clarify the presentation.</>}</p></Callout>
+        <Callout title={isJa ? "最初はtitleだけで十分です" : "Start with title only"}><p>{isJa ? <>本文を書いてから、必要なスライドにだけ<code>layout</code>や<code>transition</code>を追加すると、設定が増えすぎません。</> : <>Write the content first, then add <code>layout</code> or <code>transition</code> only where they clarify the presentation.</>}</p></Callout>
       </section>
 
       <section id="fire">
-        <h2>{isJa ? "fireでクリックごとに内容を発火する" : "Fire content one step at a time"}</h2>
-        <p>{isJa ? <>コンポーネントに<code>fire</code>を付けると、送り操作ごとに記述順で表示されます。Markdownには<code>:::fire</code>、リストには<code>:::fire&#123;each=&quot;item&quot;&#125;</code>を使います。複数のJSX要素を同時に表示する場合だけ<code>&lt;Fire&gt;</code>で囲みます。<code>fire</code>はコンパイル時に取り除かれ、コンポーネントのpropsには渡りません。</> : <>Add <code>fire</code> to a component to reveal it in source order. Use <code>:::fire</code> for Markdown and <code>:::fire&#123;each=&quot;item&quot;&#125;</code> for list items. Use <code>&lt;Fire&gt;</code> only to group multiple JSX elements into one step. The compiler removes <code>fire</code> before rendering the component.</>}</p>
+        <h2>{isJa ? "fireで内容を順に発火する" : "Fire content one step at a time"}</h2>
+        <p>{isJa ? <>コンポーネントに<code>fire</code>を付けると、送り操作に合わせて記述順に表示されます。Markdownには<code>:::fire</code>、リストには<code>:::fire&#123;each=&quot;item&quot;&#125;</code>を使います。複数のJSX要素を同時に表示するときは、まとめて<code>&lt;Fire&gt;</code>で囲みます。<code>fire</code>はコンパイル時に取り除かれ、コンポーネントのpropsには渡りません。</> : <>Add <code>fire</code> to a component to reveal it in source order. Use <code>:::fire</code> for Markdown and <code>:::fire&#123;each=&quot;item&quot;&#125;</code> for list items. Use <code>&lt;Fire&gt;</code> to group multiple JSX elements into one step. The compiler removes <code>fire</code> before rendering the component.</>}</p>
         <CodeBlock label="MDX" locale={locale} code={fireSyntaxCode} />
-        <p>{isJa ? <><a href="https://sli.dev/guide/animations">Slidevの<code>v-click</code>と<code>v-clicks</code></a>と同様に、<code>at=&quot;2&quot;</code>は絶対位置、<code>at=&quot;+2&quot;</code>は相対位置を2段進めます。リストでは<code>depth</code>で対象階層、<code>every</code>で1回に表示する項目数を指定します。どちらも既定値は<code>1</code>です。</> : <>As with Slidev's <a href="https://sli.dev/guide/animations"><code>v-click</code> and <code>v-clicks</code></a>, <code>at=&quot;2&quot;</code> is absolute and <code>at=&quot;+2&quot;</code> advances the relative position by two. For lists, <code>depth</code> selects nested levels and <code>every</code> sets the number of items per step. Both default to <code>1</code>.</>}</p>
-        <h3>{isJa ? "effectを指定する" : "Choose an effect"}</h3>
-        <p>{isJa ? <>コンポーネントでは<code>fire=&quot;scale&quot;</code>、<code>:::fire</code>では<code>effect=&quot;scale&quot;</code>と書きます。組み込みは<code>none</code>、<code>fade</code>、<code>fade-up</code>、<code>scale</code>です。独自effectは<code>theme.css</code>で定義します。</> : <>Use <code>fire=&quot;scale&quot;</code> on a component and <code>effect=&quot;scale&quot;</code> with <code>:::fire</code>. Built-ins are <code>none</code>, <code>fade</code>, <code>fade-up</code>, and <code>scale</code>. Define custom effects in <code>theme.css</code>.</>}</p>
+        <p>{isJa ? <>段階表示の考え方と<code>at</code>、<code>depth</code>、<code>every</code>は、<a href="https://sli.dev/guide/animations">Slidevの<code>v-click</code>と<code>v-clicks</code></a>に一部インスパイアされています。記法と実装はhono-decks独自で、Slidevとの互換性を保証するものではありません。<code>at=&quot;2&quot;</code>は絶対位置を、<code>at=&quot;+2&quot;</code>は相対位置を2段進める指定です。リストでは<code>depth</code>で対象にする階層、<code>every</code>で1回に表示する項目数を指定します。どちらも既定値は<code>1</code>です。</> : <>The staged-reveal model and the <code>at</code>, <code>depth</code>, and <code>every</code> options are partly inspired by Slidev's <a href="https://sli.dev/guide/animations"><code>v-click</code> and <code>v-clicks</code></a>. The syntax and implementation are specific to hono-decks and are not guaranteed to be compatible with Slidev. <code>at=&quot;2&quot;</code> is absolute, while <code>at=&quot;+2&quot;</code> advances the relative position by two. For lists, <code>depth</code> selects nested levels and <code>every</code> sets the number of items per step. Both default to <code>1</code>.</>}</p>
+        <h3>{isJa ? "表示効果を選ぶ" : "Choose an effect"}</h3>
+        <p>{isJa ? <>コンポーネントでは<code>fire=&quot;scale&quot;</code>、<code>:::fire</code>では<code>effect=&quot;scale&quot;</code>と指定します。標準の効果は<code>none</code>、<code>fade</code>、<code>fade-up</code>、<code>scale</code>です。独自の効果は<code>theme.css</code>で定義します。</> : <>Use <code>fire=&quot;scale&quot;</code> on a component and <code>effect=&quot;scale&quot;</code> with <code>:::fire</code>. Built-ins are <code>none</code>, <code>fade</code>, <code>fade-up</code>, and <code>scale</code>. Define custom effects in <code>theme.css</code>.</>}</p>
         <CodeBlock label="MDX" locale={locale} code={customFireUsageCode} />
         <CodeBlock label="theme.css" lang="css" locale={locale} code={customFireEffectCode} />
       </section>
 
       <section id="notes">
-        <h2>{isJa ? "発表者だけに見せるノートを書く" : "Add notes for the presenter"}</h2>
+        <h2>{isJa ? "発表者ノートを書く" : "Add notes for the presenter"}</h2>
         <p>{isJa ? <><code>notes: |</code>の複数行テキストとMDXコメントは発表者ノートへまとめられ、スライド本文には出ません。通常のコードコメントとして書いたMDXコメントもノートとして扱われます。</> : <>Multiline <code>notes: |</code> text and MDX comments are combined as presenter notes and omitted from slide content. Any MDX comment is treated as a note, not as an ordinary source comment.</>}</p>
         <CodeBlock label="MDX" locale={locale} code={speakerNotesCode} />
       </section>
@@ -492,13 +511,13 @@ Node for I/O. Hono for routes.`} />
         <p>{isJa ? <><code>components/index.tsx</code>の名前付きエクスポートは、同じデッキのMDXからタグとして使えます。デッキごとに登録されるため、別のデッキと同じ名前でも衝突しません。</> : <>Named exports from <code>components/index.tsx</code> are available as tags in that deck's MDX. Registries are deck-local, so the same component name can exist in another deck.</>}</p>
         <CodeBlock lang="tsx" locale={locale} code={componentCode} />
         <CodeBlock label="MDX" locale={locale} code={componentUsageCode} />
-        <h3>{isJa ? "ブラウザ操作が必要な場合だけIslandにする" : "Use an island only for browser interaction"}</h3>
+        <h3>{isJa ? "ブラウザ操作が必要な部品だけをIslandにする" : "Use an island only for browser interaction"}</h3>
         <p>{isJa ? <><code>components/client/index.tsx</code>はクリックや状態管理が必要な部品だけに使います。クライアント用コードは自動生成されるため、通常は配信用ルートを追加する必要はありません。</> : <>Use <code>components/client/index.tsx</code> only for components that need clicks or local state. The compiler generates and serves the client entry, so ordinary applications do not add a separate asset route.</>}</p>
         <CodeBlock lang="tsx" locale={locale} code={clientComponentCode} />
       </section>
 
       <section id="assets">
-        <h2>{isJa ? "画像と外部コンテンツを明示して埋め込む" : "Reference assets and embeds explicitly"}</h2>
+        <h2>{isJa ? "画像を置き、外部コンテンツを埋め込む" : "Reference assets and embeds explicitly"}</h2>
         <p>{isJa ? <><code>decks/launch/assets/</code>に置いた画像は、<code>deck.mdx</code>からの相対パスで指定します。<code>youtube</code>、<code>x</code>、<code>card</code>、<code>embed</code>、<code>iframe</code>は専用記法を使います。</> : <>Reference images under <code>decks/launch/assets/</code> with paths relative to <code>deck.mdx</code>. Explicit directives are available for <code>youtube</code>, <code>x</code>, <code>card</code>, <code>embed</code>, and <code>iframe</code>.</>}</p>
         <CodeBlock label="MDX" locale={locale} code={embedSyntaxCode} />
         <p>{isJa ? <>URLだけの行は通常のリンクになります。外部iframeを公開する前に<a class="text-link" href={localizedHref("/docs/security", locale)}>CSPと許可オリジン</a>を設定してください。R2配信へ変える場合は、MDXを変えずに<code>withR2Assets()</code>で取得元を差し替えます。</> : <>A bare URL on its own line becomes a normal link. Configure <a class="text-link" href={localizedHref("/docs/security", locale)}>CSP and allowed origins</a> before publishing external iframes. To serve assets from R2, use <code>withR2Assets()</code> without changing MDX paths.</>}</p>
@@ -512,7 +531,7 @@ Node for I/O. Hono for routes.`} />
 
       <section id="verify">
         <h2>{isJa ? "コンパイルして変更を確認する" : "Compile and verify the change"}</h2>
-        <CodeBlock label="Terminal" code="bun run decks:compile" locale={locale} />
+        <CodeBlock label="Terminal" code="npm run decks:compile" locale={locale} />
         <p>{isJa ? <>コンパイルエラーには対象ファイルとスライド番号が表示されます。表示を確認したら、公開画面を変える場合は<a class="text-link" href={localizedHref("/docs/routing", locale)}>ルートと画面</a>、環境変数やR2を使う場合は<a class="text-link" href={localizedHref("/docs/configuration", locale)}>設定</a>へ進みます。</> : <>Compile errors identify the source file and slide number. After the deck renders, continue to <a class="text-link" href={localizedHref("/docs/routing", locale)}>routes and UI</a> for public surfaces or <a class="text-link" href={localizedHref("/docs/configuration", locale)}>configuration</a> for bindings and R2.</>}</p>
       </section>
     </>,
@@ -522,13 +541,13 @@ Node for I/O. Hono for routes.`} />
 const routing = (locale: Locale): Guide => {
   const isJa = locale === "ja";
   return {
-    title: isJa ? "公開する画面を選ぶ" : "Choose routes and UI surfaces",
-    description: isJa ? "マウントしたURLからどの画面が作られるかを確認し、必要な画面だけを公開・カスタマイズします。" : "See which URLs a mounted router creates, then expose and customize only the surfaces your application needs.",
+    title: isJa ? "公開するルートと画面を選ぶ" : "Choose routes and UI surfaces",
+    description: isJa ? "ルーターが作成するURLを確認し、必要な画面だけを公開・カスタマイズします。" : "See which URLs a mounted router creates, then expose and customize only the surfaces your application needs.",
     sections: isJa ? [{ id: "model", label: "ルートの考え方" }, { id: "surfaces", label: "標準ルート" }, { id: "visibility", label: "公開範囲" }, { id: "custom", label: "画面のカスタマイズ" }, { id: "state", label: "URL状態と次の手順" }] : [{ id: "model", label: "Routing model" }, { id: "surfaces", label: "Default routes" }, { id: "visibility", label: "Public access" }, { id: "custom", label: "Custom pages" }, { id: "state", label: "URL state and next steps" }],
     content: <>
-      <section id="model"><h2>{isJa ? "configのmountPathをすべての画面の起点にする" : "Use the configured mount path for every deck URL"}</h2><p>{isJa ? <><code>app.route(decks.mountPath, decks.router())</code>と登録すると、configの<code>mountPath</code>配下にすべてのルートが作られます。</> : <>Mounting <code>app.route(decks.mountPath, decks.router())</code> places every route below the configured mount path.</>}</p><Callout title={isJa ? "通常開くURL" : "The URL most people open"}><p>{isJa ? <>閲覧者には<code>decks.paths(slug).viewer</code>を案内します。<code>render</code>はビューアー内部のiframe用です。</> : <>Share <code>decks.paths(slug).viewer</code> with viewers. The render route is the iframe runtime.</>}</p></Callout></section>
+      <section id="model"><h2>{isJa ? "mountPathをすべてのルートの起点にする" : "Use the configured mount path for every deck URL"}</h2><p>{isJa ? <><code>app.route(decks.mountPath, decks.router())</code>と登録すると、設定した<code>mountPath</code>の下にすべてのルートが作られます。</> : <>Mounting <code>app.route(decks.mountPath, decks.router())</code> places every route below the configured mount path.</>}</p><Callout title={isJa ? "閲覧者に案内するURL" : "The URL most people open"}><p>{isJa ? <>閲覧者には<code>decks.paths(slug).viewer</code>を案内します。<code>render</code>はビューアー内のiframeが読み込むURLです。</> : <>Share <code>decks.paths(slug).viewer</code> with viewers. The render route is the iframe runtime.</>}</p></Callout></section>
       <section id="surfaces"><h2>{isJa ? "画面ごとの役割を確認する" : "Understand each generated surface"}</h2><RouteTable locale={locale} rows={[["/", isJa ? "公開デッキの一覧。不要なら無効化できます" : "Public deck index; can be disabled"], ["/:slug", isJa ? "閲覧用ビューアー。操作ボタンとスライドを表示します" : "Viewer with controls and the slide frame"], ["/:slug/render", isJa ? "ビューアー内のスライド本体" : "Slide document inside the viewer iframe"], ["/:slug/presentation", isJa ? "投影・共有画面用のスライド表示" : "Projection or shared display"], ["/:slug/presenter", isJa ? "発表者向け。次のスライドやノートを表示します" : "Speaker view with next slide and notes"], ["/:slug/print", isJa ? "印刷・PDF保存向けの全スライド表示" : "All slides for printing or browser PDF"], ["/:slug/embed", isJa ? "外部iframe用。embedを有効にした場合だけ作成します" : "External iframe route; created only when embed is enabled"]]} /></section>
-      <section id="visibility"><h2>{isJa ? "不要な画面を閉じる" : "Disable surfaces you do not expose"}</h2><p>{isJa ? <>configの<code>router.pages</code>で不要な画面を<code>false</code>にします。<code>dev</code>もobject resolverで明示します。</> : <>Set unused surfaces to <code>false</code> in <code>router.pages</code> and resolve <code>dev</code> explicitly.</>}</p><CodeBlock locale={locale} code={`decks.router({
+      <section id="visibility"><h2>{isJa ? "使わない画面を無効にする" : "Disable surfaces you do not expose"}</h2><p>{isJa ? <>設定ファイルの<code>router.pages</code>で、不要な画面を<code>false</code>にします。<code>dev</code>も関数で明示します。</> : <>Set unused surfaces to <code>false</code> in <code>router.pages</code> and resolve <code>dev</code> explicitly.</>}</p><CodeBlock locale={locale} code={`decks.router({
   dev: ({ c }) => c.env.ENVIRONMENT !== "production",
   pages: {
     index: false,
@@ -536,7 +555,7 @@ const routing = (locale: Locale): Guide => {
     presenter: ({ dev }) => dev,
   },
 })`} /><p>{isJa ? "関数を指定した項目はリクエストごとに評価されるため、認証状態や環境変数による制御にも使えます。" : "Resolver functions run per request, so they can also check authentication or environment bindings."}</p></section>
-      <section id="custom"><h2>{isJa ? "既定UIを少し変えるか、アプリ側で画面を作る" : "Customize the default UI or build an app-owned page"}</h2><p>{isJa ? <><code>pages.index.render</code>は一覧の見た目だけを変えたい場合に使います。</> : <>Use <code>pages.index.render</code> to change only the deck index.</>}</p><CodeBlock locale={locale} code={`decks.router({
+      <section id="custom"><h2>{isJa ? "標準UIを調整する、または独自画面を作る" : "Customize the default UI or build an app-owned page"}</h2><p>{isJa ? <><code>pages.index.render</code>は、デッキ一覧の見た目だけを変える場合に使います。</> : <>Use <code>pages.index.render</code> to change only the deck index.</>}</p><CodeBlock locale={locale} code={`decks.router({
   pages: {
     index: {
       title: ({ decks }) => String(decks.length) + " decks",
@@ -562,7 +581,7 @@ const configuration = (locale: Locale): Guide => {
   return {
     title: isJa ? "設定ファイル" : "Configuration",
     description: isJa
-      ? "CLIとruntimeが共有するhono-decks.config.tsで、生成と公開設定を一元管理します。"
+      ? "CLIと実行時で共有するhono-decks.config.tsに、生成処理と公開時の設定をまとめます。"
       : "Use one hono-decks.config.ts for both generated output and runtime behavior.",
     sections: isJa
       ? [
@@ -585,65 +604,65 @@ const configuration = (locale: Locale): Guide => {
         ],
     content: <>
       <section id="files">
-        <h2>{isJa ? "共有configの責任範囲を確認する" : "Understand the shared config"}</h2>
-        <p>{isJa ? <><code>hono-decks init</code>は必須の<code>hono-decks.config.ts</code>と<code>src/decks.ts</code>を作ります。build input、公開path、runtime policyをこのconfigで一元管理します。</> : <><code>hono-decks init</code> creates the required <code>hono-decks.config.ts</code> and <code>src/decks.ts</code>. Build input, public paths, and runtime policy live in this one config.</>}</p>
+        <h2>{isJa ? "設定ファイルごとの役割を確認する" : "Understand the shared config"}</h2>
+        <p>{isJa ? <><code>hono-decks init</code>は、必須の<code>hono-decks.config.ts</code>と<code>src/decks.ts</code>を作ります。ビルド対象、公開パス、実行時の挙動は、この設定ファイルでまとめて管理します。</> : <><code>hono-decks init</code> creates the required <code>hono-decks.config.ts</code> and <code>src/decks.ts</code>. Build input, public paths, and runtime policy live in this one config.</>}</p>
         <dl class="configuration-map">
-          <div><dt><code>package.json</code></dt><dd>{isJa ? "既存のViteまたはWranglerのdevコマンドを実行します。" : "Runs the existing Vite or Wrangler development command."}</dd></div>
-          <div><dt><code>hono-decks.config.ts</code></dt><dd>{isJa ? "CLIとruntimeが共有する必須設定です。" : "Required configuration shared by the CLI and runtime."}</dd></div>
+          <div><dt><code>package.json</code></dt><dd>{isJa ? "ViteまたはWranglerを使う、普段の開発コマンドを定義します。" : "Runs the existing Vite or Wrangler development command."}</dd></div>
+          <div><dt><code>hono-decks.config.ts</code></dt><dd>{isJa ? "CLIと実行時で共有する必須の設定ファイルです。" : "Required configuration shared by the CLI and runtime."}</dd></div>
           <div><dt><code>decks.ts</code></dt><dd>{isJa ? "生成物とアプリの設定を読み込み、ルーターを作成します。" : "A stable facade that combines the generated source, config, and call-site overrides."}</dd></div>
           <div><dt><code>generated/</code></dt><dd>{isJa ? "コンパイラーが生成するマニフェストとスライドのモジュールです。" : "Compiler-owned manifest and slide modules."}</dd></div>
         </dl>
-        <Callout title={isJa ? "設定は1ファイル" : "One config file"}><p>{isJa ? <>CLIは<code>build</code>を、runtimeは<code>mountPath</code>と<code>router</code>を同じconfigから読みます。</> : <>The CLI reads <code>build</code>; runtime reads <code>mountPath</code> and <code>router</code> from the same config.</>}</p></Callout>
+        <Callout title={isJa ? "設定は1か所にまとめます" : "One config file"}><p>{isJa ? <>CLIは<code>build</code>を、実行時は<code>mountPath</code>と<code>router</code>を同じ設定ファイルから読み込みます。</> : <>The CLI reads <code>build</code>; runtime reads <code>mountPath</code> and <code>router</code> from the same config.</>}</p></Callout>
       </section>
       <section id="compile">
-        <h2>{isJa ? "コンパイラーをdevライフサイクルへ接続する" : "Connect the compiler to the dev lifecycle"}</h2>
-        <p>{isJa ? <>Viteでは<code>honoDecks()</code>を追加し、Wranglerではcustom buildへ<code>hono-decks compile</code>を登録します。<code>build.root</code>、<code>build.outDir</code>、<code>mountPath</code>は共有configから読み込みます。</> : <>Add <code>honoDecks()</code> to Vite, or register <code>hono-decks compile</code> as a Wrangler custom build. The shared config supplies <code>build.root</code>, <code>build.outDir</code>, and <code>mountPath</code>.</>}</p>
+        <h2>{isJa ? "コンパイラーを開発フローに組み込む" : "Connect the compiler to the dev lifecycle"}</h2>
+        <p>{isJa ? <>Viteでは<code>honoDecks()</code>を追加し、Wranglerではカスタムビルドに<code>hono-decks compile</code>を登録します。<code>build.root</code>、<code>build.outDir</code>、<code>mountPath</code>は共通の設定ファイルから読み込みます。</> : <>Add <code>honoDecks()</code> to Vite, or register <code>hono-decks compile</code> as a Wrangler custom build. The shared config supplies <code>build.root</code>, <code>build.outDir</code>, and <code>mountPath</code>.</>}</p>
         <CodeBlock label="vite.config.ts" code={viteDecksCode} locale={locale} />
         <CodeBlock label="package.json" code={buildScriptsCode} locale={locale} />
-        <p>{isJa ? <>LinkCard cacheは<code>build.ogpCacheFile</code>へ設定します。<code>--refresh-ogp</code>は保存済みデータを意図的に更新するときだけ使います。</> : <>Set LinkCard cache at <code>build.ogpCacheFile</code>. Use <code>--refresh-ogp</code> only for an intentional refresh.</>}</p>
+        <p>{isJa ? <>リンクカードのキャッシュ先は<code>build.ogpCacheFile</code>で指定します。保存済みデータを更新するときだけ<code>--refresh-ogp</code>を使います。</> : <>Set LinkCard cache at <code>build.ogpCacheFile</code>. Use <code>--refresh-ogp</code> only for an intentional refresh.</>}</p>
       </section>
       <section id="ogp">
         <h2>{isJa ? "SatoriでOGP画像をビルド時に保存する" : "Save OGP images at build time with Satori"}</h2>
-        <p>{isJa ? <>Browser Renderingを使わず、<code>compileDecks()</code>が返すデッキ情報からSatoriでSVG、resvgで1200×630 PNGを生成できます。画像生成はNode側のbuild scriptに置き、Worker runtimeやhono-decks本体へ依存を追加しません。</> : <>Generate an SVG with Satori and a 1200×630 PNG with resvg from the manifest returned by <code>compileDecks()</code>, without Browser Rendering. Keep image generation in a Node build script so neither the Worker runtime nor hono-decks core gains these dependencies.</>}</p>
+        <p>{isJa ? <>Browser Renderingを使わず、<code>compileDecks()</code>が返すデッキ情報からSatoriでSVGを、resvgで1200×630のPNGを生成できます。画像生成はNode.js側のビルドスクリプトに置くため、Workerの実行時コードやhono-decks本体に依存を追加する必要はありません。</> : <>Generate an SVG with Satori and a 1200×630 PNG with resvg from the manifest returned by <code>compileDecks()</code>, without Browser Rendering. Keep image generation in a Node build script so neither the Worker runtime nor hono-decks core gains these dependencies.</>}</p>
         <CodeBlock label="hono-decks.config.ts" locale={locale} code={`export default defineDecksConfig({
   mountPath: "/decks",
   router: {
     viewer: { openGraph: true },
   },
 })`} />
-        <p>{isJa ? <><code>viewer.openGraph</code>を有効にすると、<code>decks.paths(slug).ogImage</code>（既定では<code>/decks/:slug/og.png</code>）から絶対URLのOpen Graph / Twitter Cardタグを生成します。PNGはWrangler Static Assetsへ保存します。</> : <>Enabling <code>viewer.openGraph</code> emits absolute Open Graph and Twitter Card tags from <code>decks.paths(slug).ogImage</code>, which defaults to <code>/decks/:slug/og.png</code>. Save the PNG under Wrangler Static Assets.</>}</p>
-        <Callout title={isJa ? "フォントをビルド入力に含める" : "Keep fonts in the build input"}><p>{isJa ? <>SatoriはTTF / OTF / WOFFを扱えますがWOFF2には対応していません。日本語を描画する場合は日本語glyphを含むfont fileを同梱し、<code>build.watch_dir</code>にも追加します。</> : <>Satori accepts TTF, OTF, and WOFF, but not WOFF2. Bundle a font that covers every rendered language and add its directory to <code>build.watch_dir</code>.</>}</p></Callout>
-        <p><a class="text-link" href="https://github.com/ts-76/hono-slides/tree/main/examples/ogp">{isJa ? "Satori + resvgの完全なレシピを見る" : "Open the complete Satori + resvg recipe"} →</a></p>
-        <p>{isJa ? <><code>build.ogpCacheFile</code>はスライド内のLinkCard用キャッシュであり、このviewer share imageとは別です。</> : <><code>build.ogpCacheFile</code> caches LinkCard metadata inside slides; it is unrelated to this viewer share image.</>}</p>
+        <p>{isJa ? <><code>viewer.openGraph</code>を有効にすると、<code>decks.paths(slug).ogImage</code>（既定では<code>/decks/:slug/og.png</code>）の絶対URLを使ったOpen Graph / Twitter Cardタグを生成します。PNGはWrangler Static Assetsへ保存します。</> : <>Enabling <code>viewer.openGraph</code> emits absolute Open Graph and Twitter Card tags from <code>decks.paths(slug).ogImage</code>, which defaults to <code>/decks/:slug/og.png</code>. Save the PNG under Wrangler Static Assets.</>}</p>
+        <Callout title={isJa ? "フォントをビルド対象に含める" : "Keep fonts in the build input"}><p>{isJa ? <>SatoriはTTF / OTF / WOFFを扱えますが、WOFF2には対応していません。日本語を描画する場合は、日本語の文字を含むフォントファイルを同梱し、そのディレクトリを<code>build.watch_dir</code>にも追加します。</> : <>Satori accepts TTF, OTF, and WOFF, but not WOFF2. Bundle a font that covers every rendered language and add its directory to <code>build.watch_dir</code>.</>}</p></Callout>
+        <p><a class="text-link" href="https://github.com/ts-76/hono-slides/tree/main/examples/ogp">{isJa ? "Satori + resvgの実装例を見る" : "Open the complete Satori + resvg recipe"} →</a></p>
+        <p>{isJa ? <><code>build.ogpCacheFile</code>はスライド内のリンクカード用キャッシュです。ビューアーのOGP画像とは別に管理されます。</> : <><code>build.ogpCacheFile</code> caches LinkCard metadata inside slides; it is unrelated to this viewer share image.</>}</p>
       </section>
       <section id="browser-export">
         <h2>{isJa ? "Browser RunでPDF / PNGを書き出す" : "Export PDF and PNG with Browser Run"}</h2>
-        <p>{isJa ? <>Cloudflare Browser RunのQuick Actionsをbrowser bindingから呼び、デッキの<code>print</code>画面をPDFまたはPNGとして返せます。<code>hono-decks</code>が<code>quickAction("pdf")</code>または<code>quickAction("screenshot")</code>を呼ぶため、Puppeteer、Playwright、Browser Run用API tokenは不要です。</> : <>Use Cloudflare Browser Run Quick Actions through a browser binding to return the deck's <code>print</code> page as PDF or PNG. <code>hono-decks</code> calls <code>quickAction("pdf")</code> or <code>quickAction("screenshot")</code>, so this flow needs neither Puppeteer, Playwright, nor a Browser Run API token.</>}</p>
+        <p>{isJa ? <>Cloudflare Browser RunのQuick Actionsをブラウザバインディングから呼び、デッキの<code>print</code>画面をPDFまたはPNGとして返せます。<code>hono-decks</code>が<code>quickAction("pdf")</code>または<code>quickAction("screenshot")</code>を呼ぶため、Puppeteer、Playwright、Browser Run用のAPIトークンは不要です。</> : <>Use Cloudflare Browser Run Quick Actions through a browser binding to return the deck's <code>print</code> page as PDF or PNG. <code>hono-decks</code> calls <code>quickAction("pdf")</code> or <code>quickAction("screenshot")</code>, so this flow needs neither Puppeteer, Playwright, nor a Browser Run API token.</>}</p>
         <CodeBlock label="wrangler.jsonc" code={browserRunWranglerCode} locale={locale} />
-        <Callout title={isJa ? "ローカル開発ではremote bindingを使う" : "Use a remote binding during local development"}><p>{isJa ? <><code>quickAction()</code>には<code>2026-03-24</code>以降のcompatibility dateが必要です。ローカルモードでは未対応のため、bindingへ<code>remote: true</code>を設定するか<code>wrangler dev --remote</code>で起動します。</> : <><code>quickAction()</code> requires a compatibility date of <code>2026-03-24</code> or later. Local mode does not support it yet, so set <code>remote: true</code> on the binding or start with <code>wrangler dev --remote</code>.</>}</p></Callout>
-        <p>{isJa ? <>次の例では、先に登録したsessionまたはCloudflare Access検証middlewareが<code>deckExportAllowed</code>を設定済みとします。</> : <>The next example assumes an earlier session or Cloudflare Access validation middleware has set <code>deckExportAllowed</code>.</>}</p>
+        <Callout title={isJa ? "ローカル開発ではリモートバインディングを使う" : "Use a remote binding during local development"}><p>{isJa ? <><code>quickAction()</code>には<code>2026-03-24</code>以降のcompatibility dateが必要です。ローカルモードでは未対応のため、バインディングに<code>remote: true</code>を設定するか、<code>wrangler dev --remote</code>で起動します。</> : <><code>quickAction()</code> requires a compatibility date of <code>2026-03-24</code> or later. Local mode does not support it yet, so set <code>remote: true</code> on the binding or start with <code>wrangler dev --remote</code>.</>}</p></Callout>
+        <p>{isJa ? <>次の例では、先に登録したセッションまたはCloudflare Access検証ミドルウェアが<code>deckExportAllowed</code>を設定済みとします。</> : <>The next example assumes an earlier session or Cloudflare Access validation middleware has set <code>deckExportAllowed</code>.</>}</p>
         <CodeBlock label="hono-decks.config.ts" code={browserRunConfigCode} locale={locale} />
         <RouteTable locale={locale} rows={[
           ["/:slug/print", isJa ? "全スライドを並べるBrowser Runの入力画面" : "All-slide document used as Browser Run input"],
           ["/:slug/export.pdf", isJa ? "print画面をPDFとしてダウンロード" : "Download the print document as PDF"],
           ["/:slug/export.png", isJa ? "print画面全体をPNGとしてダウンロード" : "Download a full-page PNG of the print document"],
         ]} />
-        <p>{isJa ? <>export requestは<code>authorize</code>を通過した後、公開origin上の<code>print</code> URLをbindingへ渡し、返されたファイルをattachmentとして応答します。viewerのexport controlも、同じ認可を通過したrequestにだけ表示されます。</> : <>After <code>authorize</code> succeeds, the export request sends the public <code>print</code> URL to the binding and returns its file as an attachment. Viewer export controls are shown only on requests that pass the same authorization.</>}</p>
-        <Callout title={isJa ? "authorizeは省略しない" : "Do not omit authorize"}><p>{isJa ? <>bindingの認証と利用者の認可は別です。<code>authorize</code>を省略するとexport routeが公開されるため、既存のsessionやAccess検証へ接続してください。Bearer tokenを使う場合は<code>vars</code>へ直書きせずWrangler secretで管理します。</> : <>Binding authentication and user authorization are separate concerns. Omitting <code>authorize</code> makes the export route public, so connect it to existing session or Access validation. If you use a bearer token, store it as a Wrangler secret rather than a plain <code>vars</code> value.</>}</p></Callout>
+        <p>{isJa ? <>出力リクエストが<code>authorize</code>を通過すると、公開オリジン上の<code>print</code> URLをバインディングへ渡し、返されたファイルを添付ファイルとして応答します。ビューアーの出力ボタンも、同じ認可を通過したリクエストにだけ表示されます。</> : <>After <code>authorize</code> succeeds, the export request sends the public <code>print</code> URL to the binding and returns its file as an attachment. Viewer export controls are shown only on requests that pass the same authorization.</>}</p>
+        <Callout title={isJa ? "authorizeは省略しない" : "Do not omit authorize"}><p>{isJa ? <>バインディングの認証と利用者の認可は別です。<code>authorize</code>を省略すると出力用ルートが公開されるため、既存のセッションやAccess検証へ接続してください。Bearerトークンを使う場合は<code>vars</code>へ直書きせず、Wranglerのsecretで管理します。</> : <>Binding authentication and user authorization are separate concerns. Omitting <code>authorize</code> makes the export route public, so connect it to existing session or Access validation. If you use a bearer token, store it as a Wrangler secret rather than a plain <code>vars</code> value.</>}</p></Callout>
         <p><a class="text-link" href="https://developers.cloudflare.com/browser-run/quick-actions/">{isJa ? "Cloudflare Browser Run Quick Actionsを確認する" : "Read the Cloudflare Browser Run Quick Actions docs"} →</a></p>
-        <p><a class="text-link" href="https://github.com/ts-76/hono-slides/tree/main/examples/basic">{isJa ? "Browser Runを組み込んだexampleを見る" : "Open the example with Browser Run configured"} →</a></p>
+        <p><a class="text-link" href="https://github.com/ts-76/hono-slides/tree/main/examples/basic">{isJa ? "Browser Runを組み込んだサンプルを見る" : "Open the example with Browser Run configured"} →</a></p>
       </section>
       <section id="runtime">
         <h2>{isJa ? "リクエストごとに変わる値を設定する" : "Configure values that change per request"}</h2>
         <p>{isJa ? <><code>defineDecksConfig()</code>を使うと、HonoのBindingsとVariablesを含めて型を確認できます。<code>dev</code>は自動判定されないため、環境変数から明示的に返します。</> : <>Use <code>defineDecksConfig()</code> to preserve Hono Bindings and Variables types. <code>dev</code> is never inferred, so resolve it explicitly from an environment binding.</>}</p>
         <CodeBlock code={configCode} locale={locale} />
-        <p>{isJa ? <><code>c.get("language")</code>を使う例では、Honoの<code>languageDetector()</code>を先に登録します。手順は<a class="text-link" href={localizedHref("/docs/security#language", locale)}>安全に公開する</a>で確認できます。多言語対応が不要なら<code>lang: "ja"</code>のように固定値を指定します。</> : <>The <code>c.get("language")</code> example assumes Hono's <code>languageDetector()</code> is registered first; see <a class="text-link" href={localizedHref("/docs/security#language", locale)}>publish safely</a>. For a single-language app, use a fixed value such as <code>lang: "en"</code>.</>}</p>
+        <p>{isJa ? <><code>c.get("language")</code>を使う例では、Honoの<code>languageDetector()</code>を先に登録します。手順は<a class="text-link" href={localizedHref("/docs/security#language", locale)}>セキュリティ</a>で確認できます。多言語対応が不要なら<code>lang: "ja"</code>のように固定値を指定します。</> : <>The <code>c.get("language")</code> example assumes Hono's <code>languageDetector()</code> is registered first; see <a class="text-link" href={localizedHref("/docs/security#language", locale)}>publish safely</a>. For a single-language app, use a fixed value such as <code>lang: "en"</code>.</>}</p>
       </section>
       <section id="facade">
-        <h2>{isJa ? "上書きの優先順位を決める" : "Make precedence explicit in the facade"}</h2>
-        <p>{isJa ? <>設定はgenerated defaults、app config、<code>decks.router(overrides)</code>の順に適用され、入れ子の設定もconfigured kitが合成します。</> : <>Generated defaults, app config, and <code>decks.router(overrides)</code> are applied in order; the configured kit merges nested options.</>}</p>
+        <h2>{isJa ? "設定が上書きされる順序を確認する" : "Make precedence explicit in the facade"}</h2>
+        <p>{isJa ? <>設定は、生成時の既定値、アプリの設定、<code>decks.router(overrides)</code>の順に適用されます。入れ子になった設定も<code>createDecks(config)</code>が結合します。</> : <>Generated defaults, app config, and <code>decks.router(overrides)</code> are applied in order; the configured kit merges nested options.</>}</p>
         <CodeBlock code={facadeCode} locale={locale} />
-        <Callout title={isJa ? "公開パスは一度だけ" : "One mount path"}><p>{isJa ? <><code>mountPath</code>はconfigに一度だけ書き、runtimeでは<code>decks.mountPath</code>を使います。</> : <>Write <code>mountPath</code> once in config and use <code>decks.mountPath</code> at runtime.</>}</p></Callout>
+        <Callout title={isJa ? "公開パスは1か所で指定します" : "One mount path"}><p>{isJa ? <><code>mountPath</code>は設定ファイルに一度だけ書き、実行時は<code>decks.mountPath</code>を使います。</> : <>Write <code>mountPath</code> once in config and use <code>decks.mountPath</code> at runtime.</>}</p></Callout>
       </section>
       <section id="reference">
         <h2>{isJa ? "主な設定項目" : "Choose the right configuration boundary"}</h2>
@@ -662,20 +681,20 @@ const security = (locale: Locale): Guide => {
   const isJa = locale === "ja";
   return {
     title: isJa ? "HTMLの共通設定とセキュリティ" : "Document policy and security",
-    description: isJa ? "アプリとhono-decksの責任範囲を分け、言語、CSP、外部iframeの許可をすべての画面へ適用します。" : "Separate application and hono-decks responsibilities, then apply language, CSP, and iframe policy to every surface.",
+    description: isJa ? "Honoアプリとhono-decksの役割を分け、言語、CSP、外部iframeの設定を各画面へ適用します。" : "Separate application and hono-decks responsibilities, then apply language, CSP, and iframe policy to every surface.",
     sections: isJa ? [{ id: "defaults", label: "安全な既定値" }, { id: "language", label: "言語" }, { id: "csp", label: "CSPとnonce" }, { id: "embed", label: "外部サイトへの埋め込み" }, { id: "check", label: "公開前の確認" }] : [{ id: "defaults", label: "Safe defaults" }, { id: "language", label: "Language" }, { id: "csp", label: "CSP and nonce" }, { id: "embed", label: "External embeds" }, { id: "check", label: "Pre-release checks" }],
     content: <>
-      <section id="defaults"><h2>{isJa ? "最初は公開する画面を絞る" : "Start with the smallest public surface"}</h2><p>{isJa ? <>通常のビューアーは同一オリジンで動作します。外部iframe用の<code>/:slug/embed</code>は、<code>embed</code>を指定するまで作成されません。発表者画面や印刷画面を公開しない場合は、ルート設定で無効にしてください。</> : <>The ordinary viewer runs on the same origin. The external <code>/:slug/embed</code> route does not exist until <code>embed</code> is configured. Disable presenter or print routes when they should not be public.</>}</p><p>{isJa ? <>認証、認可、CSPヘッダーはHonoアプリが担当します。hono-decksは、アプリから渡された言語やnonceを生成するHTMLへ反映します。</> : <>The Hono application owns authentication, authorization, and CSP headers. hono-decks applies the resolved language and nonce to the HTML it generates.</>}</p></section>
+      <section id="defaults"><h2>{isJa ? "公開する画面を必要なものに絞る" : "Start with the smallest public surface"}</h2><p>{isJa ? <>通常のビューアーは同一オリジンで動作します。外部iframe用の<code>/:slug/embed</code>は、<code>embed</code>を指定するまで作成されません。発表者画面や印刷画面を公開しない場合は、ルート設定で無効にしてください。</> : <>The ordinary viewer runs on the same origin. The external <code>/:slug/embed</code> route does not exist until <code>embed</code> is configured. Disable presenter or print routes when they should not be public.</>}</p><p>{isJa ? <>認証、認可、CSPヘッダーはHonoアプリが担当します。hono-decksは、アプリから渡された言語やnonceを生成するHTMLへ反映します。</> : <>The Hono application owns authentication, authorization, and CSP headers. hono-decks applies the resolved language and nonce to the HTML it generates.</>}</p></section>
       <section id="language"><h2>{isJa ? "Honoで言語を判定し、すべての画面へ渡す" : "Detect language in Hono and pass it to every surface"}</h2><p>{isJa ? <>Honoの<code>languageDetector()</code>は、既定でクエリ、Cookie、<code>Accept-Language</code>の順に言語を判定し、<code>c.get("language")</code>から取得できるようにします。</> : <>Hono's <code>languageDetector()</code> checks query, cookie, then <code>Accept-Language</code> by default and exposes the result through <code>c.get("language")</code>.</>}</p><CodeBlock locale={locale} code={languageMiddlewareCode} /><p>{isJa ? <><code>document.lang</code>にその値を渡すと、一覧、ビューアー、スライド、印刷、発表画面、発表者画面の<code>&lt;html lang&gt;</code>が揃います。</> : <>Pass that value to <code>document.lang</code> so index, viewer, render, print, presentation, and presenter all receive the same <code>&lt;html lang&gt;</code>.</>}</p></section>
       <section id="csp"><h2>{isJa ? "同じnonceをCSPヘッダーとHTMLへ渡す" : "Use the same nonce in the CSP header and generated HTML"}</h2><p>{isJa ? <>nonceはリクエストごとに作り、HonoのVariablesへ保存します。CSPヘッダーに含めた値と、<code>document.nonce</code>が返す値は必ず同じにします。</> : <>Create one nonce per request and store it in Hono Variables. The value in the CSP header must match the value returned by <code>document.nonce</code>.</>}</p><CodeBlock label={isJa ? "アプリ側のミドルウェア" : "Application middleware"} locale={locale} code={nonceMiddlewareCode} /><CodeBlock label={isJa ? "hono-decksの設定" : "hono-decks configuration"} locale={locale} code={documentPolicyCode} /><p>{isJa ? <>hono-decksは指定されたnonceを、パッケージが生成する<code>&lt;style&gt;</code>と<code>&lt;script&gt;</code>へ付けます。YouTube、外部画像、Islandなどを使う場合は、アプリ側のCSPにも必要な配信元を追加してください。</> : <>hono-decks adds the nonce to package-generated <code>&lt;style&gt;</code> and <code>&lt;script&gt;</code> elements. Add required origins to the application CSP when using YouTube, remote images, or islands.</>}</p></section>
-      <section id="embed"><h2>{isJa ? "埋め込み先のオリジンを明示する" : "Allow explicit embedding origins"}</h2><p>{isJa ? <>外部サイトにiframeで表示するときだけ<code>embed</code>を有効にし、親originを列挙します。</> : <>Enable <code>embed</code> only for external iframes and list allowed parent origins.</>}</p><CodeBlock locale={locale} code={`decks.router({
+      <section id="embed"><h2>{isJa ? "埋め込みを許可するオリジンを指定する" : "Allow explicit embedding origins"}</h2><p>{isJa ? <>外部サイトにiframeで表示するときだけ<code>embed</code>を有効にし、親ページのオリジンを列挙します。</> : <>Enable <code>embed</code> only for external iframes and list allowed parent origins.</>}</p><CodeBlock locale={locale} code={`decks.router({
   embed: {
     frameAncestors: ["https://blog.example.com"],
     document: { nonce: ({ c }) => c.get("cspNonce") },
     viewer: { controls: false },
   },
 })`} /><Callout title={isJa ? "許可先を省略した場合" : "When origins are omitted"}><p>{isJa ? <><code>frame-ancestors 'self'</code>が適用され、別オリジンからは埋め込めません。埋め込み用ページでは、設定したCSPに合わせて<code>X-Frame-Options</code>が取り除かれます。</> : <><code>frame-ancestors 'self'</code> applies, so another origin cannot embed the page. The embed response removes <code>X-Frame-Options</code> to let the configured CSP control framing.</>}</p></Callout></section>
-      <section id="check"><h2>{isJa ? "公開前に実際のレスポンスを確認する" : "Inspect real responses before release"}</h2><dl class="troubleshooting-list"><div><dt>{isJa ? "下書きや発表者画面" : "Drafts and presenter"}</dt><dd>{isJa ? "本番で不要なルートが404になることを確認します。" : "Confirm routes that should stay private return 404 in production."}</dd></div><div><dt>CSP</dt><dd>{isJa ? "ブラウザの開発者ツールでCSP違反がなく、nonceがヘッダーとHTMLで一致することを確認します。" : "Check the browser console for CSP violations and confirm header and HTML nonces match."}</dd></div><div><dt>{isJa ? "外部埋め込み" : "External embed"}</dt><dd>{isJa ? "許可した親サイトでは表示でき、許可していないオリジンでは拒否されることを確認します。" : "Verify the allowed parent loads and an unlisted origin is rejected."}</dd></div></dl><p><a class="text-link" href={localizedHref("/api#deck-document-options", locale)}>{isJa ? "DocumentとEmbedのAPIを見る" : "Open the Document and Embed API"} →</a></p></section>
+      <section id="check"><h2>{isJa ? "公開前に実際のレスポンスを確認する" : "Inspect real responses before release"}</h2><dl class="troubleshooting-list"><div><dt>{isJa ? "下書きや発表者画面" : "Drafts and presenter"}</dt><dd>{isJa ? "本番で不要なルートが404になることを確認します。" : "Confirm routes that should stay private return 404 in production."}</dd></div><div><dt>CSP</dt><dd>{isJa ? "ブラウザの開発者ツールでCSP違反がなく、nonceがヘッダーとHTMLで一致することを確認します。" : "Check the browser console for CSP violations and confirm header and HTML nonces match."}</dd></div><div><dt>{isJa ? "外部埋め込み" : "External embed"}</dt><dd>{isJa ? "許可した親サイトでは表示でき、許可していないオリジンでは拒否されることを確認します。" : "Verify the allowed parent loads and an unlisted origin is rejected."}</dd></div></dl><p><a class="text-link" href={localizedHref("/api#deck-document-options", locale)}>{isJa ? "HTMLと埋め込みのAPIを見る" : "Open the Document and Embed API"} →</a></p></section>
     </>,
   };
 };

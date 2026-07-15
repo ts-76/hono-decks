@@ -13,12 +13,12 @@ import { localizedHref, t, type Locale } from "./i18n";
 
 const navigationByLocale = {
   ja: [
-    { href: "/docs/getting-started", label: "はじめる", detail: "最初のデッキを表示" },
-    { href: "/docs/authoring", label: "スライドを書く", detail: "MDX / 部品 / 画像 / テーマ" },
-    { href: "/docs/configuration", label: "設定する", detail: "CLI / 設定ファイル / 上書き" },
-    { href: "/docs/routing", label: "公開画面を選ぶ", detail: "閲覧 / 発表 / 印刷" },
-    { href: "/docs/security", label: "安全に公開する", detail: "言語 / CSP / 埋め込み" },
-    { href: "/api", label: "API", detail: "入口 / 使う場面 / 型" },
+    { href: "/docs/getting-started", label: "導入", detail: "インストールから表示確認まで" },
+    { href: "/docs/authoring", label: "スライドを書く", detail: "MDX / コンポーネント / 画像 / テーマ" },
+    { href: "/docs/configuration", label: "設定", detail: "設定ファイル / 開発 / ビルド" },
+    { href: "/docs/routing", label: "ルートと画面", detail: "閲覧 / 発表 / 印刷" },
+    { href: "/docs/security", label: "セキュリティ", detail: "言語 / CSP / 埋め込み" },
+    { href: "/api", label: "API", detail: "エントリー / 用途 / 型" },
   ],
   en: [
     { href: "/docs/getting-started", label: "Get started", detail: "render the first deck" },
@@ -268,7 +268,7 @@ export function DeployToCloudflare({ locale }: { locale: Locale }) {
   const label = locale === "ja" ? "Deploy to Cloudflare" : "Deploy to Cloudflare";
   const note = href
     ? locale === "ja"
-      ? "最小構成のサンプルを自分のCloudflareアカウントへ複製し、Workerとしてデプロイします。"
+      ? "最小構成のサンプルをCloudflareアカウントに複製し、Workerとしてデプロイします。"
       : "Clone the minimal example into your Cloudflare account and deploy it as a Worker."
     : locale === "ja"
       ? "公開サンプルリポジトリを準備中です。"

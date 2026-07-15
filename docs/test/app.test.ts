@@ -15,7 +15,11 @@ describe("HonoX documentation site", () => {
     expect(html).toContain('href="/docs/getting-started?lang=ja"');
     expect(html).toContain('src="/demo/product/embed"');
     expect(html).toContain('href="/api?lang=ja"');
-    expect(html).toContain("このHonoXアプリでMDXから生成しています。");
+    expect(html).toContain("ルートと画面");
+    expect(html).toContain("セキュリティ");
+    expect(html).toContain("このページと同じHonoXアプリに、MDXから生成したデッキを組み込んでいます。");
+    expect(html).toContain("パッケージを追加して、デッキを生成する");
+    expect(html).not.toContain("既存のHonoアプリへ追加できます");
   });
 
   it("uses query, cookie, and Accept-Language detection with Japanese fallback", async () => {
@@ -36,10 +40,10 @@ describe("HonoX documentation site", () => {
 
   it.each([
     ["/docs/getting-started", "最初のデッキを作ってコンパイルする"],
-    ["/docs/authoring", "1つのデッキを1つのディレクトリに置く"],
-    ["/docs/configuration", "共有configの責任範囲を確認する"],
-    ["/docs/routing", "configのmountPathをすべての画面の起点にする"],
-    ["/docs/security", "最初は公開する画面を絞る"],
+    ["/docs/authoring", "デッキごとにディレクトリを分ける"],
+    ["/docs/configuration", "設定ファイルごとの役割を確認する"],
+    ["/docs/routing", "mountPathをすべてのルートの起点にする"],
+    ["/docs/security", "公開する画面を必要なものに絞る"],
     ["/api", "実行時API"],
   ])("renders %s from HonoX file routes", async (path, expected) => {
     const response = await app.request(path);
@@ -98,6 +102,11 @@ describe("HonoX documentation site", () => {
       expect(html).not.toContain("request-aware");
       expect(html).not.toContain("route surface");
       expect(html).not.toContain("次の一手");
+      expect(html).not.toContain("CLIとruntime");
+      expect(html).not.toContain("共有config");
+      expect(html).not.toContain("custom build");
+      expect(html).not.toContain("exampleを見る");
+      expect(html).not.toContain("export request");
     }
   });
 
@@ -105,11 +114,17 @@ describe("HonoX documentation site", () => {
     const html = await (await app.request("/docs/getting-started")).text();
 
     expect(html).toContain('id="prerequisites"');
+    expect(html).toContain("インストールから表示確認まで");
     expect(html).toContain('id="install"');
     expect(html).toContain('id="deck"');
     expect(html).toContain("decks/welcome/deck.mdx");
     expect(html).toContain("src/generated/");
-    expect(html).toContain("bun run dev");
+    expect(html).toContain("npm run dev");
+    expect(html).toContain("npm install hono-decks");
+    expect(html).toContain("pnpm add hono-decks");
+    expect(html).toContain("yarn add hono-decks");
+    expect(html).toContain("bun add hono-decks");
+    expect(html).not.toContain("Bun 1.2以降");
     expect(html).toContain("http://localhost:3000/decks");
     expect(html).toContain('id="troubleshooting"');
     expect(html).toContain('href="/docs/authoring?lang=ja"');
@@ -125,8 +140,8 @@ describe("HonoX documentation site", () => {
     expect(html).toContain("interface ConfiguredDecks");
     expect(html).toContain("packages/decks/src/server/define-decks.ts");
     expect(html).toContain("使う場面");
-    expect(html).toContain("generated workflowを使わず独自pipelineを作るとき");
-    expect(html).toContain("通常は生成されたcreateDecks(config)から始める");
+    expect(html).toContain("生成コードを使わず、デッキの取得からルーティングまでを独自に組み立てるとき");
+    expect(html).toContain("まずcreateDecks(config)から始める");
     expect(html).toContain('class="copy-button"');
     expect(html).not.toContain("<table>");
   });
@@ -138,9 +153,9 @@ describe("HonoX documentation site", () => {
     const security = await (await app.request("/docs/security")).text();
 
     expect(authoring).toContain("まずサーバーコンポーネントを使う");
-    expect(authoring).toContain("ブラウザ操作が必要な場合だけIslandにする");
-    expect(configuration).toContain("build input、公開path、runtime policy");
-    expect(routing).toContain("はビューアー内部のiframe用");
+    expect(authoring).toContain("ブラウザ操作が必要な部品だけをIslandにする");
+    expect(configuration).toContain("ビルド対象、公開パス、実行時の挙動");
+    expect(routing).toContain("はビューアー内のiframeが読み込むURL");
     expect(security).toContain('languageDetector');
     expect(security).toContain("同じnonceをCSPヘッダーとHTMLへ渡す");
     expect(security).toContain("許可していないオリジンでは拒否される");
@@ -160,10 +175,13 @@ describe("HonoX documentation site", () => {
     expect(ja).toContain('each=&quot;item&quot;');
     expect(ja).toContain('fire=&quot;scale&quot;');
     expect(ja).toContain('effect=&quot;blur-in&quot;');
-    expect(ja).toContain("複数のJSX要素を同時に表示する場合だけ");
+    expect(ja).toContain("複数のJSX要素を同時に表示するときは");
     expect(ja).toContain('data-fire-effect=&quot;blur-in&quot;');
     expect(ja).toContain("--fire-filter");
     expect(ja).toContain("https://sli.dev/guide/animations");
+    expect(ja).toContain("Slidevの");
+    expect(ja).toContain("一部インスパイアされています");
+    expect(ja).toContain("互換性を保証するものではありません");
     expect(ja).toContain("at");
     expect(ja).toContain("depth");
     expect(ja).toContain("every");
@@ -179,7 +197,9 @@ describe("HonoX documentation site", () => {
     expect(en).toContain("Use CommonMark plus GFM tables, task lists, strikethrough, and autolinks");
     expect(en).not.toContain("without extra configuration");
     expect(en).toContain("Fire content one step at a time");
-    expect(en).toContain("only to group multiple JSX elements into one step");
+    expect(en).toContain("partly inspired by Slidev");
+    expect(en).toContain("not guaranteed to be compatible with Slidev");
+    expect(en).toContain("to group multiple JSX elements into one step");
     expect(en).toContain("Any MDX comment is treated as a note");
   });
 

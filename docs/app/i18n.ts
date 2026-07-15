@@ -31,10 +31,10 @@ export const messages = {
     copy: "コピー",
     copied: "コピーしました",
     copyFailed: "コピーできませんでした",
-    route: "Route / API",
+    route: "ルート / API",
     role: "役割",
     language: "言語",
-    footerLine: "MDXからHonoのスライドルートを生成します。",
+    footerLine: "MDXをコンパイルし、Honoのルートとして配信します。",
   },
   en: {
     guides: "Guides",

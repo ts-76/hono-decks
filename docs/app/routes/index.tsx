@@ -2,9 +2,9 @@ import { createRoute } from "honox/factory";
 import { getLocale, localizedHref } from "../i18n";
 import { CodeBlock, DeployToCloudflare, RouteTable } from "../site";
 
-const installCode = `bun add hono-decks
-bunx hono-decks init
-bunx hono-decks compile`;
+const installCode = `npm install hono-decks
+npx hono-decks init
+npx hono-decks compile`;
 
 export default createRoute((c) => {
   const locale = getLocale(c);
@@ -14,19 +14,19 @@ export default createRoute((c) => {
       <section class="hero" aria-labelledby="hero-title">
         <div class="hero-copy">
           <p class="hero-signal">
-            <span aria-hidden="true"></span> {isJa ? "Honoアプリに組み込むMDXスライド" : "Hono route kit for MDX slides"}
+            <span aria-hidden="true"></span> {isJa ? "Honoのルートとして配信するMDXスライド" : "Hono route kit for MDX slides"}
           </p>
           <h1 id="hero-title">
             {isJa ? <><span class="line-unit"><em>Honoアプリ</em>に</span><br /><span class="line-unit">スライドを。</span></> : <>Slides belong in<br /><em>your Hono app.</em></>}
           </h1>
           <p class="hero-lede">
             {isJa
-              ? "MDXをHono JSXモジュールへ変換し、ビューアー、発表画面、発表者画面、出力機能を既存のHonoアプリへ追加します。"
+              ? "MDXをHono JSXモジュールへ変換し、閲覧、発表、印刷、ファイル出力の各画面をHonoのルートとして追加します。"
               : "Compile MDX into Hono JSX modules, then mount viewer, presentation, presenter, and export surfaces as ordinary routes in your existing Hono app."}
           </p>
           <div class="hero-actions">
             <a class="button button-primary" href={localizedHref("/docs/getting-started", locale)}>
-              {isJa ? "導入手順を見る" : "Start in five minutes"} <span aria-hidden="true">→</span>
+              {isJa ? "導入手順" : "Start in five minutes"} <span aria-hidden="true">→</span>
             </a>
             <a class="button button-secondary" href={localizedHref("/api", locale)}>
               {isJa ? "APIを見る" : "Explore the API"}
@@ -35,17 +35,17 @@ export default createRoute((c) => {
           <dl class="hero-facts">
             <div>
               <dt>{isJa ? "実行環境" : "Runtime"}</dt>
-              <dd>Hono + Web Standards</dd>
+              <dd>{isJa ? "Hono + Web標準API" : "Hono + Web Standards"}</dd>
             </div>
             <div>
-              <dt>{isJa ? "記述" : "Authoring"}</dt>
-              <dd>MDX + local components</dd>
+              <dt>{isJa ? "スライド記法" : "Authoring"}</dt>
+              <dd>{isJa ? "MDX + デッキ固有コンポーネント" : "MDX + local components"}</dd>
             </div>
           </dl>
         </div>
-        <div class="hero-demo" aria-label={isJa ? "操作できるhono-decksのデモ" : "Interactive hono-decks demo"}>
+          <div class="hero-demo" aria-label={isJa ? "hono-decksの操作デモ" : "Interactive hono-decks demo"}>
           <div class="demo-toolbar">
-            <span class="demo-live"><i aria-hidden="true"></i>{isJa ? "操作できるデッキ" : "Live deck"}</span>
+            <span class="demo-live"><i aria-hidden="true"></i>{isJa ? "ライブデモ" : "Live deck"}</span>
             <code>GET /demo/product/embed</code>
           </div>
           <iframe
@@ -55,9 +55,9 @@ export default createRoute((c) => {
             allow="fullscreen"
           ></iframe>
           <div class="demo-meta">
-            <p>{isJa ? "このHonoXアプリでMDXから生成しています。スライドの左右、または矢印キーで操作できます。" : "Compiled from MDX and mounted in this HonoX app. Use the slide halves or arrow keys to navigate."}</p>
+            <p>{isJa ? "このページと同じHonoXアプリに、MDXから生成したデッキを組み込んでいます。スライドの左右または矢印キーで操作できます。" : "Compiled from MDX and mounted in this HonoX app. Use the slide halves or arrow keys to navigate."}</p>
             <a href="/demo/product/embed" target="_blank" rel="noreferrer">
-              {isJa ? "大きく表示" : "Open full size"} <span aria-hidden="true">↗</span>
+              {isJa ? "別ページで開く" : "Open full size"} <span aria-hidden="true">↗</span>
             </a>
           </div>
         </div>
@@ -70,7 +70,7 @@ export default createRoute((c) => {
             {isJa ? "Node.jsを使うのはローカルファイルの読み込みとコンパイルだけです。Workerでは生成済みモジュールをHonoのルートとして配信します。" : "Node.js handles local file I/O and compilation only. Generated modules and Hono routes are all that reach your Worker."}
           </p>
         </div>
-        <div class="boundary-flow" aria-label="Build and runtime boundaries">
+        <div class="boundary-flow" aria-label={isJa ? "ビルド時と実行時の処理" : "Build and runtime boundaries"}>
           <div>
             <span>01</span>
             <strong>{isJa ? "作成" : "Author"}</strong>
@@ -93,13 +93,12 @@ export default createRoute((c) => {
 
       <section class="quickstart-section" aria-labelledby="quickstart-title">
         <div>
-          <p class="section-note">{isJa ? "既存のHonoアプリへ追加できます" : "Add it to your existing Hono app."}</p>
-          <h2 id="quickstart-title">{isJa ? "デッキを生成する" : "Install the package and compile your decks."}</h2>
+          <h2 id="quickstart-title">{isJa ? "パッケージを追加して、デッキを生成する" : "Install the package and compile your decks."}</h2>
           <p>
-            {isJa ? <>コンパイラーは<code>hono-decks/node</code>から読み込みます。通常の<code>hono-decks</code>エントリーには、Workerで使える実行時APIだけが含まれます。</> : <>Compiler dependencies stay in <code>hono-decks/node</code>; the standard entry exposes Worker-safe runtime APIs only.</>}
+            {isJa ? <>例ではnpmを使っています。pnpm、Yarn、Bunを使う場合のコマンドは導入手順にまとめています。</> : <>The example uses npm. The setup guide also lists commands for pnpm, Yarn, and Bun.</>}
           </p>
           <a class="text-link" href={localizedHref("/docs/getting-started", locale)}>
-            {isJa ? "導入手順を読む" : "Read the setup guide"} <span aria-hidden="true">↗</span>
+            {isJa ? "パッケージマネージャー別の手順を見る" : "Read the setup guide"} <span aria-hidden="true">↗</span>
           </a>
         </div>
         <CodeBlock code={installCode} label="Terminal" locale={locale} />
@@ -128,7 +127,7 @@ export default createRoute((c) => {
     </main>,
     {
       activePath: "/",
-      description: isJa ? "MDXのスライドを既存のHonoアプリへ組み込むためのhono-decksドキュメント" : "Mount MDX slide routes in your existing Hono application with hono-decks",
+      description: isJa ? "MDXスライドをHonoのルートとして生成・配信するためのhono-decksドキュメント" : "Mount MDX slide routes in your existing Hono application with hono-decks",
     },
   );
 });
