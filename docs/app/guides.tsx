@@ -193,6 +193,16 @@ const markdownSyntaxCode = [
   "- Node for build-time I/O",
   "- Hono for runtime routes",
   "",
+  "- [x] Compile the deck",
+  "- [ ] Deploy the Worker",
+  "",
+  "| Layer | Responsibility |",
+  "| :-- | :-- |",
+  "| Node | Build-time I/O |",
+  "| Hono | Runtime routes |",
+  "",
+  "~~Filesystem access at runtime~~",
+  "",
   "> Keep the Worker bundle filesystem-free.",
   "",
   "```ts",
@@ -200,11 +210,11 @@ const markdownSyntaxCode = [
   "```",
 ].join("\n");
 
-const fragmentSyntaxCode = `<Fragment order={1} effect="fade-up">
+const fireSyntaxCode = `<Fire effect="fade-up">
   First reveal
-</Fragment>
+</Fire>
 
-:::fire{order="2" effect="fade-up"}
+:::fire{effect="fade-up"}
 Second reveal
 :::
 
@@ -416,13 +426,13 @@ Node for I/O. Hono for routes.`} />
       </section>
 
       <section id="syntax">
-        <h2>{isJa ? "本文はCommonMarkとMDXで書く" : "Write slide content with CommonMark and MDX"}</h2>
-        <p>{isJa ? "見出し、段落、強調、箇条書き、引用、リンク、画像、インラインコード、コードフェンスを使えます。MDXとしてJSX要素や式も記述できます。" : "Use headings, paragraphs, emphasis, lists, blockquotes, links, images, inline code, and fenced code blocks. MDX also accepts JSX elements and expressions."}</p>
+        <h2>{isJa ? "本文はGFMとMDXで書く" : "Write slide content with GFM and MDX"}</h2>
+        <p>{isJa ? "CommonMarkの基本記法に加え、GFMのテーブル、タスクリスト、打ち消し線、自動リンクを標準で使えます。MDXとしてJSX要素や式も記述できます。" : "CommonMark syntax plus GFM tables, task lists, strikethrough, and autolinks work by default. MDX also accepts JSX elements and expressions."}</p>
         <CodeBlock label="MDX" locale={locale} code={markdownSyntaxCode} />
         <dl class="configuration-map">
           <div><dt>{isJa ? "コードフェンス" : "Fenced code"}</dt><dd>{isJa ? <>開始行に<code>ts</code>、<code>tsx</code>、<code>css</code>などの言語名を付けると、スライド内でシンタックスハイライトされます。</> : <>Add a language such as <code>ts</code>, <code>tsx</code>, or <code>css</code> after the opening fence to enable syntax highlighting in the slide.</>}</dd></div>
           <div><dt>MDX</dt><dd>{isJa ? <>JSXコンポーネント、props、式を使えます。<code>import</code>と<code>export</code>はファイル先頭にまとめます。</> : <>Use JSX components, props, and expressions. Keep <code>import</code> and <code>export</code> statements at the top of the file.</>}</dd></div>
-          <div><dt>{isJa ? "GFM拡張" : "GFM extensions"}</dt><dd>{isJa ? "標準構成ではテーブル、タスクリスト、打ち消し線を有効にしていません。必要な表現はコンポーネントで追加します。" : "Tables, task lists, and strikethrough are not enabled by default. Add a component when a deck needs those structures."}</dd></div>
+          <div><dt>{isJa ? "GFM拡張" : "GFM extensions"}</dt><dd>{isJa ? "テーブル、タスクリスト、打ち消し線、URLの自動リンクは追加設定なしでコンパイルされます。" : "Tables, task lists, strikethrough, and URL autolinks compile without extra configuration."}</dd></div>
         </dl>
       </section>
 
@@ -439,10 +449,10 @@ Node for I/O. Hono for routes.`} />
       </section>
 
       <section id="fragments">
-        <h2>{isJa ? "クリックごとに内容を表示する" : "Reveal content one step at a time"}</h2>
-        <p>{isJa ? <><code>Fragment</code>、<code>:::fire</code>、JSXの<code>$fire</code>はいずれも段階表示になります。<code>order</code>は同じスライド内の順番、<code>effect</code>は<code>none</code>、<code>fade</code>、<code>fade-up</code>、<code>scale</code>から選びます。</> : <><code>Fragment</code>, <code>:::fire</code>, and the JSX <code>$fire</code> prop all create staged content. <code>order</code> controls sequence; <code>effect</code> accepts <code>none</code>, <code>fade</code>, <code>fade-up</code>, or <code>scale</code>.</>}</p>
-        <CodeBlock label="MDX" locale={locale} code={fragmentSyntaxCode} />
-        <p>{isJa ? <>箇条書きを一項目ずつ出す場合は、スライドのフロントマターに<code>fragments: list</code>を指定します。手動指定だけに戻す場合は<code>manual</code>、段階表示を止める場合は<code>none</code>です。</> : <>Set <code>fragments: list</code> in slide frontmatter to reveal top-level list items separately. Use <code>manual</code> for explicit fragments only or <code>none</code> to disable staged content.</>}</p>
+        <h2>{isJa ? "fireでクリックごとに内容を発火する" : "Fire content one step at a time"}</h2>
+        <p>{isJa ? <><code>&lt;Fire&gt;</code>がJSXにおける基本形で、Slidevの<code>&lt;v-click&gt;</code>に相当します。Markdownのまとまりには<code>:::fire</code>を使います。通常は記述順に発火するため<code>order</code>は不要です。順番を明示する場合だけ指定し、<code>effect</code>は<code>none</code>、<code>fade</code>、<code>fade-up</code>、<code>scale</code>から選びます。</> : <><code>&lt;Fire&gt;</code> is the primary JSX form and corresponds to Slidev's <code>&lt;v-click&gt;</code>. Use <code>:::fire</code> for Markdown blocks. Reveals normally follow source order, so add <code>order</code> only when you need an explicit sequence. <code>effect</code> accepts <code>none</code>, <code>fade</code>, <code>fade-up</code>, or <code>scale</code>.</>}</p>
+        <CodeBlock label="MDX" locale={locale} code={fireSyntaxCode} />
+        <Callout title={isJa ? "$fireとリスト記法は検討中" : "$fire and list syntax are under review"}><p>{isJa ? <>JSXの<code>$fire</code>とスライドフロントマターの<code>fragments: list</code>は既存デッキとの互換のため引き続き動作します。新しく書く場合は<code>&lt;Fire&gt;</code>または<code>:::fire</code>を使ってください。リストをfireの近くで指定できる記法を別途検討しています。</> : <>The JSX <code>$fire</code> prop and slide frontmatter <code>fragments: list</code> remain supported for existing decks. Prefer <code>&lt;Fire&gt;</code> or <code>:::fire</code> for new content while a fire-local list syntax is evaluated.</>}</p></Callout>
       </section>
 
       <section id="notes">

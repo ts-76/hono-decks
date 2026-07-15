@@ -4,8 +4,8 @@ function _createMdxContent(props) {
   const _components = {
     p: "p",
     ...props.components
-  }, {Fragment} = _components;
-  if (!Fragment) _missingMdxReference("Fragment", true);
+  }, {Fire} = _components;
+  if (!Fire) _missingMdxReference("Fire", true);
   return _jsxs(_Fragment, {
     children: [_jsx("style", {
       children: `
@@ -23,7 +23,7 @@ function _createMdxContent(props) {
           children: "Motion verification"
         }), _jsxs("p", {
           children: ["CSS animation stays inside the fixed 16", ":9", " slide and respects reduced motion."]
-        }), _jsxs(Fragment, {
+        }), _jsxs(Fire, {
           order: "1",
           effect: "fade-up",
           children: [_jsx(_components.p, {

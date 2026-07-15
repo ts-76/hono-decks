@@ -152,8 +152,9 @@ describe("HonoX documentation site", () => {
 
     expect(ja).toContain('id="syntax"');
     expect(ja).toContain('id="notes"');
-    expect(ja).toContain("CommonMarkとMDX");
-    expect(ja).toContain("テーブル、タスクリスト、打ち消し線を有効にしていません");
+    expect(ja).toContain("本文はGFMとMDXで書く");
+    expect(ja).toContain("テーブル、タスクリスト、打ち消し線、自動リンクを標準で使えます");
+    expect(ja).toContain("&lt;Fire&gt;");
     expect(ja).toContain(":::fire");
     expect(ja).toContain("$fire");
     expect(ja).toContain("@[x]");
@@ -161,8 +162,9 @@ describe("HonoX documentation site", () => {
     expect(ja).toContain("@[iframe]");
     expect(ja).toContain("通常のコードコメントとして書いたMDXコメントもノートとして扱われます");
     expect(ja).toContain("view-transition");
-    expect(en).toContain("Write slide content with CommonMark and MDX");
-    expect(en).toContain("Tables, task lists, and strikethrough are not enabled by default");
+    expect(en).toContain("Write slide content with GFM and MDX");
+    expect(en).toContain("GFM tables, task lists, strikethrough, and autolinks work by default");
+    expect(en).toContain("Fire content one step at a time");
     expect(en).toContain("Any MDX comment is treated as a note");
   });
 

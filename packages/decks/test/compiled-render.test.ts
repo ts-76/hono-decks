@@ -6,6 +6,7 @@ import {
   renderCompiledDeckPage,
   renderCompiledDeckPageAsync,
 } from "../src/renderer/compiled-render";
+import { builtInSlideComponents } from "../src/renderer/jsx-renderer";
 import type { CompiledDeck } from "../src/deck/model";
 
 const deck = {
@@ -33,6 +34,11 @@ const deck = {
 } satisfies CompiledDeck;
 
 describe("compiled deck rendering", () => {
+  it("exposes Fire without a built-in Fragment authoring component", () => {
+    expect(builtInSlideComponents.Fire).toBeDefined();
+    expect("Fragment" in builtInSlideComponents).toBe(false);
+  });
+
   it("renders slides with stable presentation metadata", () => {
     const html = renderCompiledDeck(deck);
 
@@ -67,7 +73,7 @@ describe("compiled deck rendering", () => {
     expect(html).toContain('data-slide-state="inactive"');
   });
 
-  it("renders explicit Fragment components with stable fragment attributes", async () => {
+  it("renders explicit Fire components with stable reveal attributes", async () => {
     const html = await renderCompiledDeckPageAsync({
       deck: {
         ...deck,
@@ -77,7 +83,7 @@ describe("compiled deck rendering", () => {
             nodes: [
               {
                 type: "component",
-                name: "Fragment",
+                name: "Fire",
                 props: { order: 2 },
                 children: [{ type: "text", value: "Second reveal" }],
               },
@@ -93,7 +99,7 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("Second reveal");
   });
 
-  it("renders Fragment effects as stable fire metadata", async () => {
+  it("renders Fire effects as stable reveal metadata", async () => {
     const html = await renderCompiledDeckPageAsync({
       deck: {
         ...deck,
@@ -103,7 +109,7 @@ describe("compiled deck rendering", () => {
             nodes: [
               {
                 type: "component",
-                name: "Fragment",
+                name: "Fire",
                 props: { order: 2, effect: "fade-up" },
                 children: [{ type: "text", value: "Animated reveal" }],
               },
@@ -185,7 +191,7 @@ describe("compiled deck rendering", () => {
             nodes: [
               {
                 type: "component",
-                name: "Fragment",
+                name: "Fire",
                 props: { order: 1 },
                 children: [{ type: "text", value: "First reveal" }],
               },

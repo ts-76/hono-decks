@@ -19,6 +19,12 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden}
 .slide :not(pre)>code{border-radius:6px;background:var(--hono-decks-inline-code-background);padding:.12em .34em}
 .slide pre{max-width:100%;overflow:auto;box-sizing:border-box;border:1px solid var(--hono-decks-border-color);border-radius:8px;background:var(--hono-decks-code-background);padding:1rem;tab-size:2;white-space:pre}
 .slide pre code{display:block;min-width:max-content;background:transparent;padding:0}
+.slide table{width:100%;margin:1rem 0;border-collapse:collapse}
+.slide th,.slide td{border:1px solid var(--hono-decks-border-color);padding:.4em .75em;text-align:left}
+.slide th{background:var(--hono-decks-card-background);font-weight:700}
+.slide del{color:var(--hono-decks-muted-color)}
+.slide li.task-list-item{list-style:none;margin-left:-1.4em}
+.slide li.task-list-item input[type=checkbox]{margin-right:.5em;vertical-align:middle}
 .hono-decks-code-block{margin:1rem 0;max-width:100%}
 .hono-decks-code-caption{display:inline-flex;margin:0 0 .4rem;border:1px solid var(--hono-decks-border-color);border-radius:6px;padding:.2rem .5rem;background:var(--hono-decks-inline-code-background);color:var(--hono-decks-muted-color);font-size:.82rem}
 .hono-decks-embed-frame{margin:1rem 0;max-width:100%}

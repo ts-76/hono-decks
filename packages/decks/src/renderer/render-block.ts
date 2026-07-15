@@ -1,4 +1,4 @@
-import type { SlideBlock, SlidePropValue } from "../shared/types";
+import type { SlideBlock, SlidePropValue, TableAlign } from "../shared/types";
 
 export function renderBlock(block: SlideBlock): string {
   switch (block.type) {
@@ -25,7 +25,18 @@ export function renderBlock(block: SlideBlock): string {
       return `<div class="mdx-component" data-component="${escapeHtml(block.name)}"><strong>&lt;${escapeHtml(
         block.name,
       )} /&gt;</strong>${renderProps(block.props)}</div>`;
+    case "table":
+      return renderTable(block.header, block.rows, block.align);
   }
+}
+
+function renderTable(header: string[], rows: string[][], align: TableAlign[]): string {
+  const cellAttr = (index: number) => (align[index] ? ` style="text-align:${align[index]}"` : "");
+  const headRow = `<tr>${header.map((cell, index) => `<th${cellAttr(index)}>${inline(cell)}</th>`).join("")}</tr>`;
+  const bodyRows = rows
+    .map((row) => `<tr>${row.map((cell, index) => `<td${cellAttr(index)}>${inline(cell)}</td>`).join("")}</tr>`)
+    .join("");
+  return `<table><thead>${headRow}</thead><tbody>${bodyRows}</tbody></table>`;
 }
 
 function renderHero(props: Record<string, SlidePropValue>): string {
@@ -61,6 +72,7 @@ function inline(text: string): string {
   return escapeHtml(text)
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/~~([^~]+)~~/g, "<del>$1</del>")
     .replace(/\*([^*]+)\*/g, "<em>$1</em>");
 }
 

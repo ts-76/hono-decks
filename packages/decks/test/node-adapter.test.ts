@@ -800,6 +800,51 @@ fragments: list
     }
   });
 
+  it("compiles GFM syntax without extra configuration", async () => {
+    const cwd = await createFixture();
+
+    try {
+      await writeFile(
+        join(cwd, "decks", "deck1", "deck.mdx"),
+        `---
+title: Deck One
+---
+
+---
+title: GFM
+---
+
+| Runtime | Boundary |
+| :-- | --: |
+| Node | build |
+
+- [x] Compile MDX
+- [ ] Deploy Worker
+
+~~filesystem at runtime~~
+
+https://hono.dev/
+`,
+        "utf8",
+      );
+
+      await compileDecks({
+        cwd,
+        root: "decks",
+        out: "src/generated",
+        mountPath: "/slides",
+      });
+
+      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.ts"), "utf8");
+      expect(slideOutput).toContain("_components.table");
+      expect(slideOutput).toContain('class: "task-list-item"');
+      expect(slideOutput).toContain("_components.del");
+      expect(slideOutput).toContain('href: "https://hono.dev/"');
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("compiles Zenn-style embeds and fire reveal authoring syntax", async () => {
     const cwd = await createFixture();
 
@@ -839,6 +884,8 @@ https://example.com/plain-link
 :::fire
 Markdown reveal
 :::
+
+<Fire effect="fade">Direct JSX reveal</Fire>
 
 <Badge $fire={2} effect="fade-up">JSX reveal</Badge>
 
@@ -882,8 +929,9 @@ The slide stays 16:9.
       expect(slideOutput).toContain('src: "https://example.com/embed/dashboard"');
       expect(slideOutput).toContain('href: "https://example.com/plain-link"');
       expect(slideOutput).toContain('children: "https://example.com/plain-link"');
-      expect(slideOutput).toContain("Fragment");
+      expect(slideOutput).toContain("Fire");
       expect(slideOutput).toContain("Markdown reveal");
+      expect(slideOutput).toContain("Direct JSX reveal");
       expect(slideOutput).toContain("JSX reveal");
       expect(slideOutput).toContain("16");
       expect(slideOutput).toContain(":9");

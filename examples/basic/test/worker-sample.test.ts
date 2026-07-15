@@ -438,7 +438,7 @@ describe("sample Worker app", () => {
     expect(html).toContain('data-fire-effect="fade-up"');
     expect(html).toContain("The reveal state is owned by the presentation iframe.");
     expect(html).toContain("Markdown fire blocks use Zenn-style directive syntax.");
-    expect(html).toContain("JSX fire props are stripped before rendering.");
+    expect(html).toContain("Use Fire as the explicit JSX equivalent of a click reveal.");
     expect(html).not.toContain("$fire");
     expect(html).toContain("CSS animation runs before hydration.");
     expect(html).toContain("Client island animation keeps local state.");

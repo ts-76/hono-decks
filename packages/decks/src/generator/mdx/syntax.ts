@@ -151,7 +151,7 @@ function fireDirectiveNode(node: MarkdownNode): MarkdownNode | undefined {
     ...(typeof attributes.order === "string" ? [mdxAttribute("order", attributes.order)] : []),
     ...(typeof attributes.effect === "string" ? [mdxAttribute("effect", attributes.effect)] : []),
   ];
-  return mdxElement("Fragment", fragmentAttributes, node.children ?? []);
+  return mdxElement("Fire", fragmentAttributes, node.children ?? []);
 }
 
 function firePropNode(node: MarkdownNode): MarkdownNode | undefined {
@@ -168,7 +168,7 @@ function firePropNode(node: MarkdownNode): MarkdownNode | undefined {
     ...fireOrderAttribute(fireAttribute),
     ...(typeof effectAttribute?.value === "string" ? [mdxAttribute("effect", effectAttribute.value)] : []),
   ];
-  return mdxElement("Fragment", fragmentAttributes, [node]);
+  return mdxElement("Fire", fragmentAttributes, [node]);
 }
 
 function unknownDirectiveFallback(node: MarkdownNode): MarkdownNode | undefined {

@@ -6,8 +6,8 @@ function _createMdxContent(props) {
     li: "li",
     ul: "ul",
     ...props.components
-  }, {Fragment, MotionMeter} = _components;
-  if (!Fragment) _missingMdxReference("Fragment", true);
+  }, {Fire, MotionMeter} = _components;
+  if (!Fire) _missingMdxReference("Fire", true);
   if (!MotionMeter) _missingMdxReference("MotionMeter", true);
   return _jsxs(_Fragment, {
     children: [_jsx(_components.h2, {
@@ -25,9 +25,9 @@ function _createMdxContent(props) {
         children: "Client island animation keeps local state."
       }), "\n"]
     }), "\n", _jsx("p", {
-      children: "JSX fire props are stripped before rendering."
-    }), "\n", _jsx(Fragment, {
-      order: "2",
+      children: "Use Fire as the explicit JSX equivalent of a click reveal."
+    }), "\n", _jsx(Fire, {
+      order: 2,
       effect: "scale",
       children: _jsx(MotionMeter, {
         label: "Animation island",

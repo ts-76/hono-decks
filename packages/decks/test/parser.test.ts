@@ -45,6 +45,43 @@ const ok = true;
       },
     ]);
   });
+
+  it("parses GFM tables, task lists, strikethrough, and autolinks by default", () => {
+    const deck = parseDeck(`| Runtime | Boundary |
+| :-- | --: |
+| Node | build |
+| Hono | runtime |
+
+- [x] Compile MDX
+- [ ] Deploy Worker
+
+~~filesystem at runtime~~
+
+https://hono.dev/`);
+
+    expect(deck.slides[0].blocks).toContainEqual({
+      type: "table",
+      align: ["left", "right"],
+      header: ["Runtime", "Boundary"],
+      rows: [
+        ["Node", "build"],
+        ["Hono", "runtime"],
+      ],
+    });
+    expect(deck.slides[0].blocks).toContainEqual({
+      type: "list",
+      ordered: false,
+      items: ["[x] Compile MDX", "[ ] Deploy Worker"],
+    });
+
+    const html = renderDeck(deck);
+    expect(html).toContain('<th style="text-align:left">Runtime</th>');
+    expect(html).toContain('<td style="text-align:right">runtime</td>');
+    expect(html).toContain('<li class="task-list-item">');
+    expect(html).toContain('type="checkbox"');
+    expect(html).toContain("<del>filesystem at runtime</del>");
+    expect(html).toContain('<a href="https://hono.dev/">https://hono.dev/</a>');
+  });
 });
 
 describe("renderDeck", () => {

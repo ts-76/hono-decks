@@ -35,6 +35,8 @@ export type SlideNode =
 
 export type SlidePropValue = string | number | boolean;
 
+export type TableAlign = "left" | "center" | "right" | undefined;
+
 export type SlideBlock =
   | { type: "heading"; depth: 1 | 2 | 3; text: string }
   | { type: "paragraph"; text: string }
@@ -42,7 +44,8 @@ export type SlideBlock =
   | { type: "code"; lang?: string; code: string }
   | { type: "blockquote"; text: string }
   | { type: "image"; alt: string; src: string; title?: string }
-  | { type: "component"; name: string; props: Record<string, SlidePropValue>; raw: string };
+  | { type: "component"; name: string; props: Record<string, SlidePropValue>; raw: string }
+  | { type: "table"; align: TableAlign[]; header: string[]; rows: string[][] };
 
 export interface AgentSuggestRequest {
   markdown: string;

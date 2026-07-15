@@ -1,7 +1,8 @@
 import { unified } from "unified";
+import remarkGfm from "remark-gfm";
 import remarkMdx from "remark-mdx";
 import remarkParse from "remark-parse";
-import type { Slide, SlideBlock, SlideDeck, SlideNode, SlidePropValue } from "../shared/types";
+import type { Slide, SlideBlock, SlideDeck, SlideNode, SlidePropValue, TableAlign } from "../shared/types";
 
 const slideSeparator = /^---\s*$/m;
 
@@ -11,6 +12,8 @@ type MarkdownNode = {
   children?: MarkdownNode[];
   depth?: number;
   ordered?: boolean | null;
+  checked?: boolean | null;
+  align?: (string | null)[];
   lang?: string | null;
   url?: string;
   alt?: string | null;
@@ -160,13 +163,13 @@ function parseContent(body: string, slideIndex: number): ParsedContent {
 function parseMarkdownTree(body: string, slideIndex: number): ParsedMarkdownTree {
   try {
     return {
-      root: unified().use(remarkParse).use(remarkMdx).parse(body) as MarkdownNode,
+      root: unified().use(remarkParse).use(remarkGfm).use(remarkMdx).parse(body) as MarkdownNode,
       warnings: [],
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown MDX parse error";
     return {
-      root: unified().use(remarkParse).parse(body) as MarkdownNode,
+      root: unified().use(remarkParse).use(remarkGfm).parse(body) as MarkdownNode,
       warnings: [parserWarning("mdx-parse-error", `Slide ${slideIndex + 1}: ${message}`, slideIndex)],
     };
   }
@@ -210,13 +213,15 @@ function toBlocks(node: MarkdownNode, slideIndex: number, source: string): Parse
         {
           type: "list",
           ordered: node.ordered === true,
-          items: (node.children ?? []).map((item) => textContent(item).replace(/\s+/g, " ").trim()).filter(Boolean),
+          items: (node.children ?? []).map((item) => taskListItemText(item)).filter(Boolean),
         },
       ]);
     case "code":
       return blockResult([{ type: "code", lang: node.lang ?? undefined, code: node.value ?? "" }]);
     case "blockquote":
       return blockResult([{ type: "blockquote", text: textContent(node).trim() }]);
+    case "table":
+      return blockResult([tableBlock(node)]);
     case "mdxJsxFlowElement":
     case "mdxJsxTextElement":
       return jsxElementBlock(node, slideIndex, source);
@@ -260,6 +265,8 @@ function toNodes(node: MarkdownNode, slideIndex: number, source: string): Parsed
       return elementNodeResult(node, "em", slideIndex, source);
     case "strong":
       return elementNodeResult(node, "strong", slideIndex, source);
+    case "delete":
+      return elementNodeResult(node, "del", slideIndex, source);
     case "inlineCode":
       return nodeResult([{ type: "element", tag: "code", props: {}, children: [{ type: "text", value: node.value ?? "" }] }]);
     case "break":
@@ -273,19 +280,15 @@ function toNodes(node: MarkdownNode, slideIndex: number, source: string): Parsed
     }
     case "list": {
       const tag = node.ordered === true ? "ol" : "ul";
-      const childResults = (node.children ?? []).map((child) => childrenToNodes(child, slideIndex, source));
+      const items = node.children ?? [];
+      const childResults = items.map((child) => childrenToNodes(child, slideIndex, source));
       return nodeResult(
         [
           {
             type: "element",
             tag,
             props: {},
-            children: childResults.map(({ nodes }) => ({
-              type: "element",
-              tag: "li",
-              props: {},
-              children: nodes,
-            })),
+            children: childResults.map(({ nodes }, itemIndex) => listItemNode(nodes, items[itemIndex]?.checked)),
           },
         ],
         childResults.flatMap(({ warnings }) => warnings),
@@ -308,6 +311,8 @@ function toNodes(node: MarkdownNode, slideIndex: number, source: string): Parsed
       ]);
     case "link":
       return elementNodeResult(node, "a", slideIndex, source, { href: node.url ?? "" });
+    case "table":
+      return tableNodes(node, slideIndex, source);
     case "mdxJsxFlowElement":
     case "mdxJsxTextElement":
       return jsxElementNodes(node, slideIndex, source);
@@ -359,6 +364,94 @@ function elementNodeResult(
       },
     ],
     children.warnings,
+  );
+}
+
+function listItemNode(children: SlideNode[], checked: boolean | null | undefined): SlideNode {
+  if (typeof checked !== "boolean") return { type: "element", tag: "li", props: {}, children };
+
+  return {
+    type: "element",
+    tag: "li",
+    props: { class: "task-list-item" },
+    children: [
+      {
+        type: "element",
+        tag: "input",
+        props: { type: "checkbox", disabled: true, ...(checked ? { checked: true } : {}) },
+        children: [],
+      },
+      { type: "text", value: " " },
+      ...children,
+    ],
+  };
+}
+
+function tableNodes(node: MarkdownNode, slideIndex: number, source: string): ParsedNodeResult {
+  const align = node.align ?? [];
+  const [headerRow, ...bodyRows] = node.children ?? [];
+  const headerResult = headerRow ? tableRowCells(headerRow, "th", align, slideIndex, source) : cellsResult([]);
+  const bodyResults = bodyRows.map((row) => tableRowCells(row, "td", align, slideIndex, source));
+
+  return nodeResult(
+    [
+      {
+        type: "element",
+        tag: "table",
+        props: {},
+        children: [
+          {
+            type: "element",
+            tag: "thead",
+            props: {},
+            children: [{ type: "element", tag: "tr", props: {}, children: headerResult.cells }],
+          },
+          {
+            type: "element",
+            tag: "tbody",
+            props: {},
+            children: bodyResults.map(({ cells }) => ({ type: "element", tag: "tr", props: {}, children: cells })),
+          },
+        ],
+      },
+    ],
+    [...headerResult.warnings, ...bodyResults.flatMap(({ warnings }) => warnings)],
+  );
+}
+
+interface TableCellsResult {
+  cells: SlideNode[];
+  warnings: ParserWarning[];
+}
+
+function cellsResult(cells: SlideNode[], emittedWarnings: ParserWarning[] = []): TableCellsResult {
+  return { cells, warnings: emittedWarnings };
+}
+
+function tableRowCells(
+  row: MarkdownNode,
+  tag: "th" | "td",
+  align: (string | null)[],
+  slideIndex: number,
+  source: string,
+): TableCellsResult {
+  const results = (row.children ?? []).map((cell, cellIndex) => {
+    const children = childrenToNodes(cell, slideIndex, source);
+    const cellAlign = toTableAlign(align[cellIndex]);
+    return {
+      cell: {
+        type: "element" as const,
+        tag,
+        props: cellAlign ? { style: `text-align:${cellAlign}` } : {},
+        children: children.nodes,
+      },
+      warnings: children.warnings,
+    };
+  });
+
+  return cellsResult(
+    results.map(({ cell }) => cell),
+    results.flatMap(({ warnings }) => warnings),
   );
 }
 
@@ -431,11 +524,35 @@ function textContent(node: MarkdownNode): string {
   if (typeof node.value === "string") return node.value;
   if (node.type === "strong") return `**${(node.children ?? []).map(textContent).join("")}**`;
   if (node.type === "emphasis") return `*${(node.children ?? []).map(textContent).join("")}*`;
+  if (node.type === "delete") return `~~${(node.children ?? []).map(textContent).join("")}~~`;
   if (node.type === "inlineCode") return `\`${node.value ?? ""}\``;
   if ((node.type === "mdxJsxFlowElement" || node.type === "mdxJsxTextElement") && node.name && !isComponentName(node.name)) {
     return `<${node.name}>${(node.children ?? []).map(textContent).join("")}</${node.name}>`;
   }
   return (node.children ?? []).map(textContent).join("");
+}
+
+function taskListItemText(item: MarkdownNode): string {
+  const text = textContent(item).replace(/\s+/g, " ").trim();
+  if (typeof item.checked === "boolean") return `${item.checked ? "[x]" : "[ ]"} ${text}`.trim();
+  return text;
+}
+
+function tableBlock(node: MarkdownNode): Extract<SlideBlock, { type: "table" }> {
+  const rows = (node.children ?? []).map((row) =>
+    (row.children ?? []).map((cell) => textContent(cell).replace(/\s+/g, " ").trim()),
+  );
+  const [header = [], ...bodyRows] = rows;
+  return {
+    type: "table",
+    align: (node.align ?? []).map(toTableAlign),
+    header,
+    rows: bodyRows,
+  };
+}
+
+function toTableAlign(value: string | null | undefined): TableAlign {
+  return value === "left" || value === "center" || value === "right" ? value : undefined;
 }
 
 function soleImage(node: MarkdownNode): MarkdownNode | undefined {

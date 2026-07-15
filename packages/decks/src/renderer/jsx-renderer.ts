@@ -30,7 +30,7 @@ export type SlideComponentInput = SlideComponent | SlideComponentDefinition;
 export type SlideComponentRegistry = Record<string, SlideComponentDefinition>;
 
 export const builtInSlideComponents = defineSlideComponents({
-  Fragment: (props) => {
+  Fire: (props) => {
     const order =
       typeof props.order === "number" || typeof props.order === "string" ? Number(props.order) : undefined;
     const fragmentOrder = order !== undefined && Number.isFinite(order) ? String(order) : undefined;

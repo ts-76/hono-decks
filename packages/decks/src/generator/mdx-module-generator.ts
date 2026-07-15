@@ -1,5 +1,6 @@
 import { compile } from "@mdx-js/mdx";
 import remarkDirective from "remark-directive";
+import remarkGfm from "remark-gfm";
 import { CompileError } from "../deck/model";
 import {
   addUnknownFrontmatterWarnings,
@@ -188,6 +189,7 @@ async function compileMdxModule(
           format: "mdx",
           elementAttributeNameCase: "html",
           remarkPlugins: [
+            remarkGfm,
             remarkDirective,
             remarkDeckSyntax({ linkCardMetadata }),
             remarkListFragments(fragments),

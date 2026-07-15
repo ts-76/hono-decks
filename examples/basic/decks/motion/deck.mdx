@@ -48,9 +48,11 @@ fragments: list
 - CSS animation runs before hydration.
 - Client island animation keeps local state.
 
-<p>JSX fire props are stripped before rendering.</p>
+<p>Use Fire as the explicit JSX equivalent of a click reveal.</p>
 
-<MotionMeter $fire={2} effect="scale" label="Animation island" initial={35} />
+<Fire order={2} effect="scale">
+  <MotionMeter label="Animation island" initial={35} />
+</Fire>
 
 ---
 title: Queued Transition

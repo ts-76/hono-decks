@@ -5,14 +5,14 @@ function _createMdxContent(props) {
     h2: "h2",
     p: "p",
     ...props.components
-  }, {Fragment} = _components;
-  if (!Fragment) _missingMdxReference("Fragment", true);
+  }, {Fire} = _components;
+  if (!Fire) _missingMdxReference("Fire", true);
   return _jsxs(_Fragment, {
     children: [_jsx(_components.h2, {
       children: "Queued navigation"
     }), "\n", _jsx(_components.p, {
       children: "Rapid commands during a slide transition are folded into the latest pending navigation."
-    }), "\n", _jsx(Fragment, {
+    }), "\n", _jsx(Fire, {
       order: "1",
       effect: "fade-up",
       children: _jsx(_components.p, {
