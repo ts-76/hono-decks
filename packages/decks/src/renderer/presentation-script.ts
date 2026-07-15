@@ -297,6 +297,8 @@ export function renderPresentationScript(nonce?: string): string {
   }
 
   function next() {
+    const isAtDeckEnd = index >= slides.length - 1 && stepIndex >= stepCount;
+    if (isAtDeckEnd) return;
     if (isTransitioning) {
       queueNavigation(index + 1, 0);
       return;

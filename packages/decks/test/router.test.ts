@@ -1240,6 +1240,7 @@ describe("decksRouter", () => {
       decksRouter({
         source: manifestDeckSource({ decks: [deck] }),
         export: {
+          authorize: () => true,
           browser: () => browser,
           pdf: true,
           png: {

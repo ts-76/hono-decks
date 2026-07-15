@@ -345,6 +345,8 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("window.opener.postMessage(state, window.location.origin)");
     expect(html).toContain("function next()");
     expect(html).toContain("function previous()");
+    expect(html).toContain("const isAtDeckEnd = index >= slides.length - 1 && stepIndex >= stepCount");
+    expect(html).toContain("if (isAtDeckEnd) return");
     expect(html).toContain("if (stepIndex < stepCount)");
     expect(html).toContain("updateFires(stepIndex + 1)");
     expect(html).toContain("show(index + 1, 0)");

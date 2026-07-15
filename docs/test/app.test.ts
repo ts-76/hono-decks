@@ -83,7 +83,10 @@ describe("HonoX documentation site", () => {
     expect(ja).toContain("deckExportAllowed");
     expect(ja).toContain("2026-03-24");
     expect(ja).toContain("/:slug/export.pdf");
-    expect(ja).toContain("authorizeは省略しない");
+    expect(ja).toContain("公開範囲を明示する");
+    expect(ja).toContain("出力を全員に許可する場合");
+    expect(ja).toContain("authorize: () =&gt; true");
+    expect(ja).toContain("<code>authorize</code>を省略した場合も公開されます");
     expect(ja).toContain("defineDecksConfig");
     expect(ja).toContain("wrangler dev");
     expect(ja).toContain("明示したbooleanまたは関数は自動判定より優先");
@@ -93,7 +96,8 @@ describe("HonoX documentation site", () => {
     expect(en).toContain("Understand the shared config");
     expect(en).toContain("Export PDF and PNG with Browser Run");
     expect(en).toContain("Use a remote binding during local development");
-    expect(en).toContain("Do not omit authorize");
+    expect(en).toContain("Make export access explicit");
+    expect(en).toContain("Omitting <code>authorize</code> also makes exports public");
     expect(en).toContain("Generated defaults, app config");
     expect(en).toContain("An explicit boolean or resolver overrides detection");
     expect(en).toContain("unknown environments fail closed to production mode");
