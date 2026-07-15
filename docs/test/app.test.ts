@@ -10,15 +10,17 @@ describe("HonoX documentation site", () => {
     expect(response.headers.get("content-type")).toContain("text/html");
     expect(html).toContain('<html lang="ja">');
     expect(html).toContain("Honoアプリ");
-    expect(html).toContain("Node.jsで生成し、");
-    expect(html).toContain("Honoで配信する");
+    expect(html).toContain("MDXをHono JSXへコンパイルし");
+    expect(html).toContain("発表者画面、印刷画面を既存のHonoアプリへ追加します");
     expect(html).toContain('href="/docs/getting-started?lang=ja"');
     expect(html).toContain('src="/demo/product/embed"');
     expect(html).toContain('href="/api?lang=ja"');
     expect(html).toContain("ルートと画面");
     expect(html).toContain("セキュリティ");
     expect(html).toContain("このページと同じHonoXアプリに、MDXから生成したデッキを組み込んでいます。");
-    expect(html).toContain("パッケージを追加して、デッキを生成する");
+    expect(html).toContain("コンパイルして、ルーターを登録する");
+    expect(html).toContain("Node.jsを使うのはコンパイル時だけです");
+    expect(html).toContain("標準では外部埋め込みを除く各画面が作成されます");
     expect(html).not.toContain("既存のHonoアプリへ追加できます");
   });
 
@@ -34,7 +36,7 @@ describe("HonoX documentation site", () => {
     expect(queryHtml).toContain('href="/docs/getting-started?lang=ja"');
     expect(query.headers.get("set-cookie")).toContain("language=en");
     expect(await cookie.text()).toContain("Check the prerequisites");
-    expect(await header.text()).toContain("Start in five minutes");
+    expect(await header.text()).toContain("Get started");
     expect(await fallback.text()).toContain('<html lang="ja">');
   });
 
@@ -42,8 +44,9 @@ describe("HonoX documentation site", () => {
     ["/docs/getting-started", "最初のデッキを作ってコンパイルする"],
     ["/docs/authoring", "デッキごとにディレクトリを分ける"],
     ["/docs/configuration", "設定ファイルごとの役割を確認する"],
+    ["/docs/recipes", "SatoriでOGP画像をビルド時に保存する"],
     ["/docs/routing", "mountPathをすべてのルートの起点にする"],
-    ["/docs/security", "公開する画面を必要なものに絞る"],
+    ["/docs/security", "標準で作成されるルートを確認する"],
     ["/api", "実行時API"],
   ])("renders %s from HonoX file routes", async (path, expected) => {
     const response = await app.request(path);
@@ -71,22 +74,16 @@ describe("HonoX documentation site", () => {
     expect(viewer.status).toBe(404);
   });
 
-  it("documents config ownership, build recipes, runtime resolvers, and override precedence in both languages", async () => {
+  it("separates shared configuration from optional build and export recipes", async () => {
     const ja = await (await app.request("/docs/configuration")).text();
     const en = await (await app.request("/docs/configuration?lang=en")).text();
+    const recipesJa = await (await app.request("/docs/recipes")).text();
+    const recipesEn = await (await app.request("/docs/recipes?lang=en")).text();
 
     expect(ja).toContain("hono-decks.config.ts");
     expect(ja).toContain("build.ogpCacheFile");
-    expect(ja).toContain('id="browser-export"');
-    expect(ja).toContain("Browser RunでPDF / PNGを書き出す");
-    expect(ja).toContain("DeckBrowserRunBinding");
-    expect(ja).toContain("deckExportAllowed");
-    expect(ja).toContain("2026-03-24");
-    expect(ja).toContain("/:slug/export.pdf");
-    expect(ja).toContain("公開範囲を明示する");
-    expect(ja).toContain("出力を全員に許可する場合");
-    expect(ja).toContain("authorize: () =&gt; true");
-    expect(ja).toContain("<code>authorize</code>を省略した場合も公開されます");
+    expect(ja).not.toContain('id="browser-export"');
+    expect(ja).toContain('href="/docs/recipes?lang=ja"');
     expect(ja).toContain("defineDecksConfig");
     expect(ja).toContain("wrangler dev");
     expect(ja).toContain("明示したbooleanまたは関数は自動判定より優先");
@@ -94,17 +91,27 @@ describe("HonoX documentation site", () => {
     expect(ja).toContain("decks.router(overrides)");
     expect(ja).toContain('href="/api?lang=ja#define-decks-config"');
     expect(en).toContain("Understand the shared config");
-    expect(en).toContain("Export PDF and PNG with Browser Run");
-    expect(en).toContain("Use a remote binding during local development");
-    expect(en).toContain("Make export access explicit");
-    expect(en).toContain("Omitting <code>authorize</code> also makes exports public");
     expect(en).toContain("Generated defaults, app config");
     expect(en).toContain("An explicit boolean or resolver overrides detection");
     expect(en).toContain("unknown environments fail closed to production mode");
+    expect(recipesJa).toContain('id="browser-export"');
+    expect(recipesJa).toContain("Browser RunでPDF / PNGを書き出す");
+    expect(recipesJa).toContain("DeckBrowserRunBinding");
+    expect(recipesJa).toContain("deckExportAllowed");
+    expect(recipesJa).toContain("2026-03-24");
+    expect(recipesJa).toContain("/:slug/export.pdf");
+    expect(recipesJa).toContain("authorizeはPDF・PNG出力だけを制御します");
+    expect(recipesJa).toContain("ビューアー、発表画面、発表者画面");
+    expect(recipesJa).toContain("authorize: () =&gt; true");
+    expect(recipesJa).toContain("誰でもファイルを書き出せます");
+    expect(recipesEn).toContain("Export PDF and PNG with Browser Run");
+    expect(recipesEn).toContain("Use a remote binding during local development");
+    expect(recipesEn).toContain("authorize only controls PDF and PNG export");
+    expect(recipesEn).toContain("It does not protect the viewer, presentation, presenter");
   });
 
   it("uses concise Japanese instead of internal architecture jargon", async () => {
-    const paths = ["/", "/docs/getting-started", "/docs/authoring", "/docs/configuration", "/docs/routing", "/docs/security", "/api"];
+    const paths = ["/", "/docs/getting-started", "/docs/authoring", "/docs/configuration", "/docs/recipes", "/docs/routing", "/docs/security", "/api"];
 
     for (const path of paths) {
       const html = await (await app.request(path)).text();
@@ -163,9 +170,13 @@ describe("HonoX documentation site", () => {
 
     expect(authoring).toContain("まずサーバーコンポーネントを使う");
     expect(authoring).toContain("ブラウザ操作が必要な部品だけをIslandにする");
+    expect(authoring).toContain("<code>dev</code>実行中は、保存したMDXが自動で再コンパイル");
     expect(configuration).toContain("ビルド対象、公開パス、実行時の挙動");
     expect(routing).toContain("はビューアー内のiframeが読み込むURL");
+    expect(routing).toContain("slide</code>は1から始まるスライド番号");
+    expect(routing).toContain("step=0</code>は段階表示がまだ発火していない状態");
     expect(security).toContain('languageDetector');
+    expect(security).toContain("hono-decks独自の認証は付きません");
     expect(security).toContain("同じnonceをCSPヘッダーとHTMLへ渡す");
     expect(security).toContain("許可していないオリジンでは拒否される");
   });

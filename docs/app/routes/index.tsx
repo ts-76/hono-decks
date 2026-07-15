@@ -13,35 +13,22 @@ export default createRoute((c) => {
     <main class="home">
       <section class="hero" aria-labelledby="hero-title">
         <div class="hero-copy">
-          <p class="hero-signal">
-            <span aria-hidden="true"></span> {isJa ? "Honoのルートとして配信するMDXスライド" : "Hono route kit for MDX slides"}
-          </p>
           <h1 id="hero-title">
             {isJa ? <><span class="line-unit"><em>Honoアプリ</em>に</span><br /><span class="line-unit">スライドを。</span></> : <>Slides belong in<br /><em>your Hono app.</em></>}
           </h1>
           <p class="hero-lede">
             {isJa
-              ? "MDXをHono JSXモジュールへ変換し、閲覧、発表、印刷、ファイル出力の各画面をHonoのルートとして追加します。"
-              : "Compile MDX into Hono JSX modules, then mount viewer, presentation, presenter, and export surfaces as ordinary routes in your existing Hono app."}
+              ? "MDXをHono JSXへコンパイルし、ビューアー、発表画面、発表者画面、印刷画面を既存のHonoアプリへ追加します。"
+              : "Compile MDX to Hono JSX, then add viewer, presentation, presenter, and print routes to an existing Hono application."}
           </p>
           <div class="hero-actions">
             <a class="button button-primary" href={localizedHref("/docs/getting-started", locale)}>
-              {isJa ? "導入手順" : "Start in five minutes"} <span aria-hidden="true">→</span>
+              {isJa ? "導入手順" : "Get started"} <span aria-hidden="true">→</span>
             </a>
             <a class="button button-secondary" href={localizedHref("/api", locale)}>
               {isJa ? "APIを見る" : "Explore the API"}
             </a>
           </div>
-          <dl class="hero-facts">
-            <div>
-              <dt>{isJa ? "実行環境" : "Runtime"}</dt>
-              <dd>{isJa ? "Hono + Web標準API" : "Hono + Web Standards"}</dd>
-            </div>
-            <div>
-              <dt>{isJa ? "スライド記法" : "Authoring"}</dt>
-              <dd>{isJa ? "MDX + デッキ固有コンポーネント" : "MDX + local components"}</dd>
-            </div>
-          </dl>
         </div>
           <div class="hero-demo" aria-label={isJa ? "hono-decksの操作デモ" : "Interactive hono-decks demo"}>
           <div class="demo-toolbar">
@@ -63,55 +50,23 @@ export default createRoute((c) => {
         </div>
       </section>
 
-      <section class="boundary-section" aria-labelledby="boundary-title">
-        <div class="section-intro">
-          <h2 id="boundary-title">{isJa ? <><span class="line-unit">Node.jsで生成し、</span><wbr /><span class="line-unit">Honoで配信する</span></> : "Compile with Node. Serve with Hono."}</h2>
-          <p>
-            {isJa ? "Node.jsを使うのはローカルファイルの読み込みとコンパイルだけです。Workerでは生成済みモジュールをHonoのルートとして配信します。" : "Node.js handles local file I/O and compilation only. Generated modules and Hono routes are all that reach your Worker."}
-          </p>
-        </div>
-        <div class="boundary-flow" aria-label={isJa ? "ビルド時と実行時の処理" : "Build and runtime boundaries"}>
-          <div>
-            <span>01</span>
-            <strong>{isJa ? "作成" : "Author"}</strong>
-            <code>decks/*/deck.mdx</code>
-          </div>
-          <i aria-hidden="true">→</i>
-          <div>
-            <span>02</span>
-            <strong>{isJa ? "生成" : "Compile"}</strong>
-            <code>hono-decks compile</code>
-          </div>
-          <i aria-hidden="true">→</i>
-          <div>
-            <span>03</span>
-            <strong>{isJa ? "登録" : "Route"}</strong>
-            <code>app.route("/decks", …)</code>
-          </div>
-        </div>
-      </section>
-
       <section class="quickstart-section" aria-labelledby="quickstart-title">
         <div>
-          <h2 id="quickstart-title">{isJa ? "パッケージを追加して、デッキを生成する" : "Install the package and compile your decks."}</h2>
+          <h2 id="quickstart-title">{isJa ? "コンパイルして、ルーターを登録する" : "Compile the deck and mount its router."}</h2>
           <p>
-            {isJa ? <>例ではnpmを使っています。pnpm、Yarn、Bunを使う場合のコマンドは導入手順にまとめています。</> : <>The example uses npm. The setup guide also lists commands for pnpm, Yarn, and Bun.</>}
+            {isJa ? <>Node.jsを使うのはコンパイル時だけです。生成されたルーターを<code>app.route(decks.mountPath, decks.router())</code>で登録します。ViteまたはWranglerの<code>dev</code>コマンドから変更監視も起動できます。</> : <>Node is used only at compile time. Mount the generated router with <code>app.route(decks.mountPath, decks.router())</code>. The Vite or Wrangler <code>dev</code> command can also watch deck changes.</>}
           </p>
           <a class="text-link" href={localizedHref("/docs/getting-started", locale)}>
-            {isJa ? "パッケージマネージャー別の手順を見る" : "Read the setup guide"} <span aria-hidden="true">↗</span>
+            {isJa ? "npm・pnpm・Yarn・Bunの導入手順" : "Setup for npm, pnpm, Yarn, and Bun"} <span aria-hidden="true">↗</span>
           </a>
         </div>
         <CodeBlock code={installCode} label="Terminal" locale={locale} />
       </section>
 
-      <section class="deploy-section">
-        <DeployToCloudflare locale={locale} />
-      </section>
-
       <section class="surfaces-section" aria-labelledby="surfaces-title">
         <div class="section-intro compact">
-          <h2 id="surfaces-title">{isJa ? <><span class="line-unit">必要な画面だけ</span><wbr /><span class="line-unit">ルートとして公開する</span></> : "Every surface is a route."}</h2>
-          <p>{isJa ? "標準のUIをそのまま使うことも、リクエストに応じて画面ごとの設定を変えることもできます。" : "Use the default UI and override only the surfaces that need request context."}</p>
+          <h2 id="surfaces-title">{isJa ? "作成されるルート" : "Generated routes"}</h2>
+          <p>{isJa ? "標準では外部埋め込みを除く各画面が作成されます。使わないルートは設定で無効にできます。認証はHonoアプリ側で追加します。" : "The standard router creates every surface except external embed. Disable unused routes in configuration and add authentication in the Hono application."}</p>
         </div>
         <RouteTable
           rows={[
@@ -123,6 +78,10 @@ export default createRoute((c) => {
           ]}
           locale={locale}
         />
+      </section>
+
+      <section class="deploy-section">
+        <DeployToCloudflare locale={locale} />
       </section>
     </main>,
     {

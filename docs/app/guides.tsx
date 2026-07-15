@@ -528,9 +528,10 @@ Node for I/O. Hono for routes.`} />
       </section>
 
       <section id="verify">
-        <h2>{isJa ? "コンパイルして変更を確認する" : "Compile and verify the change"}</h2>
-        <CodeBlock label="Terminal" code="npm run decks:compile" locale={locale} />
-        <p>{isJa ? <>コンパイルエラーには対象ファイルとスライド番号が表示されます。表示を確認したら、公開画面を変える場合は<a class="text-link" href={localizedHref("/docs/routing", locale)}>ルートと画面</a>、環境変数やR2を使う場合は<a class="text-link" href={localizedHref("/docs/configuration", locale)}>設定</a>へ進みます。</> : <>Compile errors identify the source file and slide number. After the deck renders, continue to <a class="text-link" href={localizedHref("/docs/routing", locale)}>routes and UI</a> for public surfaces or <a class="text-link" href={localizedHref("/docs/configuration", locale)}>configuration</a> for bindings and R2.</>}</p>
+        <h2>{isJa ? "devコマンドで変更を確認する" : "Verify changes through the dev command"}</h2>
+        <CodeBlock label="Terminal" code="npm run dev" locale={locale} />
+        <p>{isJa ? <>ViteまたはWranglerの<code>dev</code>実行中は、保存したMDXが自動で再コンパイルされ、成功後にブラウザへ反映されます。<code>npm run decks:compile</code>は、CIやコンパイラーだけを単独で確認するときに使います。コンパイルエラーには対象ファイルとスライド番号が表示されます。</> : <>While the Vite or Wrangler <code>dev</code> command is running, saved MDX is recompiled automatically and the browser updates after a successful compile. Use <code>npm run decks:compile</code> in CI or when checking the compiler by itself. Compile errors identify the source file and slide number.</>}</p>
+        <p>{isJa ? <>表示を確認したら、公開画面を変える場合は<a class="text-link" href={localizedHref("/docs/routing", locale)}>ルートと画面</a>、環境変数やR2を使う場合は<a class="text-link" href={localizedHref("/docs/configuration", locale)}>設定</a>へ進みます。</> : <>After the deck renders, continue to <a class="text-link" href={localizedHref("/docs/routing", locale)}>routes and UI</a> for public surfaces or <a class="text-link" href={localizedHref("/docs/configuration", locale)}>configuration</a> for bindings and R2.</>}</p>
       </section>
     </>,
   };
@@ -545,14 +546,17 @@ const routing = (locale: Locale): Guide => {
     content: <>
       <section id="model"><h2>{isJa ? "mountPathをすべてのルートの起点にする" : "Use the configured mount path for every deck URL"}</h2><p>{isJa ? <><code>app.route(decks.mountPath, decks.router())</code>と登録すると、設定した<code>mountPath</code>の下にすべてのルートが作られます。</> : <>Mounting <code>app.route(decks.mountPath, decks.router())</code> places every route below the configured mount path.</>}</p><Callout title={isJa ? "閲覧者に案内するURL" : "The URL most people open"}><p>{isJa ? <>閲覧者には<code>decks.paths(slug).viewer</code>を案内します。<code>render</code>はビューアー内のiframeが読み込むURLです。</> : <>Share <code>decks.paths(slug).viewer</code> with viewers. The render route is the iframe runtime.</>}</p></Callout></section>
       <section id="surfaces"><h2>{isJa ? "画面ごとの役割を確認する" : "Understand each generated surface"}</h2><RouteTable locale={locale} rows={[["/", isJa ? "公開デッキの一覧。不要なら無効化できます" : "Public deck index; can be disabled"], ["/:slug", isJa ? "閲覧用ビューアー。操作ボタンとスライドを表示します" : "Viewer with controls and the slide frame"], ["/:slug/render", isJa ? "ビューアー内のスライド本体" : "Slide document inside the viewer iframe"], ["/:slug/presentation", isJa ? "投影・共有画面用のスライド表示" : "Projection or shared display"], ["/:slug/presenter", isJa ? "発表者向け。次のスライドやノートを表示します" : "Speaker view with next slide and notes"], ["/:slug/print", isJa ? "印刷・PDF保存向けの全スライド表示" : "All slides for printing or browser PDF"], ["/:slug/embed", isJa ? "外部iframe用。embedを有効にした場合だけ作成します" : "External iframe route; created only when embed is enabled"]]} /></section>
-      <section id="visibility"><h2>{isJa ? "使わない画面を無効にする" : "Disable surfaces you do not expose"}</h2><p>{isJa ? <>設定ファイルの<code>router.pages</code>で、不要な画面を<code>false</code>にします。<code>dev</code>を省略すると、ViteとWranglerの開発コマンドから自動判定されます。</> : <>Set unused surfaces to <code>false</code> in <code>router.pages</code>. When <code>dev</code> is omitted, Vite and Wrangler development commands are detected automatically.</>}</p><CodeBlock locale={locale} code={`decks.router({
-  pages: {
-    index: false,
-    print: false,
-    presenter: ({ dev }) => dev,
+      <section id="visibility"><h2>{isJa ? "使わない画面を設定ファイルで無効にする" : "Disable unused surfaces in the shared config"}</h2><p>{isJa ? <>通常は<code>hono-decks.config.ts</code>の<code>router.pages</code>で、不要な画面を<code>false</code>にします。標準では<code>embed</code>以外の画面が有効です。<code>dev</code>を省略すると、ViteとWranglerが設定する<code>NODE_ENV</code>から開発モードを判定します。</> : <>Normally, set unused surfaces to <code>false</code> in <code>router.pages</code> inside <code>hono-decks.config.ts</code>. Every standard surface except <code>embed</code> is enabled by default. When <code>dev</code> is omitted, development mode is derived from the <code>NODE_ENV</code> set by Vite or Wrangler.</>}</p><CodeBlock label="hono-decks.config.ts" locale={locale} code={`export default defineDecksConfig({
+  mountPath: "/decks",
+  router: {
+    pages: {
+      index: false,
+      print: false,
+      presenter: ({ dev }) => dev,
+    },
   },
 })`} /><p>{isJa ? "関数を指定した項目はリクエストごとに評価されるため、認証状態や環境変数による制御にも使えます。" : "Resolver functions run per request, so they can also check authentication or environment bindings."}</p></section>
-      <section id="custom"><h2>{isJa ? "標準UIを調整する、または独自画面を作る" : "Customize the default UI or build an app-owned page"}</h2><p>{isJa ? <><code>pages.index.render</code>は、デッキ一覧の見た目だけを変える場合に使います。</> : <>Use <code>pages.index.render</code> to change only the deck index.</>}</p><CodeBlock locale={locale} code={`decks.router({
+      <section id="custom"><h2>{isJa ? "標準UIを調整する、または独自画面を作る" : "Customize the default UI or build an app-owned page"}</h2><p>{isJa ? <><code>pages.index.render</code>は、デッキ一覧の見た目だけを変える場合に使います。共通設定は<code>hono-decks.config.ts</code>に置きます。次の<code>decks.router(overrides)</code>は、特定の登録箇所だけを上書きする例です。</> : <>Use <code>pages.index.render</code> to change only the deck index. Keep shared behavior in <code>hono-decks.config.ts</code>; the following <code>decks.router(overrides)</code> example changes one mount point only.</>}</p><CodeBlock locale={locale} code={`decks.router({
   pages: {
     index: {
       title: ({ decks }) => String(decks.length) + " decks",
@@ -568,7 +572,7 @@ const routing = (locale: Locale): Guide => {
     toc: c.var.deckToc,
   }),
 )`} /></section>
-      <section id="state"><h2>{isJa ? "同じスライド位置をURLで共有する" : "Share the same slide position by URL"}</h2><p>{isJa ? <>ビューアー、発表画面、発表者画面は<code>?slide=2&amp;step=1</code>を共通して使います。<code>slide</code>はスライド番号、<code>step</code>は段階表示の位置です。</> : <>Viewer, presentation, and presenter share <code>?slide=2&amp;step=1</code>. <code>slide</code> selects the slide and <code>step</code> selects the fire reveal state.</>}</p><p>{isJa ? <>外部サイトへ埋め込む場合は<a class="text-link" href={localizedHref("/docs/security", locale)}>セキュリティ</a>で許可するオリジンを設定します。すべてのオプションを探す場合は<a class="text-link" href={localizedHref("/api", locale)}>API</a>を参照してください。</> : <>For external iframe use, continue to <a class="text-link" href={localizedHref("/docs/security", locale)}>security</a> and allow explicit origins. Use the <a class="text-link" href={localizedHref("/api", locale)}>API reference</a> when you need a specific option.</>}</p></section>
+      <section id="state"><h2>{isJa ? "同じスライド位置をURLで共有する" : "Share the same slide position by URL"}</h2><p>{isJa ? <>ビューアー、発表画面、発表者画面は<code>?slide=2&amp;step=1</code>を共通して使います。<code>slide</code>は1から始まるスライド番号です。<code>step</code>は0から始まり、<code>step=0</code>は段階表示がまだ発火していない状態を表します。最終スライドの最終ステップから先へ送っても、URLの値は変わりません。</> : <>Viewer, presentation, and presenter share <code>?slide=2&amp;step=1</code>. <code>slide</code> is one-based. <code>step</code> starts at zero, where <code>step=0</code> means that no staged content has fired yet. Advancing past the final step of the final slide leaves the URL unchanged.</>}</p><p>{isJa ? <>外部サイトへ埋め込む場合は<a class="text-link" href={localizedHref("/docs/security", locale)}>HTMLとセキュリティ</a>で許可するオリジンを設定します。すべてのオプションを探す場合は<a class="text-link" href={localizedHref("/api", locale)}>API</a>を参照してください。</> : <>For external iframe use, continue to <a class="text-link" href={localizedHref("/docs/security", locale)}>security</a> and allow explicit origins. Use the <a class="text-link" href={localizedHref("/api", locale)}>API reference</a> when you need a specific option.</>}</p></section>
     </>,
   };
 };
@@ -584,8 +588,6 @@ const configuration = (locale: Locale): Guide => {
       ? [
           { id: "files", label: "ファイル構成" },
           { id: "compile", label: "コンパイル設定" },
-          { id: "ogp", label: "OGP画像生成" },
-          { id: "browser-export", label: "Browser Run出力" },
           { id: "runtime", label: "実行時設定" },
           { id: "facade", label: "設定の優先順位" },
           { id: "reference", label: "設定項目" },
@@ -593,8 +595,6 @@ const configuration = (locale: Locale): Guide => {
       : [
           { id: "files", label: "File ownership" },
           { id: "compile", label: "Compile settings" },
-          { id: "ogp", label: "OGP images" },
-          { id: "browser-export", label: "Browser Run export" },
           { id: "runtime", label: "Runtime settings" },
           { id: "facade", label: "Facade and overrides" },
           { id: "reference", label: "Configuration map" },
@@ -617,43 +617,13 @@ const configuration = (locale: Locale): Guide => {
         <CodeBlock label="vite.config.ts" code={viteDecksCode} locale={locale} />
         <CodeBlock label="package.json" code={buildScriptsCode} locale={locale} />
         <p>{isJa ? <>リンクカードのキャッシュ先は<code>build.ogpCacheFile</code>で指定します。保存済みデータを更新するときだけ<code>--refresh-ogp</code>を使います。</> : <>Set LinkCard cache at <code>build.ogpCacheFile</code>. Use <code>--refresh-ogp</code> only for an intentional refresh.</>}</p>
-      </section>
-      <section id="ogp">
-        <h2>{isJa ? "SatoriでOGP画像をビルド時に保存する" : "Save OGP images at build time with Satori"}</h2>
-        <p>{isJa ? <>Browser Renderingを使わず、<code>compileDecks()</code>が返すデッキ情報からSatoriでSVGを、resvgで1200×630のPNGを生成できます。画像生成はNode.js側のビルドスクリプトに置くため、Workerの実行時コードやhono-decks本体に依存を追加する必要はありません。</> : <>Generate an SVG with Satori and a 1200×630 PNG with resvg from the manifest returned by <code>compileDecks()</code>, without Browser Rendering. Keep image generation in a Node build script so neither the Worker runtime nor hono-decks core gains these dependencies.</>}</p>
-        <CodeBlock label="hono-decks.config.ts" locale={locale} code={`export default defineDecksConfig({
-  mountPath: "/decks",
-  router: {
-    viewer: { openGraph: true },
-  },
-})`} />
-        <p>{isJa ? <><code>viewer.openGraph</code>を有効にすると、<code>decks.paths(slug).ogImage</code>（既定では<code>/decks/:slug/og.png</code>）の絶対URLを使ったOpen Graph / Twitter Cardタグを生成します。PNGはWrangler Static Assetsへ保存します。</> : <>Enabling <code>viewer.openGraph</code> emits absolute Open Graph and Twitter Card tags from <code>decks.paths(slug).ogImage</code>, which defaults to <code>/decks/:slug/og.png</code>. Save the PNG under Wrangler Static Assets.</>}</p>
-        <Callout title={isJa ? "フォントをビルド対象に含める" : "Keep fonts in the build input"}><p>{isJa ? <>SatoriはTTF / OTF / WOFFを扱えますが、WOFF2には対応していません。日本語を描画する場合は、日本語の文字を含むフォントファイルを同梱し、そのディレクトリを<code>build.watch_dir</code>にも追加します。</> : <>Satori accepts TTF, OTF, and WOFF, but not WOFF2. Bundle a font that covers every rendered language and add its directory to <code>build.watch_dir</code>.</>}</p></Callout>
-        <p><a class="text-link" href="https://github.com/ts-76/hono-slides/tree/main/examples/ogp">{isJa ? "Satori + resvgの実装例を見る" : "Open the complete Satori + resvg recipe"} →</a></p>
-        <p>{isJa ? <><code>build.ogpCacheFile</code>はスライド内のリンクカード用キャッシュです。ビューアーのOGP画像とは別に管理されます。</> : <><code>build.ogpCacheFile</code> caches LinkCard metadata inside slides; it is unrelated to this viewer share image.</>}</p>
-      </section>
-      <section id="browser-export">
-        <h2>{isJa ? "Browser RunでPDF / PNGを書き出す" : "Export PDF and PNG with Browser Run"}</h2>
-        <p>{isJa ? <>Cloudflare Browser RunのQuick Actionsをブラウザバインディングから呼び、デッキの<code>print</code>画面をPDFまたはPNGとして返せます。<code>hono-decks</code>が<code>quickAction("pdf")</code>または<code>quickAction("screenshot")</code>を呼ぶため、Puppeteer、Playwright、Browser Run用のAPIトークンは不要です。</> : <>Use Cloudflare Browser Run Quick Actions through a browser binding to return the deck's <code>print</code> page as PDF or PNG. <code>hono-decks</code> calls <code>quickAction("pdf")</code> or <code>quickAction("screenshot")</code>, so this flow needs neither Puppeteer, Playwright, nor a Browser Run API token.</>}</p>
-        <CodeBlock label="wrangler.jsonc" code={browserRunWranglerCode} locale={locale} />
-        <Callout title={isJa ? "ローカル開発ではリモートバインディングを使う" : "Use a remote binding during local development"}><p>{isJa ? <><code>quickAction()</code>には<code>2026-03-24</code>以降のcompatibility dateが必要です。ローカルモードでは未対応のため、バインディングに<code>remote: true</code>を設定するか、<code>wrangler dev --remote</code>で起動します。</> : <><code>quickAction()</code> requires a compatibility date of <code>2026-03-24</code> or later. Local mode does not support it yet, so set <code>remote: true</code> on the binding or start with <code>wrangler dev --remote</code>.</>}</p></Callout>
-        <p>{isJa ? <>次の例では、先に登録したセッションまたはCloudflare Access検証ミドルウェアが<code>deckExportAllowed</code>を設定済みとします。</> : <>The next example assumes an earlier session or Cloudflare Access validation middleware has set <code>deckExportAllowed</code>.</>}</p>
-        <CodeBlock label="hono-decks.config.ts" code={browserRunConfigCode} locale={locale} />
-        <RouteTable locale={locale} rows={[
-          ["/:slug/print", isJa ? "全スライドを並べるBrowser Runの入力画面" : "All-slide document used as Browser Run input"],
-          ["/:slug/export.pdf", isJa ? "print画面をPDFとしてダウンロード" : "Download the print document as PDF"],
-          ["/:slug/export.png", isJa ? "print画面全体をPNGとしてダウンロード" : "Download a full-page PNG of the print document"],
-        ]} />
-        <p>{isJa ? <>出力リクエストが<code>authorize</code>を通過すると、公開オリジン上の<code>print</code> URLをバインディングへ渡し、返されたファイルを添付ファイルとして応答します。ビューアーの出力ボタンも、同じ認可を通過したリクエストにだけ表示されます。</> : <>After <code>authorize</code> succeeds, the export request sends the public <code>print</code> URL to the binding and returns its file as an attachment. Viewer export controls are shown only on requests that pass the same authorization.</>}</p>
-        <Callout title={isJa ? "公開範囲を明示する" : "Make export access explicit"}><p>{isJa ? <>出力を全員に許可する場合は<code>authorize: () =&gt; true</code>と明示できます。利用者を制限する場合は、既存のセッションやAccess検証の結果を<code>authorize</code>から返します。<code>authorize</code>を省略した場合も公開されますが、設定意図が分かるよう明示することを推奨します。Bearerトークンを使う場合は<code>vars</code>へ直書きせず、Wranglerのsecretで管理します。</> : <>Use <code>authorize: () =&gt; true</code> to state that exports are public. To restrict access, return the result of existing session or Access validation from <code>authorize</code>. Omitting <code>authorize</code> also makes exports public, but an explicit setting keeps that intent visible. Store bearer tokens as Wrangler secrets rather than plain <code>vars</code> values.</>}</p></Callout>
-        <p><a class="text-link" href="https://developers.cloudflare.com/browser-run/quick-actions/">{isJa ? "Cloudflare Browser Run Quick Actionsを確認する" : "Read the Cloudflare Browser Run Quick Actions docs"} →</a></p>
-        <p><a class="text-link" href="https://github.com/ts-76/hono-slides/tree/main/examples/basic">{isJa ? "Browser Runを組み込んだサンプルを見る" : "Open the example with Browser Run configured"} →</a></p>
+        <p><a class="text-link" href={localizedHref("/docs/recipes", locale)}>{isJa ? "OGP画像とPDF・PNG出力のレシピを見る" : "Open the OGP and file-export recipes"} →</a></p>
       </section>
       <section id="runtime">
         <h2>{isJa ? "リクエストごとに変わる値を設定する" : "Configure values that change per request"}</h2>
         <p>{isJa ? <><code>defineDecksConfig()</code>を使うと、HonoのBindingsとVariablesを含めて型を確認できます。<code>dev</code>を省略すると、ViteとWranglerが設定する<code>NODE_ENV</code>から判定します。標準設定では、<code>vite</code>と<code>wrangler dev</code>は開発モード、プロダクションビルドと<code>wrangler deploy</code>は本番モードになります。明示したbooleanまたは関数は自動判定より優先され、判定できない環境では本番モードになります。</> : <>Use <code>defineDecksConfig()</code> to preserve Hono Bindings and Variables types. When <code>dev</code> is omitted, hono-decks reads the <code>NODE_ENV</code> set by Vite and Wrangler. With their standard settings, <code>vite</code> and <code>wrangler dev</code> enable development mode, while production builds and <code>wrangler deploy</code> use production mode. An explicit boolean or resolver overrides detection, and unknown environments fail closed to production mode.</>}</p>
         <CodeBlock code={configCode} locale={locale} />
-        <p>{isJa ? <><code>c.get("language")</code>を使う例では、Honoの<code>languageDetector()</code>を先に登録します。手順は<a class="text-link" href={localizedHref("/docs/security#language", locale)}>セキュリティ</a>で確認できます。多言語対応が不要なら<code>lang: "ja"</code>のように固定値を指定します。</> : <>The <code>c.get("language")</code> example assumes Hono's <code>languageDetector()</code> is registered first; see <a class="text-link" href={localizedHref("/docs/security#language", locale)}>publish safely</a>. For a single-language app, use a fixed value such as <code>lang: "en"</code>.</>}</p>
+        <p>{isJa ? <><code>c.get("language")</code>を使う例では、Honoの<code>languageDetector()</code>を先に登録します。手順は<a class="text-link" href={localizedHref("/docs/security#language", locale)}>HTMLとセキュリティ</a>で確認できます。多言語対応が不要なら<code>lang: "ja"</code>のように固定値を指定します。</> : <>The <code>c.get("language")</code> example assumes Hono's <code>languageDetector()</code> is registered first; see <a class="text-link" href={localizedHref("/docs/security#language", locale)}>document policy and security</a>. For a single-language app, use a fixed value such as <code>lang: "en"</code>.</>}</p>
       </section>
       <section id="facade">
         <h2>{isJa ? "設定が上書きされる順序を確認する" : "Make precedence explicit in the facade"}</h2>
@@ -674,14 +644,61 @@ const configuration = (locale: Locale): Guide => {
   };
 };
 
+const recipes = (locale: Locale): Guide => {
+  const isJa = locale === "ja";
+  return {
+    title: isJa ? "OGP画像とファイル出力" : "OGP images and file export",
+    description: isJa
+      ? "Satoriによるビルド時のOGP画像生成と、Cloudflare Browser RunによるPDF・PNG出力を追加します。"
+      : "Add build-time OGP image generation with Satori and PDF or PNG export with Cloudflare Browser Run.",
+    sections: isJa
+      ? [{ id: "ogp", label: "OGP画像生成" }, { id: "browser-export", label: "PDF・PNG出力" }]
+      : [{ id: "ogp", label: "OGP images" }, { id: "browser-export", label: "PDF and PNG export" }],
+    content: <>
+      <section id="ogp">
+        <h2>{isJa ? "SatoriでOGP画像をビルド時に保存する" : "Save OGP images at build time with Satori"}</h2>
+        <p>{isJa ? <>Browser Renderingを使わず、<code>compileDecks()</code>が返すデッキ情報からSatoriでSVGを、resvgで1200×630のPNGを生成できます。画像生成はNode.js側のビルドスクリプトに置くため、Workerの実行時コードやhono-decks本体に依存を追加する必要はありません。</> : <>Generate an SVG with Satori and a 1200×630 PNG with resvg from the manifest returned by <code>compileDecks()</code>, without Browser Rendering. Keep image generation in a Node build script so neither the Worker runtime nor hono-decks core gains these dependencies.</>}</p>
+        <CodeBlock label="hono-decks.config.ts" locale={locale} code={`export default defineDecksConfig({
+  mountPath: "/decks",
+  router: {
+    viewer: { openGraph: true },
+  },
+})`} />
+        <p>{isJa ? <><code>viewer.openGraph</code>を有効にすると、<code>decks.paths(slug).ogImage</code>（既定では<code>/decks/:slug/og.png</code>）の絶対URLを使ったOpen Graph / Twitter Cardタグを生成します。PNGはWrangler Static Assetsへ保存します。</> : <>Enabling <code>viewer.openGraph</code> emits absolute Open Graph and Twitter Card tags from <code>decks.paths(slug).ogImage</code>, which defaults to <code>/decks/:slug/og.png</code>. Save the PNG under Wrangler Static Assets.</>}</p>
+        <Callout title={isJa ? "フォントをビルド対象に含める" : "Keep fonts in the build input"}><p>{isJa ? <>SatoriはTTF / OTF / WOFFを扱えますが、WOFF2には対応していません。日本語を描画する場合は、日本語の文字を含むフォントファイルを同梱し、そのディレクトリを<code>wrangler.jsonc</code>の<code>build.watch_dir</code>にも追加します。</> : <>Satori accepts TTF, OTF, and WOFF, but not WOFF2. Bundle a font that covers every rendered language and add its directory to <code>build.watch_dir</code> in <code>wrangler.jsonc</code>.</>}</p></Callout>
+        <p><a class="text-link" href="https://github.com/ts-76/hono-slides/tree/main/examples/ogp">{isJa ? "Satori + resvgの実装例を見る" : "Open the complete Satori + resvg recipe"} →</a></p>
+        <p>{isJa ? <><code>build.ogpCacheFile</code>はスライド内のリンクカード用キャッシュです。ビューアーのOGP画像とは別に管理されます。</> : <><code>build.ogpCacheFile</code> caches LinkCard metadata inside slides; it is unrelated to this viewer share image.</>}</p>
+      </section>
+      <section id="browser-export">
+        <h2>{isJa ? "Browser RunでPDF / PNGを書き出す" : "Export PDF and PNG with Browser Run"}</h2>
+        <p>{isJa ? <>Cloudflare Browser RunのQuick Actionsをブラウザバインディングから呼び、デッキの<code>print</code>画面をPDFまたはPNGとして返せます。<code>hono-decks</code>が<code>quickAction("pdf")</code>または<code>quickAction("screenshot")</code>を呼ぶため、Puppeteer、Playwright、Browser Run用のAPIトークンは不要です。</> : <>Use Cloudflare Browser Run Quick Actions through a browser binding to return the deck's <code>print</code> page as PDF or PNG. <code>hono-decks</code> calls <code>quickAction("pdf")</code> or <code>quickAction("screenshot")</code>, so this flow needs neither Puppeteer, Playwright, nor a Browser Run API token.</>}</p>
+        <CodeBlock label="wrangler.jsonc" code={browserRunWranglerCode} locale={locale} />
+        <Callout title={isJa ? "ローカル開発ではリモートバインディングを使う" : "Use a remote binding during local development"}><p>{isJa ? <><code>quickAction()</code>には<code>2026-03-24</code>以降のcompatibility dateが必要です。ローカルモードでは未対応のため、バインディングに<code>remote: true</code>を設定するか、<code>wrangler dev --remote</code>で起動します。</> : <><code>quickAction()</code> requires a compatibility date of <code>2026-03-24</code> or later. Local mode does not support it yet, so set <code>remote: true</code> on the binding or start with <code>wrangler dev --remote</code>.</>}</p></Callout>
+        <p>{isJa ? <>次の例では、先に登録したセッションまたはCloudflare Access検証ミドルウェアが<code>deckExportAllowed</code>を設定済みとします。</> : <>The next example assumes an earlier session or Cloudflare Access validation middleware has set <code>deckExportAllowed</code>.</>}</p>
+        <CodeBlock label="hono-decks.config.ts" code={browserRunConfigCode} locale={locale} />
+        <RouteTable locale={locale} rows={[
+          ["/:slug/print", isJa ? "全スライドを並べるBrowser Runの入力画面" : "All-slide document used as Browser Run input"],
+          ["/:slug/export.pdf", isJa ? "print画面をPDFとしてダウンロード" : "Download the print document as PDF"],
+          ["/:slug/export.png", isJa ? "print画面全体をPNGとしてダウンロード" : "Download a full-page PNG of the print document"],
+        ]} />
+        <p>{isJa ? <>出力リクエストが<code>authorize</code>を通過すると、公開オリジン上の<code>print</code> URLをバインディングへ渡し、返されたファイルを添付ファイルとして応答します。ビューアーの出力ボタンも、同じ認可を通過したリクエストにだけ表示されます。</> : <>After <code>authorize</code> succeeds, the export request sends the public <code>print</code> URL to the binding and returns its file as an attachment. Viewer export controls are shown only on requests that pass the same authorization.</>}</p>
+        <Callout title={isJa ? "authorizeはPDF・PNG出力だけを制御します" : "authorize only controls PDF and PNG export"}><p>{isJa ? <><code>authorize</code>の対象は<code>/:slug/export.pdf</code>、<code>/:slug/export.png</code>と、対応するビューアー上の出力ボタンです。ビューアー、発表画面、発表者画面、<code>print</code>画面の公開範囲は変わりません。<code>authorize: () =&gt; true</code>では誰でもファイルを書き出せます。省略した場合も同じく公開されるため、公開する場合も明示を推奨します。利用者を制限する場合は、既存のセッションやAccess検証の結果を返します。</> : <><code>authorize</code> applies to <code>/:slug/export.pdf</code>, <code>/:slug/export.png</code>, and their viewer controls. It does not protect the viewer, presentation, presenter, or <code>print</code> routes. <code>authorize: () =&gt; true</code> lets anyone export a file. Omitting it has the same public behavior, so an explicit setting is recommended. To restrict exports, return the result of existing session or Access validation.</>}</p></Callout>
+        <p>{isJa ? <>Bearerトークンを使う場合は<code>vars</code>へ直書きせず、Wranglerのsecretで管理します。</> : <>Store bearer tokens as Wrangler secrets rather than plain <code>vars</code> values.</>}</p>
+        <p><a class="text-link" href="https://developers.cloudflare.com/browser-run/quick-actions/">{isJa ? "Cloudflare Browser Run Quick Actionsを確認する" : "Read the Cloudflare Browser Run Quick Actions docs"} →</a></p>
+        <p><a class="text-link" href="https://github.com/ts-76/hono-slides/tree/main/examples/basic">{isJa ? "Browser Runを組み込んだサンプルを見る" : "Open the example with Browser Run configured"} →</a></p>
+      </section>
+    </>,
+  };
+};
+
 const security = (locale: Locale): Guide => {
   const isJa = locale === "ja";
   return {
     title: isJa ? "HTMLの共通設定とセキュリティ" : "Document policy and security",
     description: isJa ? "Honoアプリとhono-decksの役割を分け、言語、CSP、外部iframeの設定を各画面へ適用します。" : "Separate application and hono-decks responsibilities, then apply language, CSP, and iframe policy to every surface.",
-    sections: isJa ? [{ id: "defaults", label: "安全な既定値" }, { id: "language", label: "言語" }, { id: "csp", label: "CSPとnonce" }, { id: "embed", label: "外部サイトへの埋め込み" }, { id: "check", label: "公開前の確認" }] : [{ id: "defaults", label: "Safe defaults" }, { id: "language", label: "Language" }, { id: "csp", label: "CSP and nonce" }, { id: "embed", label: "External embeds" }, { id: "check", label: "Pre-release checks" }],
+    sections: isJa ? [{ id: "defaults", label: "公開ルート" }, { id: "language", label: "言語" }, { id: "csp", label: "CSPとnonce" }, { id: "embed", label: "外部サイトへの埋め込み" }, { id: "check", label: "公開前の確認" }] : [{ id: "defaults", label: "Public routes" }, { id: "language", label: "Language" }, { id: "csp", label: "CSP and nonce" }, { id: "embed", label: "External embeds" }, { id: "check", label: "Pre-release checks" }],
     content: <>
-      <section id="defaults"><h2>{isJa ? "公開する画面を必要なものに絞る" : "Start with the smallest public surface"}</h2><p>{isJa ? <>通常のビューアーは同一オリジンで動作します。外部iframe用の<code>/:slug/embed</code>は、<code>embed</code>を指定するまで作成されません。発表者画面や印刷画面を公開しない場合は、ルート設定で無効にしてください。</> : <>The ordinary viewer runs on the same origin. The external <code>/:slug/embed</code> route does not exist until <code>embed</code> is configured. Disable presenter or print routes when they should not be public.</>}</p><p>{isJa ? <>認証、認可、CSPヘッダーはHonoアプリが担当します。hono-decksは、アプリから渡された言語やnonceを生成するHTMLへ反映します。</> : <>The Hono application owns authentication, authorization, and CSP headers. hono-decks applies the resolved language and nonce to the HTML it generates.</>}</p></section>
+      <section id="defaults"><h2>{isJa ? "標準で作成されるルートを確認する" : "Review the routes created by default"}</h2><p>{isJa ? <>標準では、一覧、ビューアー、スライド本体、発表画面、発表者画面、印刷画面が作成されます。これらのルートにhono-decks独自の認証は付きません。外部iframe用の<code>/:slug/embed</code>だけは、<code>embed</code>を指定するまで作成されません。不要な画面は<code>router.pages</code>で無効にしてください。</> : <>By default, the router creates the index, viewer, slide document, presentation, presenter, and print routes. hono-decks does not add authentication to those routes. Only the external <code>/:slug/embed</code> route is opt-in. Disable unused surfaces through <code>router.pages</code>.</>}</p><p>{isJa ? <>認証、認可、CSPヘッダーはHonoアプリが担当します。hono-decksは、アプリから渡された言語やnonceを生成するHTMLへ反映します。</> : <>The Hono application owns authentication, authorization, and CSP headers. hono-decks applies the resolved language and nonce to the HTML it generates.</>}</p></section>
       <section id="language"><h2>{isJa ? "Honoで言語を判定し、すべての画面へ渡す" : "Detect language in Hono and pass it to every surface"}</h2><p>{isJa ? <>Honoの<code>languageDetector()</code>は、既定でクエリ、Cookie、<code>Accept-Language</code>の順に言語を判定し、<code>c.get("language")</code>から取得できるようにします。</> : <>Hono's <code>languageDetector()</code> checks query, cookie, then <code>Accept-Language</code> by default and exposes the result through <code>c.get("language")</code>.</>}</p><CodeBlock locale={locale} code={languageMiddlewareCode} /><p>{isJa ? <><code>document.lang</code>にその値を渡すと、一覧、ビューアー、スライド、印刷、発表画面、発表者画面の<code>&lt;html lang&gt;</code>が揃います。</> : <>Pass that value to <code>document.lang</code> so index, viewer, render, print, presentation, and presenter all receive the same <code>&lt;html lang&gt;</code>.</>}</p></section>
       <section id="csp"><h2>{isJa ? "同じnonceをCSPヘッダーとHTMLへ渡す" : "Use the same nonce in the CSP header and generated HTML"}</h2><p>{isJa ? <>nonceはリクエストごとに作り、HonoのVariablesへ保存します。CSPヘッダーに含めた値と、<code>document.nonce</code>が返す値は必ず同じにします。</> : <>Create one nonce per request and store it in Hono Variables. The value in the CSP header must match the value returned by <code>document.nonce</code>.</>}</p><CodeBlock label={isJa ? "アプリ側のミドルウェア" : "Application middleware"} locale={locale} code={nonceMiddlewareCode} /><CodeBlock label={isJa ? "hono-decksの設定" : "hono-decks configuration"} locale={locale} code={documentPolicyCode} /><p>{isJa ? <>hono-decksは指定されたnonceを、パッケージが生成する<code>&lt;style&gt;</code>と<code>&lt;script&gt;</code>へ付けます。YouTube、外部画像、Islandなどを使う場合は、アプリ側のCSPにも必要な配信元を追加してください。</> : <>hono-decks adds the nonce to package-generated <code>&lt;style&gt;</code> and <code>&lt;script&gt;</code> elements. Add required origins to the application CSP when using YouTube, remote images, or islands.</>}</p></section>
       <section id="embed"><h2>{isJa ? "埋め込みを許可するオリジンを指定する" : "Allow explicit embedding origins"}</h2><p>{isJa ? <>外部サイトにiframeで表示するときだけ<code>embed</code>を有効にし、親ページのオリジンを列挙します。</> : <>Enable <code>embed</code> only for external iframes and list allowed parent origins.</>}</p><CodeBlock locale={locale} code={`decks.router({
@@ -697,6 +714,6 @@ const security = (locale: Locale): Guide => {
 };
 
 export function getGuide(slug: string, locale: Locale): Guide | undefined {
-  const factories: Record<string, (locale: Locale) => Guide> = { "getting-started": gettingStarted, authoring, configuration, routing, security };
+  const factories: Record<string, (locale: Locale) => Guide> = { "getting-started": gettingStarted, authoring, configuration, recipes, routing, security };
   return factories[slug]?.(locale);
 }
