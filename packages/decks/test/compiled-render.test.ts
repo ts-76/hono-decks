@@ -94,8 +94,8 @@ describe("compiled deck rendering", () => {
       mountPath: "/slides",
     });
 
-    expect(html).toContain("data-hono-decks-fragment");
-    expect(html).toContain('data-fragment-order="2"');
+    expect(html).toContain("data-hono-decks-fire");
+    expect(html).toContain('data-fire-order="2"');
     expect(html).toContain("Second reveal");
   });
 
@@ -120,11 +120,40 @@ describe("compiled deck rendering", () => {
       mountPath: "/slides",
     });
 
-    expect(html).toContain("data-hono-decks-fragment");
-    expect(html).toContain('data-fragment-order="2"');
+    expect(html).toContain("data-hono-decks-fire");
+    expect(html).toContain('data-fire-order="2"');
     expect(html).toContain('data-fire-effect="fade-up"');
-    expect(html).toContain("[data-fire-effect=fade-up][data-fragment-hidden]");
+    expect(html).toContain("[data-fire-effect=fade-up]{--hono-decks-fire-hidden-transform:translateY(.85rem)}");
     expect(html).toContain("@media (prefers-reduced-motion: reduce)");
+  });
+
+  it("keeps custom Fire effect names and theme variables", async () => {
+    const html = await renderCompiledDeckPageAsync({
+      deck: {
+        ...deck,
+        themeStyle:
+          '[data-fire-effect="blur-in"]{--hono-decks-fire-hidden-filter:blur(12px);--hono-decks-fire-duration:.32s}',
+        slides: [
+          {
+            ...deck.slides[0],
+            nodes: [
+              {
+                type: "component",
+                name: "Fire",
+                props: { effect: "blur-in" },
+                children: [{ type: "text", value: "Custom reveal" }],
+              },
+            ],
+          },
+        ],
+      },
+      mountPath: "/slides",
+    });
+
+    expect(html).toContain('data-fire-effect="blur-in"');
+    expect(html).toContain("--hono-decks-fire-hidden-filter:blur(12px)");
+    expect(html).toContain("--hono-decks-fire-duration:.32s");
+    expect(html).toContain("filter var(--hono-decks-fire-duration,.18s)");
   });
 
   it("renders a full page as a clean presentation surface with warnings", () => {
@@ -181,7 +210,7 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("window.requestAnimationFrame(() => window.print())");
   });
 
-  it("publishes step state and advances fragments before slides", async () => {
+  it("publishes step state and advances fires before slides", async () => {
     const html = await renderCompiledDeckPageAsync({
       deck: {
         ...deck,
@@ -203,8 +232,8 @@ describe("compiled deck rendering", () => {
       mountPath: "/slides",
     });
 
-    expect(html).toContain("[data-hono-decks-fragment]");
-    expect(html).toContain("data-fragment-hidden");
+    expect(html).toContain("[data-hono-decks-fire]");
+    expect(html).toContain("data-fire-hidden");
     expect(html).toContain("let stepIndex = 0");
     expect(html).toContain("let stepCount = 0");
     expect(html).toContain("function readInitialState()");
@@ -234,7 +263,7 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("function next()");
     expect(html).toContain("function previous()");
     expect(html).toContain("if (stepIndex < stepCount)");
-    expect(html).toContain("updateFragments(stepIndex + 1)");
+    expect(html).toContain("updateFires(stepIndex + 1)");
     expect(html).toContain("show(index + 1, 0)");
   });
 
@@ -291,7 +320,7 @@ describe("compiled deck rendering", () => {
     expect(html).not.toContain("html,body{margin:0;width:var(--hono-decks-width);height:var(--hono-decks-height)");
   });
 
-  it("prints slides as an A4 portrait handout with all fragments visible", () => {
+  it("prints slides as an A4 portrait handout with all fires visible", () => {
     const html = renderCompiledDeckPage({ deck, mountPath: "/decks" });
 
     expect(html).toContain("@page{size:A4 portrait;margin:12mm}");
@@ -319,7 +348,7 @@ describe("compiled deck rendering", () => {
     expect(html).toContain(".slide:nth-of-type(3n):not(:last-child){page-break-after:always;break-after:page}");
     expect(html).toContain("body:not([data-overview-mode]) .slide[hidden]{display:block!important}");
     expect(html).toContain(
-      "[data-hono-decks-fragment]{visibility:visible!important;opacity:1!important;transform:none!important}",
+      "[data-hono-decks-fire]{visibility:visible!important;opacity:1!important;transform:none!important;filter:none!important}",
     );
     expect(html).toContain(
       ".slide[data-slide-state]{visibility:visible!important;opacity:1!important;transform:none!important}",

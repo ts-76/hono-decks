@@ -127,21 +127,21 @@ async function runViewportCheck(check, slug, verifyNavigation) {
   }
 
   if (slug === "motion") {
-    await verifyMotionFragmentSteps(check.name);
+    await verifyMotionFireSteps(check.name);
   }
 
   await agent(["--session", session, "screenshot", path.join(artifactDir, `${check.name}-${slug}-viewer.png`)]);
 }
 
-async function verifyMotionFragmentSteps(label) {
+async function verifyMotionFireSteps(label) {
   const initial = await waitForMotionState(
     (state) =>
       state.position === "1 / 3" &&
       state.stepIndex === "0" &&
       state.stepCount === "1" &&
-      state.hiddenFragments === 1 &&
+      state.hiddenFires === 1 &&
       state.activeTransitions === 0,
-    `${label} motion initial fragment state`,
+    `${label} motion initial fire state`,
   );
   assertSlideOnlyPosition(initial.position, `${label} motion initial position`);
 
@@ -151,9 +151,9 @@ async function verifyMotionFragmentSteps(label) {
       state.position === "1 / 3" &&
       state.stepIndex === "1" &&
       state.stepCount === "1" &&
-      state.visibleFragments === 1 &&
+      state.visibleFires === 1 &&
       state.activeTransitions === 0,
-    `${label} motion first fragment reveal`,
+    `${label} motion first fire reveal`,
   );
   assertSlideOnlyPosition(firstReveal.position, `${label} motion first reveal position`);
 
@@ -164,7 +164,7 @@ async function verifyMotionFragmentSteps(label) {
       state.stepIndex === "0" &&
       Number(state.stepCount) > 0 &&
       state.activeTransitions === 0,
-    `${label} motion second slide fragment state`,
+    `${label} motion second slide fire state`,
   );
   assertSlideOnlyPosition(secondSlide.position, `${label} motion second slide position`);
 
@@ -173,9 +173,9 @@ async function verifyMotionFragmentSteps(label) {
     (state) =>
       state.position === "2 / 3" &&
       state.stepIndex === "1" &&
-      state.visibleFragments >= 1 &&
+      state.visibleFires >= 1 &&
       state.activeTransitions === 0,
-    `${label} motion second slide fragment reveal`,
+    `${label} motion second fire reveal`,
   );
   assertSlideOnlyPosition(secondReveal.position, `${label} motion second reveal position`);
 
@@ -324,14 +324,14 @@ function motionStateScript() {
     const iframe = doc.querySelector("iframe");
     const frameDoc = iframe?.contentDocument;
     const activeSlide = frameDoc?.querySelector(".slide:not([hidden])");
-    const fragments = Array.from(activeSlide?.querySelectorAll("[data-hono-decks-fragment]") ?? []);
+    const fires = Array.from(activeSlide?.querySelectorAll("[data-hono-decks-fire]") ?? []);
     return {
       position: position?.textContent ?? "",
       stepIndex: root?.getAttribute("data-step-index") ?? "",
       stepCount: root?.getAttribute("data-step-count") ?? "",
       activeTransitions: frameDoc?.querySelectorAll("[data-active-transition]").length ?? 0,
-      visibleFragments: fragments.filter((fragment) => !fragment.hasAttribute("data-fragment-hidden")).length,
-      hiddenFragments: fragments.filter((fragment) => fragment.hasAttribute("data-fragment-hidden")).length
+      visibleFires: fires.filter((fire) => !fire.hasAttribute("data-fire-hidden")).length,
+      hiddenFires: fires.filter((fire) => fire.hasAttribute("data-fire-hidden")).length
     };
   })()`;
 }
@@ -424,7 +424,7 @@ async function waitForEmbeddedViewerState(predicate) {
 
 function assertSlideOnlyPosition(position, label) {
   if (position.includes("·")) {
-    throw new Error(`${label} should not include fragment step text: ${position}`);
+    throw new Error(`${label} should not include fire step text: ${position}`);
   }
 }
 

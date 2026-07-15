@@ -61,34 +61,34 @@ export function renderPresentationScript(nonce?: string): string {
     window.history.replaceState(null, "", url);
   }
 
-  function slideFragments(slide) {
-    return Array.from(slide?.querySelectorAll("[data-hono-decks-fragment]") ?? []).sort((a, b) => fragmentOrder(a, 0) - fragmentOrder(b, 0));
+  function slideFires(slide) {
+    return Array.from(slide?.querySelectorAll("[data-hono-decks-fire]") ?? []).sort((a, b) => fireOrder(a, 0) - fireOrder(b, 0));
   }
 
-  function fragmentOrder(fragment, fallback) {
-    const order = Number(fragment.getAttribute("data-fragment-order"));
+  function fireOrder(fire, fallback) {
+    const order = Number(fire.getAttribute("data-fire-order"));
     return Number.isFinite(order) && order > 0 ? order : fallback;
   }
 
-  function fragmentCountForSlide(slideIndex) {
-    return slideFragments(slides[slideIndex]).length;
+  function fireCountForSlide(slideIndex) {
+    return slideFires(slides[slideIndex]).length;
   }
 
-  function setFragmentsVisible(fragments, visible) {
-    fragments.forEach((fragment) => {
-      fragment.toggleAttribute("data-fragment-hidden", !visible);
-      fragment.setAttribute("aria-hidden", visible ? "false" : "true");
+  function setFiresVisible(fires, visible) {
+    fires.forEach((fire) => {
+      fire.toggleAttribute("data-fire-hidden", !visible);
+      fire.setAttribute("aria-hidden", visible ? "false" : "true");
     });
   }
 
-  function updateFragments(nextStepIndex) {
-    const fragments = slideFragments(slides[index]);
-    stepCount = fragments.length;
+  function updateFires(nextStepIndex) {
+    const fires = slideFires(slides[index]);
+    stepCount = fires.length;
     stepIndex = Math.max(0, Math.min(stepCount, nextStepIndex));
-    fragments.forEach((fragment, fragmentIndex) => {
-      const visible = fragmentOrder(fragment, fragmentIndex + 1) <= stepIndex;
-      fragment.toggleAttribute("data-fragment-hidden", !visible);
-      fragment.setAttribute("aria-hidden", visible ? "false" : "true");
+    fires.forEach((fire, fireIndex) => {
+      const visible = fireOrder(fire, fireIndex + 1) <= stepIndex;
+      fire.toggleAttribute("data-fire-hidden", !visible);
+      fire.setAttribute("aria-hidden", visible ? "false" : "true");
     });
   }
 
@@ -188,7 +188,7 @@ export function renderPresentationScript(nonce?: string): string {
     slides.forEach((slide, slideIndex) => {
       setSlideState(slide, slideIndex === index ? "active" : "inactive", slideIndex === index ? direction : undefined);
     });
-    updateFragments(nextStepIndex);
+    updateFires(nextStepIndex);
     publishState();
   }
 
@@ -275,7 +275,7 @@ export function renderPresentationScript(nonce?: string): string {
     });
     setSlideState(outgoing, "active", direction, transition, timing);
     setSlideState(incoming, "entering", direction, transition, timing);
-    updateFragments(nextStepIndex);
+    updateFires(nextStepIndex);
     publishState();
     requestAnimationFrame(() => {
       setSlideState(outgoing, "leaving", direction, transition, timing);
@@ -290,7 +290,7 @@ export function renderPresentationScript(nonce?: string): string {
       return;
     }
     if (stepIndex < stepCount) {
-      updateFragments(stepIndex + 1);
+      updateFires(stepIndex + 1);
       publishState();
       return;
     }
@@ -300,17 +300,17 @@ export function renderPresentationScript(nonce?: string): string {
   function previous() {
     if (isTransitioning) {
       const targetIndex = Math.max(0, index - 1);
-      queueNavigation(targetIndex, fragmentCountForSlide(targetIndex));
+      queueNavigation(targetIndex, fireCountForSlide(targetIndex));
       return;
     }
     if (stepIndex > 0) {
-      updateFragments(stepIndex - 1);
+      updateFires(stepIndex - 1);
       publishState();
       return;
     }
     if (index > 0) {
       const previousIndex = index - 1;
-      show(previousIndex, fragmentCountForSlide(previousIndex));
+      show(previousIndex, fireCountForSlide(previousIndex));
       return;
     }
     show(0, 0);
@@ -327,7 +327,7 @@ export function renderPresentationScript(nonce?: string): string {
       slide.removeAttribute("data-slide-direction");
       slide.removeAttribute("data-active-transition");
     });
-    setFragmentsVisible(Array.from(document.querySelectorAll("[data-hono-decks-fragment]")), enabled);
+    setFiresVisible(Array.from(document.querySelectorAll("[data-hono-decks-fire]")), enabled);
     if (!enabled) show(index);
   }
 

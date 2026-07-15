@@ -83,7 +83,6 @@ export type {
   DeckManifest,
   DeckRequestContext,
   DeckSource,
-  SlideFragmentsMode,
   SlideFrontmatter,
   SlideTransition,
 } from "./deck/model";

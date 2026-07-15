@@ -33,12 +33,12 @@ export const builtInSlideComponents = defineSlideComponents({
   Fire: (props) => {
     const order =
       typeof props.order === "number" || typeof props.order === "string" ? Number(props.order) : undefined;
-    const fragmentOrder = order !== undefined && Number.isFinite(order) ? String(order) : undefined;
+    const fireOrder = order !== undefined && Number.isFinite(order) ? String(order) : undefined;
     const effect = stringProp(props.effect);
 
     return jsx("span", {
-      "data-hono-decks-fragment": true,
-      ...(fragmentOrder ? { "data-fragment-order": fragmentOrder } : {}),
+      "data-hono-decks-fire": true,
+      ...(fireOrder ? { "data-fire-order": fireOrder } : {}),
       ...(effect ? { "data-fire-effect": safeToken(effect).toLowerCase() } : {}),
       children: props.children,
     });

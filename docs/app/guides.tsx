@@ -214,11 +214,25 @@ const fireSyntaxCode = `<Fire effect="fade-up">
   First reveal
 </Fire>
 
-:::fire{effect="fade-up"}
+:::fire
 Second reveal
 :::
 
-<Metric $fire={3} effect="scale" value="18 ms" />`;
+:::fire{each="item"}
+- First list item
+- Second list item
+:::
+
+<Fire effect="blur-in">
+  Custom effect
+</Fire>`;
+
+const customFireEffectCode = `[data-fire-effect="blur-in"] {
+  --hono-decks-fire-hidden-transform: scale(.98);
+  --hono-decks-fire-hidden-filter: blur(12px);
+  --hono-decks-fire-duration: .32s;
+  --hono-decks-fire-easing: ease-out;
+}`;
 
 const speakerNotesCode = `---
 notes: |
@@ -380,7 +394,7 @@ const authoring = (locale: Locale): Guide => {
         { id: "structure", label: "デッキとスライド" },
         { id: "syntax", label: "本文の記法" },
         { id: "metadata", label: "フロントマター" },
-        { id: "fragments", label: "段階表示" },
+        { id: "fire", label: "段階表示" },
         { id: "notes", label: "発表者ノート" },
         { id: "components", label: "コンポーネント" },
         { id: "assets", label: "画像と埋め込み" },
@@ -391,7 +405,7 @@ const authoring = (locale: Locale): Guide => {
         { id: "structure", label: "Decks and slides" },
         { id: "syntax", label: "Content syntax" },
         { id: "metadata", label: "Frontmatter" },
-        { id: "fragments", label: "Staged content" },
+        { id: "fire", label: "Staged content" },
         { id: "notes", label: "Speaker notes" },
         { id: "components", label: "Components" },
         { id: "assets", label: "Assets and embeds" },
@@ -441,18 +455,20 @@ Node for I/O. Hono for routes.`} />
         <p>{isJa ? "ファイル先頭のフロントマターはデッキ全体に、区切り線の直後に置いたフロントマターは次の1枚だけに適用されます。未定義のキーはmetaに残りますが、警告が出ます。" : "Opening frontmatter applies to the deck. Frontmatter immediately after a slide separator applies only to that slide. Unknown keys remain in meta but produce a warning."}</p>
         <dl class="configuration-map">
           <div><dt>{isJa ? "デッキ" : "Deck"}</dt><dd><code>title</code>, <code>description</code>, <code>author</code>, <code>tags</code>, <code>date</code>, <code>theme</code>, <code>transition</code>, <code>transitionDuration</code>, <code>transitionEasing</code>, <code>draft</code>, <code>assets</code>, <code>presenter</code></dd></div>
-          <div><dt>{isJa ? "スライド" : "Slide"}</dt><dd><code>title</code>, <code>layout</code>, <code>class</code>, <code>notes</code>, <code>background</code>, <code>transition</code>, <code>transitionDuration</code>, <code>transitionEasing</code>, <code>fragments</code></dd></div>
+          <div><dt>{isJa ? "スライド" : "Slide"}</dt><dd><code>title</code>, <code>layout</code>, <code>class</code>, <code>notes</code>, <code>background</code>, <code>transition</code>, <code>transitionDuration</code>, <code>transitionEasing</code></dd></div>
           <div><dt>{isJa ? "トランジション" : "Transitions"}</dt><dd><code>none</code>, <code>fade</code>, <code>fade-out</code>, <code>slide-left</code>, <code>slide-right</code>, <code>slide-up</code>, <code>slide-down</code>, <code>view-transition</code></dd></div>
           <div><dt>{isJa ? "レイアウト" : "Layouts"}</dt><dd>{isJa ? <><code>default</code>、中央配置の<code>cover</code>と<code>statement</code>が標準です。独自名は<code>layout-&lt;name&gt;</code>クラスとして<code>theme.css</code>から指定できます。</> : <><code>default</code>, centered <code>cover</code>, and centered <code>statement</code> are built in. A custom name becomes a <code>layout-&lt;name&gt;</code> class that can be styled in <code>theme.css</code>.</>}</dd></div>
         </dl>
         <Callout title={isJa ? "最初に必要なのはtitleだけ" : "Start with title only"}><p>{isJa ? <>本文を先に書き、必要なスライドにだけ<code>layout</code>や<code>transition</code>を追加すると設定を追いやすくなります。</> : <>Write the content first, then add <code>layout</code> or <code>transition</code> only where they clarify the presentation.</>}</p></Callout>
       </section>
 
-      <section id="fragments">
+      <section id="fire">
         <h2>{isJa ? "fireでクリックごとに内容を発火する" : "Fire content one step at a time"}</h2>
-        <p>{isJa ? <><code>&lt;Fire&gt;</code>がJSXにおける基本形で、Slidevの<code>&lt;v-click&gt;</code>に相当します。Markdownのまとまりには<code>:::fire</code>を使います。通常は記述順に発火するため<code>order</code>は不要です。順番を明示する場合だけ指定し、<code>effect</code>は<code>none</code>、<code>fade</code>、<code>fade-up</code>、<code>scale</code>から選びます。</> : <><code>&lt;Fire&gt;</code> is the primary JSX form and corresponds to Slidev's <code>&lt;v-click&gt;</code>. Use <code>:::fire</code> for Markdown blocks. Reveals normally follow source order, so add <code>order</code> only when you need an explicit sequence. <code>effect</code> accepts <code>none</code>, <code>fade</code>, <code>fade-up</code>, or <code>scale</code>.</>}</p>
+        <p>{isJa ? <><code>&lt;Fire&gt;</code>がJSXにおける基本形で、Slidevの<code>&lt;v-click&gt;</code>に相当します。Markdownのまとまりには<code>:::fire</code>、1つのリストを項目ごとに発火する場合は<code>:::fire&#123;each=&quot;item&quot;&#125;</code>を使います。通常は記述順に発火するため<code>order</code>は不要です。</> : <><code>&lt;Fire&gt;</code> is the primary JSX form and corresponds to Slidev's <code>&lt;v-click&gt;</code>. Use <code>:::fire</code> for Markdown blocks and <code>:::fire&#123;each=&quot;item&quot;&#125;</code> to reveal items within one list. Reveals normally follow source order, so add <code>order</code> only when you need an explicit sequence.</>}</p>
         <CodeBlock label="MDX" locale={locale} code={fireSyntaxCode} />
-        <Callout title={isJa ? "$fireとリスト記法は検討中" : "$fire and list syntax are under review"}><p>{isJa ? <>JSXの<code>$fire</code>とスライドフロントマターの<code>fragments: list</code>は既存デッキとの互換のため引き続き動作します。新しく書く場合は<code>&lt;Fire&gt;</code>または<code>:::fire</code>を使ってください。リストをfireの近くで指定できる記法を別途検討しています。</> : <>The JSX <code>$fire</code> prop and slide frontmatter <code>fragments: list</code> remain supported for existing decks. Prefer <code>&lt;Fire&gt;</code> or <code>:::fire</code> for new content while a fire-local list syntax is evaluated.</>}</p></Callout>
+        <h3>{isJa ? "effectをテーマで追加する" : "Add an effect in the theme"}</h3>
+        <p>{isJa ? <><code>none</code>、<code>fade</code>、<code>fade-up</code>、<code>scale</code>は組み込みです。それ以外の名前も<code>effect</code>へ指定でき、<code>data-fire-effect</code>と<code>--hono-decks-fire-*</code>変数を使って<code>theme.css</code>で動きを定義できます。</> : <><code>none</code>, <code>fade</code>, <code>fade-up</code>, and <code>scale</code> are built in. Any other <code>effect</code> name is exposed through <code>data-fire-effect</code>; define its motion in <code>theme.css</code> with the <code>--hono-decks-fire-*</code> variables.</>}</p>
+        <CodeBlock label="theme.css" lang="css" locale={locale} code={customFireEffectCode} />
       </section>
 
       <section id="notes">
@@ -526,7 +542,7 @@ const routing = (locale: Locale): Guide => {
     toc: c.var.deckToc,
   }),
 )`} /></section>
-      <section id="state"><h2>{isJa ? "同じスライド位置をURLで共有する" : "Share the same slide position by URL"}</h2><p>{isJa ? <>ビューアー、発表画面、発表者画面は<code>?slide=2&amp;step=1</code>を共通して使います。<code>slide</code>はスライド番号、<code>step</code>は段階表示の位置です。</> : <>Viewer, presentation, and presenter share <code>?slide=2&amp;step=1</code>. <code>slide</code> selects the slide and <code>step</code> selects the fragment reveal state.</>}</p><p>{isJa ? <>外部サイトへ埋め込む場合は<a class="text-link" href={localizedHref("/docs/security", locale)}>セキュリティ</a>で許可するオリジンを設定します。すべてのオプションを探す場合は<a class="text-link" href={localizedHref("/api", locale)}>API</a>を参照してください。</> : <>For external iframe use, continue to <a class="text-link" href={localizedHref("/docs/security", locale)}>security</a> and allow explicit origins. Use the <a class="text-link" href={localizedHref("/api", locale)}>API reference</a> when you need a specific option.</>}</p></section>
+      <section id="state"><h2>{isJa ? "同じスライド位置をURLで共有する" : "Share the same slide position by URL"}</h2><p>{isJa ? <>ビューアー、発表画面、発表者画面は<code>?slide=2&amp;step=1</code>を共通して使います。<code>slide</code>はスライド番号、<code>step</code>は段階表示の位置です。</> : <>Viewer, presentation, and presenter share <code>?slide=2&amp;step=1</code>. <code>slide</code> selects the slide and <code>step</code> selects the fire reveal state.</>}</p><p>{isJa ? <>外部サイトへ埋め込む場合は<a class="text-link" href={localizedHref("/docs/security", locale)}>セキュリティ</a>で許可するオリジンを設定します。すべてのオプションを探す場合は<a class="text-link" href={localizedHref("/api", locale)}>API</a>を参照してください。</> : <>For external iframe use, continue to <a class="text-link" href={localizedHref("/docs/security", locale)}>security</a> and allow explicit origins. Use the <a class="text-link" href={localizedHref("/api", locale)}>API reference</a> when you need a specific option.</>}</p></section>
     </>,
   };
 };

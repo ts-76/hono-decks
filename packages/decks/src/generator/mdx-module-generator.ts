@@ -10,7 +10,7 @@ import {
   toSlideFrontmatter,
 } from "../deck/frontmatter";
 import { combineSpeakerNotes, extractMdxCommentSpeakerNotes } from "../deck/speaker-notes";
-import type { AssetRef, CompiledDeck, DeckKind, SlideFrontmatter } from "../deck/model";
+import type { AssetRef, CompiledDeck, DeckKind } from "../deck/model";
 import { parseDeckWithWarnings, type ParserWarning } from "../parser/parser";
 import type { ResolvedDeckFile } from "../routing/file-routing";
 import {
@@ -27,7 +27,7 @@ import {
 import { emitModuleDecksRouter } from "./mdx/emit";
 import { resolveLinkCardMetadataByUrl } from "./mdx/ogp";
 import type { LinkCardOgpMetadata } from "./mdx/ogp";
-import { remarkCodeHighlight, remarkDeckSyntax, remarkListFragments } from "./mdx/syntax";
+import { remarkCodeHighlight, remarkDeckSyntax } from "./mdx/syntax";
 
 export type { LinkCardOgpMetadata } from "./mdx/ogp";
 
@@ -114,7 +114,7 @@ async function compileMdxModuleDeck(
     addUnknownFrontmatterWarnings(warnings, slideMeta.meta, "slide", index);
     const moduleSource = [prelude, rewriteAssetUrls(speakerNotes.body, assets)].filter(Boolean).join("\n\n");
     const rewrittenSource = rewriteRelativeMdxImports(moduleSource, dirname(entry.sourcePath), dirname(slideModulePath));
-    const code = await compileMdxModule(rewrittenSource, entry.sourcePath, index, slideMeta.fragments, input.resolveOgp);
+    const code = await compileMdxModule(rewrittenSource, entry.sourcePath, index, input.resolveOgp);
 
     slideModules.push({
       path: slideModulePath,
@@ -175,7 +175,6 @@ async function compileMdxModule(
   source: string,
   sourcePath: string,
   slideIndex: number,
-  fragments: SlideFrontmatter["fragments"],
   resolveOgp: CompileMdxModuleDecksInput["resolveOgp"],
 ): Promise<string> {
   try {
@@ -192,7 +191,6 @@ async function compileMdxModule(
             remarkGfm,
             remarkDirective,
             remarkDeckSyntax({ linkCardMetadata }),
-            remarkListFragments(fragments),
             remarkCodeHighlight,
           ],
         },

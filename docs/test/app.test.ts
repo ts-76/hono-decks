@@ -156,7 +156,11 @@ describe("HonoX documentation site", () => {
     expect(ja).toContain("テーブル、タスクリスト、打ち消し線、自動リンクを標準で使えます");
     expect(ja).toContain("&lt;Fire&gt;");
     expect(ja).toContain(":::fire");
-    expect(ja).toContain("$fire");
+    expect(ja).toContain('each=&quot;item&quot;');
+    expect(ja).toContain('data-fire-effect=&quot;blur-in&quot;');
+    expect(ja).toContain("--hono-decks-fire-hidden-filter");
+    expect(ja).not.toContain("$fire");
+    expect(ja).not.toContain("fragments: list");
     expect(ja).toContain("@[x]");
     expect(ja).toContain("@[embed]");
     expect(ja).toContain("@[iframe]");

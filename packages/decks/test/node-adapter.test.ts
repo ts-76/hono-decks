@@ -563,7 +563,7 @@ Visible generated content.
     }
   });
 
-  it("warns and falls back for unknown slide dynamics frontmatter in generated decks", async () => {
+  it("warns and falls back for unknown slide transition frontmatter in generated decks", async () => {
     const cwd = await createFixture();
 
     try {
@@ -576,7 +576,6 @@ title: Deck One
 ---
 title: Invalid Dynamics
 transition: spin
-fragments: magic
 ---
 
 # Invalid Dynamics
@@ -592,15 +591,10 @@ fragments: magic
       });
 
       expect(manifest.decks[0].slides[0].meta.transition).toBe("none");
-      expect(manifest.decks[0].slides[0].meta.fragments).toBe("none");
       expect(manifest.decks[0].warnings).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
             code: "unknown-transition",
-            slideIndex: 0,
-          }),
-          expect.objectContaining({
-            code: "unknown-fragments",
             slideIndex: 0,
           }),
         ]),
@@ -608,9 +602,7 @@ fragments: magic
 
       const output = await readFile(join(cwd, "src", "generated", "decks.ts"), "utf8");
       expect(output).toContain('"transition": "none"');
-      expect(output).toContain('"fragments": "none"');
       expect(output).toContain('"code": "unknown-transition"');
-      expect(output).toContain('"code": "unknown-fragments"');
     } finally {
       await rm(cwd, { recursive: true, force: true });
     }
@@ -762,44 +754,6 @@ transitionEasing: bounce
     }
   });
 
-  it("marks top-level list items as fragments when slide frontmatter uses fragments list", async () => {
-    const cwd = await createFixture();
-
-    try {
-      await writeFile(
-        join(cwd, "decks", "deck1", "deck.mdx"),
-        `---
-title: Deck One
----
-
----
-title: Reveal List
-fragments: list
----
-
-- First reveal
-- Second reveal
-`,
-        "utf8",
-      );
-
-      await compileDecks({
-        cwd,
-        root: "decks",
-        out: "src/generated",
-        mountPath: "/slides",
-      });
-
-      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.ts"), "utf8");
-      expect(slideOutput).toContain("data-hono-decks-fragment");
-      expect(slideOutput).toContain("data-fragment-order");
-      expect(slideOutput).toContain("First reveal");
-      expect(slideOutput).toContain("Second reveal");
-    } finally {
-      await rm(cwd, { recursive: true, force: true });
-    }
-  });
-
   it("compiles GFM syntax without extra configuration", async () => {
     const cwd = await createFixture();
 
@@ -845,6 +799,69 @@ https://hono.dev/
     }
   });
 
+  it("fires Markdown list items from a colocated fire directive", async () => {
+    const cwd = await createFixture();
+
+    try {
+      await writeFile(
+        join(cwd, "decks", "deck1", "deck.mdx"),
+        `---
+title: Deck One
+---
+
+:::fire{each="item" effect="fade-up"}
+- First reveal
+- Second reveal
+:::
+`,
+        "utf8",
+      );
+
+      await compileDecks({
+        cwd,
+        root: "decks",
+        out: "src/generated",
+        mountPath: "/slides",
+      });
+
+      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.ts"), "utf8");
+      expect(slideOutput.match(/"data-hono-decks-fire": "true"/g)).toHaveLength(2);
+      expect(slideOutput.match(/"data-fire-effect": "fade-up"/g)).toHaveLength(2);
+      expect(slideOutput).toContain("First reveal");
+      expect(slideOutput).toContain("Second reveal");
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects the removed $fire shorthand", async () => {
+    const cwd = await createFixture();
+
+    try {
+      await writeFile(
+        join(cwd, "decks", "deck1", "deck.mdx"),
+        `---
+title: Deck One
+---
+
+<Hero $fire />
+`,
+        "utf8",
+      );
+
+      await expect(
+        compileDecks({
+          cwd,
+          root: "decks",
+          out: "src/generated",
+          mountPath: "/slides",
+        }),
+      ).rejects.toThrow('The "$fire" prop is not supported. Wrap the content with <Fire>...</Fire>.');
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("compiles Zenn-style embeds and fire reveal authoring syntax", async () => {
     const cwd = await createFixture();
 
@@ -885,9 +902,9 @@ https://example.com/plain-link
 Markdown reveal
 :::
 
-<Fire effect="fade">Direct JSX reveal</Fire>
+<Fire effect="blur-in">Direct JSX reveal</Fire>
 
-<Badge $fire={2} effect="fade-up">JSX reveal</Badge>
+<Fire order={2} effect="fade-up"><Badge>JSX reveal</Badge></Fire>
 
 The slide stays 16:9.
 `,
@@ -933,11 +950,11 @@ The slide stays 16:9.
       expect(slideOutput).toContain("Markdown reveal");
       expect(slideOutput).toContain("Direct JSX reveal");
       expect(slideOutput).toContain("JSX reveal");
+      expect(slideOutput).toContain('effect: "blur-in"');
       expect(slideOutput).toContain("16");
       expect(slideOutput).toContain(":9");
-      expect(slideOutput).toContain('order: "2"');
+      expect(slideOutput).toContain("order: 2");
       expect(slideOutput).toContain('effect: "fade-up"');
-      expect(slideOutput).not.toContain("$fire");
       expect(slideOutput).not.toContain("_components.div");
       expect(slideOutput.match(/_jsx\(LinkCard/g)?.length).toBe(1);
     } finally {

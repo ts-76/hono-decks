@@ -16,7 +16,6 @@ export const SLIDE_TRANSITIONS = [
 ] as const;
 
 export type SlideTransition = (typeof SLIDE_TRANSITIONS)[number];
-export type SlideFragmentsMode = "none" | "manual" | "list";
 
 export interface DeckFrontmatter {
   title?: string;
@@ -43,7 +42,6 @@ export interface SlideFrontmatter {
   transition?: SlideTransition;
   transitionDuration?: string;
   transitionEasing?: string;
-  fragments?: SlideFragmentsMode;
   meta: Record<string, unknown>;
 }
 

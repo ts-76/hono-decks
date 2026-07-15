@@ -433,13 +433,12 @@ describe("sample Worker app", () => {
     expect(html).toContain("--hono-decks-slide-transition-duration:420ms");
     expect(html).toContain("--hono-decks-slide-transition-easing:cubic-bezier(.2, 0, 0, 1)");
     expect(html).toContain("data-active-transition");
-    expect(html).toContain("data-hono-decks-fragment");
-    expect(html).toContain('data-fragment-order="1"');
+    expect(html).toContain("data-hono-decks-fire");
+    expect(html).toContain('data-fire-order="1"');
     expect(html).toContain('data-fire-effect="fade-up"');
     expect(html).toContain("The reveal state is owned by the presentation iframe.");
     expect(html).toContain("Markdown fire blocks use Zenn-style directive syntax.");
     expect(html).toContain("Use Fire as the explicit JSX equivalent of a click reveal.");
-    expect(html).not.toContain("$fire");
     expect(html).toContain("CSS animation runs before hydration.");
     expect(html).toContain("Client island animation keeps local state.");
     expect(html).toContain("Queued navigation");

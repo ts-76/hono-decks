@@ -16,18 +16,15 @@ function _createMdxContent(props) {
       children: "Client components can own small interactive animation state with hono/jsx/dom."
     }), "\n", _jsxs(_components.ul, {
       children: ["\n", _jsx(_components.li, {
-        "data-hono-decks-fragment": "true",
-        "data-fragment-order": "1",
+        "data-hono-decks-fire": "true",
         children: "CSS animation runs before hydration."
       }), "\n", _jsx(_components.li, {
-        "data-hono-decks-fragment": "true",
-        "data-fragment-order": "2",
+        "data-hono-decks-fire": "true",
         children: "Client island animation keeps local state."
       }), "\n"]
     }), "\n", _jsx("p", {
       children: "Use Fire as the explicit JSX equivalent of a click reveal."
     }), "\n", _jsx(Fire, {
-      order: 2,
       effect: "scale",
       children: _jsx(MotionMeter, {
         label: "Animation island",

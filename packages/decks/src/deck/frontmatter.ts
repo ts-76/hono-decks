@@ -75,15 +75,6 @@ export function toSlideFrontmatter(
       ) ?? input.fallbackTransition,
     transitionDuration: takeTransitionDuration(meta, warnings, input.slideIndex) ?? input.fallbackTransitionDuration,
     transitionEasing: takeTransitionEasing(meta, warnings, input.slideIndex) ?? input.fallbackTransitionEasing,
-    fragments: takeKnownStringWithWarning(
-      meta,
-      "fragments",
-      ["none", "manual", "list"],
-      "none",
-      warnings,
-      "unknown-fragments",
-      input.slideIndex,
-    ),
     meta,
   };
 

@@ -38,19 +38,20 @@ layout: motion
 ---
 title: Client Island Animation
 layout: motion
-fragments: list
 ---
 
 ## Animation island
 
 <p>Client components can own small interactive animation state with hono/jsx/dom.</p>
 
+:::fire{each="item"}
 - CSS animation runs before hydration.
 - Client island animation keeps local state.
+:::
 
 <p>Use Fire as the explicit JSX equivalent of a click reveal.</p>
 
-<Fire order={2} effect="scale">
+<Fire effect="scale">
   <MotionMeter label="Animation island" initial={35} />
 </Fire>
 

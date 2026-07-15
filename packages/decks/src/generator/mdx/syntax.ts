@@ -1,5 +1,4 @@
 import { codeToHtml } from "shiki";
-import type { SlideFrontmatter } from "../../deck/model";
 import type { LinkCardOgpMetadata } from "./ogp";
 
 export interface MarkdownNode {
@@ -23,13 +22,6 @@ export function remarkDeckSyntax(input: { linkCardMetadata?: Map<string, LinkCar
   };
 }
 
-export function remarkListFragments(fragments: SlideFrontmatter["fragments"]) {
-  return () => (tree: MarkdownNode) => {
-    if (fragments !== "list") return;
-    markTopLevelListFragments(tree);
-  };
-}
-
 export function remarkCodeHighlight() {
   return async (tree: MarkdownNode) => {
     await highlightMarkdownNode(tree);
@@ -45,16 +37,23 @@ function transformDeckSyntaxChildren(
   const children: MarkdownNode[] = [];
   for (const child of node.children) {
     transformDeckSyntaxChildren(child, input);
+    rejectFireProp(child);
     children.push(
       zennEmbedNode(child, input) ??
       plainUrlLinkNode(child) ??
       fireDirectiveNode(child) ??
-      firePropNode(child) ??
       unknownDirectiveFallback(child) ??
       child,
     );
   }
   node.children = children;
+}
+
+function rejectFireProp(node: MarkdownNode): void {
+  if (node.type !== "mdxJsxFlowElement" && node.type !== "mdxJsxTextElement") return;
+  if (!Array.isArray(node.attributes)) return;
+  if (!node.attributes.some((attribute) => attribute.name === "$fire")) return;
+  throw new Error('The "$fire" prop is not supported. Wrap the content with <Fire>...</Fire>.');
 }
 
 function zennEmbedNode(
@@ -147,28 +146,45 @@ function isHttpUrl(value: string): boolean {
 function fireDirectiveNode(node: MarkdownNode): MarkdownNode | undefined {
   if (node.type !== "containerDirective" || node.name !== "fire") return undefined;
   const attributes = directiveAttributes(node);
-  const fragmentAttributes = [
+  if (attributes.each !== undefined) return fireEachItemNode(node, attributes);
+  const fireAttributes = [
     ...(typeof attributes.order === "string" ? [mdxAttribute("order", attributes.order)] : []),
     ...(typeof attributes.effect === "string" ? [mdxAttribute("effect", attributes.effect)] : []),
   ];
-  return mdxElement("Fire", fragmentAttributes, node.children ?? []);
+  return mdxElement("Fire", fireAttributes, node.children ?? []);
 }
 
-function firePropNode(node: MarkdownNode): MarkdownNode | undefined {
-  if (node.type !== "mdxJsxFlowElement" && node.type !== "mdxJsxTextElement") return undefined;
-  if (!Array.isArray(node.attributes)) return undefined;
+function fireEachItemNode(node: MarkdownNode, attributes: Record<string, string>): MarkdownNode {
+  if (attributes.each !== "item") {
+    throw new Error('The fire "each" attribute only accepts "item".');
+  }
+  if (attributes.order !== undefined) {
+    throw new Error('The fire "order" attribute cannot be combined with each="item". Items use source order.');
+  }
 
-  const fireAttribute = node.attributes.find((attribute) => attribute.name === "$fire");
-  if (!fireAttribute) return undefined;
+  const children = node.children ?? [];
+  const list = children.length === 1 && children[0]?.type === "list" ? children[0] : undefined;
+  if (!list) {
+    throw new Error('fire each="item" must contain exactly one Markdown list.');
+  }
 
-  const effectAttribute = node.attributes.find((attribute) => attribute.name === "effect");
-  node.attributes = node.attributes.filter((attribute) => attribute.name !== "$fire" && attribute.name !== "effect");
+  const effect = attributes.effect ? fireEffectToken(attributes.effect) : undefined;
+  for (const item of list.children ?? []) {
+    if (item.type !== "listItem") continue;
+    item.data = {
+      ...item.data,
+      hProperties: {
+        ...item.data?.hProperties,
+        "data-hono-decks-fire": "true",
+        ...(effect ? { "data-fire-effect": effect } : {}),
+      },
+    };
+  }
+  return list;
+}
 
-  const fragmentAttributes = [
-    ...fireOrderAttribute(fireAttribute),
-    ...(typeof effectAttribute?.value === "string" ? [mdxAttribute("effect", effectAttribute.value)] : []),
-  ];
-  return mdxElement("Fire", fragmentAttributes, [node]);
+function fireEffectToken(value: string): string {
+  return value.trim().replace(/[^A-Za-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase() || "fade";
 }
 
 function unknownDirectiveFallback(node: MarkdownNode): MarkdownNode | undefined {
@@ -181,20 +197,6 @@ function unknownDirectiveFallback(node: MarkdownNode): MarkdownNode | undefined 
     };
   }
   return undefined;
-}
-
-function fireOrderAttribute(attribute: MarkdownNode): MarkdownNode[] {
-  if (attribute.value === null || attribute.value === undefined || attribute.value === true) return [];
-  if (typeof attribute.value === "string" && attribute.value.trim()) return [mdxAttribute("order", attribute.value.trim())];
-  if (isMdxExpressionValue(attribute.value)) {
-    const value = String(attribute.value.value ?? "").trim();
-    if (/^\d+$/.test(value)) return [mdxAttribute("order", value)];
-  }
-  return [];
-}
-
-function isMdxExpressionValue(value: unknown): value is { value?: unknown } {
-  return typeof value === "object" && value !== null && "value" in value;
 }
 
 function directiveAttributes(node: MarkdownNode): Record<string, string> {
@@ -234,32 +236,6 @@ function toYoutubeEmbedUrl(value: string): string {
   } catch {
     return value;
   }
-}
-
-function markTopLevelListFragments(root: MarkdownNode): void {
-  let order = 1;
-
-  function visit(node: MarkdownNode, listDepth: number): void {
-    const nextListDepth = node.type === "list" ? listDepth + 1 : listDepth;
-    if (!Array.isArray(node.children)) return;
-
-    for (const child of node.children) {
-      if (child.type === "listItem" && nextListDepth === 1) {
-        child.data = {
-          ...child.data,
-          hProperties: {
-            ...child.data?.hProperties,
-            "data-hono-decks-fragment": "true",
-            "data-fragment-order": String(order),
-          },
-        };
-        order += 1;
-      }
-      visit(child, nextListDepth);
-    }
-  }
-
-  visit(root, 0);
 }
 
 async function highlightMarkdownNode(node: MarkdownNode): Promise<void> {

@@ -229,7 +229,6 @@ const generatedDecks = defineDecks({
             "transition": "slide-left",
             "transitionDuration": "420ms",
             "transitionEasing": "cubic-bezier(.2, 0, 0, 1)",
-            "fragments": "list",
             "meta": {}
           },
           html: "",

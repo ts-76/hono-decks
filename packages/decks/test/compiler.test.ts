@@ -214,7 +214,7 @@ assets:
     ]);
   });
 
-  it("preserves known transition and fragment frontmatter", async () => {
+  it("preserves known transition frontmatter", async () => {
     const deck = await compileMarkdown({
       slug: "motion",
       sourcePath: "decks/motion/deck.mdx",
@@ -226,7 +226,6 @@ title: Motion
 ---
 title: Reveal
 transition: fade
-fragments: list
 ---
 
 - First
@@ -235,33 +234,6 @@ fragments: list
     });
 
     expect(deck.slides[0].meta.transition).toBe("fade");
-    expect(deck.slides[0].meta.fragments).toBe("list");
-  });
-
-  it("warns and falls back for unknown slide fragments frontmatter", async () => {
-    const deck = await compileMarkdown({
-      slug: "deck1",
-      sourcePath: "decks/deck1/deck.mdx",
-      kind: "directory",
-      markdown: `# One
-
----
-fragments: magic
----
-
-## Two`,
-    });
-
-    expect(deck.slides[1].meta.fragments).toBe("none");
-    expect(deck.warnings).toEqual(
-      expect.arrayContaining([
-        {
-          code: "unknown-fragments",
-          message: 'Unknown fragments value "magic"; using none.',
-          slideIndex: 1,
-        },
-      ]),
-    );
   });
 
   it("applies deck-level transition as a slide fallback and lets slides override it", async () => {
@@ -738,31 +710,6 @@ const unclosed = true;`,
         },
       ]),
     );
-  });
-
-  it("does not expose control prop names in parser warnings", async () => {
-    const deck = await compileMarkdown({
-      slug: "deck1",
-      sourcePath: "decks/deck1/deck.mdx",
-      kind: "directory",
-      markdown: `<Hero $fire={["fade-up"]} count={1} />`,
-    });
-
-    expect(deck.warnings).toEqual(
-      expect.arrayContaining([
-        {
-          code: "parse-warning",
-          message: "Slide 1: MDX JavaScript expression props are ignored on Hero dynamic prop.",
-          slideIndex: 0,
-        },
-        {
-          code: "parse-warning",
-          message: "Slide 1: MDX JavaScript expression props are ignored on Hero.count.",
-          slideIndex: 0,
-        },
-      ]),
-    );
-    expect(deck.warnings.map((warning) => warning.message).join("\n")).not.toContain("$fire");
   });
 
   it("exports the compiler from the public module", async () => {
