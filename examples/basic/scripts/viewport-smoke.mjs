@@ -158,7 +158,7 @@ async function verifyMotionFireSteps(label) {
   );
 
   await evalJson(installMotionTransitionProbeScript());
-  await evalJson(clickNavigationLayerScript("next"));
+  await agent(["--session", session, "press", "ArrowRight"]);
   const firstReveal = await waitForMotionState(
     (state) =>
       state.position === "1 / 3" &&
@@ -167,7 +167,7 @@ async function verifyMotionFireSteps(label) {
       state.visibleFires === 1 &&
       state.activeTransitions === 0 &&
       state.visibleOpacityTransitionStarts >= 1,
-    `${label} motion first fire reveal`,
+    `${label} motion keyboard fire reveal`,
   );
   assertSlideOnlyPosition(firstReveal.position, `${label} motion first reveal position`);
 
@@ -178,7 +178,7 @@ async function verifyMotionFireSteps(label) {
       state.stepIndex === "0" &&
       state.hiddenFires === 1 &&
       state.visibleOpacityTransitionStarts >= 2,
-    `${label} motion first fire hide`,
+    `${label} motion click fire hide after keyboard reveal`,
   );
   assertSlideOnlyPosition(firstHide.position, `${label} motion first hide position`);
 

@@ -325,6 +325,11 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("function writePaginationState()");
     expect(html).toContain('params.set("slide", String(index + 1))');
     expect(html).toContain("show(initialState.index, initialState.stepIndex)");
+    expect(html).toContain("function handleCommand(action, commandIndex, commandStepIndex)");
+    expect(html).toContain('handleCommand("next")');
+    expect(html).toContain('handleCommand("previous")');
+    expect(html).toContain("handleCommand(message.action, message.index, message.stepIndex)");
+    expect(html).toContain("window.__honoDecksPresentationRuntime = { command: handleCommand }");
     expect(html).toContain("let previousIndex = 0");
     expect(html).toContain("let isTransitioning = false");
     expect(html).toContain("let pendingNavigation = null");

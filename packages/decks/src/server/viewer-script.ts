@@ -27,7 +27,17 @@ export function renderViewerScript(nonce?: string): string {
     if (position && viewport) viewport.append(position);
 
     function sendCommand(action, index) {
-      iframe?.contentWindow?.postMessage({ type: ${JSON.stringify(VIEWER_COMMAND_MESSAGE_TYPE)}, action, index }, frameOrigin);
+      const target = iframe?.contentWindow;
+      try {
+        const command = target?.__honoDecksPresentationRuntime?.command;
+        if (typeof command === "function") {
+          command(action, index);
+          return;
+        }
+      } catch {
+        // Cross-origin frames cannot expose their runtime. Use postMessage below.
+      }
+      target?.postMessage({ type: ${JSON.stringify(VIEWER_COMMAND_MESSAGE_TYPE)}, action, index }, frameOrigin);
     }
 
     function navigationClick(event) {

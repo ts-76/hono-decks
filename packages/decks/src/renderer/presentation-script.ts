@@ -350,6 +350,17 @@ export function renderPresentationScript(nonce?: string): string {
     document.querySelectorAll(".speaker-notes").forEach((note) => { note.hidden = !enabled; });
   }
 
+  function handleCommand(action, commandIndex, commandStepIndex) {
+    if (action === "previous") previous();
+    if (action === "next") next();
+    if (action === "goTo" && Number.isInteger(commandIndex)) {
+      show(commandIndex, Number.isInteger(commandStepIndex) ? commandStepIndex : 0);
+    }
+    if (action === "fullscreen") void toggleFullscreen();
+    if (action === "presenter") togglePresenter();
+    if (action === "overview") toggleOverview();
+  }
+
   async function toggleFullscreen() {
     if (document.fullscreenElement) {
       await document.exitFullscreen?.();
@@ -367,23 +378,20 @@ export function renderPresentationScript(nonce?: string): string {
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "ArrowRight" || event.key === " ") next();
-    if (event.key === "ArrowLeft") previous();
-    if (event.key === "f") void toggleFullscreen();
-    if (event.key === "p") togglePresenter();
-    if (event.key === "o") toggleOverview();
+    if (event.key === "ArrowRight" || event.key === " ") handleCommand("next");
+    if (event.key === "ArrowLeft") handleCommand("previous");
+    if (event.key === "f") handleCommand("fullscreen");
+    if (event.key === "p") handleCommand("presenter");
+    if (event.key === "o") handleCommand("overview");
   });
 
   window.addEventListener("message", (event) => {
     const message = event.data;
     if (!message || message.type !== "hono-decks:command") return;
-    if (message.action === "previous") previous();
-    if (message.action === "next") next();
-    if (message.action === "goTo" && Number.isInteger(message.index)) show(message.index, Number.isInteger(message.stepIndex) ? message.stepIndex : 0);
-    if (message.action === "fullscreen") void toggleFullscreen();
-    if (message.action === "presenter") togglePresenter();
-    if (message.action === "overview") toggleOverview();
+    handleCommand(message.action, message.index, message.stepIndex);
   });
+
+  window.__honoDecksPresentationRuntime = { command: handleCommand };
 
   window.addEventListener("resize", fitDeck);
   fitDeck();
