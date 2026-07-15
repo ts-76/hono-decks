@@ -145,7 +145,6 @@ import { defineDecksConfig } from "hono-decks"
 
 type AppEnv = {
   Bindings: {
-    ENVIRONMENT: "development" | "production"
     PRESENTER_ENABLED?: string
   }
   Variables: {
@@ -157,7 +156,6 @@ export default defineDecksConfig<AppEnv>({
   mountPath: "/decks",
   build: { root: "decks", outDir: "src/generated" },
   router: {
-    dev: ({ c }) => c.env.ENVIRONMENT !== "production",
     document: {
       lang: ({ c }) => c.get("language"),
     },
@@ -547,8 +545,7 @@ const routing = (locale: Locale): Guide => {
     content: <>
       <section id="model"><h2>{isJa ? "mountPathをすべてのルートの起点にする" : "Use the configured mount path for every deck URL"}</h2><p>{isJa ? <><code>app.route(decks.mountPath, decks.router())</code>と登録すると、設定した<code>mountPath</code>の下にすべてのルートが作られます。</> : <>Mounting <code>app.route(decks.mountPath, decks.router())</code> places every route below the configured mount path.</>}</p><Callout title={isJa ? "閲覧者に案内するURL" : "The URL most people open"}><p>{isJa ? <>閲覧者には<code>decks.paths(slug).viewer</code>を案内します。<code>render</code>はビューアー内のiframeが読み込むURLです。</> : <>Share <code>decks.paths(slug).viewer</code> with viewers. The render route is the iframe runtime.</>}</p></Callout></section>
       <section id="surfaces"><h2>{isJa ? "画面ごとの役割を確認する" : "Understand each generated surface"}</h2><RouteTable locale={locale} rows={[["/", isJa ? "公開デッキの一覧。不要なら無効化できます" : "Public deck index; can be disabled"], ["/:slug", isJa ? "閲覧用ビューアー。操作ボタンとスライドを表示します" : "Viewer with controls and the slide frame"], ["/:slug/render", isJa ? "ビューアー内のスライド本体" : "Slide document inside the viewer iframe"], ["/:slug/presentation", isJa ? "投影・共有画面用のスライド表示" : "Projection or shared display"], ["/:slug/presenter", isJa ? "発表者向け。次のスライドやノートを表示します" : "Speaker view with next slide and notes"], ["/:slug/print", isJa ? "印刷・PDF保存向けの全スライド表示" : "All slides for printing or browser PDF"], ["/:slug/embed", isJa ? "外部iframe用。embedを有効にした場合だけ作成します" : "External iframe route; created only when embed is enabled"]]} /></section>
-      <section id="visibility"><h2>{isJa ? "使わない画面を無効にする" : "Disable surfaces you do not expose"}</h2><p>{isJa ? <>設定ファイルの<code>router.pages</code>で、不要な画面を<code>false</code>にします。<code>dev</code>も関数で明示します。</> : <>Set unused surfaces to <code>false</code> in <code>router.pages</code> and resolve <code>dev</code> explicitly.</>}</p><CodeBlock locale={locale} code={`decks.router({
-  dev: ({ c }) => c.env.ENVIRONMENT !== "production",
+      <section id="visibility"><h2>{isJa ? "使わない画面を無効にする" : "Disable surfaces you do not expose"}</h2><p>{isJa ? <>設定ファイルの<code>router.pages</code>で、不要な画面を<code>false</code>にします。<code>dev</code>を省略すると、ViteとWranglerの開発コマンドから自動判定されます。</> : <>Set unused surfaces to <code>false</code> in <code>router.pages</code>. When <code>dev</code> is omitted, Vite and Wrangler development commands are detected automatically.</>}</p><CodeBlock locale={locale} code={`decks.router({
   pages: {
     index: false,
     print: false,
@@ -654,7 +651,7 @@ const configuration = (locale: Locale): Guide => {
       </section>
       <section id="runtime">
         <h2>{isJa ? "リクエストごとに変わる値を設定する" : "Configure values that change per request"}</h2>
-        <p>{isJa ? <><code>defineDecksConfig()</code>を使うと、HonoのBindingsとVariablesを含めて型を確認できます。<code>dev</code>は自動判定されないため、環境変数から明示的に返します。</> : <>Use <code>defineDecksConfig()</code> to preserve Hono Bindings and Variables types. <code>dev</code> is never inferred, so resolve it explicitly from an environment binding.</>}</p>
+        <p>{isJa ? <><code>defineDecksConfig()</code>を使うと、HonoのBindingsとVariablesを含めて型を確認できます。<code>dev</code>を省略すると、ViteとWranglerが設定する<code>NODE_ENV</code>から判定します。標準設定では、<code>vite</code>と<code>wrangler dev</code>は開発モード、プロダクションビルドと<code>wrangler deploy</code>は本番モードになります。明示したbooleanまたは関数は自動判定より優先され、判定できない環境では本番モードになります。</> : <>Use <code>defineDecksConfig()</code> to preserve Hono Bindings and Variables types. When <code>dev</code> is omitted, hono-decks reads the <code>NODE_ENV</code> set by Vite and Wrangler. With their standard settings, <code>vite</code> and <code>wrangler dev</code> enable development mode, while production builds and <code>wrangler deploy</code> use production mode. An explicit boolean or resolver overrides detection, and unknown environments fail closed to production mode.</>}</p>
         <CodeBlock code={configCode} locale={locale} />
         <p>{isJa ? <><code>c.get("language")</code>を使う例では、Honoの<code>languageDetector()</code>を先に登録します。手順は<a class="text-link" href={localizedHref("/docs/security#language", locale)}>セキュリティ</a>で確認できます。多言語対応が不要なら<code>lang: "ja"</code>のように固定値を指定します。</> : <>The <code>c.get("language")</code> example assumes Hono's <code>languageDetector()</code> is registered first; see <a class="text-link" href={localizedHref("/docs/security#language", locale)}>publish safely</a>. For a single-language app, use a fixed value such as <code>lang: "en"</code>.</>}</p>
       </section>

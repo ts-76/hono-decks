@@ -13,7 +13,6 @@ export interface DecksConfigBindings {
   DECK_EMBED_ALLOWED_ORIGINS?: string;
   DECK_EXPORT_TOKEN?: string;
   DECK_PRESENTER_ENABLED?: boolean | string;
-  DECK_RUNTIME_DEV?: boolean | string;
 }
 
 export interface DecksConfigEnv {
@@ -51,7 +50,6 @@ export default defineDecksConfig<DecksConfigEnv>({
     };
   },
   router: {
-    dev: ({ c }) => truthyBinding(c.env?.DECK_RUNTIME_DEV),
     presenter: {
       enabled: ({ c, dev }) => dev || truthyBinding(c.env?.DECK_PRESENTER_ENABLED),
       viewerControl: {

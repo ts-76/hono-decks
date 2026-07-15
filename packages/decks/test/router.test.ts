@@ -513,6 +513,46 @@ describe("decksRouter", () => {
     expect(presenter.status).toBe(200);
   });
 
+  it("infers dev mode from Vite and Wrangler NODE_ENV defaults", async () => {
+    const originalNodeEnv = process.env.NODE_ENV;
+    const draftDeck = {
+      ...deck,
+      meta: { ...deck.meta, draft: true },
+    } satisfies CompiledDeck;
+    const source = manifestDeckSource({ decks: [draftDeck] });
+
+    try {
+      process.env.NODE_ENV = "development";
+
+      const automatic = new Hono();
+      automatic.route("/slides", decksRouter({ source }));
+      expect((await automatic.request("/slides/deck1")).status).toBe(200);
+
+      const disabled = new Hono();
+      disabled.route("/slides", decksRouter({ source, dev: false }));
+      expect((await disabled.request("/slides/deck1")).status).toBe(404);
+
+      const resolved = new Hono();
+      resolved.route("/slides", decksRouter({ source, dev: () => false }));
+      expect((await resolved.request("/slides/deck1")).status).toBe(404);
+
+      process.env.NODE_ENV = "production";
+
+      const production = new Hono();
+      production.route("/slides", decksRouter({ source }));
+      expect((await production.request("/slides/deck1")).status).toBe(404);
+
+      process.env.NODE_ENV = "staging";
+
+      const unknown = new Hono();
+      unknown.route("/slides", decksRouter({ source }));
+      expect((await unknown.request("/slides/deck1")).status).toBe(404);
+    } finally {
+      if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
+      else process.env.NODE_ENV = originalNodeEnv;
+    }
+  });
+
   it("keeps the presenter next preview height when there is no next slide", async () => {
     const app = new Hono();
     app.route("/slides", decksRouter({ source: manifestDeckSource({ decks: [deck] }) }));

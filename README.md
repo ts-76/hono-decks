@@ -132,7 +132,6 @@ import {
 
 interface AppEnv {
   Bindings: {
-    ENVIRONMENT: string;
     BROWSER?: DeckBrowserRunBinding;
     DECK_EXPORT_TOKEN?: string;
   };
@@ -142,7 +141,6 @@ export default defineDecksConfig<AppEnv>({
   mountPath: "/decks",
   build: { root: "decks", outDir: "src/generated" },
   router: {
-    dev: ({ c }) => c.env.ENVIRONMENT !== "production",
     presenter: {
       enabled: ({ dev }) => dev,
       viewerControl: true,
@@ -157,6 +155,8 @@ export default defineDecksConfig<AppEnv>({
   },
 });
 ```
+
+`dev`を省略すると、ViteとWranglerが設定する`NODE_ENV`から判定します。標準設定では、`vite`と`wrangler dev`は開発モード、プロダクションビルドと`wrangler deploy`は本番モードになります。`dev: false`やresolverを指定した場合は明示値が優先され、判定できない環境では本番モードとして扱われます。
 
 `decks.router(overrides)` は config を保ったまま nested options を合成します。機能を明示的に止める場合は `export: false`、`embed: false`、`presenter: false` を指定できます。
 

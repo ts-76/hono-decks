@@ -44,4 +44,7 @@ declare module "node:url" {
 
 declare const process: {
   cwd(): string;
+  env: {
+    NODE_ENV?: string;
+  };
 };

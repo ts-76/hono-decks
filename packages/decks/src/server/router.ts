@@ -107,6 +107,11 @@ export interface DecksRouterExtension<E extends Env = any> {
 
 export interface DecksRouterOptions<E extends Env = any> {
   source: DeckSource<E>;
+  /**
+   * Enables development-only deck behavior. When omitted, Vite and Wrangler
+   * development commands are detected from NODE_ENV. Explicit values and
+   * resolvers always take precedence.
+   */
   dev?: boolean | DeckDevResolver<E>;
   extensions?: DecksRouterExtension<E>[];
   liveReloadPath?(slug: string, mountPath: string): string | undefined;
@@ -485,7 +490,16 @@ async function isDevEnabled<E extends Env>(
   options: Pick<DecksRouterOptions<E>, "dev">,
 ): Promise<boolean> {
   if (typeof options.dev === "function") return Boolean(await options.dev({ c }));
-  return options.dev === true;
+  if (typeof options.dev === "boolean") return options.dev;
+  return inferToolchainDevMode();
+}
+
+function inferToolchainDevMode(): boolean {
+  try {
+    return process.env.NODE_ENV === "development";
+  } catch {
+    return false;
+  }
 }
 
 async function resolveViewerControls<E extends Env>(

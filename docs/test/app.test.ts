@@ -85,6 +85,9 @@ describe("HonoX documentation site", () => {
     expect(ja).toContain("/:slug/export.pdf");
     expect(ja).toContain("authorizeは省略しない");
     expect(ja).toContain("defineDecksConfig");
+    expect(ja).toContain("wrangler dev");
+    expect(ja).toContain("明示したbooleanまたは関数は自動判定より優先");
+    expect(ja).toContain("判定できない環境では本番モード");
     expect(ja).toContain("decks.router(overrides)");
     expect(ja).toContain('href="/api?lang=ja#define-decks-config"');
     expect(en).toContain("Understand the shared config");
@@ -92,6 +95,8 @@ describe("HonoX documentation site", () => {
     expect(en).toContain("Use a remote binding during local development");
     expect(en).toContain("Do not omit authorize");
     expect(en).toContain("Generated defaults, app config");
+    expect(en).toContain("An explicit boolean or resolver overrides detection");
+    expect(en).toContain("unknown environments fail closed to production mode");
   });
 
   it("uses concise Japanese instead of internal architecture jargon", async () => {

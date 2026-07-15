@@ -126,7 +126,6 @@ pluginはVite起動前にcompileし、deck rootと`hono-decks.config.ts`をVite 
 ```ts
 interface AppEnv {
   Bindings: {
-    ENVIRONMENT: string;
     BROWSER?: DeckBrowserRunBinding;
     DECK_EXPORT_TOKEN?: string;
   };
@@ -136,7 +135,6 @@ export default defineDecksConfig<AppEnv>({
   mountPath: "/decks",
   build: { root: "decks", outDir: "src/generated" },
   router: {
-    dev: ({ c }) => c.env.ENVIRONMENT !== "production",
     presenter: {
       enabled: ({ dev }) => dev,
       viewerControl: true,
@@ -151,6 +149,8 @@ export default defineDecksConfig<AppEnv>({
   },
 });
 ```
+
+`dev`を省略すると、ViteとWranglerが設定する`NODE_ENV`から判定します。標準設定では、`vite`と`wrangler dev`は開発モード、プロダクションビルドと`wrangler deploy`は本番モードになります。`dev: false`やresolverを指定した場合は明示値が優先され、判定できない環境では本番モードとして扱われます。
 
 呼び出し元で一部だけ変える場合は `decks.router({ viewer: ... })` を使います。viewer controls、document surfaces、presenter、embed、export などの nested option は config を失わずに合成されます。機能を止めるときは `presenter: false`、`embed: false`、`export: false` のように明示できます。
 
