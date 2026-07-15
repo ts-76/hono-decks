@@ -22,6 +22,7 @@ export function renderViewerScript(nonce?: string): string {
     let pointerStartX = null;
     let pointerStartY = null;
     let suppressNavigationClick = false;
+    let suppressNavigationClickTimer = null;
 
     if (position && viewport) viewport.append(position);
 
@@ -31,12 +32,24 @@ export function renderViewerScript(nonce?: string): string {
 
     function navigationClick(event) {
       if (suppressNavigationClick) {
-        suppressNavigationClick = false;
+        clearNavigationClickSuppression();
         event.preventDefault();
         return;
       }
       const action = event.currentTarget?.getAttribute("data-viewer-navigation");
       if (action === "previous" || action === "next") sendCommand(action);
+    }
+
+    function clearNavigationClickSuppression() {
+      suppressNavigationClick = false;
+      if (suppressNavigationClickTimer !== null) window.clearTimeout(suppressNavigationClickTimer);
+      suppressNavigationClickTimer = null;
+    }
+
+    function suppressCurrentNavigationClick() {
+      clearNavigationClickSuppression();
+      suppressNavigationClick = true;
+      suppressNavigationClickTimer = window.setTimeout(clearNavigationClickSuppression, 0);
     }
 
     function viewerPointerDown(event) {
@@ -51,14 +64,14 @@ export function renderViewerScript(nonce?: string): string {
       pointerStartX = null;
       pointerStartY = null;
       if (Math.abs(deltaX) < 48 || Math.abs(deltaX) < Math.abs(deltaY)) return;
-      suppressNavigationClick = true;
+      suppressCurrentNavigationClick();
       sendCommand(deltaX < 0 ? "next" : "previous");
     }
 
     function viewerPointerCancel() {
       pointerStartX = null;
       pointerStartY = null;
-      suppressNavigationClick = false;
+      clearNavigationClickSuppression();
     }
 
     function isPortraitMobile() {

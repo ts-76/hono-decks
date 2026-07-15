@@ -96,7 +96,9 @@ describe("decksRouter", () => {
     expect(html).toContain("pointerup");
     expect(html).toContain("pointercancel");
     expect(html).toContain("touch-action:pan-y");
-    expect(html).toContain("suppressNavigationClick = true");
+    expect(html).toContain("suppressCurrentNavigationClick()");
+    expect(html).toContain("window.setTimeout(clearNavigationClickSuppression, 0)");
+    expect(html).toContain("clearNavigationClickSuppression()");
     expect(html).toContain('orientation.lock("landscape")');
     expect(html).toContain("unlockViewerOrientation()");
     expect(html).toContain('document.addEventListener("fullscreenchange"');

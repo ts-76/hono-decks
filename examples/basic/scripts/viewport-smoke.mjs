@@ -145,6 +145,18 @@ async function verifyMotionFireSteps(label) {
   );
   assertSlideOnlyPosition(initial.position, `${label} motion initial position`);
 
+  const bounds = await evalJson(boundsScript());
+  await evalJson(dispatchSwipeScript(bounds));
+  await waitForMotionState(
+    (state) => state.position === "1 / 3" && state.stepIndex === "1" && state.visibleFires === 1,
+    `${label} motion swipe fire reveal`,
+  );
+  await evalJson(clickNavigationLayerScript("previous"));
+  await waitForMotionState(
+    (state) => state.position === "1 / 3" && state.stepIndex === "0" && state.hiddenFires === 1,
+    `${label} motion click after swipe`,
+  );
+
   await evalJson(installMotionTransitionProbeScript());
   await evalJson(clickNavigationLayerScript("next"));
   const firstReveal = await waitForMotionState(
