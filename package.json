@@ -31,6 +31,6 @@
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "vitest": "^4.0.14",
-    "wrangler": "^4.50.0"
+    "wrangler": "^4.110.0"
   }
 }

@@ -145,19 +145,38 @@ async function verifyMotionFireSteps(label) {
   );
   assertSlideOnlyPosition(initial.position, `${label} motion initial position`);
 
-  await evalJson(clickNextControlScript());
+  await evalJson(installMotionTransitionProbeScript());
+  await evalJson(clickNavigationLayerScript("next"));
   const firstReveal = await waitForMotionState(
     (state) =>
       state.position === "1 / 3" &&
       state.stepIndex === "1" &&
       state.stepCount === "1" &&
       state.visibleFires === 1 &&
-      state.activeTransitions === 0,
+      state.activeTransitions === 0 &&
+      state.visibleOpacityTransitionStarts >= 1,
     `${label} motion first fire reveal`,
   );
   assertSlideOnlyPosition(firstReveal.position, `${label} motion first reveal position`);
 
-  await evalJson(clickNextControlScript());
+  await evalJson(clickNavigationLayerScript("previous"));
+  const firstHide = await waitForMotionState(
+    (state) =>
+      state.position === "1 / 3" &&
+      state.stepIndex === "0" &&
+      state.hiddenFires === 1 &&
+      state.visibleOpacityTransitionStarts >= 2,
+    `${label} motion first fire hide`,
+  );
+  assertSlideOnlyPosition(firstHide.position, `${label} motion first hide position`);
+
+  await evalJson(clickNavigationLayerScript("next"));
+  await waitForMotionState(
+    (state) => state.stepIndex === "1" && state.visibleFires === 1 && state.visibleOpacityTransitionStarts >= 3,
+    `${label} motion repeated fire reveal`,
+  );
+
+  await evalJson(clickNavigationLayerScript("next"));
   const secondSlide = await waitForMotionState(
     (state) =>
       state.position === "2 / 3" &&
@@ -168,7 +187,7 @@ async function verifyMotionFireSteps(label) {
   );
   assertSlideOnlyPosition(secondSlide.position, `${label} motion second slide position`);
 
-  await evalJson(clickNextControlScript());
+  await evalJson(clickNavigationLayerScript("next"));
   const secondReveal = await waitForMotionState(
     (state) =>
       state.position === "2 / 3" &&
@@ -331,8 +350,29 @@ function motionStateScript() {
       stepCount: root?.getAttribute("data-step-count") ?? "",
       activeTransitions: frameDoc?.querySelectorAll("[data-active-transition]").length ?? 0,
       visibleFires: fires.filter((fire) => !fire.hasAttribute("data-fire-hidden")).length,
-      hiddenFires: fires.filter((fire) => fire.hasAttribute("data-fire-hidden")).length
+      hiddenFires: fires.filter((fire) => fire.hasAttribute("data-fire-hidden")).length,
+      visibleOpacityTransitionStarts: Number(root?.getAttribute("data-motion-visible-opacity-transition-starts") ?? 0)
     };
+  })()`;
+}
+
+function installMotionTransitionProbeScript() {
+  return `(() => {
+    const doc = window.top?.document ?? document;
+    const root = doc.querySelector("[data-hono-decks-viewer]");
+    const iframe = doc.querySelector("iframe");
+    const activeSlide = iframe?.contentDocument?.querySelector(".slide:not([hidden])");
+    const fires = Array.from(activeSlide?.querySelectorAll("[data-hono-decks-fire]") ?? []);
+    if (!(root instanceof HTMLElement) || fires.length === 0) throw new Error("missing motion fire probe target");
+    root.setAttribute("data-motion-visible-opacity-transition-starts", "0");
+    fires.forEach((fire) => {
+      fire.addEventListener("transitionstart", (event) => {
+        if (event.propertyName !== "opacity" || getComputedStyle(fire).visibility !== "visible") return;
+        const current = Number(root.getAttribute("data-motion-visible-opacity-transition-starts") ?? 0);
+        root.setAttribute("data-motion-visible-opacity-transition-starts", String(current + 1));
+      });
+    });
+    return { fireCount: fires.length };
   })()`;
 }
 
@@ -362,12 +402,12 @@ function embeddedViewerStateScript() {
   })()`;
 }
 
-function clickNextControlScript() {
+function clickNavigationLayerScript(action) {
   return `(() => {
     const doc = window.top?.document ?? document;
-    const next = doc.querySelector("[data-action='next']");
-    if (!(next instanceof HTMLButtonElement)) throw new Error("missing next control");
-    next.click();
+    const layer = doc.querySelector('[data-viewer-navigation="${action}"]');
+    if (!(layer instanceof HTMLButtonElement)) throw new Error("missing ${action} navigation layer");
+    layer.click();
     return { ok: true };
   })()`;
 }

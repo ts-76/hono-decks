@@ -312,6 +312,8 @@ describe("compiled deck rendering", () => {
 
     expect(html).toContain("[data-hono-decks-fire]");
     expect(html).toContain("data-fire-hidden");
+    expect(html).toContain("transition:visibility 0s linear 0s,opacity var(--fire-duration)");
+    expect(html).toContain("transition-delay:var(--fire-duration),0s,0s,0s");
     expect(html).toContain("let stepIndex = 0");
     expect(html).toContain("let stepCount = 0");
     expect(html).toContain("function fireSchedule(slide)");
