@@ -99,6 +99,7 @@ describe("decksRouter", () => {
     expect(html).toContain("suppressCurrentNavigationClick()");
     expect(html).toContain("window.setTimeout(clearNavigationClickSuppression, 0)");
     expect(html).toContain("clearNavigationClickSuppression()");
+    expect(html).toContain("viewport?.focus({ preventScroll: true })");
     expect(html).toContain('orientation.lock("landscape")');
     expect(html).toContain("unlockViewerOrientation()");
     expect(html).toContain('document.addEventListener("fullscreenchange"');

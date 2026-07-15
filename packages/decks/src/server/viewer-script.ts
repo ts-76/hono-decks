@@ -37,7 +37,10 @@ export function renderViewerScript(nonce?: string): string {
         return;
       }
       const action = event.currentTarget?.getAttribute("data-viewer-navigation");
-      if (action === "previous" || action === "next") sendCommand(action);
+      if (action === "previous" || action === "next") {
+        sendCommand(action);
+        viewport?.focus({ preventScroll: true });
+      }
     }
 
     function clearNavigationClickSuppression() {
