@@ -1,0 +1,3 @@
+/dist/
+/public/**/*.png
+/.wrangler-config/

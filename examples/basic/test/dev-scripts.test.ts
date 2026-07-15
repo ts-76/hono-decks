@@ -15,6 +15,7 @@ describe("development scripts", () => {
     expect(packageJson.scripts.dev).toContain("CI=1");
     expect(packageJson.scripts.dev).toContain("XDG_CONFIG_HOME=.wrangler-config");
     expect(packageJson.scripts.dev).toContain("wrangler dev");
+    expect(packageJson.scripts.dev).toContain("--live-reload");
     expect(packageJson.scripts.dev).not.toContain("--alias");
   });
 

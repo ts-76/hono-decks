@@ -9,6 +9,7 @@ describe("honoDecks Vite plugin", () => {
     const cwd = await createFixture();
     const watcher = new FakeWatcher();
     const httpServer = new FakeHttpServer();
+    const ws = new FakeWebSocket();
     const info: string[] = [];
     const errors: string[] = [];
     const plugin = honoDecks();
@@ -30,22 +31,26 @@ describe("honoDecks Vite plugin", () => {
 
       const configureServer = plugin.configureServer;
       expect(typeof configureServer).toBe("function");
-      (configureServer as Function)({ watcher, httpServer });
+      (configureServer as Function)({ watcher, httpServer, ws });
       expect(watcher.added).toContain(join(cwd, "decks"));
       expect(watcher.added).toContain(join(cwd, "hono-decks.config.ts"));
+      expect(ws.fullReloads).toBe(0);
 
       const deckPath = join(cwd, "decks", "intro", "deck.mdx");
       await writeFile(deckPath, "# Updated title\n", "utf8");
       watcher.emit("change", deckPath);
       await waitFor(async () => (await readFile(join(cwd, "src", "generated", "decks", "intro", "slide-0.ts"), "utf8")).includes("Updated title"));
+      await waitFor(() => ws.fullReloads === 1);
 
       await writeFile(deckPath, "<Broken", "utf8");
       watcher.emit("change", deckPath);
       await waitFor(() => errors.length > 0);
+      expect(ws.fullReloads).toBe(1);
 
       await writeFile(deckPath, "# Recovered title\n", "utf8");
       watcher.emit("change", deckPath);
       await waitFor(async () => (await readFile(join(cwd, "src", "generated", "decks", "intro", "slide-0.ts"), "utf8")).includes("Recovered title"));
+      await waitFor(() => ws.fullReloads === 2);
 
       const nextRoot = join(cwd, "presentations");
       await mkdir(join(nextRoot, "next"), { recursive: true });
@@ -62,6 +67,7 @@ describe("honoDecks Vite plugin", () => {
       );
       watcher.emit("change", configPath);
       await waitFor(async () => (await readFile(join(cwd, "src", "generated", "decks", "next", "slide-0.ts"), "utf8")).includes("Configured root"));
+      await waitFor(() => ws.fullReloads === 3);
       expect(watcher.added).toContain(nextRoot);
       expect(watcher.added).not.toContain(join(cwd, "decks"));
 
@@ -99,6 +105,14 @@ class FakeWatcher {
 
   emit(event: string, path: string): void {
     this.listener?.(event, path);
+  }
+}
+
+class FakeWebSocket {
+  fullReloads = 0;
+
+  send(payload: { type: string }): void {
+    if (payload.type === "full-reload") this.fullReloads += 1;
   }
 }
 

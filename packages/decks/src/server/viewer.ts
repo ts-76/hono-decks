@@ -18,11 +18,22 @@ import {
 
 export interface DeckViewerOptions<E extends Env = any> {
   controls?: false | DeckViewerControlsOptions;
+  openGraph?: boolean | DeckViewerOpenGraphOptions;
   style?: string;
   head?: MaybePromise<DeckRenderable> | ((input: DeckViewerRenderInput<E>) => MaybePromise<DeckRenderable>);
   lang?: string | ((input: DeckViewerRenderInput<E>) => MaybePromise<string>);
   nonce?: string | ((input: DeckViewerRenderInput<E>) => MaybePromise<string | undefined>);
   render?(input: DeckViewerRenderInput<E>): MaybePromise<DeckRenderable>;
+}
+
+export interface DeckViewerOpenGraphOptions {
+  /** Public image URL. Defaults to `paths.ogImage` when Open Graph metadata is enabled. */
+  imagePath?: string | ((input: DeckViewerOpenGraphInput) => MaybePromise<string | undefined>);
+}
+
+export interface DeckViewerOpenGraphInput {
+  deck: CompiledDeck;
+  paths: DeckPaths;
 }
 
 export type DeckViewerControlKey =
@@ -179,12 +190,14 @@ export async function createDeckViewerParts(input: {
   mountPath: string;
   viewerStateQuery?: string;
   controls?: false | DeckViewerControlsOptions;
+  openGraph?: boolean | DeckViewerOpenGraphOptions;
   exportPaths?: DeckViewerExportPaths;
 }): Promise<DeckViewerParts> {
   const slug = input.deck.slug;
   const title = input.deck.meta.title ?? slug;
   const basePath = input.mountPath.replace(/\/$/, "");
   const paths = createDeckPaths(basePath, slug);
+  const imagePath = await resolveOpenGraphImagePath(input.openGraph, { deck: input.deck, paths });
   const renderUrl = `${paths.render}${input.viewerStateQuery ?? ""}`;
   const slides = createDeckToc(input.deck);
   const meta: DeckPageMeta = {
@@ -192,6 +205,7 @@ export async function createDeckViewerParts(input: {
     description: input.deck.meta.description,
     paths,
     availableExports: input.exportPaths ?? {},
+    ...(imagePath ? { imagePath } : {}),
   };
   const controlsInput = input.controls === false ? false : input.controls ?? {};
   const controlsContext: DeckViewerControlsContext = { slug, title, mountPath: basePath, meta, slides };
@@ -254,6 +268,7 @@ export async function renderDeckViewerPage<E extends Env = any>(input: {
     mountPath: input.mountPath,
     viewerStateQuery: input.viewerStateQuery,
     controls: input.viewer?.controls,
+    openGraph: input.viewer?.openGraph,
     exportPaths: await resolveAuthorizedExportPaths(input.c, input.deck, input.mountPath, input.exportOptions),
   });
   const renderInput: DeckViewerRenderInput<E> = {
@@ -305,6 +320,7 @@ export async function renderDeckViewerPage<E extends Env = any>(input: {
     { head: viewerHead, lang: viewerLang, nonce: viewerNonce },
   );
   const nonceAttribute = documentNonceAttribute(document.nonce);
+  const socialHead = renderViewerSocialHead(input.c, parts.meta);
 
   return `<!doctype html>
 <html lang="${escapeHtml(document.lang)}">
@@ -312,6 +328,7 @@ export async function renderDeckViewerPage<E extends Env = any>(input: {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>${escapeHtml(parts.title)}</title>
+  ${socialHead}
   <style${nonceAttribute}>${baseViewerStyle()}${input.viewer?.style ?? ""}</style>
   ${document.head}
 </head>
@@ -320,6 +337,36 @@ export async function renderDeckViewerPage<E extends Env = any>(input: {
   ${renderViewerScript(document.nonce)}
 </body>
 </html>`;
+}
+
+async function resolveOpenGraphImagePath(
+  options: boolean | DeckViewerOpenGraphOptions | undefined,
+  input: DeckViewerOpenGraphInput,
+): Promise<string | undefined> {
+  if (!options) return undefined;
+  if (options === true) return input.paths.ogImage;
+  if (typeof options.imagePath === "function") return options.imagePath(input);
+  return options.imagePath ?? input.paths.ogImage;
+}
+
+function renderViewerSocialHead<E extends Env>(c: Context<E>, meta: DeckPageMeta): string {
+  if (!meta.imagePath) return "";
+  const pageUrl = new URL(meta.paths.viewer, c.req.url).href;
+  const imageUrl = new URL(meta.imagePath, c.req.url).href;
+  const description = meta.description
+    ? `\n  <meta name="description" content="${escapeHtml(meta.description)}" />\n  <meta property="og:description" content="${escapeHtml(meta.description)}" />\n  <meta name="twitter:description" content="${escapeHtml(meta.description)}" />`
+    : "";
+
+  return `<meta property="og:type" content="website" />
+  <meta property="og:title" content="${escapeHtml(meta.title)}" />${description}
+  <meta property="og:url" content="${escapeHtml(pageUrl)}" />
+  <meta property="og:image" content="${escapeHtml(imageUrl)}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="${escapeHtml(meta.title)}" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${escapeHtml(meta.title)}" />
+  <meta name="twitter:image" content="${escapeHtml(imageUrl)}" />`;
 }
 
 function createDeckToc(deck: CompiledDeck): DeckTocItem[] {

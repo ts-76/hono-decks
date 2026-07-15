@@ -1,0 +1,19 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "hono-decks-ogp",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "build": {
+    "command": "bun run decks:compile:hook",
+    "watch_dir": ["decks", "scripts", "assets/fonts"]
+  },
+  "assets": {
+    "directory": "./public"
+  },
+  "alias": {
+    "hono-decks": "../../packages/decks/src/mod.ts",
+    "hono-decks/advanced": "../../packages/decks/src/advanced.ts",
+    "hono-decks/client": "../../packages/decks/src/client.ts"
+  }
+}

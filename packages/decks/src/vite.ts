@@ -60,16 +60,20 @@ export function honoDecks(options: HonoDecksViteOptions = {}): Plugin {
       return;
     }
     compiling = true;
+    let latestCompileSucceeded = false;
     try {
       do {
         queued = false;
         try {
           await compileOnce();
+          latestCompileSucceeded = true;
         } catch (error) {
+          latestCompileSucceeded = false;
           if (fatal) throw error;
           resolvedConfig?.logger.error(`[hono-decks] ${error instanceof Error ? error.message : String(error)}`);
         }
       } while (queued);
+      if (latestCompileSucceeded && server) server.ws.send({ type: "full-reload" });
     } finally {
       compiling = false;
     }

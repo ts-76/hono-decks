@@ -211,7 +211,22 @@ function mergeViewerOptions<E extends Env>(
   if (!base) return override;
   if (!override) return base;
   const controls = mergeControls(base.controls, override.controls);
-  return { ...base, ...override, ...(controls === undefined ? {} : { controls }) };
+  const openGraph = mergeOpenGraph(base.openGraph, override.openGraph);
+  return {
+    ...base,
+    ...override,
+    ...(controls === undefined ? {} : { controls }),
+    ...(openGraph === undefined ? {} : { openGraph }),
+  };
+}
+
+function mergeOpenGraph(
+  base: NonNullable<DecksRouterOptions["viewer"]>["openGraph"],
+  override: NonNullable<DecksRouterOptions["viewer"]>["openGraph"],
+): NonNullable<DecksRouterOptions["viewer"]>["openGraph"] {
+  if (override === undefined) return base;
+  if (base === undefined || typeof base === "boolean" || typeof override === "boolean") return override;
+  return { ...base, ...override };
 }
 
 function mergeControls(

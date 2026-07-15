@@ -8,6 +8,7 @@ export interface DeckPaths {
   embed: string;
   exportPdf: string;
   exportPng: string;
+  ogImage: string;
   assets: string;
 }
 
@@ -24,6 +25,7 @@ export function createDeckPaths(mountPath: string, slug: string): DeckPaths {
     embed: `${viewer}/embed`,
     exportPdf: `${viewer}/export.pdf`,
     exportPng: `${viewer}/export.png`,
+    ogImage: `${viewer}/og.png`,
     assets: `${viewer}/assets`,
   };
 }

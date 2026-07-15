@@ -1,0 +1,31 @@
+---
+title: Build-time Open Graph images
+description: Generate share images from deck metadata without launching a browser.
+author: hono-decks
+---
+
+---
+layout: cover
+---
+
+# Build-time Open Graph images
+
+Satori + resvg, isolated to this example.
+
+---
+layout: default
+---
+
+## One source of truth
+
+- Deck title, description, and author come from frontmatter
+- `decks.paths(slug).ogImage` defines the public image URL
+- `viewer.openGraph` emits absolute social metadata
+
+---
+layout: default
+---
+
+## Browserless output
+
+The build writes a deterministic 1200×630 PNG to Workers Static Assets.

@@ -33,6 +33,8 @@ import {
   type DeckPageMeta,
   type DeckTocItem,
   type DeckViewerOptions,
+  type DeckViewerOpenGraphInput,
+  type DeckViewerOpenGraphOptions,
   type DeckViewerPart,
   type DeckViewerParts,
   type DeckViewerRenderControlItem,
@@ -90,6 +92,8 @@ export type {
   DeckPageMeta,
   DeckTocItem,
   DeckViewerOptions,
+  DeckViewerOpenGraphInput,
+  DeckViewerOpenGraphOptions,
   DeckViewerPart,
   DeckViewerParts,
   DeckViewerRenderControlItem,
@@ -206,7 +210,7 @@ export interface DeckContextOptions<E extends Env = any> {
   source: DeckSource<E>;
   dev?: boolean | DeckDevResolver<E>;
   mountPath?: string;
-  viewer?: Pick<DeckViewerOptions<E>, "controls">;
+  viewer?: Pick<DeckViewerOptions<E>, "controls" | "openGraph">;
 }
 
 export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>): Hono<E> {
@@ -465,6 +469,7 @@ export function deckContext<E extends Env = any>(
       deck,
       mountPath,
       controls: options.viewer?.controls,
+      openGraph: options.viewer?.openGraph,
     });
 
     c.set("deck", deck);

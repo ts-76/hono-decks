@@ -558,6 +558,55 @@ describe("decksRouter", () => {
     expect(renderHtml).not.toContain("custom-viewer");
   });
 
+  it("emits absolute Open Graph and Twitter metadata from the canonical image path", async () => {
+    const app = new Hono<{ Variables: DeckContextVariables }>();
+    const describedDeck = {
+      ...deck,
+      meta: { ...deck.meta, description: 'Share <this> & "that"' },
+    };
+    const configured = configureDecks(
+      defineDecks({ manifest: { decks: [describedDeck] } }),
+      defineDecksConfig({ mountPath: "/slides", router: { viewer: { openGraph: {} } } }),
+    );
+    app.get("/slides/:slug/meta", configured.context(), (c) => c.json(c.var.deckMeta));
+    app.route(configured.mountPath, configured.router());
+
+    const response = await app.request("https://slides.example/slides/deck1");
+    const html = await response.text();
+    const meta = await (await app.request("https://slides.example/slides/deck1/meta")).json<{
+      imagePath: string;
+      paths: { ogImage: string };
+    }>();
+
+    expect(html).toContain('<meta property="og:title" content="Deck One" />');
+    expect(html).toContain('<meta property="og:url" content="https://slides.example/slides/deck1" />');
+    expect(html).toContain('<meta property="og:image" content="https://slides.example/slides/deck1/og.png" />');
+    expect(html).toContain('<meta property="og:image:width" content="1200" />');
+    expect(html).toContain('<meta property="og:image:height" content="630" />');
+    expect(html).toContain('<meta name="twitter:card" content="summary_large_image" />');
+    expect(html).toContain('content="Share &lt;this&gt; &amp; &quot;that&quot;"');
+    expect(meta.imagePath).toBe("/slides/deck1/og.png");
+    expect(meta.paths.ogImage).toBe("/slides/deck1/og.png");
+  });
+
+  it("keeps social metadata opt-in and accepts a custom image resolver", async () => {
+    const disabled = new Hono();
+    disabled.route("/slides", decksRouter({ source: manifestDeckSource({ decks: [deck] }) }));
+    expect(await (await disabled.request("https://slides.example/slides/deck1")).text()).not.toContain("og:image");
+
+    const custom = new Hono();
+    custom.route(
+      "/slides",
+      decksRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        viewer: { openGraph: { imagePath: ({ deck: current }) => `/social/${current.slug}.png` } },
+      }),
+    );
+    expect(await (await custom.request("https://slides.example/slides/deck1")).text()).toContain(
+      '<meta property="og:image" content="https://slides.example/social/deck1.png" />',
+    );
+  });
+
   it("returns null controls parts when viewer controls are disabled", async () => {
     const parts = await createDeckViewerParts({
       deck,
@@ -985,6 +1034,7 @@ describe("decksRouter", () => {
       viewer: "/slides/deck%201",
       presentation: "/slides/deck%201/presentation",
       embed: "/slides/deck%201/embed",
+      ogImage: "/slides/deck%201/og.png",
       assets: "/slides/deck%201/assets",
     });
     expect((await app.request("/slides")).status).toBe(404);
@@ -1010,6 +1060,7 @@ describe("decksRouter", () => {
       viewer: {
         lang: "en",
         style: ".base-viewer { color: red; }",
+        openGraph: { imagePath: "/base-social.png" },
         controls: {
           className: "base-controls",
           hidden: ["fullscreen"],
@@ -1034,6 +1085,7 @@ describe("decksRouter", () => {
       "/decks",
       decks.router({
         viewer: {
+          openGraph: {},
           controls: {
             itemClassName: "override-item",
             hidden: ["print"],
@@ -1054,6 +1106,7 @@ describe("decksRouter", () => {
     const html = await (await app.request("/decks/deck1")).text();
     const renderHtml = await (await app.request("/decks/deck1/render")).text();
     expect(html).toContain('<html lang="en">');
+    expect(html).toContain('<meta property="og:image" content="http://localhost/base-social.png" />');
     expect(html).toContain(".base-viewer { color: red; }");
     expect(html).toContain("base-controls");
     expect(html).toContain("override-item");

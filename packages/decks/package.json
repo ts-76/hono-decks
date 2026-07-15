@@ -1,6 +1,6 @@
 {
   "name": "hono-decks",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Slide decks for Hono and Cloudflare Workers",
   "license": "MIT",
   "repository": {

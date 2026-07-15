@@ -5,9 +5,13 @@ import app from "../src/index";
 describe("minimal example", () => {
   it("imports the generated router from the runtime entry", async () => {
     const generated = await readFile(new URL("../src/generated/decks.ts", import.meta.url), "utf8");
+    const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8")) as {
+      scripts: Record<string, string>;
+    };
 
     expect(generated).toContain('from "hono-decks"');
     expect(generated).not.toContain("hono-decks/runtime");
+    expect(packageJson.scripts.dev).toBe("wrangler dev --live-reload");
   });
 
   it("redirects the home page to the only deck", async () => {

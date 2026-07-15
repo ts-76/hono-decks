@@ -82,6 +82,12 @@ const wranglerDecksCode = `{
   }
 }`;
 
+const wranglerDevCode = `{
+  "scripts": {
+    "dev": "wrangler dev --live-reload"
+  }
+}`;
+
 const configCode = `// hono-decks.config.ts
 import { defineDecksConfig } from "hono-decks"
 
@@ -228,11 +234,12 @@ const gettingStarted = (locale: Locale): Guide => locale === "ja" ? {
     </section>
     <section id="scripts">
       <h2>既存のdevコマンドへコンパイルを統合する</h2>
-      <p>HonoXやViteではpluginを同じVite configへ追加します。Vite起動前の初回compileと、MDX変更時の再生成が自動で行われます。</p>
+      <p>HonoXやViteではpluginを同じVite configへ追加します。Vite起動前の初回compileと、MDX変更時の再生成、成功後のブラウザ更新が自動で行われます。</p>
       <CodeBlock label="vite.config.ts" code={viteDecksCode} locale={locale} />
       <CodeBlock label="package.json" code={buildScriptsCode} locale={locale} />
-      <p>Wranglerを直接使うCloudflare Workerでは、<code>wrangler.jsonc</code>のcustom buildへ登録します。通常の<code>wrangler dev</code>がdeck rootも監視します。</p>
+      <p>Wranglerを直接使うCloudflare Workerでは、<code>wrangler.jsonc</code>のcustom buildへ登録します。<code>--live-reload</code>により、通常のdevコマンドだけでdeck rootの監視とブラウザ更新まで行います。</p>
       <CodeBlock label="wrangler.jsonc" code={wranglerDecksCode} locale={locale} />
+      <CodeBlock label="package.json" code={wranglerDevCode} locale={locale} />
     </section>
     <section id="verify">
       <h2>ブラウザで表示を確認する</h2>
@@ -272,7 +279,7 @@ const gettingStarted = (locale: Locale): Guide => locale === "ja" ? {
     <section id="install"><h2>Install the package and create the config</h2><p><code>init</code> creates the shared <code>hono-decks.config.ts</code> and the app-owned <code>src/decks.ts</code> facade. It refuses to overwrite existing files.</p><CodeBlock label="Terminal" code={installCode} locale={locale} /></section>
     <section id="deck"><h2>Create and compile the first deck</h2><p>Create <code>decks/welcome/deck.mdx</code>. The first frontmatter block describes the whole deck; the next <code>---</code> starts slide one.</p><CodeBlock label="decks/welcome/deck.mdx" code={firstDeckCode} locale={locale} /><p>Compile the MDX into Hono JSX modules. A successful run creates <code>src/generated/</code>.</p><CodeBlock label="Terminal" code={compileCode} locale={locale} /><CodeBlock label="Generated files" code={expectedFiles(locale)} locale={locale} /><p>Edit <code>src/decks.ts</code> and <code>deck.mdx</code> as needed. Never edit <code>src/generated/</code>; each compile replaces it.</p></section>
     <section id="mount"><h2>Mount the router</h2><p>Add the configured router to the existing Hono app.</p><CodeBlock code={mountCode} locale={locale} /><p><code>decks.mountPath</code> comes from the shared config, so compile-time assets and runtime routes stay aligned.</p></section>
-    <section id="scripts"><h2>Integrate compilation with the existing dev command</h2><p>For HonoX or Vite, add the plugin to the existing Vite config. It compiles before Vite starts and regenerates modules when MDX changes.</p><CodeBlock label="vite.config.ts" code={viteDecksCode} locale={locale} /><CodeBlock label="package.json" code={buildScriptsCode} locale={locale} /><p>For a Cloudflare Worker that runs Wrangler directly, register the compiler as a custom build. The ordinary <code>wrangler dev</code> command then watches the deck root.</p><CodeBlock label="wrangler.jsonc" code={wranglerDecksCode} locale={locale} /></section>
+    <section id="scripts"><h2>Integrate compilation with the existing dev command</h2><p>For HonoX or Vite, add the plugin to the existing Vite config. It compiles before Vite starts, regenerates modules when MDX changes, and reloads the browser after a successful compile.</p><CodeBlock label="vite.config.ts" code={viteDecksCode} locale={locale} /><CodeBlock label="package.json" code={buildScriptsCode} locale={locale} /><p>For a Cloudflare Worker that runs Wrangler directly, register the compiler as a custom build. The <code>--live-reload</code> flag lets the ordinary dev command watch the deck root and refresh the browser.</p><CodeBlock label="wrangler.jsonc" code={wranglerDecksCode} locale={locale} /><CodeBlock label="package.json" code={wranglerDevCode} locale={locale} /></section>
     <section id="verify"><h2>Verify it in the browser</h2><CodeBlock label="Terminal" code="bun run dev" locale={locale} /><p>Open <code>/decks/welcome</code> on the local URL printed by the dev server. The setup works when the Welcome slide appears and the controls or arrow keys move to slide two.</p><Callout title="Expected URL"><p><code>http://localhost:3000/decks/welcome</code>. If your dev server selects another port, use the printed URL.</p></Callout></section>
     <section id="troubleshooting"><h2>Troubleshooting</h2><dl class="troubleshooting-list"><div><dt>Missing <code>src/generated/decks.ts</code></dt><dd>Run <code>bunx hono-decks compile</code> again and check <code>build.root</code> and <code>build.outDir</code> in the config.</dd></div><div><dt><code>/decks</code> returns 404</dt><dd>Mount <code>decks.router()</code> at <code>decks.mountPath</code>.</dd></div><div><dt>Node modules enter the Worker bundle</dt><dd>Import runtime APIs from <code>hono-decks</code>. Keep <code>hono-decks/node</code> in build scripts only.</dd></div></dl></section>
     <section id="next"><h2>Choose the next step</h2><p>Continue with <a class="text-link" href={localizedHref("/docs/authoring", locale)}>authoring slides</a>. Open <a class="text-link" href={localizedHref("/docs/configuration", locale)}>configuration</a> or <a class="text-link" href={localizedHref("/docs/routing", locale)}>routes and UI</a> only when you need environment bindings or different public surfaces.</p><DeployToCloudflare locale={locale} /></section>
@@ -400,6 +407,7 @@ const configuration = (locale: Locale): Guide => {
       ? [
           { id: "files", label: "ファイル構成" },
           { id: "compile", label: "コンパイル設定" },
+          { id: "ogp", label: "OGP画像生成" },
           { id: "runtime", label: "実行時設定" },
           { id: "facade", label: "設定の優先順位" },
           { id: "reference", label: "設定項目" },
@@ -407,6 +415,7 @@ const configuration = (locale: Locale): Guide => {
       : [
           { id: "files", label: "File ownership" },
           { id: "compile", label: "Compile settings" },
+          { id: "ogp", label: "OGP images" },
           { id: "runtime", label: "Runtime settings" },
           { id: "facade", label: "Facade and overrides" },
           { id: "reference", label: "Configuration map" },
@@ -429,6 +438,20 @@ const configuration = (locale: Locale): Guide => {
         <CodeBlock label="vite.config.ts" code={viteDecksCode} locale={locale} />
         <CodeBlock label="package.json" code={buildScriptsCode} locale={locale} />
         <p>{isJa ? <>LinkCard cacheは<code>build.ogpCacheFile</code>へ設定します。<code>--refresh-ogp</code>は保存済みデータを意図的に更新するときだけ使います。</> : <>Set LinkCard cache at <code>build.ogpCacheFile</code>. Use <code>--refresh-ogp</code> only for an intentional refresh.</>}</p>
+      </section>
+      <section id="ogp">
+        <h2>{isJa ? "SatoriでOGP画像をビルド時に保存する" : "Save OGP images at build time with Satori"}</h2>
+        <p>{isJa ? <>Browser Renderingを使わず、<code>compileDecks()</code>が返すデッキ情報からSatoriでSVG、resvgで1200×630 PNGを生成できます。画像生成はNode側のbuild scriptに置き、Worker runtimeやhono-decks本体へ依存を追加しません。</> : <>Generate an SVG with Satori and a 1200×630 PNG with resvg from the manifest returned by <code>compileDecks()</code>, without Browser Rendering. Keep image generation in a Node build script so neither the Worker runtime nor hono-decks core gains these dependencies.</>}</p>
+        <CodeBlock label="hono-decks.config.ts" locale={locale} code={`export default defineDecksConfig({
+  mountPath: "/decks",
+  router: {
+    viewer: { openGraph: true },
+  },
+})`} />
+        <p>{isJa ? <><code>viewer.openGraph</code>を有効にすると、<code>decks.paths(slug).ogImage</code>（既定では<code>/decks/:slug/og.png</code>）から絶対URLのOpen Graph / Twitter Cardタグを生成します。PNGはWrangler Static Assetsへ保存します。</> : <>Enabling <code>viewer.openGraph</code> emits absolute Open Graph and Twitter Card tags from <code>decks.paths(slug).ogImage</code>, which defaults to <code>/decks/:slug/og.png</code>. Save the PNG under Wrangler Static Assets.</>}</p>
+        <Callout title={isJa ? "フォントをビルド入力に含める" : "Keep fonts in the build input"}><p>{isJa ? <>SatoriはTTF / OTF / WOFFを扱えますがWOFF2には対応していません。日本語を描画する場合は日本語glyphを含むfont fileを同梱し、<code>build.watch_dir</code>にも追加します。</> : <>Satori accepts TTF, OTF, and WOFF, but not WOFF2. Bundle a font that covers every rendered language and add its directory to <code>build.watch_dir</code>.</>}</p></Callout>
+        <p><a class="text-link" href="https://github.com/ts-76/hono-slides/tree/main/examples/ogp">{isJa ? "Satori + resvgの完全なレシピを見る" : "Open the complete Satori + resvg recipe"} →</a></p>
+        <p>{isJa ? <><code>build.ogpCacheFile</code>はスライド内のLinkCard用キャッシュであり、このviewer share imageとは別です。</> : <><code>build.ogpCacheFile</code> caches LinkCard metadata inside slides; it is unrelated to this viewer share image.</>}</p>
       </section>
       <section id="runtime">
         <h2>{isJa ? "リクエストごとに変わる値を設定する" : "Configure values that change per request"}</h2>
