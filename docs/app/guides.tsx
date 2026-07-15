@@ -88,6 +88,41 @@ const wranglerDevCode = `{
   }
 }`;
 
+const browserRunWranglerCode = `{
+  "compatibility_date": "2026-07-15",
+  "browser": {
+    "binding": "BROWSER",
+    "remote": true
+  }
+}`;
+
+const browserRunConfigCode = `// hono-decks.config.ts
+import {
+  defineDecksConfig,
+  type DeckBrowserRunBinding,
+} from "hono-decks"
+
+type AppEnv = {
+  Bindings: {
+    BROWSER: DeckBrowserRunBinding
+  }
+  Variables: {
+    deckExportAllowed: boolean
+  }
+}
+
+export default defineDecksConfig<AppEnv>({
+  mountPath: "/decks",
+  router: {
+    export: {
+      browser: ({ c }) => c.env.BROWSER,
+      authorize: ({ c }) => c.get("deckExportAllowed") === true,
+      pdf: true,
+      png: true,
+    },
+  },
+})`;
+
 const configCode = `// hono-decks.config.ts
 import { defineDecksConfig } from "hono-decks"
 
@@ -408,6 +443,7 @@ const configuration = (locale: Locale): Guide => {
           { id: "files", label: "ファイル構成" },
           { id: "compile", label: "コンパイル設定" },
           { id: "ogp", label: "OGP画像生成" },
+          { id: "browser-export", label: "Browser Run出力" },
           { id: "runtime", label: "実行時設定" },
           { id: "facade", label: "設定の優先順位" },
           { id: "reference", label: "設定項目" },
@@ -416,6 +452,7 @@ const configuration = (locale: Locale): Guide => {
           { id: "files", label: "File ownership" },
           { id: "compile", label: "Compile settings" },
           { id: "ogp", label: "OGP images" },
+          { id: "browser-export", label: "Browser Run export" },
           { id: "runtime", label: "Runtime settings" },
           { id: "facade", label: "Facade and overrides" },
           { id: "reference", label: "Configuration map" },
@@ -452,6 +489,23 @@ const configuration = (locale: Locale): Guide => {
         <Callout title={isJa ? "フォントをビルド入力に含める" : "Keep fonts in the build input"}><p>{isJa ? <>SatoriはTTF / OTF / WOFFを扱えますがWOFF2には対応していません。日本語を描画する場合は日本語glyphを含むfont fileを同梱し、<code>build.watch_dir</code>にも追加します。</> : <>Satori accepts TTF, OTF, and WOFF, but not WOFF2. Bundle a font that covers every rendered language and add its directory to <code>build.watch_dir</code>.</>}</p></Callout>
         <p><a class="text-link" href="https://github.com/ts-76/hono-slides/tree/main/examples/ogp">{isJa ? "Satori + resvgの完全なレシピを見る" : "Open the complete Satori + resvg recipe"} →</a></p>
         <p>{isJa ? <><code>build.ogpCacheFile</code>はスライド内のLinkCard用キャッシュであり、このviewer share imageとは別です。</> : <><code>build.ogpCacheFile</code> caches LinkCard metadata inside slides; it is unrelated to this viewer share image.</>}</p>
+      </section>
+      <section id="browser-export">
+        <h2>{isJa ? "Browser RunでPDF / PNGを書き出す" : "Export PDF and PNG with Browser Run"}</h2>
+        <p>{isJa ? <>Cloudflare Browser RunのQuick Actionsをbrowser bindingから呼び、デッキの<code>print</code>画面をPDFまたはPNGとして返せます。<code>hono-decks</code>が<code>quickAction("pdf")</code>または<code>quickAction("screenshot")</code>を呼ぶため、Puppeteer、Playwright、Browser Run用API tokenは不要です。</> : <>Use Cloudflare Browser Run Quick Actions through a browser binding to return the deck's <code>print</code> page as PDF or PNG. <code>hono-decks</code> calls <code>quickAction("pdf")</code> or <code>quickAction("screenshot")</code>, so this flow needs neither Puppeteer, Playwright, nor a Browser Run API token.</>}</p>
+        <CodeBlock label="wrangler.jsonc" code={browserRunWranglerCode} locale={locale} />
+        <Callout title={isJa ? "ローカル開発ではremote bindingを使う" : "Use a remote binding during local development"}><p>{isJa ? <><code>quickAction()</code>には<code>2026-03-24</code>以降のcompatibility dateが必要です。ローカルモードでは未対応のため、bindingへ<code>remote: true</code>を設定するか<code>wrangler dev --remote</code>で起動します。</> : <><code>quickAction()</code> requires a compatibility date of <code>2026-03-24</code> or later. Local mode does not support it yet, so set <code>remote: true</code> on the binding or start with <code>wrangler dev --remote</code>.</>}</p></Callout>
+        <p>{isJa ? <>次の例では、先に登録したsessionまたはCloudflare Access検証middlewareが<code>deckExportAllowed</code>を設定済みとします。</> : <>The next example assumes an earlier session or Cloudflare Access validation middleware has set <code>deckExportAllowed</code>.</>}</p>
+        <CodeBlock label="hono-decks.config.ts" code={browserRunConfigCode} locale={locale} />
+        <RouteTable locale={locale} rows={[
+          ["/:slug/print", isJa ? "全スライドを並べるBrowser Runの入力画面" : "All-slide document used as Browser Run input"],
+          ["/:slug/export.pdf", isJa ? "print画面をPDFとしてダウンロード" : "Download the print document as PDF"],
+          ["/:slug/export.png", isJa ? "print画面全体をPNGとしてダウンロード" : "Download a full-page PNG of the print document"],
+        ]} />
+        <p>{isJa ? <>export requestは<code>authorize</code>を通過した後、公開origin上の<code>print</code> URLをbindingへ渡し、返されたファイルをattachmentとして応答します。viewerのexport controlも、同じ認可を通過したrequestにだけ表示されます。</> : <>After <code>authorize</code> succeeds, the export request sends the public <code>print</code> URL to the binding and returns its file as an attachment. Viewer export controls are shown only on requests that pass the same authorization.</>}</p>
+        <Callout title={isJa ? "authorizeは省略しない" : "Do not omit authorize"}><p>{isJa ? <>bindingの認証と利用者の認可は別です。<code>authorize</code>を省略するとexport routeが公開されるため、既存のsessionやAccess検証へ接続してください。Bearer tokenを使う場合は<code>vars</code>へ直書きせずWrangler secretで管理します。</> : <>Binding authentication and user authorization are separate concerns. Omitting <code>authorize</code> makes the export route public, so connect it to existing session or Access validation. If you use a bearer token, store it as a Wrangler secret rather than a plain <code>vars</code> value.</>}</p></Callout>
+        <p><a class="text-link" href="https://developers.cloudflare.com/browser-run/quick-actions/">{isJa ? "Cloudflare Browser Run Quick Actionsを確認する" : "Read the Cloudflare Browser Run Quick Actions docs"} →</a></p>
+        <p><a class="text-link" href="https://github.com/ts-76/hono-slides/tree/main/examples/basic">{isJa ? "Browser Runを組み込んだexampleを見る" : "Open the example with Browser Run configured"} →</a></p>
       </section>
       <section id="runtime">
         <h2>{isJa ? "リクエストごとに変わる値を設定する" : "Configure values that change per request"}</h2>

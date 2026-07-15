@@ -67,16 +67,26 @@ describe("HonoX documentation site", () => {
     expect(viewer.status).toBe(404);
   });
 
-  it("documents config ownership, compile flags, runtime resolvers, and override precedence in both languages", async () => {
+  it("documents config ownership, build recipes, runtime resolvers, and override precedence in both languages", async () => {
     const ja = await (await app.request("/docs/configuration")).text();
     const en = await (await app.request("/docs/configuration?lang=en")).text();
 
     expect(ja).toContain("hono-decks.config.ts");
     expect(ja).toContain("build.ogpCacheFile");
+    expect(ja).toContain('id="browser-export"');
+    expect(ja).toContain("Browser RunでPDF / PNGを書き出す");
+    expect(ja).toContain("DeckBrowserRunBinding");
+    expect(ja).toContain("deckExportAllowed");
+    expect(ja).toContain("2026-03-24");
+    expect(ja).toContain("/:slug/export.pdf");
+    expect(ja).toContain("authorizeは省略しない");
     expect(ja).toContain("defineDecksConfig");
     expect(ja).toContain("decks.router(overrides)");
     expect(ja).toContain('href="/api?lang=ja#define-decks-config"');
     expect(en).toContain("Understand the shared config");
+    expect(en).toContain("Export PDF and PNG with Browser Run");
+    expect(en).toContain("Use a remote binding during local development");
+    expect(en).toContain("Do not omit authorize");
     expect(en).toContain("Generated defaults, app config");
   });
 
