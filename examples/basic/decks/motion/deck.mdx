@@ -44,14 +44,15 @@ layout: motion
 
 <p>Client components can own small interactive animation state with hono/jsx/dom.</p>
 
-:::fire{each="item"}
+:::fire{each="item" depth="2" every="2"}
 - CSS animation runs before hydration.
+  - Nested items can join the sequence.
 - Client island animation keeps local state.
 :::
 
-<p>Add fire to a component to reveal it in source order.</p>
+<p>Use at for an absolute or relative reveal position.</p>
 
-<MotionMeter fire="scale" label="Animation island" initial={35} />
+<MotionMeter fire="scale" at="+1" label="Animation island" initial={35} />
 
 ---
 title: Queued Transition

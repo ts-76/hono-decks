@@ -99,6 +99,61 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("Second reveal");
   });
 
+  it("renders absolute and relative Fire positions", async () => {
+    const html = await renderCompiledDeckPageAsync({
+      deck: {
+        ...deck,
+        slides: [
+          {
+            ...deck.slides[0],
+            nodes: [
+              {
+                type: "component",
+                name: "Fire",
+                props: { at: 2 },
+                children: [{ type: "text", value: "Absolute reveal" }],
+              },
+              {
+                type: "component",
+                name: "Fire",
+                props: { at: "+2" },
+                children: [{ type: "text", value: "Relative reveal" }],
+              },
+            ],
+          },
+        ],
+      },
+      mountPath: "/slides",
+    });
+
+    expect(html).toContain('data-fire-at="2"');
+    expect(html).toContain('data-fire-at="+2"');
+  });
+
+  it("rejects invalid Fire positions in programmatic slide nodes", async () => {
+    await expect(
+      renderCompiledDeckPageAsync({
+        deck: {
+          ...deck,
+          slides: [
+            {
+              ...deck.slides[0],
+              nodes: [
+                {
+                  type: "component",
+                  name: "Fire",
+                  props: { at: 1.5 },
+                  children: [{ type: "text", value: "Invalid reveal" }],
+                },
+              ],
+            },
+          ],
+        },
+        mountPath: "/slides",
+      }),
+    ).rejects.toThrow('The Fire "at" prop accepts a non-negative integer or a relative string such as "+1".');
+  });
+
   it("rejects Fire ordering in programmatic slide nodes", async () => {
     await expect(
       renderCompiledDeckPageAsync({
@@ -259,7 +314,10 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("data-fire-hidden");
     expect(html).toContain("let stepIndex = 0");
     expect(html).toContain("let stepCount = 0");
-    expect(html).toContain("const visible = fireIndex < stepIndex");
+    expect(html).toContain("function fireSchedule(slide)");
+    expect(html).toContain('fire.getAttribute("data-fire-at")');
+    expect(html).toContain("stepCount: Math.max(0, ...entries.map(({ position }) => position))");
+    expect(html).toContain("const visible = position <= stepIndex");
     expect(html).not.toContain("function fireOrder");
     expect(html).toContain("function readInitialState()");
     expect(html).toContain("function writePaginationState()");

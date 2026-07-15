@@ -59,6 +59,10 @@ function rejectRemovedFireAuthoring(node: MarkdownNode): void {
   if (node.name === "Fire" && node.attributes.some((attribute) => attribute.name === "order")) {
     throw new Error('The Fire "order" prop is not supported. Fires reveal in source order.');
   }
+  if (node.name === "Fire") {
+    const atAttribute = node.attributes.find((attribute) => attribute.name === "at");
+    if (atAttribute) fireAtAttributeValue(atAttribute.value);
+  }
 }
 
 function fireAttributeNode(node: MarkdownNode): MarkdownNode | undefined {
@@ -69,6 +73,9 @@ function fireAttributeNode(node: MarkdownNode): MarkdownNode | undefined {
     (attribute) => attribute.type === "mdxJsxAttribute" && attribute.name === "fire",
   );
   if (!fireAttribute) return undefined;
+  const atAttribute = node.attributes.find(
+    (attribute) => attribute.type === "mdxJsxAttribute" && attribute.name === "at",
+  );
 
   if (node.name === "Fire") {
     throw new Error('The "fire" attribute is not supported on <Fire>. Use the effect prop instead.');
@@ -84,8 +91,24 @@ function fireAttributeNode(node: MarkdownNode): MarkdownNode | undefined {
   }
 
   const effect = typeof fireAttribute.value === "string" ? fireAttribute.value.trim() : "";
-  node.attributes = node.attributes.filter((attribute) => attribute !== fireAttribute);
-  return mdxElement("Fire", effect ? [mdxAttribute("effect", effect)] : [], [node]);
+  const at = atAttribute ? fireAtAttributeValue(atAttribute.value) : undefined;
+  node.attributes = node.attributes.filter((attribute) => attribute !== fireAttribute && attribute !== atAttribute);
+  return mdxElement(
+    "Fire",
+    [
+      ...(effect ? [mdxAttribute("effect", effect)] : []),
+      ...(at ? [mdxAttribute("at", at)] : []),
+    ],
+    [node],
+  );
+}
+
+function fireAtAttributeValue(value: unknown): string {
+  if (typeof value === "string") {
+    const at = value.trim();
+    if (/^(?:\d+|[+-]\d+)$/.test(at)) return at;
+  }
+  throw new Error('The fire "at" attribute accepts a non-negative integer or a relative value such as "+1".');
 }
 
 function zennEmbedNode(
@@ -181,9 +204,14 @@ function fireDirectiveNode(node: MarkdownNode): MarkdownNode | undefined {
   if (attributes.order !== undefined) {
     throw new Error('The fire "order" attribute is not supported. Fires reveal in source order.');
   }
+  if (attributes.each === undefined && (attributes.depth !== undefined || attributes.every !== undefined)) {
+    throw new Error('The fire "depth" and "every" attributes require each="item".');
+  }
   if (attributes.each !== undefined) return fireEachItemNode(node, attributes);
+  const at = attributes.at !== undefined ? fireAtAttributeValue(attributes.at) : undefined;
   const fireAttributes = [
     ...(typeof attributes.effect === "string" ? [mdxAttribute("effect", attributes.effect)] : []),
+    ...(at ? [mdxAttribute("at", at)] : []),
   ];
   return mdxElement("Fire", fireAttributes, node.children ?? []);
 }
@@ -198,19 +226,51 @@ function fireEachItemNode(node: MarkdownNode, attributes: Record<string, string>
     throw new Error('fire each="item" must contain exactly one Markdown list.');
   }
 
+  const depth = positiveFireInteger(attributes.depth, "depth", 1);
+  const every = positiveFireInteger(attributes.every, "every", 1);
+  const at = attributes.at !== undefined ? fireAtAttributeValue(attributes.at) : undefined;
   const effect = attributes.effect ? fireEffectToken(attributes.effect) : undefined;
-  for (const item of list.children ?? []) {
-    if (item.type !== "listItem") continue;
+  const items = fireListItems(list, depth);
+  for (const [itemIndex, item] of items.entries()) {
+    const itemAt = fireListItemAt(at, every, itemIndex);
     item.data = {
       ...item.data,
       hProperties: {
         ...item.data?.hProperties,
         "data-hono-decks-fire": "true",
+        ...(itemAt ? { "data-fire-at": itemAt } : {}),
         ...(effect ? { "data-fire-effect": effect } : {}),
       },
     };
   }
   return list;
+}
+
+function positiveFireInteger(value: string | undefined, name: "depth" | "every", fallback: number): number {
+  if (value === undefined) return fallback;
+  const parsed = Number(value);
+  if (Number.isInteger(parsed) && parsed > 0) return parsed;
+  throw new Error(`The fire "${name}" attribute accepts a positive integer.`);
+}
+
+function fireListItems(list: MarkdownNode, maxDepth: number, depth = 1): MarkdownNode[] {
+  const items: MarkdownNode[] = [];
+  for (const item of list.children ?? []) {
+    if (item.type !== "listItem") continue;
+    items.push(item);
+    if (depth >= maxDepth) continue;
+    for (const child of item.children ?? []) {
+      if (child.type === "list") items.push(...fireListItems(child, maxDepth, depth + 1));
+    }
+  }
+  return items;
+}
+
+function fireListItemAt(at: string | undefined, every: number, itemIndex: number): string | undefined {
+  if (at && /^\d+$/.test(at)) return String(Number(at) + Math.floor(itemIndex / every));
+  if (!at && every === 1) return undefined;
+  if (itemIndex === 0) return at;
+  return itemIndex % every === 0 ? "+1" : "+0";
 }
 
 function fireEffectToken(value: string): string {

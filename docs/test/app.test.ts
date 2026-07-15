@@ -153,7 +153,8 @@ describe("HonoX documentation site", () => {
     expect(ja).toContain('id="syntax"');
     expect(ja).toContain('id="notes"');
     expect(ja).toContain("本文はGFMとMDXで書く");
-    expect(ja).toContain("テーブル、タスクリスト、打ち消し線、自動リンクを標準で使えます");
+    expect(ja).toContain("GFM（テーブル、タスクリスト、打ち消し線、自動リンク）を使えます");
+    expect(ja).not.toContain("追加設定なしで");
     expect(ja).toContain("&lt;Fire&gt;");
     expect(ja).toContain(":::fire");
     expect(ja).toContain('each=&quot;item&quot;');
@@ -165,6 +166,7 @@ describe("HonoX documentation site", () => {
     expect(ja).toContain("https://sli.dev/guide/animations");
     expect(ja).toContain("at");
     expect(ja).toContain("depth");
+    expect(ja).toContain("every");
     expect(ja).not.toContain("--hono-decks-fire-");
     expect(ja).not.toContain("$fire");
     expect(ja).not.toContain("fragments: list");
@@ -174,7 +176,8 @@ describe("HonoX documentation site", () => {
     expect(ja).toContain("通常のコードコメントとして書いたMDXコメントもノートとして扱われます");
     expect(ja).toContain("view-transition");
     expect(en).toContain("Write slide content with GFM and MDX");
-    expect(en).toContain("GFM tables, task lists, strikethrough, and autolinks work by default");
+    expect(en).toContain("Use CommonMark plus GFM tables, task lists, strikethrough, and autolinks");
+    expect(en).not.toContain("without extra configuration");
     expect(en).toContain("Fire content one step at a time");
     expect(en).toContain("only to group multiple JSX elements into one step");
     expect(en).toContain("Any MDX comment is treated as a note");

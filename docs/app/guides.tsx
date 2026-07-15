@@ -212,15 +212,17 @@ const markdownSyntaxCode = [
 
 const fireSyntaxCode = `<Card fire />
 
-<Chart fire="scale" />
+<Chart fire="scale" at="2" />
 
-:::fire
+:::fire{at="+2"}
 Markdown block
 :::
 
-:::fire{each="item"}
-- First list item
-- Second list item
+:::fire{each="item" depth="2" every="2"}
+- Parent one
+  - Child one
+- Parent two
+  - Child two
 :::
 
 <Fire effect="fade-up">
@@ -448,12 +450,11 @@ Node for I/O. Hono for routes.`} />
 
       <section id="syntax">
         <h2>{isJa ? "本文はGFMとMDXで書く" : "Write slide content with GFM and MDX"}</h2>
-        <p>{isJa ? "CommonMarkの基本記法に加え、GFMのテーブル、タスクリスト、打ち消し線、自動リンクを標準で使えます。MDXとしてJSX要素や式も記述できます。" : "CommonMark syntax plus GFM tables, task lists, strikethrough, and autolinks work by default. MDX also accepts JSX elements and expressions."}</p>
+        <p>{isJa ? "CommonMarkとGFM（テーブル、タスクリスト、打ち消し線、自動リンク）を使えます。MDXではJSX要素や式も記述できます。" : "Use CommonMark plus GFM tables, task lists, strikethrough, and autolinks. MDX adds JSX elements and expressions."}</p>
         <CodeBlock label="MDX" locale={locale} code={markdownSyntaxCode} />
         <dl class="configuration-map">
           <div><dt>{isJa ? "コードフェンス" : "Fenced code"}</dt><dd>{isJa ? <>開始行に<code>ts</code>、<code>tsx</code>、<code>css</code>などの言語名を付けると、スライド内でシンタックスハイライトされます。</> : <>Add a language such as <code>ts</code>, <code>tsx</code>, or <code>css</code> after the opening fence to enable syntax highlighting in the slide.</>}</dd></div>
           <div><dt>MDX</dt><dd>{isJa ? <>JSXコンポーネント、props、式を使えます。<code>import</code>と<code>export</code>はファイル先頭にまとめます。</> : <>Use JSX components, props, and expressions. Keep <code>import</code> and <code>export</code> statements at the top of the file.</>}</dd></div>
-          <div><dt>{isJa ? "GFM拡張" : "GFM extensions"}</dt><dd>{isJa ? "テーブル、タスクリスト、打ち消し線、URLの自動リンクは追加設定なしでコンパイルされます。" : "Tables, task lists, strikethrough, and URL autolinks compile without extra configuration."}</dd></div>
         </dl>
       </section>
 
@@ -473,7 +474,7 @@ Node for I/O. Hono for routes.`} />
         <h2>{isJa ? "fireでクリックごとに内容を発火する" : "Fire content one step at a time"}</h2>
         <p>{isJa ? <>コンポーネントに<code>fire</code>を付けると、送り操作ごとに記述順で表示されます。Markdownには<code>:::fire</code>、リストには<code>:::fire&#123;each=&quot;item&quot;&#125;</code>を使います。複数のJSX要素を同時に表示する場合だけ<code>&lt;Fire&gt;</code>で囲みます。<code>fire</code>はコンパイル時に取り除かれ、コンポーネントのpropsには渡りません。</> : <>Add <code>fire</code> to a component to reveal it in source order. Use <code>:::fire</code> for Markdown and <code>:::fire&#123;each=&quot;item&quot;&#125;</code> for list items. Use <code>&lt;Fire&gt;</code> only to group multiple JSX elements into one step. The compiler removes <code>fire</code> before rendering the component.</>}</p>
         <CodeBlock label="MDX" locale={locale} code={fireSyntaxCode} />
-        <p>{isJa ? <><a href="https://sli.dev/guide/animations">Slidevの<code>v-click</code>と<code>v-clicks</code></a>に近い記法ですが、現在は記述順の表示だけに対応しています。<code>at</code>、<code>depth</code>、<code>every</code>は未対応です。</> : <>This covers the source-ordered cases of Slidev's <a href="https://sli.dev/guide/animations"><code>v-click</code> and <code>v-clicks</code></a>. <code>at</code>, <code>depth</code>, and <code>every</code> are not supported.</>}</p>
+        <p>{isJa ? <><a href="https://sli.dev/guide/animations">Slidevの<code>v-click</code>と<code>v-clicks</code></a>と同様に、<code>at=&quot;2&quot;</code>は絶対位置、<code>at=&quot;+2&quot;</code>は相対位置を2段進めます。リストでは<code>depth</code>で対象階層、<code>every</code>で1回に表示する項目数を指定します。どちらも既定値は<code>1</code>です。</> : <>As with Slidev's <a href="https://sli.dev/guide/animations"><code>v-click</code> and <code>v-clicks</code></a>, <code>at=&quot;2&quot;</code> is absolute and <code>at=&quot;+2&quot;</code> advances the relative position by two. For lists, <code>depth</code> selects nested levels and <code>every</code> sets the number of items per step. Both default to <code>1</code>.</>}</p>
         <h3>{isJa ? "effectを指定する" : "Choose an effect"}</h3>
         <p>{isJa ? <>コンポーネントでは<code>fire=&quot;scale&quot;</code>、<code>:::fire</code>では<code>effect=&quot;scale&quot;</code>と書きます。組み込みは<code>none</code>、<code>fade</code>、<code>fade-up</code>、<code>scale</code>です。独自effectは<code>theme.css</code>で定義します。</> : <>Use <code>fire=&quot;scale&quot;</code> on a component and <code>effect=&quot;scale&quot;</code> with <code>:::fire</code>. Built-ins are <code>none</code>, <code>fade</code>, <code>fade-up</code>, and <code>scale</code>. Define custom effects in <code>theme.css</code>.</>}</p>
         <CodeBlock label="MDX" locale={locale} code={customFireUsageCode} />

@@ -834,6 +834,89 @@ title: Deck One
     }
   });
 
+  it("applies depth, every, and at to Markdown list fires", async () => {
+    const cwd = await createFixture();
+
+    try {
+      await writeFile(
+        join(cwd, "decks", "deck1", "deck.mdx"),
+        `---
+title: Deck One
+---
+
+:::fire{each="item" depth="2" every="2" at="2" effect="fade-up"}
+- Parent one
+  - Child one
+  - Child two
+- Parent two
+:::
+`,
+        "utf8",
+      );
+
+      await compileDecks({
+        cwd,
+        root: "decks",
+        out: "src/generated",
+        mountPath: "/slides",
+      });
+
+      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.ts"), "utf8");
+      expect(slideOutput.match(/"data-hono-decks-fire": "true"/g)).toHaveLength(4);
+      expect(slideOutput.match(/"data-fire-at": "2"/g)).toHaveLength(2);
+      expect(slideOutput.match(/"data-fire-at": "3"/g)).toHaveLength(2);
+      expect(slideOutput.match(/"data-fire-effect": "fade-up"/g)).toHaveLength(4);
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects invalid fire schedule attributes", async () => {
+    const cases = [
+      {
+        source: `:::fire{at="next"}\nReveal\n:::`,
+        message: 'The fire "at" attribute accepts a non-negative integer or a relative value such as "+1".',
+      },
+      {
+        source: `:::fire{depth="2"}\nReveal\n:::`,
+        message: 'The fire "depth" and "every" attributes require each="item".',
+      },
+      {
+        source: `:::fire{each="item" depth="0"}\n- Reveal\n:::`,
+        message: 'The fire "depth" attribute accepts a positive integer.',
+      },
+      {
+        source: `:::fire{each="item" every="0"}\n- Reveal\n:::`,
+        message: 'The fire "every" attribute accepts a positive integer.',
+      },
+      {
+        source: `<Fire at={2}>Reveal</Fire>`,
+        message: 'The fire "at" attribute accepts a non-negative integer or a relative value such as "+1".',
+      },
+    ];
+
+    for (const testCase of cases) {
+      const cwd = await createFixture();
+      try {
+        await writeFile(
+          join(cwd, "decks", "deck1", "deck.mdx"),
+          `---\ntitle: Deck One\n---\n\n${testCase.source}\n`,
+          "utf8",
+        );
+        await expect(
+          compileDecks({
+            cwd,
+            root: "decks",
+            out: "src/generated",
+            mountPath: "/slides",
+          }),
+        ).rejects.toThrow(testCase.message);
+      } finally {
+        await rm(cwd, { recursive: true, force: true });
+      }
+    }
+  });
+
   it("rejects the removed $fire shorthand", async () => {
     const cwd = await createFixture();
 
@@ -884,9 +967,9 @@ export function Badge(props: { children?: unknown }) {
 title: Deck One
 ---
 
-<Badge fire>Default reveal</Badge>
+<Badge fire at="2">Default reveal</Badge>
 
-<Badge fire="scale">Scaled reveal</Badge>
+<Badge fire="scale" at="+2">Scaled reveal</Badge>
 `,
         "utf8",
       );
@@ -901,6 +984,8 @@ title: Deck One
       const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.ts"), "utf8");
       expect(slideOutput.match(/_jsx\(Fire/g)).toHaveLength(2);
       expect(slideOutput).toContain('effect: "scale"');
+      expect(slideOutput).toContain('at: "2"');
+      expect(slideOutput).toContain('at: "+2"');
       expect(slideOutput).toContain("Default reveal");
       expect(slideOutput).toContain("Scaled reveal");
       expect(slideOutput).not.toContain("fire: true");

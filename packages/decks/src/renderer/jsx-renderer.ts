@@ -35,9 +35,11 @@ export const builtInSlideComponents = defineSlideComponents({
       throw new Error('The Fire "order" prop is not supported. Fires reveal in source order.');
     }
     const effect = stringProp(props.effect);
+    const at = fireAtProp(props.at);
 
     return jsx("div", {
       "data-hono-decks-fire": true,
+      ...(at ? { "data-fire-at": at } : {}),
       ...(effect ? { "data-fire-effect": safeToken(effect).toLowerCase() } : {}),
       children: props.children,
     });
@@ -304,6 +306,19 @@ function stringProp(value: unknown): string | undefined {
   if (typeof value === "string") return value;
   if (typeof value === "number" || typeof value === "boolean") return String(value);
   return undefined;
+}
+
+function fireAtProp(value: unknown): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value === "number") {
+    if (Number.isInteger(value) && value >= 0) return String(value);
+    throw new Error('The Fire "at" prop accepts a non-negative integer or a relative string such as "+1".');
+  }
+  if (typeof value === "string") {
+    const at = value.trim();
+    if (/^(?:\d+|[+-]\d+)$/.test(at)) return at;
+  }
+  throw new Error('The Fire "at" prop accepts a non-negative integer or a relative string such as "+1".');
 }
 
 function safeToken(value: string): string {

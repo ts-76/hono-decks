@@ -65,8 +65,25 @@ export function renderPresentationScript(nonce?: string): string {
     return Array.from(slide?.querySelectorAll("[data-hono-decks-fire]") ?? []);
   }
 
+  function fireSchedule(slide) {
+    let cursor = 0;
+    const entries = slideFires(slide).map((fire) => {
+      const rawAt = fire.getAttribute("data-fire-at");
+      let position;
+      if (rawAt !== null && /^\d+$/.test(rawAt)) {
+        position = Number(rawAt);
+      } else {
+        const offset = rawAt !== null && /^[+-]\d+$/.test(rawAt) ? Number(rawAt) : 1;
+        cursor += offset;
+        position = cursor;
+      }
+      return { fire, position };
+    });
+    return { entries, stepCount: Math.max(0, ...entries.map(({ position }) => position)) };
+  }
+
   function fireCountForSlide(slideIndex) {
-    return slideFires(slides[slideIndex]).length;
+    return fireSchedule(slides[slideIndex]).stepCount;
   }
 
   function setFiresVisible(fires, visible) {
@@ -77,11 +94,11 @@ export function renderPresentationScript(nonce?: string): string {
   }
 
   function updateFires(nextStepIndex) {
-    const fires = slideFires(slides[index]);
-    stepCount = fires.length;
+    const schedule = fireSchedule(slides[index]);
+    stepCount = schedule.stepCount;
     stepIndex = Math.max(0, Math.min(stepCount, nextStepIndex));
-    fires.forEach((fire, fireIndex) => {
-      const visible = fireIndex < stepIndex;
+    schedule.entries.forEach(({ fire, position }) => {
+      const visible = position <= stepIndex;
       fire.toggleAttribute("data-fire-hidden", !visible);
       fire.setAttribute("aria-hidden", visible ? "false" : "true");
     });
