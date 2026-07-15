@@ -856,9 +856,107 @@ title: Deck One
           out: "src/generated",
           mountPath: "/slides",
         }),
-      ).rejects.toThrow('The "$fire" prop is not supported. Wrap the content with <Fire>...</Fire>.');
+      ).rejects.toThrow(
+        'The "$fire" prop is not supported. Use fire or fire="effect" on a block-level custom component.',
+      );
     } finally {
       await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("compiles fire attributes on block-level custom components", async () => {
+    const cwd = await createFixture();
+
+    try {
+      await mkdir(join(cwd, "decks", "deck1", "components"), { recursive: true });
+      await writeFile(
+        join(cwd, "decks", "deck1", "components", "index.tsx"),
+        `/** @jsxImportSource hono/jsx */
+export function Badge(props: { children?: unknown }) {
+  return <strong class="badge">{props.children}</strong>;
+}
+`,
+        "utf8",
+      );
+      await writeFile(
+        join(cwd, "decks", "deck1", "deck.mdx"),
+        `---
+title: Deck One
+---
+
+<Badge fire>Default reveal</Badge>
+
+<Badge fire="scale">Scaled reveal</Badge>
+`,
+        "utf8",
+      );
+
+      await compileDecks({
+        cwd,
+        root: "decks",
+        out: "src/generated",
+        mountPath: "/slides",
+      });
+
+      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.ts"), "utf8");
+      expect(slideOutput.match(/_jsx\(Fire/g)).toHaveLength(2);
+      expect(slideOutput).toContain('effect: "scale"');
+      expect(slideOutput).toContain("Default reveal");
+      expect(slideOutput).toContain("Scaled reveal");
+      expect(slideOutput).not.toContain("fire: true");
+      expect(slideOutput).not.toContain('fire: "scale"');
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects dynamic and inline fire attributes with actionable errors", async () => {
+    const dynamicCwd = await createFixture();
+    const inlineCwd = await createFixture();
+
+    try {
+      await writeFile(
+        join(dynamicCwd, "decks", "deck1", "deck.mdx"),
+        `---
+title: Deck One
+---
+
+<Hero fire={true} />
+`,
+        "utf8",
+      );
+      await expect(
+        compileDecks({
+          cwd: dynamicCwd,
+          root: "decks",
+          out: "src/generated",
+          mountPath: "/slides",
+        }),
+      ).rejects.toThrow('The "fire" attribute accepts no value or a static effect name such as fire="fade-up".');
+
+      await writeFile(
+        join(inlineCwd, "decks", "deck1", "deck.mdx"),
+        `---
+title: Deck One
+---
+
+Text before <Hero fire /> text after.
+`,
+        "utf8",
+      );
+      await expect(
+        compileDecks({
+          cwd: inlineCwd,
+          root: "decks",
+          out: "src/generated",
+          mountPath: "/slides",
+        }),
+      ).rejects.toThrow(
+        'The "fire" attribute is only supported on block-level custom components. Move the component to its own line.',
+      );
+    } finally {
+      await rm(dynamicCwd, { recursive: true, force: true });
+      await rm(inlineCwd, { recursive: true, force: true });
     }
   });
 
@@ -962,7 +1060,7 @@ Markdown reveal
 
 <Fire effect="blur-in">Direct JSX reveal</Fire>
 
-<Fire effect="fade-up"><Badge>JSX reveal</Badge></Fire>
+<Badge fire="fade-up">JSX reveal</Badge>
 
 The slide stays 16:9.
 `,

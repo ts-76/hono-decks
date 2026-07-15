@@ -23,7 +23,7 @@ function _createMdxContent(props) {
         children: "Client island animation keeps local state."
       }), "\n"]
     }), "\n", _jsx("p", {
-      children: "Use Fire as the explicit JSX equivalent of a click reveal."
+      children: "Add fire to a component to reveal it in source order."
     }), "\n", _jsx(Fire, {
       effect: "scale",
       children: _jsx(MotionMeter, {

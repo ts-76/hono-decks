@@ -157,6 +157,9 @@ describe("HonoX documentation site", () => {
     expect(ja).toContain("&lt;Fire&gt;");
     expect(ja).toContain(":::fire");
     expect(ja).toContain('each=&quot;item&quot;');
+    expect(ja).toContain('fire=&quot;scale&quot;');
+    expect(ja).toContain('effect=&quot;blur-in&quot;');
+    expect(ja).toContain("複数のJSX要素を同時に表示する場合だけ");
     expect(ja).toContain('data-fire-effect=&quot;blur-in&quot;');
     expect(ja).toContain("--fire-filter");
     expect(ja).toContain("https://sli.dev/guide/animations");
@@ -173,6 +176,7 @@ describe("HonoX documentation site", () => {
     expect(en).toContain("Write slide content with GFM and MDX");
     expect(en).toContain("GFM tables, task lists, strikethrough, and autolinks work by default");
     expect(en).toContain("Fire content one step at a time");
+    expect(en).toContain("only to group multiple JSX elements into one step");
     expect(en).toContain("Any MDX comment is treated as a note");
   });
 

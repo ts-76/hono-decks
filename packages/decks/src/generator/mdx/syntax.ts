@@ -39,6 +39,7 @@ function transformDeckSyntaxChildren(
     transformDeckSyntaxChildren(child, input);
     rejectRemovedFireAuthoring(child);
     children.push(
+      fireAttributeNode(child) ??
       zennEmbedNode(child, input) ??
       plainUrlLinkNode(child) ??
       fireDirectiveNode(child) ??
@@ -53,11 +54,38 @@ function rejectRemovedFireAuthoring(node: MarkdownNode): void {
   if (node.type !== "mdxJsxFlowElement" && node.type !== "mdxJsxTextElement") return;
   if (!Array.isArray(node.attributes)) return;
   if (node.attributes.some((attribute) => attribute.name === "$fire")) {
-    throw new Error('The "$fire" prop is not supported. Wrap the content with <Fire>...</Fire>.');
+    throw new Error('The "$fire" prop is not supported. Use fire or fire="effect" on a block-level custom component.');
   }
   if (node.name === "Fire" && node.attributes.some((attribute) => attribute.name === "order")) {
     throw new Error('The Fire "order" prop is not supported. Fires reveal in source order.');
   }
+}
+
+function fireAttributeNode(node: MarkdownNode): MarkdownNode | undefined {
+  if (node.type !== "mdxJsxFlowElement" && node.type !== "mdxJsxTextElement") return undefined;
+  if (!Array.isArray(node.attributes)) return undefined;
+
+  const fireAttribute = node.attributes.find(
+    (attribute) => attribute.type === "mdxJsxAttribute" && attribute.name === "fire",
+  );
+  if (!fireAttribute) return undefined;
+
+  if (node.name === "Fire") {
+    throw new Error('The "fire" attribute is not supported on <Fire>. Use the effect prop instead.');
+  }
+  if (!node.name || !/^[A-Z]/.test(node.name)) {
+    throw new Error('The "fire" attribute is only supported on custom components. Use :::fire for Markdown content.');
+  }
+  if (node.type !== "mdxJsxFlowElement") {
+    throw new Error('The "fire" attribute is only supported on block-level custom components. Move the component to its own line.');
+  }
+  if (fireAttribute.value !== null && fireAttribute.value !== undefined && typeof fireAttribute.value !== "string") {
+    throw new Error('The "fire" attribute accepts no value or a static effect name such as fire="fade-up".');
+  }
+
+  const effect = typeof fireAttribute.value === "string" ? fireAttribute.value.trim() : "";
+  node.attributes = node.attributes.filter((attribute) => attribute !== fireAttribute);
+  return mdxElement("Fire", effect ? [mdxAttribute("effect", effect)] : [], [node]);
 }
 
 function zennEmbedNode(

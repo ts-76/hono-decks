@@ -436,9 +436,10 @@ describe("sample Worker app", () => {
     expect(html).toContain("data-hono-decks-fire");
     expect(html).not.toContain("data-fire-order");
     expect(html).toContain('data-fire-effect="fade-up"');
+    expect(html).toContain('data-fire-effect="scale"');
     expect(html).toContain("The reveal state is owned by the presentation iframe.");
     expect(html).toContain("Markdown fire blocks use Zenn-style directive syntax.");
-    expect(html).toContain("Use Fire as the explicit JSX equivalent of a click reveal.");
+    expect(html).toContain("Add fire to a component to reveal it in source order.");
     expect(html).toContain("CSS animation runs before hydration.");
     expect(html).toContain("Client island animation keeps local state.");
     expect(html).toContain("Queued navigation");

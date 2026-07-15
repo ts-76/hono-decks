@@ -210,12 +210,12 @@ const markdownSyntaxCode = [
   "```",
 ].join("\n");
 
-const fireSyntaxCode = `<Fire effect="fade-up">
-  First reveal
-</Fire>
+const fireSyntaxCode = `<Card fire />
+
+<Chart fire="scale" />
 
 :::fire
-Second reveal
+Markdown block
 :::
 
 :::fire{each="item"}
@@ -223,8 +223,9 @@ Second reveal
 - Second list item
 :::
 
-<Fire effect="blur-in">
-  Custom effect
+<Fire effect="fade-up">
+  <Heading />
+  <Description />
 </Fire>`;
 
 const customFireEffectCode = `[data-fire-effect="blur-in"] {
@@ -233,6 +234,12 @@ const customFireEffectCode = `[data-fire-effect="blur-in"] {
   --fire-duration: .32s;
   --fire-easing: ease-out;
 }`;
+
+const customFireUsageCode = `<Chart fire="blur-in" />
+
+:::fire{effect="blur-in"}
+Markdown block
+:::`;
 
 const speakerNotesCode = `---
 notes: |
@@ -464,11 +471,12 @@ Node for I/O. Hono for routes.`} />
 
       <section id="fire">
         <h2>{isJa ? "fireでクリックごとに内容を発火する" : "Fire content one step at a time"}</h2>
-        <p>{isJa ? <><code>&lt;Fire&gt;</code>がJSXの基本形です。Markdownのまとまりには<code>:::fire</code>、1つのリストを項目ごとに発火する場合は<code>:::fire&#123;each=&quot;item&quot;&#125;</code>を使います。すべて記述順に発火します。</> : <><code>&lt;Fire&gt;</code> is the primary JSX form. Use <code>:::fire</code> for Markdown blocks and <code>:::fire&#123;each=&quot;item&quot;&#125;</code> to reveal the direct items of one list. Every Fire follows source order.</>}</p>
+        <p>{isJa ? <>コンポーネントに<code>fire</code>を付けると、送り操作ごとに記述順で表示されます。Markdownには<code>:::fire</code>、リストには<code>:::fire&#123;each=&quot;item&quot;&#125;</code>を使います。複数のJSX要素を同時に表示する場合だけ<code>&lt;Fire&gt;</code>で囲みます。<code>fire</code>はコンパイル時に取り除かれ、コンポーネントのpropsには渡りません。</> : <>Add <code>fire</code> to a component to reveal it in source order. Use <code>:::fire</code> for Markdown and <code>:::fire&#123;each=&quot;item&quot;&#125;</code> for list items. Use <code>&lt;Fire&gt;</code> only to group multiple JSX elements into one step. The compiler removes <code>fire</code> before rendering the component.</>}</p>
         <CodeBlock label="MDX" locale={locale} code={fireSyntaxCode} />
-        <Callout title={isJa ? "Slidevとの対応範囲" : "How this maps to Slidev"}><p>{isJa ? <>記述順の<code>&lt;Fire&gt;</code>は、位置を指定しないSlidevの<code>&lt;v-click&gt;</code>または<code>v-click</code>に相当します。<code>each=&quot;item&quot;</code>は基本的な<code>&lt;v-clicks&gt;</code>相当です。Slidevの<code>at</code>、<code>depth</code>、<code>every</code>、<code>v-after</code>、<code>hide</code>にはまだ対応していません。詳しくは<a href="https://sli.dev/guide/animations">SlidevのAnimationガイド</a>を参照してください。</> : <>Source-ordered <code>&lt;Fire&gt;</code> maps to Slidev's <code>&lt;v-click&gt;</code> component or <code>v-click</code> directive without a position. <code>each=&quot;item&quot;</code> covers the basic <code>&lt;v-clicks&gt;</code> list case. Slidev's <code>at</code>, <code>depth</code>, <code>every</code>, <code>v-after</code>, and <code>hide</code> are not supported yet. See the <a href="https://sli.dev/guide/animations">Slidev Animation guide</a> for its full model.</>}</p></Callout>
-        <h3>{isJa ? "effectをテーマで追加する" : "Add an effect in the theme"}</h3>
-        <p>{isJa ? <><code>none</code>、<code>fade</code>、<code>fade-up</code>、<code>scale</code>は組み込みです。それ以外の名前も<code>effect</code>へ指定でき、<code>data-fire-effect</code>と<code>--fire-duration</code>、<code>--fire-easing</code>、<code>--fire-opacity</code>、<code>--fire-transform</code>、<code>--fire-filter</code>を使って<code>theme.css</code>で動きを定義できます。</> : <><code>none</code>, <code>fade</code>, <code>fade-up</code>, and <code>scale</code> are built in. Any other <code>effect</code> name is exposed through <code>data-fire-effect</code>. Define it in <code>theme.css</code> with <code>--fire-duration</code>, <code>--fire-easing</code>, <code>--fire-opacity</code>, <code>--fire-transform</code>, and <code>--fire-filter</code>.</>}</p>
+        <p>{isJa ? <><a href="https://sli.dev/guide/animations">Slidevの<code>v-click</code>と<code>v-clicks</code></a>に近い記法ですが、現在は記述順の表示だけに対応しています。<code>at</code>、<code>depth</code>、<code>every</code>は未対応です。</> : <>This covers the source-ordered cases of Slidev's <a href="https://sli.dev/guide/animations"><code>v-click</code> and <code>v-clicks</code></a>. <code>at</code>, <code>depth</code>, and <code>every</code> are not supported.</>}</p>
+        <h3>{isJa ? "effectを指定する" : "Choose an effect"}</h3>
+        <p>{isJa ? <>コンポーネントでは<code>fire=&quot;scale&quot;</code>、<code>:::fire</code>では<code>effect=&quot;scale&quot;</code>と書きます。組み込みは<code>none</code>、<code>fade</code>、<code>fade-up</code>、<code>scale</code>です。独自effectは<code>theme.css</code>で定義します。</> : <>Use <code>fire=&quot;scale&quot;</code> on a component and <code>effect=&quot;scale&quot;</code> with <code>:::fire</code>. Built-ins are <code>none</code>, <code>fade</code>, <code>fade-up</code>, and <code>scale</code>. Define custom effects in <code>theme.css</code>.</>}</p>
+        <CodeBlock label="MDX" locale={locale} code={customFireUsageCode} />
         <CodeBlock label="theme.css" lang="css" locale={locale} code={customFireEffectCode} />
       </section>
 
