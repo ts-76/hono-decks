@@ -1,8 +1,10 @@
 # hono-decks
 
-Hono / Cloudflare Workers で MDX の slide deck を配信するための monorepo です。MDX は CLI で TypeScript module に変換され、Worker は生成済み module だけを読み込みます。
+English | [日本語](https://github.com/ts-76/hono-decks/blob/main/README.ja.md)
 
-## 最短の導入
+This monorepo contains hono-decks, a toolkit for serving MDX slide decks from Hono applications and Cloudflare Workers. The CLI compiles MDX into TypeScript modules, so Workers only load generated modules at runtime.
+
+## Quick start
 
 ```bash
 bun add hono hono-decks
@@ -10,7 +12,7 @@ bunx hono-decks init
 bunx hono-decks compile
 ```
 
-`init` は `hono-decks.config.ts` と `src/decks.ts` を作ります。
+`init` creates `hono-decks.config.ts` and `src/decks.ts`.
 
 ```ts
 // hono-decks.config.ts
@@ -44,13 +46,13 @@ app.route(decks.mountPath, decks.router());
 export default app;
 ```
 
-`decks/welcome/deck.mdx` を追加すると `/decks/welcome` で表示できます。
+Add `decks/welcome/deck.mdx`, then open `/decks/welcome` to view the deck.
 
-## API の考え方
+## API model
 
-`hono-decks.config.ts` は CLI と runtime の single source of truth です。compile 時の asset URL と `app.route()` に別々の mount path を書く必要はありません。
+`hono-decks.config.ts` is the single source of truth for the CLI and runtime. You do not need to specify separate mount paths for compiled asset URLs and `app.route()`.
 
-generated module が返す configured kit には、アプリで必要な操作がまとまっています。
+The generated module returns a configured kit containing the operations your application needs.
 
 ```ts
 decks.mountPath;
@@ -60,7 +62,7 @@ decks.context();
 decks.paths("welcome");
 ```
 
-`decks.paths(slug)` は次を返します。
+`decks.paths(slug)` returns the following route map.
 
 ```ts
 {
@@ -77,7 +79,7 @@ decks.paths("welcome");
 }
 ```
 
-custom viewer や route では文字列を連結せず、この path map または `DeckPageMeta.paths` を使います。
+Use this path map or `DeckPageMeta.paths` in custom viewers and routes instead of concatenating strings.
 
 ```ts
 router: {
@@ -93,7 +95,7 @@ router: {
 
 ## Dev integration
 
-通常の `dev` コマンドへ生成処理を統合します。Cloudflare WorkersではWranglerのcustom buildを使います。
+Integrate generation into the existing `dev` command. For Cloudflare Workers, use Wrangler's custom build configuration.
 
 ```jsonc
 // wrangler.jsonc
@@ -105,7 +107,7 @@ router: {
 }
 ```
 
-これでdeck変更時に自動compileされます。ブラウザも自動更新するため、dev scriptでは`wrangler dev --live-reload`を使います。HonoXやViteを使う場合は同じVite configへpluginを追加します。
+This automatically recompiles decks when they change. Use `wrangler dev --live-reload` in the dev script to refresh the browser as well. For HonoX or Vite applications, add the plugin to the existing Vite config.
 
 ```ts
 import { honoDecks } from "hono-decks/vite";
@@ -116,13 +118,13 @@ export default defineConfig({
 });
 ```
 
-Vite pluginはcompile成功後にfull reloadを通知します。どちらも利用者が実行するコマンドは既存の `bun run dev` だけです。`hono-decks compile --watch` は独自ツールへ組み込む場合の低レベルな選択肢として残しています。
+The Vite plugin triggers a full reload after a successful compile. With either integration, users only need to run the existing `bun run dev` command. `hono-decks compile --watch` remains available as a lower-level option for custom tooling.
 
-config を別名にした場合だけ `hono-decks compile --config path/to/config.ts` を使います。`root`、`outDir`、`mountPath` は config の `build` と top-level に置きます。
+Use `hono-decks compile --config path/to/config.ts` only when the config file has a custom name. Put `root` and `outDir` under `build`, and put `mountPath` at the top level of the config.
 
-## Runtime config
+## Runtime configuration
 
-resolver はすべて object argument を1個受け取ります。
+Every resolver accepts a single object argument.
 
 ```ts
 import {
@@ -156,11 +158,11 @@ export default defineDecksConfig<AppEnv>({
 });
 ```
 
-`dev`を省略すると、ViteとWranglerが設定する`NODE_ENV`から判定します。標準設定では、`vite`と`wrangler dev`は開発モード、プロダクションビルドと`wrangler deploy`は本番モードになります。`dev: false`やresolverを指定した場合は明示値が優先され、判定できない環境では本番モードとして扱われます。
+When `dev` is omitted, hono-decks infers it from the `NODE_ENV` set by Vite or Wrangler. With the standard setup, `vite` and `wrangler dev` run in development mode, while production builds and `wrangler deploy` run in production mode. An explicit value such as `dev: false`, or a resolver, takes precedence. Environments that cannot be identified default to production mode.
 
-`decks.router(overrides)` は config を保ったまま nested options を合成します。機能を明示的に止める場合は `export: false`、`embed: false`、`presenter: false` を指定できます。
+`decks.router(overrides)` merges nested options while preserving the config. Set `export: false`, `embed: false`, or `presenter: false` to disable a feature explicitly.
 
-## Custom route
+## Custom routes
 
 ```ts
 import type { DeckContextVariables } from "hono-decks";
@@ -179,9 +181,9 @@ app.get(
 );
 ```
 
-configured middleware は source、mount path、draft/dev policy を標準 router と共有します。
+The configured middleware shares its source, mount path, and draft/development policy with the standard router.
 
-## Directory deck
+## Directory-based decks
 
 ```text
 decks/product/
@@ -195,14 +197,14 @@ decks/product/
       index.tsx
 ```
 
-- `theme.css`: deck 固有 style
-- `assets/`: compile 時に public path へ書き換える local asset
-- `components/index.tsx`: server component
-- `components/client/index.tsx`: browser で hydrate する island component
+- `theme.css`: deck-specific styles
+- `assets/`: local assets rewritten to public paths during compilation
+- `components/index.tsx`: server components
+- `components/client/index.tsx`: island components hydrated in the browser
 
 ## Embed / export / print
 
-外部 iframe は `router.embed` で明示的に有効化し、`frameAncestors` に埋め込み元 origin を列挙します。
+Enable external iframes explicitly with `router.embed`, and list every allowed embedding origin in `frameAncestors`.
 
 ```ts
 router: {
@@ -213,13 +215,13 @@ router: {
 }
 ```
 
-PDF/PNG は Cloudflare Browser Rendering binding を `browser: ({ c }) => c.env.BROWSER` で返します。export control は `authorize` が通った request にだけ表示されます。
+For PDF and PNG exports, return the Cloudflare Browser Rendering binding from `browser: ({ c }) => c.env.BROWSER`. Export controls appear only for requests accepted by `authorize`.
 
-Viewer 上の `Cmd + P` / `Ctrl + P` は print route へ移動し、すべての slide を印刷対象にします。
+In the viewer, `Cmd + P` or `Ctrl + P` opens the print route and includes every slide in the print job.
 
 ## Build-time OGP images
 
-`router.viewer.openGraph` を有効にすると、viewer は `decks.paths(slug).ogImage` を使って Open Graph / Twitter Card の絶対URLを出力します。画像生成ライブラリは core へ含めていません。
+When `router.viewer.openGraph` is enabled, the viewer uses `decks.paths(slug).ogImage` to emit absolute Open Graph and Twitter Card image URLs. The core package does not include an image-generation library.
 
 ```ts
 router: {
@@ -227,17 +229,17 @@ router: {
 }
 ```
 
-`examples/ogp` は Satori と resvg を example だけの依存として追加し、frontmatter から 1200×630 PNG をビルド時に生成して Workers Static Assets で配信するレシピです。Browser Rendering binding は不要です。`build.ogpCacheFile` はスライド内 LinkCard 用の外部メタデータキャッシュであり、この share image 生成とは別機能です。
+`examples/ogp` provides a recipe that installs Satori and resvg only in the example, generates 1200×630 PNG files from frontmatter at build time, and serves them through Workers Static Assets. It does not require a Browser Rendering binding. `build.ogpCacheFile` is an external metadata cache for LinkCards inside slides and is separate from this share-image generation.
 
 ## Public entries
 
-- `hono-decks`: `defineDecksConfig`、configured kit の型、customization、deck authoring
-- `hono-decks/advanced`: raw router/source/renderer を組み立てる低レベル API
-- `hono-decks/client`: client island hydration
-- `hono-decks/node`: compiler / local filesystem adapter
+- `hono-decks`: `defineDecksConfig`, configured-kit types, customization, and deck authoring
+- `hono-decks/advanced`: low-level APIs for assembling raw routers, sources, and renderers
+- `hono-decks/client`: client-island hydration
+- `hono-decks/node`: compiler and local-filesystem adapters
 - `hono-decks/cli`: programmatic CLI
 
-通常は root entry と generated `createDecks(config)` を使ってください。
+Most applications should use the root entry and the generated `createDecks(config)` function.
 
 ```ts
 import { decksRouter, manifestDeckSource } from "hono-decks/advanced";
@@ -246,27 +248,27 @@ const source = manifestDeckSource(manifest);
 app.route("/internal", decksRouter({ source }));
 ```
 
-advanced entry は独自 source や独自 pipeline を作る場合に限定します。
+Use the advanced entry only when building a custom source or pipeline.
 
 ## Examples
 
-- `examples/minimal`: standalone Worker の最小構成
-- `examples/basic`: R2 assets、Browser Rendering、custom page、client components
-- `examples/honox`: HonoX route への mount
-- `examples/ogp`: Satori による browserless な build-time OGP 生成
-- `docs`: documentation site と embedded demo
+- `examples/minimal`: minimal standalone Worker
+- `examples/basic`: R2 assets, Browser Rendering, custom pages, and client components
+- `examples/honox`: mounting the router in a HonoX route
+- `examples/ogp`: browserless build-time OGP generation with Satori
+- `docs`: documentation site and embedded demo
 
-各 example は同じ `hono-decks.config.ts` contract を使います。`decks:compile`、`typecheck`、`test`、`deploy` の前に generated modules を更新します。
+Every example uses the same `hono-decks.config.ts` contract. The example scripts update generated modules before `decks:compile`, `typecheck`, `test`, and `deploy`.
 
 ## Cloudflare
 
-copy 可能な Worker example は JSONC の Wrangler config、current compatibility date、`nodejs_compat`、`wrangler types` で生成した binding type を基準にします。secret は config の `vars` へ置かず `wrangler secret put` で登録してください。
+Copy-ready Worker examples use JSONC Wrangler configs, a current compatibility date, `nodejs_compat`, and binding types generated by `wrangler types`. Store secrets with `wrangler secret put`, not in the config's `vars` section.
 
 ## Maintainer release flow
 
-`main` へ入った Conventional Commits をもとに、GitHub Actions が `hono-decks` を npm へ公開します。0.x の間は `feat` と破壊的変更を minor release、`fix` と `perf` を patch release として扱います。CI は pull request で `bun run check`、Release workflow は `main` で同じ確認を通した後に semantic-release を実行します。
+GitHub Actions publishes `hono-decks` to npm from Conventional Commits merged into `main`. During the 0.x series, `feat` and breaking changes produce minor releases, while `fix` and `perf` produce patch releases. CI runs `bun run check` for pull requests. On `main`, the release workflow runs the same checks before semantic-release.
 
-初回だけは npm package と release tag の基準がないため、`0.1.0` を手動で登録します。基準 tag がない間、Release workflow は検証だけを行い、公開を安全にスキップします。
+The first `0.1.0` release must be published manually because no npm package or baseline release tag exists yet. Until a baseline tag exists, the release workflow performs validation and safely skips publication.
 
 ```bash
 bun install --frozen-lockfile
@@ -278,10 +280,10 @@ git tag -a v0.1.0 -m "hono-decks v0.1.0"
 git push origin v0.1.0
 ```
 
-`npm publish` には npm account の login と 2FA が必要です。公開後、npm の `hono-decks` package settings で GitHub Actions の Trusted Publisher を次の内容で登録します。
+`npm publish` requires an npm account login and 2FA. After publishing, configure GitHub Actions as a Trusted Publisher in the npm settings for the `hono-decks` package:
 
 - Organization or user: `ts-76`
 - Repository: `hono-decks`
 - Workflow filename: `release.yml`
 
-以後は npm token を GitHub Secrets に置かず、GitHub OIDC と provenance で公開します。tag は必ず実際に `0.1.0` を公開した commit に付けてください。
+Subsequent releases use GitHub OIDC and provenance, so do not store an npm token in GitHub Secrets. Attach the tag to the exact commit used to publish `0.1.0`.
