@@ -18,8 +18,8 @@ export default createRoute((c) => {
           </h1>
           <p class="hero-lede">
             {isJa
-              ? "MDXをHono JSXへコンパイルし、ビューアー、発表画面、発表者画面、印刷画面を既存のHonoアプリへ追加します。"
-              : "Compile MDX to Hono JSX, then add viewer, presentation, presenter, and print routes to an existing Hono application."}
+              ? "MDXをHono JSXへコンパイルし、閲覧・発表・発表者・印刷の各画面を既存のHonoアプリに追加します。"
+              : "Compile MDX to Hono JSX and add viewer, presentation, presenter, and print screens to your existing Hono app."}
           </p>
           <div class="hero-actions">
             <a class="button button-primary" href={localizedHref("/docs/getting-started", locale)}>
@@ -42,7 +42,7 @@ export default createRoute((c) => {
             allow="fullscreen"
           ></iframe>
           <div class="demo-meta">
-            <p>{isJa ? "このページと同じHonoXアプリに、MDXから生成したデッキを組み込んでいます。スライドの左右または矢印キーで操作できます。" : "Compiled from MDX and mounted in this HonoX app. Use the slide halves or arrow keys to navigate."}</p>
+            <p>{isJa ? "MDXから生成したデッキを、このページと同じHonoXアプリに組み込んでいます。スライドの左右をクリックするか、矢印キーで操作できます。" : "This deck is compiled from MDX and mounted in the same HonoX app as this page. Click either half of the slide or use the arrow keys to navigate."}</p>
             <a href="/demo/product/embed" target="_blank" rel="noreferrer">
               {isJa ? "別ページで開く" : "Open full size"} <span aria-hidden="true">↗</span>
             </a>
@@ -52,9 +52,9 @@ export default createRoute((c) => {
 
       <section class="quickstart-section" aria-labelledby="quickstart-title">
         <div>
-          <h2 id="quickstart-title">{isJa ? "コンパイルして、ルーターを登録する" : "Compile the deck and mount its router."}</h2>
+          <h2 id="quickstart-title">{isJa ? "コンパイル後にルーターを登録する" : "Compile, then mount the router"}</h2>
           <p>
-            {isJa ? <>Node.jsを使うのはコンパイル時だけです。生成されたルーターを<code>app.route(decks.mountPath, decks.router())</code>で登録します。ViteまたはWranglerの<code>dev</code>コマンドから変更監視も起動できます。</> : <>Node is used only at compile time. Mount the generated router with <code>app.route(decks.mountPath, decks.router())</code>. The Vite or Wrangler <code>dev</code> command can also watch deck changes.</>}
+            {isJa ? <>Node.jsが必要なのはコンパイル時だけです。生成したルーターは<code>app.route(decks.mountPath, decks.router())</code>で登録します。ViteまたはWranglerの<code>dev</code>コマンドを使えば、デッキの変更も自動で反映されます。</> : <>Node is needed only at compile time. Mount the generated router with <code>app.route(decks.mountPath, decks.router())</code>. With the Vite or Wrangler <code>dev</code> command, deck changes are recompiled automatically.</>}
           </p>
           <a class="text-link" href={localizedHref("/docs/getting-started", locale)}>
             {isJa ? "npm・pnpm・Yarn・Bunの導入手順" : "Setup for npm, pnpm, Yarn, and Bun"} <span aria-hidden="true">↗</span>
@@ -66,7 +66,7 @@ export default createRoute((c) => {
       <section class="surfaces-section" aria-labelledby="surfaces-title">
         <div class="section-intro compact">
           <h2 id="surfaces-title">{isJa ? "作成されるルート" : "Generated routes"}</h2>
-          <p>{isJa ? "標準では外部埋め込みを除く各画面が作成されます。使わないルートは設定で無効にできます。認証はHonoアプリ側で追加します。" : "The standard router creates every surface except external embed. Disable unused routes in configuration and add authentication in the Hono application."}</p>
+          <p>{isJa ? "標準では、外部埋め込みを除くすべての画面が作成されます。使わないルートは設定で無効にし、必要な認証はHonoアプリ側で追加します。" : "By default, the router creates every screen except the external embed. Disable routes you do not use, and add any required authentication in the Hono app."}</p>
         </div>
         <RouteTable
           rows={[

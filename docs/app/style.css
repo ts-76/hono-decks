@@ -8,7 +8,7 @@
   --surface-subtle: oklch(0.965 0.006 264);
   --accent: oklch(0.68 0.19 43);
   --accent-dark: oklch(0.49 0.16 39);
-  --accent-soft: oklch(0.91 0.085 45);
+  --accent-soft: oklch(0.94 0.05 45);
   --dark: oklch(0.16 0.006 264);
   --dark-soft: oklch(0.24 0.01 264);
   --on-dark: oklch(0.97 0 0);
@@ -490,8 +490,8 @@ button {
 
 .quickstart-section {
   display: grid;
-  grid-template-columns: minmax(0, 0.75fr) minmax(420px, 1fr);
-  gap: clamp(54px, 9vw, 120px);
+  grid-template-columns: minmax(0, 0.9fr) minmax(420px, 1fr);
+  gap: clamp(48px, 7vw, 96px);
   align-items: center;
 }
 

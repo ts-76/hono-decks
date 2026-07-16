@@ -49,16 +49,16 @@ describe("HonoX documentation site", () => {
     expect(html).toContain('<html lang="ja">');
     expect(html).toContain("Honoアプリ");
     expect(html).toContain("MDXをHono JSXへコンパイルし");
-    expect(html).toContain("発表者画面、印刷画面を既存のHonoアプリへ追加します");
+    expect(html).toContain("閲覧・発表・発表者・印刷の各画面を既存のHonoアプリに追加します");
     expect(html).toContain('href="/docs/getting-started?lang=ja"');
     expect(html).toContain('src="/demo/product/embed"');
     expect(html).toContain('href="/api?lang=ja"');
     expect(html).toContain("ルートと画面");
     expect(html).toContain("セキュリティ");
-    expect(html).toContain("このページと同じHonoXアプリに、MDXから生成したデッキを組み込んでいます。");
-    expect(html).toContain("コンパイルして、ルーターを登録する");
-    expect(html).toContain("Node.jsを使うのはコンパイル時だけです");
-    expect(html).toContain("標準では外部埋め込みを除く各画面が作成されます");
+    expect(html).toContain("MDXから生成したデッキを、このページと同じHonoXアプリに組み込んでいます。");
+    expect(html).toContain("コンパイル後にルーターを登録する");
+    expect(html).toContain("Node.jsが必要なのはコンパイル時だけです");
+    expect(html).toContain("標準では、外部埋め込みを除くすべての画面が作成されます");
     expect(html).not.toContain("既存のHonoアプリへ追加できます");
   });
 
@@ -77,10 +77,10 @@ describe("HonoX documentation site", () => {
     const noPreference = await app.request("https://docs.example/");
 
     expect(queryHtml).toContain('<html lang="en">');
-    expect(queryHtml).toContain("Check the prerequisites");
+    expect(queryHtml).toContain("Start with a working Hono 4 app");
     expect(queryHtml).toContain('href="/docs/getting-started?lang=ja"');
     expect(query.headers.get("set-cookie")).toContain("language=en");
-    expect(await cookie.text()).toContain("Check the prerequisites");
+    expect(await cookie.text()).toContain("Start with a working Hono 4 app");
     expect(await header.text()).toContain("Get started");
     expect(await fallback.text()).toContain('<html lang="en">');
     expect(await noPreference.text()).toContain('<html lang="en">');
@@ -89,7 +89,7 @@ describe("HonoX documentation site", () => {
   it.each([
     ["/docs/getting-started", "最初のデッキを作ってコンパイルする"],
     ["/docs/authoring", "デッキごとにディレクトリを分ける"],
-    ["/docs/configuration", "設定ファイルごとの役割を確認する"],
+    ["/docs/configuration", "4つのファイルの役割を把握する"],
     ["/docs/recipes", "SatoriでOGP画像をビルド時に保存する"],
     ["/docs/routing", "mountPathをすべてのルートの起点にする"],
     ["/docs/security", "標準で作成されるルートを確認する"],
@@ -132,14 +132,14 @@ describe("HonoX documentation site", () => {
     expect(ja).toContain('href="/docs/recipes?lang=ja"');
     expect(ja).toContain("defineDecksConfig");
     expect(ja).toContain("wrangler dev");
-    expect(ja).toContain("明示したbooleanまたは関数は自動判定より優先");
-    expect(ja).toContain("判定できない環境では本番モード");
+    expect(ja).toContain("boolean値または関数を明示すると自動判定より優先");
+    expect(ja).toContain("環境を判定できない場合は、安全側に倒して本番モード");
     expect(ja).toContain("decks.router(overrides)");
     expect(ja).toContain('href="/api?lang=ja#define-decks-config"');
-    expect(en).toContain("Understand the shared config");
+    expect(en).toContain("Know which file owns each setting");
     expect(en).toContain("Generated defaults, app config");
-    expect(en).toContain("An explicit boolean or resolver overrides detection");
-    expect(en).toContain("unknown environments fail closed to production mode");
+    expect(en).toContain("An explicit boolean or resolver takes precedence");
+    expect(en).toContain("defaults safely to production mode");
     expect(recipesJa).toContain('id="browser-export"');
     expect(recipesJa).toContain("Browser RunでPDF / PNGを書き出す");
     expect(recipesJa).toContain("DeckBrowserRunBinding");
@@ -185,7 +185,7 @@ describe("HonoX documentation site", () => {
     const html = await (await app.request("/docs/getting-started?lang=ja")).text();
 
     expect(html).toContain('id="prerequisites"');
-    expect(html).toContain("インストールから表示確認まで");
+    expect(html).toContain("インストールから最初の表示まで");
     expect(html).toContain('id="install"');
     expect(html).toContain('id="deck"');
     expect(html).toContain("decks/welcome/deck.mdx");
@@ -229,7 +229,7 @@ describe("HonoX documentation site", () => {
     expect(configuration).toContain("ビルド対象、公開パス、実行時の挙動");
     expect(routing).toContain("はビューアー内のiframeが読み込むURL");
     expect(routing).toContain("slide</code>は1から始まるスライド番号");
-    expect(routing).toContain("step=0</code>は段階表示がまだ発火していない状態");
+    expect(routing).toContain("step=0</code>は段階表示がまだ始まっていない状態");
     expect(routing).toContain("標準ビューアーと外部埋め込みの印刷ボタンも表示されません");
     expect(routing).toContain("ブラウザ本来の印刷として動作します");
     expect(security).toContain("languageDetector");
@@ -257,8 +257,8 @@ describe("HonoX documentation site", () => {
     expect(ja).toContain("--fire-filter");
     expect(ja).toContain("https://sli.dev/guide/animations");
     expect(ja).toContain("Slidevの");
-    expect(ja).toContain("一部インスパイアされています");
-    expect(ja).toContain("互換性を保証するものではありません");
+    expect(ja).toContain("一部参考にしています");
+    expect(ja).toContain("互換性は保証しません");
     expect(ja).toContain("at");
     expect(ja).toContain("depth");
     expect(ja).toContain("every");
@@ -268,16 +268,16 @@ describe("HonoX documentation site", () => {
     expect(ja).toContain("@[x]");
     expect(ja).toContain("@[embed]");
     expect(ja).toContain("@[iframe]");
-    expect(ja).toContain("通常のコードコメントとして書いたMDXコメントもノートとして扱われます");
+    expect(ja).toContain("MDXコメントは、コードの補足として書いた場合もノートとして扱われます");
     expect(ja).toContain("view-transition");
     expect(en).toContain("Write slide content with GFM and MDX");
     expect(en).toContain("Use CommonMark plus GFM tables, task lists, strikethrough, and autolinks");
     expect(en).not.toContain("without extra configuration");
-    expect(en).toContain("Fire content one step at a time");
-    expect(en).toContain("partly inspired by Slidev");
-    expect(en).toContain("not guaranteed to be compatible with Slidev");
+    expect(en).toContain("Reveal content one step at a time with fire");
+    expect(en).toContain("draw in part on Slidev");
+    expect(en).toContain("compatibility with Slidev is not guaranteed");
     expect(en).toContain("to group multiple JSX elements into one step");
-    expect(en).toContain("Any MDX comment is treated as a note");
+    expect(en).toContain("Every MDX comment is treated as a note");
   });
 
   it("renders language-aware syntax highlighting while preserving copy controls", async () => {

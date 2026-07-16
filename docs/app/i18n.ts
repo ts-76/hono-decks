@@ -33,7 +33,7 @@ export const messages = {
     route: "ルート / API",
     role: "役割",
     language: "言語",
-    footerLine: "MDXをコンパイルし、Honoのルートとして配信します。",
+    footerLine: "MDXからスライドを生成し、Honoアプリから配信します。",
   },
   en: {
     guides: "Guides",
@@ -53,7 +53,7 @@ export const messages = {
     route: "Route / API",
     role: "Purpose",
     language: "Language",
-    footerLine: "build-time MDX, runtime Hono routes.",
+    footerLine: "Build slides from MDX and serve them from your Hono app.",
   },
 } as const;
 

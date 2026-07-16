@@ -79,9 +79,9 @@ export default createRoute((c) => {
   const description = isJa ? "用途に合うパッケージのエントリーを選び、必要な関数や型を確認できます。" : "Choose the correct package entry first, then find the function or type for the task at hand.";
   return c.render(
     <DocsLayout activePath="/api" title={title} description={description} sections={sectionsByLocale[locale]} locale={locale}>
-      <aside class="version-note"><strong>hono-decks 0.1.0</strong><span>{isJa ? "package.jsonのexportsと実装に基づき、アプリから直接使う主なAPIを掲載しています。" : "This page explains the primary APIs applications choose directly, based on package exports and source."}</span></aside>
+      <aside class="version-note"><strong>hono-decks 0.1.0</strong><span>{isJa ? "package.jsonのexportsと実装に基づき、アプリから直接使う主なAPIを掲載しています。" : "This page covers the main APIs that applications use directly, based on the package exports and source."}</span></aside>
       <section id="start">
-        <h2>{isJa ? "まずcreateDecks(config)から始める" : "Most applications start with generated createDecks(config)"}</h2>
+        <h2>{isJa ? "まずcreateDecks(config)から始める" : "Most applications start with the generated createDecks(config)"}</h2>
         <p>{isJa ? <>導入手順で作る<code>src/decks.ts</code>が、生成物と公開APIの境界になります。デッキを表示するだけなら、このページの低レベルAPIを直接組み合わせる必要はありません。</> : <>The <code>src/decks.ts</code> facade created in the getting-started guide is the boundary between generated modules and public APIs. You do not need to compose low-level APIs just to render a deck.</>}</p>
         <dl class="configuration-map">
           <div><dt><code>hono-decks</code></dt><dd>{isJa ? "HonoアプリとWorkerで使う実行時APIです。通常はこのエントリーを使います。" : "Worker-safe runtime APIs for Hono applications. This is the normal entry."}</dd></div>
@@ -91,7 +91,7 @@ export default createRoute((c) => {
         </dl>
         <p><a class="text-link" href={localizedHref("/docs/getting-started", locale)}>{isJa ? "導入手順から始める" : "Start with the getting-started guide"} →</a></p>
       </section>
-      <ApiSection id="runtime" title={isJa ? "実行時API" : "Runtime entry"} intro={isJa ? "HonoアプリやWorkerではhono-decksから読み込みます。まず生成されたcreateDecks(config)を使い、必要な機能が足りない場合だけ個別のAPIを利用してください。" : "Import these from hono-decks in Hono and Worker code. Read each use case and reach for the direct API only when the generated facade is not enough."}><ApiDefinitionList definitions={runtimeDefinitions} locale={locale} /></ApiSection>
+      <ApiSection id="runtime" title={isJa ? "実行時API" : "Runtime entry"} intro={isJa ? "HonoアプリやWorkerでは、hono-decksから読み込みます。まず生成されたcreateDecks(config)を使い、必要な機能が足りない場合に限って個別のAPIを利用してください。" : "Import these APIs from hono-decks in Hono and Worker code. Start with the generated facade, and use a direct API only when the facade does not cover your use case."}><ApiDefinitionList definitions={runtimeDefinitions} locale={locale} /></ApiSection>
       <ApiSection id="rendering" title={isJa ? "レンダリングと拡張" : "Rendering and extension"} intro={isJa ? "標準UIの一部を使う、独自UIへ差し替える、アセットの取得元を変える場合に使います。" : "Decompose and extend the default UI or replace its asset source."}><ApiDefinitionList definitions={renderingDefinitions} locale={locale} /></ApiSection>
       <ApiSection id="policy-types" title={isJa ? "設定とモデルの型" : "Configuration and model types"} intro={isJa ? "公開画面、HTMLの共通設定、独自のDeckSourceを型付きで定義するときに使います。" : "Types for public surfaces, shared HTML policy, and custom DeckSource implementations."}><ApiDefinitionList definitions={typeDefinitions} locale={locale} /></ApiSection>
       <ApiSection id="build-client" title={isJa ? "Node.jsとクライアント向けエントリー" : "Node and client entries"} intro={isJa ? "ファイル操作とコンパイルはNode.js向けエントリーから、Islandの有効化はクライアント向けエントリーから読み込みます。" : "Filesystem/compiler APIs live in the Node entry; hydration lives in the client entry."}><ApiDefinitionList definitions={nodeDefinitions} locale={locale} /></ApiSection>

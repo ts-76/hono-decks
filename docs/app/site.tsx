@@ -13,7 +13,7 @@ import { localizedHref, t, type Locale } from "./i18n";
 
 const navigationByLocale = {
   ja: [
-    { href: "/docs/getting-started", label: "導入", detail: "インストールから表示確認まで" },
+    { href: "/docs/getting-started", label: "導入", detail: "インストールから最初の表示まで" },
     { href: "/docs/authoring", label: "スライドを書く", detail: "MDX / コンポーネント / 画像 / テーマ" },
     { href: "/docs/configuration", label: "設定", detail: "設定ファイル / 開発 / 上書き" },
     { href: "/docs/recipes", label: "レシピ", detail: "OGP画像 / PDF・PNG出力" },
@@ -22,7 +22,7 @@ const navigationByLocale = {
     { href: "/api", label: "API", detail: "エントリー / 用途 / 型" },
   ],
   en: [
-    { href: "/docs/getting-started", label: "Get started", detail: "render the first deck" },
+    { href: "/docs/getting-started", label: "Get started", detail: "install and render your first deck" },
     { href: "/docs/authoring", label: "Author slides", detail: "MDX / components / assets / theme" },
     { href: "/docs/configuration", label: "Configure", detail: "config file / development / overrides" },
     { href: "/docs/recipes", label: "Recipes", detail: "OGP images / PDF and PNG export" },

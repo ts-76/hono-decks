@@ -320,9 +320,9 @@ const documentPolicyCode = `decks.router({
 
 const gettingStarted = (locale: Locale): Guide => locale === "ja" ? {
   title: "導入",
-  description: "パッケージの追加から、最初のデッキをHonoアプリで表示するところまでを説明します。",
+  description: "パッケージを追加し、最初のデッキをHonoアプリで表示するまでの手順です。",
   sections: [
-    { id: "prerequisites", label: "必要なもの" },
+    { id: "prerequisites", label: "Hono 4のアプリ" },
     { id: "install", label: "インストール" },
     { id: "deck", label: "最初のデッキ" },
     { id: "mount", label: "ルーターの登録" },
@@ -333,13 +333,13 @@ const gettingStarted = (locale: Locale): Guide => locale === "ja" ? {
   ],
   content: <>
     <section id="prerequisites">
-      <h2>必要なもの</h2>
-      <p>npm、pnpm、Yarn、Bunのいずれかが使える環境と、起動できるHono 4のアプリを用意します。この手順では、2枚のスライドを<code>/decks/welcome</code>に表示します。</p>
+      <h2>Hono 4のアプリを用意する</h2>
+      <p>npm、pnpm、Yarn、Bunのいずれかと、起動できるHono 4アプリが必要です。この手順が終わると、2枚のスライドを<code>/decks/welcome</code>で表示できます。</p>
       <Callout title="コンパイルと配信は分かれています"><p>MDXの変換はローカルの開発・ビルド環境で行います。Honoアプリは生成済みモジュールを読み込むため、Cloudflare Workers上でファイルシステムへアクセスする必要はありません。</p></Callout>
     </section>
     <section id="install">
       <h2>パッケージを追加し、設定ファイルを作る</h2>
-      <p>以下ではnpmを使います。<code>init</code>は、CLIと実行時で共有する<code>hono-decks.config.ts</code>と、生成コードをアプリにつなぐ<code>src/decks.ts</code>を作ります。既存ファイルは上書きしません。</p>
+      <p>以下の例ではnpmを使います。<code>init</code>を実行すると、CLIと実行時の共通設定<code>hono-decks.config.ts</code>と、生成コードをアプリにつなぐ<code>src/decks.ts</code>が作られます。既存のファイルは上書きされません。</p>
       <CodeBlock label="Terminal" code={installCode} locale={locale} />
       <PackageManagerTable locale={locale} />
       <p><code>&lt;command&gt;</code>には<code>init</code>や<code>compile</code>を指定します。以降の例も、利用中のパッケージマネージャーに合わせて読み替えてください。</p>
@@ -351,11 +351,11 @@ const gettingStarted = (locale: Locale): Guide => locale === "ja" ? {
       <p>MDXをHono JSXモジュールへ変換します。成功すると<code>src/generated/</code>が作成されます。</p>
       <CodeBlock label="Terminal" code={compileCode} locale={locale} />
       <CodeBlock label="Generated files" code={expectedFiles(locale)} locale={locale} />
-      <p><code>src/decks.ts</code>と<code>deck.mdx</code>は編集できます。<code>src/generated/</code>はコンパイルのたびに更新されるため、直接編集しません。</p>
+      <p><code>src/decks.ts</code>と<code>deck.mdx</code>は編集してかまいません。一方、<code>src/generated/</code>はコンパイルのたびに上書きされるため、直接編集しないでください。</p>
     </section>
     <section id="mount">
-      <h2>ルーターを登録する</h2>
-      <p>既存のHonoアプリへ、生成済みルーターを<code>/decks</code>配下として追加します。</p>
+      <h2>生成したルーターをHonoに登録する</h2>
+      <p>生成したルーターを、既存のHonoアプリの<code>/decks</code>配下に登録します。</p>
       <CodeBlock code={mountCode} locale={locale} />
       <p><code>decks.mountPath</code>は設定ファイルの値から生成されるため、コンパイル時と実行時で公開パスがずれません。</p>
     </section>
@@ -384,7 +384,7 @@ const gettingStarted = (locale: Locale): Guide => locale === "ja" ? {
     </section>
     <section id="next">
       <h2>次に読む</h2>
-      <p>まずは<a class="text-link" href={localizedHref("/docs/authoring", locale)}>スライドの書き方</a>へ進んでください。環境変数や公開画面を変える必要が出たときは、<a class="text-link" href={localizedHref("/docs/configuration", locale)}>設定</a>と<a class="text-link" href={localizedHref("/docs/routing", locale)}>ルートと画面</a>を参照します。</p>
+      <p>次は<a class="text-link" href={localizedHref("/docs/authoring", locale)}>スライドの書き方</a>へ進みます。環境変数を使うときは<a class="text-link" href={localizedHref("/docs/configuration", locale)}>設定</a>、公開する画面を変えるときは<a class="text-link" href={localizedHref("/docs/routing", locale)}>ルートと画面</a>を参照してください。</p>
       <DeployToCloudflare locale={locale} />
     </section>
   </>,
@@ -392,7 +392,7 @@ const gettingStarted = (locale: Locale): Guide => locale === "ja" ? {
   title: "Get started",
   description: "Compile an MDX deck, mount the generated router in an existing Hono application, and verify it in your browser.",
   sections: [
-    { id: "prerequisites", label: "Prerequisites" },
+    { id: "prerequisites", label: "Hono 4 app" },
     { id: "install", label: "Install" },
     { id: "deck", label: "First deck" },
     { id: "mount", label: "Mount the router" },
@@ -402,10 +402,10 @@ const gettingStarted = (locale: Locale): Guide => locale === "ja" ? {
     { id: "next", label: "Next steps" },
   ],
   content: <>
-    <section id="prerequisites"><h2>Check the prerequisites</h2><p>Use npm, pnpm, Yarn, or Bun with a working Hono 4 application. This guide serves a two-slide deck at <code>/decks/welcome</code>.</p><Callout title="Compilation and delivery are separate"><p>Compile MDX in your local development or build environment. The Hono application imports generated modules, so a deployed Worker never needs filesystem access.</p></Callout></section>
+    <section id="prerequisites"><h2>Start with a working Hono 4 app</h2><p>You need npm, pnpm, Yarn, or Bun and a Hono 4 app that already runs. By the end of this guide, it will serve a two-slide deck at <code>/decks/welcome</code>.</p><Callout title="Compilation and delivery are separate"><p>Compile MDX in your local development or build environment. The Hono app imports generated modules, so the deployed Worker does not need filesystem access.</p></Callout></section>
     <section id="install"><h2>Install the package and create the config</h2><p>The example uses npm. <code>init</code> creates the shared <code>hono-decks.config.ts</code> and the app-owned <code>src/decks.ts</code> facade. It refuses to overwrite existing files.</p><CodeBlock label="Terminal" code={installCode} locale={locale} /><PackageManagerTable locale={locale} /><p>Replace <code>&lt;command&gt;</code> with <code>init</code> or <code>compile</code>, and use the same package manager for the remaining examples.</p></section>
     <section id="deck"><h2>Create and compile the first deck</h2><p>Create <code>decks/welcome/deck.mdx</code>. The first frontmatter block describes the whole deck; the next <code>---</code> starts slide one.</p><CodeBlock label="decks/welcome/deck.mdx" code={firstDeckCode} locale={locale} /><p>Compile the MDX into Hono JSX modules. A successful run creates <code>src/generated/</code>.</p><CodeBlock label="Terminal" code={compileCode} locale={locale} /><CodeBlock label="Generated files" code={expectedFiles(locale)} locale={locale} /><p>Edit <code>src/decks.ts</code> and <code>deck.mdx</code> as needed. Never edit <code>src/generated/</code>; each compile replaces it.</p></section>
-    <section id="mount"><h2>Mount the router</h2><p>Add the configured router to the existing Hono app.</p><CodeBlock code={mountCode} locale={locale} /><p><code>decks.mountPath</code> comes from the shared config, so compile-time assets and runtime routes stay aligned.</p></section>
+    <section id="mount"><h2>Mount the generated router in Hono</h2><p>Add the generated router to the existing Hono app.</p><CodeBlock code={mountCode} locale={locale} /><p><code>decks.mountPath</code> comes from the shared config, keeping compile-time assets and runtime routes on the same public path.</p></section>
     <section id="scripts"><h2>Integrate compilation with the existing dev command</h2><p>For HonoX or Vite, add the plugin to the existing Vite config. It compiles before Vite starts, regenerates modules when MDX changes, and reloads the browser after a successful compile.</p><CodeBlock label="vite.config.ts" code={viteDecksCode} locale={locale} /><CodeBlock label="package.json" code={buildScriptsCode} locale={locale} /><p>For a Cloudflare Worker that runs Wrangler directly, register the compiler as a custom build. The <code>--live-reload</code> flag lets the ordinary dev command watch the deck root and refresh the browser.</p><CodeBlock label="wrangler.jsonc" code={wranglerDecksCode} locale={locale} /><CodeBlock label="package.json" code={wranglerDevCode} locale={locale} /></section>
     <section id="verify"><h2>Verify it in the browser</h2><CodeBlock label="Terminal" code="npm run dev" locale={locale} /><p>Open <code>/decks/welcome</code> on the local URL printed by the dev server. The setup works when the Welcome slide appears and the controls or arrow keys move to slide two.</p><Callout title="Expected URL"><p><code>http://localhost:3000/decks/welcome</code>. If your dev server selects another port, use the printed URL.</p></Callout></section>
     <section id="troubleshooting"><h2>Troubleshooting</h2><dl class="troubleshooting-list"><div><dt>Missing <code>src/generated/decks.ts</code></dt><dd>Run <code>npx hono-decks compile</code> again and check <code>build.root</code> and <code>build.outDir</code> in the config.</dd></div><div><dt><code>/decks</code> returns 404</dt><dd>Mount <code>decks.router()</code> at <code>decks.mountPath</code>.</dd></div><div><dt>Node modules enter the Worker bundle</dt><dd>Import runtime APIs from <code>hono-decks</code>. Keep <code>hono-decks/node</code> in build scripts only.</dd></div></dl></section>
@@ -488,10 +488,10 @@ Node for I/O. Hono for routes.`} />
       </section>
 
       <section id="fire">
-        <h2>{isJa ? "fireで内容を順に発火する" : "Fire content one step at a time"}</h2>
+        <h2>{isJa ? "fireで内容を1つずつ表示する" : "Reveal content one step at a time with fire"}</h2>
         <p>{isJa ? <>コンポーネントに<code>fire</code>を付けると、送り操作に合わせて記述順に表示されます。Markdownには<code>:::fire</code>、リストには<code>:::fire&#123;each=&quot;item&quot;&#125;</code>を使います。複数のJSX要素を同時に表示するときは、まとめて<code>&lt;Fire&gt;</code>で囲みます。<code>fire</code>はコンパイル時に取り除かれ、コンポーネントのpropsには渡りません。</> : <>Add <code>fire</code> to a component to reveal it in source order. Use <code>:::fire</code> for Markdown and <code>:::fire&#123;each=&quot;item&quot;&#125;</code> for list items. Use <code>&lt;Fire&gt;</code> to group multiple JSX elements into one step. The compiler removes <code>fire</code> before rendering the component.</>}</p>
         <CodeBlock label="MDX" locale={locale} code={fireSyntaxCode} />
-        <p>{isJa ? <>段階表示の考え方と<code>at</code>、<code>depth</code>、<code>every</code>は、<a href="https://sli.dev/guide/animations">Slidevの<code>v-click</code>と<code>v-clicks</code></a>に一部インスパイアされています。記法と実装はhono-decks独自で、Slidevとの互換性を保証するものではありません。<code>at=&quot;2&quot;</code>は絶対位置を、<code>at=&quot;+2&quot;</code>は相対位置を2段進める指定です。リストでは<code>depth</code>で対象にする階層、<code>every</code>で1回に表示する項目数を指定します。どちらも既定値は<code>1</code>です。</> : <>The staged-reveal model and the <code>at</code>, <code>depth</code>, and <code>every</code> options are partly inspired by Slidev's <a href="https://sli.dev/guide/animations"><code>v-click</code> and <code>v-clicks</code></a>. The syntax and implementation are specific to hono-decks and are not guaranteed to be compatible with Slidev. <code>at=&quot;2&quot;</code> is absolute, while <code>at=&quot;+2&quot;</code> advances the relative position by two. For lists, <code>depth</code> selects nested levels and <code>every</code> sets the number of items per step. Both default to <code>1</code>.</>}</p>
+        <p>{isJa ? <>段階表示の考え方と<code>at</code>、<code>depth</code>、<code>every</code>の仕組みは、<a href="https://sli.dev/guide/animations">Slidevの<code>v-click</code>と<code>v-clicks</code></a>を一部参考にしています。ただし、記法と実装はhono-decks独自であり、Slidevとの互換性は保証しません。<code>at=&quot;2&quot;</code>は絶対位置、<code>at=&quot;+2&quot;</code>は現在位置から2段先を指定します。リストでは、<code>depth</code>で対象の階層、<code>every</code>で1回に表示する項目数を指定します。どちらも既定値は<code>1</code>です。</> : <>The staged-reveal model and the <code>at</code>, <code>depth</code>, and <code>every</code> options draw in part on Slidev's <a href="https://sli.dev/guide/animations"><code>v-click</code> and <code>v-clicks</code></a>. The syntax and implementation are specific to hono-decks; compatibility with Slidev is not guaranteed. <code>at=&quot;2&quot;</code> sets an absolute position, while <code>at=&quot;+2&quot;</code> advances two steps from the current position. For lists, <code>depth</code> selects the nested levels and <code>every</code> sets how many items appear per step. Both default to <code>1</code>.</>}</p>
         <h3>{isJa ? "表示効果を選ぶ" : "Choose an effect"}</h3>
         <p>{isJa ? <>コンポーネントでは<code>fire=&quot;scale&quot;</code>、<code>:::fire</code>では<code>effect=&quot;scale&quot;</code>と指定します。標準の効果は<code>none</code>、<code>fade</code>、<code>fade-up</code>、<code>scale</code>です。独自の効果は<code>theme.css</code>で定義します。</> : <>Use <code>fire=&quot;scale&quot;</code> on a component and <code>effect=&quot;scale&quot;</code> with <code>:::fire</code>. Built-ins are <code>none</code>, <code>fade</code>, <code>fade-up</code>, and <code>scale</code>. Define custom effects in <code>theme.css</code>.</>}</p>
         <CodeBlock label="MDX" locale={locale} code={customFireUsageCode} />
@@ -500,7 +500,7 @@ Node for I/O. Hono for routes.`} />
 
       <section id="notes">
         <h2>{isJa ? "発表者ノートを書く" : "Add notes for the presenter"}</h2>
-        <p>{isJa ? <><code>notes: |</code>の複数行テキストとMDXコメントは発表者ノートへまとめられ、スライド本文には出ません。通常のコードコメントとして書いたMDXコメントもノートとして扱われます。</> : <>Multiline <code>notes: |</code> text and MDX comments are combined as presenter notes and omitted from slide content. Any MDX comment is treated as a note, not as an ordinary source comment.</>}</p>
+        <p>{isJa ? <><code>notes: |</code>に書いた複数行テキストとMDXコメントは、発表者ノートにまとめられ、スライド本文には表示されません。MDXコメントは、コードの補足として書いた場合もノートとして扱われます。</> : <>Text under <code>notes: |</code> and MDX comments are combined into presenter notes and omitted from the slide. Every MDX comment is treated as a note, even if you intended it only as a source-code comment.</>}</p>
         <CodeBlock label="MDX" locale={locale} code={speakerNotesCode} />
       </section>
 
@@ -528,7 +528,7 @@ Node for I/O. Hono for routes.`} />
       </section>
 
       <section id="verify">
-        <h2>{isJa ? "devコマンドで変更を確認する" : "Verify changes through the dev command"}</h2>
+        <h2>{isJa ? "devコマンドで変更を自動反映する" : "Preview changes with the dev command"}</h2>
         <CodeBlock label="Terminal" code="npm run dev" locale={locale} />
         <p>{isJa ? <>ViteまたはWranglerの<code>dev</code>実行中は、保存したMDXが自動で再コンパイルされ、成功後にブラウザへ反映されます。<code>npm run decks:compile</code>は、CIやコンパイラーだけを単独で確認するときに使います。コンパイルエラーには対象ファイルとスライド番号が表示されます。</> : <>While the Vite or Wrangler <code>dev</code> command is running, saved MDX is recompiled automatically and the browser updates after a successful compile. Use <code>npm run decks:compile</code> in CI or when checking the compiler by itself. Compile errors identify the source file and slide number.</>}</p>
         <p>{isJa ? <>表示を確認したら、公開画面を変える場合は<a class="text-link" href={localizedHref("/docs/routing", locale)}>ルートと画面</a>、環境変数やR2を使う場合は<a class="text-link" href={localizedHref("/docs/configuration", locale)}>設定</a>へ進みます。</> : <>After the deck renders, continue to <a class="text-link" href={localizedHref("/docs/routing", locale)}>routes and UI</a> for public surfaces or <a class="text-link" href={localizedHref("/docs/configuration", locale)}>configuration</a> for bindings and R2.</>}</p>
@@ -572,7 +572,7 @@ const routing = (locale: Locale): Guide => {
     toc: c.var.deckToc,
   }),
 )`} /></section>
-      <section id="state"><h2>{isJa ? "同じスライド位置をURLで共有する" : "Share the same slide position by URL"}</h2><p>{isJa ? <>ビューアー、発表画面、発表者画面は<code>?slide=2&amp;step=1</code>を共通して使います。<code>slide</code>は1から始まるスライド番号です。<code>step</code>は0から始まり、<code>step=0</code>は段階表示がまだ発火していない状態を表します。最終スライドの最終ステップから先へ送っても、URLの値は変わりません。</> : <>Viewer, presentation, and presenter share <code>?slide=2&amp;step=1</code>. <code>slide</code> is one-based. <code>step</code> starts at zero, where <code>step=0</code> means that no staged content has fired yet. Advancing past the final step of the final slide leaves the URL unchanged.</>}</p><p>{isJa ? <>外部サイトへ埋め込む場合は<a class="text-link" href={localizedHref("/docs/security", locale)}>HTMLとセキュリティ</a>で許可するオリジンを設定します。すべてのオプションを探す場合は<a class="text-link" href={localizedHref("/api", locale)}>API</a>を参照してください。</> : <>For external iframe use, continue to <a class="text-link" href={localizedHref("/docs/security", locale)}>security</a> and allow explicit origins. Use the <a class="text-link" href={localizedHref("/api", locale)}>API reference</a> when you need a specific option.</>}</p></section>
+      <section id="state"><h2>{isJa ? "同じスライド位置をURLで共有する" : "Share the same slide position by URL"}</h2><p>{isJa ? <>ビューアー、発表画面、発表者画面は、スライド位置を<code>?slide=2&amp;step=1</code>の形で共有します。<code>slide</code>は1から始まるスライド番号です。<code>step</code>は0から始まり、<code>step=0</code>は段階表示がまだ始まっていない状態を表します。最後のスライドの最後のステップから先へ進んでも、URLの値は変わりません。</> : <>The viewer, presentation, and presenter screens share the slide position as <code>?slide=2&amp;step=1</code>. <code>slide</code> is one-based. <code>step</code> starts at zero, where <code>step=0</code> means staged content has not started appearing. Advancing beyond the last step of the last slide leaves the URL unchanged.</>}</p><p>{isJa ? <>外部サイトへ埋め込む場合は<a class="text-link" href={localizedHref("/docs/security", locale)}>HTMLとセキュリティ</a>で許可するオリジンを設定します。すべてのオプションを探す場合は<a class="text-link" href={localizedHref("/api", locale)}>API</a>を参照してください。</> : <>For external iframe use, continue to <a class="text-link" href={localizedHref("/docs/security", locale)}>security</a> and allow explicit origins. Use the <a class="text-link" href={localizedHref("/api", locale)}>API reference</a> when you need a specific option.</>}</p></section>
     </>,
   };
 };
@@ -582,8 +582,8 @@ const configuration = (locale: Locale): Guide => {
   return {
     title: isJa ? "設定ファイル" : "Configuration",
     description: isJa
-      ? "CLIと実行時で共有するhono-decks.config.tsに、生成処理と公開時の設定をまとめます。"
-      : "Use one hono-decks.config.ts for both generated output and runtime behavior.",
+      ? "コンパイルと実行時の設定は、共通のhono-decks.config.tsで管理します。"
+      : "Manage compilation and runtime behavior in one shared hono-decks.config.ts file.",
     sections: isJa
       ? [
           { id: "files", label: "ファイル構成" },
@@ -601,7 +601,7 @@ const configuration = (locale: Locale): Guide => {
         ],
     content: <>
       <section id="files">
-        <h2>{isJa ? "設定ファイルごとの役割を確認する" : "Understand the shared config"}</h2>
+        <h2>{isJa ? "4つのファイルの役割を把握する" : "Know which file owns each setting"}</h2>
         <p>{isJa ? <><code>hono-decks init</code>は、必須の<code>hono-decks.config.ts</code>と<code>src/decks.ts</code>を作ります。ビルド対象、公開パス、実行時の挙動は、この設定ファイルでまとめて管理します。</> : <><code>hono-decks init</code> creates the required <code>hono-decks.config.ts</code> and <code>src/decks.ts</code>. Build input, public paths, and runtime policy live in this one config.</>}</p>
         <dl class="configuration-map">
           <div><dt><code>package.json</code></dt><dd>{isJa ? "ViteまたはWranglerを使う、普段の開発コマンドを定義します。" : "Runs the existing Vite or Wrangler development command."}</dd></div>
@@ -621,7 +621,7 @@ const configuration = (locale: Locale): Guide => {
       </section>
       <section id="runtime">
         <h2>{isJa ? "リクエストごとに変わる値を設定する" : "Configure values that change per request"}</h2>
-        <p>{isJa ? <><code>defineDecksConfig()</code>を使うと、HonoのBindingsとVariablesを含めて型を確認できます。<code>dev</code>を省略すると、ViteとWranglerが設定する<code>NODE_ENV</code>から判定します。標準設定では、<code>vite</code>と<code>wrangler dev</code>は開発モード、プロダクションビルドと<code>wrangler deploy</code>は本番モードになります。明示したbooleanまたは関数は自動判定より優先され、判定できない環境では本番モードになります。</> : <>Use <code>defineDecksConfig()</code> to preserve Hono Bindings and Variables types. When <code>dev</code> is omitted, hono-decks reads the <code>NODE_ENV</code> set by Vite and Wrangler. With their standard settings, <code>vite</code> and <code>wrangler dev</code> enable development mode, while production builds and <code>wrangler deploy</code> use production mode. An explicit boolean or resolver overrides detection, and unknown environments fail closed to production mode.</>}</p>
+        <p>{isJa ? <><code>defineDecksConfig()</code>を使うと、HonoのBindingsとVariablesも型検査の対象にできます。<code>dev</code>を省略した場合は、ViteとWranglerが設定する<code>NODE_ENV</code>から環境を判定します。標準設定では、<code>vite</code>と<code>wrangler dev</code>は開発モード、プロダクションビルドと<code>wrangler deploy</code>は本番モードとして動作します。boolean値または関数を明示すると自動判定より優先されます。環境を判定できない場合は、安全側に倒して本番モードになります。</> : <>Use <code>defineDecksConfig()</code> to type-check Hono Bindings and Variables as part of the config. When <code>dev</code> is omitted, hono-decks reads the <code>NODE_ENV</code> set by Vite and Wrangler. With their standard settings, <code>vite</code> and <code>wrangler dev</code> use development mode, while production builds and <code>wrangler deploy</code> use production mode. An explicit boolean or resolver takes precedence. If the environment cannot be detected, hono-decks defaults safely to production mode.</>}</p>
         <CodeBlock code={configCode} locale={locale} />
         <p>{isJa ? <><code>c.get("language")</code>を使う例では、Honoの<code>languageDetector()</code>を先に登録します。手順は<a class="text-link" href={localizedHref("/docs/security#language", locale)}>HTMLとセキュリティ</a>で確認できます。多言語対応が不要なら<code>lang: "ja"</code>のように固定値を指定します。</> : <>The <code>c.get("language")</code> example assumes Hono's <code>languageDetector()</code> is registered first; see <a class="text-link" href={localizedHref("/docs/security#language", locale)}>document policy and security</a>. For a single-language app, use a fixed value such as <code>lang: "en"</code>.</>}</p>
       </section>
@@ -695,7 +695,7 @@ const security = (locale: Locale): Guide => {
   const isJa = locale === "ja";
   return {
     title: isJa ? "HTMLの共通設定とセキュリティ" : "Document policy and security",
-    description: isJa ? "Honoアプリとhono-decksの役割を分け、言語、CSP、外部iframeの設定を各画面へ適用します。" : "Separate application and hono-decks responsibilities, then apply language, CSP, and iframe policy to every surface.",
+    description: isJa ? "認証やCSPはHonoアプリ側で管理し、言語、nonce、外部iframeの設定を各画面に反映します。" : "Manage authentication and CSP in the Hono app, then apply language, nonce, and external iframe settings to each screen.",
     sections: isJa ? [{ id: "defaults", label: "公開ルート" }, { id: "language", label: "言語" }, { id: "csp", label: "CSPとnonce" }, { id: "embed", label: "外部サイトへの埋め込み" }, { id: "check", label: "公開前の確認" }] : [{ id: "defaults", label: "Public routes" }, { id: "language", label: "Language" }, { id: "csp", label: "CSP and nonce" }, { id: "embed", label: "External embeds" }, { id: "check", label: "Pre-release checks" }],
     content: <>
       <section id="defaults"><h2>{isJa ? "標準で作成されるルートを確認する" : "Review the routes created by default"}</h2><p>{isJa ? <>標準では、一覧、ビューアー、スライド本体、発表画面、発表者画面、印刷画面が作成されます。これらのルートにhono-decks独自の認証は付きません。外部iframe用の<code>/:slug/embed</code>だけは、<code>embed</code>を指定するまで作成されません。不要な画面は<code>router.pages</code>で無効にしてください。</> : <>By default, the router creates the index, viewer, slide document, presentation, presenter, and print routes. hono-decks does not add authentication to those routes. Only the external <code>/:slug/embed</code> route is opt-in. Disable unused surfaces through <code>router.pages</code>.</>}</p><p>{isJa ? <>認証、認可、CSPヘッダーはHonoアプリが担当します。hono-decksは、アプリから渡された言語やnonceを生成するHTMLへ反映します。</> : <>The Hono application owns authentication, authorization, and CSP headers. hono-decks applies the resolved language and nonce to the HTML it generates.</>}</p></section>
