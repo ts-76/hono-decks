@@ -56,7 +56,7 @@
     "build": "tsup",
     "prepack": "bun run build",
     "decks:compile": "bun run build && node dist/bin.js compile",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.worker.json",
+    "typecheck": "bun run build && tsc --noEmit && tsc --noEmit -p tsconfig.worker.json",
     "test": "bun run build && vitest run",
     "check": "bun run typecheck && bun run test"
   },

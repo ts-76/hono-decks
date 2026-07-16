@@ -54,6 +54,7 @@ describe("package build metadata", () => {
     expect(packageJson.files).toEqual(expect.arrayContaining(["dist", "README.md"]));
     expect(packageJson.scripts.build).toBe("tsup");
     expect(packageJson.scripts.prepack).toBe("bun run build");
+    expect(packageJson.scripts.typecheck).toContain("bun run build");
     expect(packageJson.repository).toEqual({
       type: "git",
       url: "git+https://github.com/ts-76/hono-slides.git",
