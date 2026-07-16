@@ -50,7 +50,7 @@ describe("package build metadata", () => {
         import: "./dist/vite.js",
       },
     });
-    expect(packageJson.bin).toEqual({ "hono-decks": "./dist/bin.js" });
+    expect(packageJson.bin).toEqual({ "hono-decks": "dist/bin.js" });
     expect(packageJson.files).toEqual(expect.arrayContaining(["dist", "README.md"]));
     expect(packageJson.scripts.build).toBe("tsup");
     expect(packageJson.scripts.prepack).toBe("bun run build");

@@ -20,7 +20,7 @@
     "directory": "packages/decks"
   },
   "bin": {
-    "hono-decks": "./dist/bin.js"
+    "hono-decks": "dist/bin.js"
   },
   "files": [
     "dist",
