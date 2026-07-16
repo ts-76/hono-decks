@@ -50,7 +50,7 @@ const sectionsByLocale: Record<Locale, PageSection[]> = {
   en: [{ id: "start", label: "Start here" }, { id: "runtime", label: "Runtime entry" }, { id: "rendering", label: "Rendering" }, { id: "policy-types", label: "Policy and model types" }, { id: "build-client", label: "Node and client entries" }],
 };
 
-const sourceBase = "https://github.com/ts-76/hono-slides/blob/main/packages/decks/src/";
+const sourceBase = "https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/";
 
 function ApiDefinitionList({ definitions, locale }: { definitions: ApiDefinition[]; locale: Locale }) {
   return <div class="api-definition-list">{definitions.map((definition) => {

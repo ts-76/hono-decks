@@ -281,7 +281,7 @@ git push origin v0.1.0
 `npm publish` には npm account の login と 2FA が必要です。公開後、npm の `hono-decks` package settings で GitHub Actions の Trusted Publisher を次の内容で登録します。
 
 - Organization or user: `ts-76`
-- Repository: `hono-slides`
+- Repository: `hono-decks`
 - Workflow filename: `release.yml`
 
 以後は npm token を GitHub Secrets に置かず、GitHub OIDC と provenance で公開します。tag は必ず実際に `0.1.0` を公開した commit に付けてください。

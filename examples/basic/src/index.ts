@@ -12,7 +12,14 @@ interface Env extends DecksConfigEnv {
 }
 
 const app = new Hono<Env>();
+const robotsPolicy = "noindex, nofollow, noarchive";
+const robotsText = "User-agent: *\nDisallow: /\n";
 
+app.use("*", async (c, next) => {
+  await next();
+  c.header("X-Robots-Tag", robotsPolicy);
+});
+app.get("/robots.txt", (c) => c.text(robotsText));
 app.get("/", async (c) => c.html(renderHomePage(await decks.source.listDecks(c))));
 app.get(
   `${decks.mountPath}/:slug/about`,

@@ -3,10 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "decks:compile": "bun run --cwd ../../packages/decks build && node ../../packages/decks/dist/bin.js compile",
-    "decks:compile:hook": "node ../../packages/decks/dist/bin.js compile",
-    "dev": "bun run --cwd ../../packages/decks build -- --clean=false && CI=1 XDG_CONFIG_HOME=.wrangler-config wrangler dev --live-reload",
-    "deploy": "bun run --cwd ../../packages/decks build && wrangler deploy",
+    "decks:compile": "hono-decks compile",
+    "decks:compile:hook": "hono-decks compile",
+    "dev": "CI=1 XDG_CONFIG_HOME=.wrangler-config wrangler dev --live-reload",
+    "deploy": "wrangler deploy",
+    "deploy:production": "wrangler deploy --config wrangler.production.jsonc",
     "smoke:pdf": "node scripts/pdf-smoke.mjs",
     "smoke:r2-cache": "node scripts/deployed-r2-cache-smoke.mjs",
     "smoke:viewport": "node scripts/viewport-smoke.mjs",
@@ -16,11 +17,15 @@
   },
   "dependencies": {
     "hono": "^4.12.30",
-    "hono-decks": "workspace:*"
+    "hono-decks": "0.1.0"
   },
   "devDependencies": {
-    "vite": "catalog:",
-    "vitest": "catalog:",
+    "@cloudflare/workers-types": "^5.20260714.1",
+    "@types/node": "^25.9.2",
+    "typescript": "^5.9.3",
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.2.4",
+    "vitest": "4.1.10",
     "wrangler": "^4.110.0"
-  }
+  },
+  "packageManager": "bun@1.3.13"
 }

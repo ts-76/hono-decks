@@ -5,13 +5,15 @@ describe("development scripts", () => {
   it("runs wrangler dev with non-interactive workspace-local configuration", async () => {
     const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8")) as {
       scripts: Record<string, string>;
+      dependencies: Record<string, string>;
     };
 
-    expect(packageJson.scripts["decks:compile"]).toMatch(/bin\.js compile$/);
-    expect(packageJson.scripts["decks:compile:hook"]).toMatch(/bin\.js compile$/);
+    expect(packageJson.dependencies["hono-decks"]).toBe("0.1.0");
+    expect(packageJson.scripts["decks:compile"]).toBe("hono-decks compile");
+    expect(packageJson.scripts["decks:compile:hook"]).toBe("hono-decks compile");
     expect(packageJson.scripts["decks:watch"]).toBeUndefined();
     expect(packageJson.scripts.dev).not.toContain("decks:compile");
-    expect(packageJson.scripts.dev).toContain("build -- --clean=false");
+    expect(packageJson.scripts.dev).not.toContain("../../packages/decks");
     expect(packageJson.scripts.dev).toContain("CI=1");
     expect(packageJson.scripts.dev).toContain("XDG_CONFIG_HOME=.wrangler-config");
     expect(packageJson.scripts.dev).toContain("wrangler dev");
@@ -24,10 +26,22 @@ describe("development scripts", () => {
 
     expect(wranglerJson).toContain('"command": "bun run decks:compile:hook"');
     expect(wranglerJson).toContain('"watch_dir": ["decks"]');
-    expect(wranglerJson).toContain('"alias"');
-    expect(wranglerJson).toContain('"hono-decks": "../../packages/decks/src/mod.ts"');
-    expect(wranglerJson).toContain('"hono-decks/advanced": "../../packages/decks/src/advanced.ts"');
-    expect(wranglerJson).toContain('"hono-decks/client": "../../packages/decks/src/client.ts"');
+    expect(wranglerJson).not.toContain('"alias"');
+    expect(wranglerJson).not.toContain("../../packages/decks");
+  });
+
+  it("uses a binding-light production config for the public sample", async () => {
+    const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8")) as {
+      scripts: Record<string, string>;
+    };
+    const productionConfig = await readFile(new URL("../wrangler.production.jsonc", import.meta.url), "utf8");
+
+    expect(packageJson.scripts.deploy).toBe("wrangler deploy");
+    expect(packageJson.scripts["deploy:production"]).toContain("--config wrangler.production.jsonc");
+    expect(productionConfig).toContain('"pattern": "basic.hono-decks.com"');
+    expect(productionConfig).toContain('"custom_domain": true');
+    expect(productionConfig).not.toContain('"binding": "DECK_ASSETS"');
+    expect(productionConfig).not.toContain('"alias"');
   });
 
   it("starts viewport smoke wrangler with non-interactive workspace-local configuration", async () => {

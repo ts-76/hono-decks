@@ -6,6 +6,7 @@
     "decks:compile": "bun run --cwd ../packages/decks build -- --clean=false && node ../packages/decks/dist/bin.js compile",
     "dev": "bun run --cwd ../packages/decks build -- --clean=false && vp dev",
     "build": "bun run --cwd ../packages/decks build && vp build --mode client && vp build",
+    "deploy": "bun run build && wrangler deploy",
     "preview": "wrangler dev",
     "typecheck": "bun run decks:compile && tsc --noEmit",
     "test": "bun run decks:compile && vp test run",

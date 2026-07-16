@@ -74,7 +74,7 @@ export function SiteHeader({ activePath = "", locale }: { activePath?: string; l
   return (
     <header class="site-header">
       <a class="brand" href={localizedHref("/", locale)} aria-label="hono decks documentation home">
-        <span class="brand-mark" aria-hidden="true">h</span>
+        <img class="brand-mark" src="/icon-192.png" width="32" height="32" alt="" aria-hidden="true" />
         <span>hono<span class="brand-slash">-</span>decks</span>
       </a>
       <nav class="top-nav" aria-label={text.primaryNavigation}>
@@ -83,7 +83,7 @@ export function SiteHeader({ activePath = "", locale }: { activePath?: string; l
         </a>
         <a href={localizedHref("/api", locale)} aria-current={activePath === "/api" ? "page" : undefined}>{text.api}</a>
         <LanguageSwitcher locale={locale} path={activePath || "/"} />
-        <a href="https://github.com/ts-76/hono-slides">GitHub ↗</a>
+        <a href="https://github.com/ts-76/hono-decks">GitHub ↗</a>
       </nav>
       <div class="mobile-menu" data-disclosure>
         <DisclosureButton
@@ -99,7 +99,7 @@ export function SiteHeader({ activePath = "", locale }: { activePath?: string; l
             </a>
           ))}
           <div class="mobile-language"><LanguageSwitcher locale={locale} path={activePath || "/"} /></div>
-          <a href="https://github.com/ts-76/hono-slides">GitHub ↗</a>
+          <a href="https://github.com/ts-76/hono-decks">GitHub ↗</a>
         </nav>
       </div>
     </header>
@@ -138,16 +138,6 @@ export function DocsLayout({
     <main class="docs-layout">
       <aside class="docs-sidebar" aria-label={text.documentationSections}>
         <p class="sidebar-label">{text.documentation}</p>
-        <div class="docs-switcher" data-disclosure>
-          <DisclosureButton className="docs-switcher-trigger" controls="docs-switcher-panel" label={text.selectGuide} />
-          <nav id="docs-switcher-panel" data-disclosure-panel hidden>
-            {links.map((item) => (
-              <a href={localizedHref(item.href, locale)} aria-current={activePath === item.href ? "page" : undefined}>
-                <span>{item.label}</span><small>{item.detail}</small>
-              </a>
-            ))}
-          </nav>
-        </div>
         <nav class="docs-navigation">
           {links.map((item) => (
             <a href={localizedHref(item.href, locale)} aria-current={activePath === item.href ? "page" : undefined}>

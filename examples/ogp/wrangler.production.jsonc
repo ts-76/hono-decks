@@ -1,6 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "hono-decks-ogp",
+  "account_id": "934c6255d681d05e1fa9903560de8a59",
   "main": "src/index.ts",
   "compatibility_date": "2026-07-15",
   "compatibility_flags": ["nodejs_compat"],
@@ -10,5 +11,8 @@
   },
   "assets": {
     "directory": "./public"
-  }
+  },
+  "routes": [
+    { "pattern": "ogp.hono-decks.com", "custom_domain": true }
+  ]
 }

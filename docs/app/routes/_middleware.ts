@@ -14,6 +14,6 @@ export default createRoute(
       maxAge: 60 * 60 * 24 * 365,
     },
     supportedLanguages: ["ja", "en"],
-    fallbackLanguage: "ja",
+    fallbackLanguage: "en",
   }),
 );

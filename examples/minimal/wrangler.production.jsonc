@@ -1,11 +1,15 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "hono-decks-minimal",
+  "account_id": "934c6255d681d05e1fa9903560de8a59",
   "main": "src/index.ts",
   "compatibility_date": "2026-07-14",
   "compatibility_flags": ["nodejs_compat"],
   "build": {
     "command": "bun run decks:compile",
     "watch_dir": ["decks"]
-  }
+  },
+  "routes": [
+    { "pattern": "minimal.hono-decks.com", "custom_domain": true }
+  ]
 }

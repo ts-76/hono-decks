@@ -1,9 +1,47 @@
+import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vite-plus/test";
 import app from "../app/server";
+import { clientEntrySource } from "../app/routes/_renderer";
 
 describe("HonoX documentation site", () => {
+  it("allows indexing and crawling", async () => {
+    const home = await app.request("/");
+    const robots = await app.request("/robots.txt");
+
+    expect(home.headers.get("x-robots-tag")).toBeNull();
+    expect(robots.headers.get("x-robots-tag")).toBeNull();
+    expect(await robots.text()).toBe("User-agent: *\nAllow: /\n");
+  });
+
+  it("keeps the home hero within narrow viewports", async () => {
+    const css = await readFile(new URL("../app/style.css", import.meta.url), "utf8");
+
+    expect(css).toContain("grid-template-columns: minmax(0, 1fr)");
+    expect(css).toContain("max-width: 100%");
+    expect(css).toContain("overflow-wrap: anywhere");
+    expect(css).toContain("word-break: normal");
+    expect(css).not.toContain("word-break: keep-all");
+  });
+
+  it("loads the global client entry even when a page has no islands", async () => {
+    const html = await (await app.request("/docs/getting-started")).text();
+
+    expect(clientEntrySource(false)).toBe("/app/client.ts");
+    expect(html).toContain('<script type="module" src="/app/client.ts"></script>');
+  });
+
+  it("publishes the Hono Decks icon metadata and header mark", async () => {
+    const html = await (await app.request("/")).text();
+
+    expect(html).toContain('href="/favicon.ico"');
+    expect(html).toContain('href="/favicon-32.png"');
+    expect(html).toContain('href="/apple-touch-icon.png"');
+    expect(html).toContain('href="/site.webmanifest"');
+    expect(html).toContain('class="brand-mark" src="/icon-192.png"');
+  });
+
   it("renders the Japanese home page with localized guide and API navigation", async () => {
-    const response = await app.request("/");
+    const response = await app.request("/?lang=ja");
     const html = await response.text();
 
     expect(response.status).toBe(200);
@@ -24,7 +62,7 @@ describe("HonoX documentation site", () => {
     expect(html).not.toContain("既存のHonoアプリへ追加できます");
   });
 
-  it("uses query, cookie, and Accept-Language detection with Japanese fallback", async () => {
+  it("uses query, cookie, and Accept-Language detection with English fallback", async () => {
     const query = await app.request("https://docs.example/docs/getting-started?lang=en");
     const queryHtml = await query.text();
     const cookie = await app.request("https://docs.example/docs/getting-started", {
@@ -36,6 +74,7 @@ describe("HonoX documentation site", () => {
     const fallback = await app.request("https://docs.example/", {
       headers: { "accept-language": "fr-FR" },
     });
+    const noPreference = await app.request("https://docs.example/");
 
     expect(queryHtml).toContain('<html lang="en">');
     expect(queryHtml).toContain("Check the prerequisites");
@@ -43,7 +82,8 @@ describe("HonoX documentation site", () => {
     expect(query.headers.get("set-cookie")).toContain("language=en");
     expect(await cookie.text()).toContain("Check the prerequisites");
     expect(await header.text()).toContain("Get started");
-    expect(await fallback.text()).toContain('<html lang="ja">');
+    expect(await fallback.text()).toContain('<html lang="en">');
+    expect(await noPreference.text()).toContain('<html lang="en">');
   });
 
   it.each([
@@ -55,7 +95,7 @@ describe("HonoX documentation site", () => {
     ["/docs/security", "標準で作成されるルートを確認する"],
     ["/api", "実行時API"],
   ])("renders %s from HonoX file routes", async (path, expected) => {
-    const response = await app.request(path);
+    const response = await app.request(`${path}?lang=ja`);
     const html = await response.text();
 
     expect(response.status).toBe(200);
@@ -81,9 +121,9 @@ describe("HonoX documentation site", () => {
   });
 
   it("separates shared configuration from optional build and export recipes", async () => {
-    const ja = await (await app.request("/docs/configuration")).text();
+    const ja = await (await app.request("/docs/configuration?lang=ja")).text();
     const en = await (await app.request("/docs/configuration?lang=en")).text();
-    const recipesJa = await (await app.request("/docs/recipes")).text();
+    const recipesJa = await (await app.request("/docs/recipes?lang=ja")).text();
     const recipesEn = await (await app.request("/docs/recipes?lang=en")).text();
 
     expect(ja).toContain("hono-decks.config.ts");
@@ -129,7 +169,7 @@ describe("HonoX documentation site", () => {
     ];
 
     for (const path of paths) {
-      const html = await (await app.request(path)).text();
+      const html = await (await app.request(`${path}?lang=ja`)).text();
       expect(html).not.toContain("request-aware");
       expect(html).not.toContain("route surface");
       expect(html).not.toContain("次の一手");
@@ -142,7 +182,7 @@ describe("HonoX documentation site", () => {
   });
 
   it("documents the complete first-run success and recovery path", async () => {
-    const html = await (await app.request("/docs/getting-started")).text();
+    const html = await (await app.request("/docs/getting-started?lang=ja")).text();
 
     expect(html).toContain('id="prerequisites"');
     expect(html).toContain("インストールから表示確認まで");
@@ -162,7 +202,7 @@ describe("HonoX documentation site", () => {
   });
 
   it("renders anchored API definitions with imports, signatures, guide links, and source links", async () => {
-    const html = await (await app.request("/api")).text();
+    const html = await (await app.request("/api?lang=ja")).text();
 
     expect(html).toContain('id="configured-decks"');
     expect(html).toContain('id="deck-document-options"');
@@ -178,10 +218,10 @@ describe("HonoX documentation site", () => {
   });
 
   it("guides first-time users from basic tasks to optional extensions", async () => {
-    const authoring = await (await app.request("/docs/authoring")).text();
-    const configuration = await (await app.request("/docs/configuration")).text();
-    const routing = await (await app.request("/docs/routing")).text();
-    const security = await (await app.request("/docs/security")).text();
+    const authoring = await (await app.request("/docs/authoring?lang=ja")).text();
+    const configuration = await (await app.request("/docs/configuration?lang=ja")).text();
+    const routing = await (await app.request("/docs/routing?lang=ja")).text();
+    const security = await (await app.request("/docs/security?lang=ja")).text();
 
     expect(authoring).toContain("まずサーバーコンポーネントを使う");
     expect(authoring).toContain("ブラウザ操作が必要な部品だけをIslandにする");
@@ -199,7 +239,7 @@ describe("HonoX documentation site", () => {
   });
 
   it("documents the supported authoring syntax and its default boundaries", async () => {
-    const ja = await (await app.request("/docs/authoring")).text();
+    const ja = await (await app.request("/docs/authoring?lang=ja")).text();
     const en = await (await app.request("/docs/authoring?lang=en")).text();
 
     expect(ja).toContain('id="syntax"');
@@ -241,8 +281,8 @@ describe("HonoX documentation site", () => {
   });
 
   it("renders language-aware syntax highlighting while preserving copy controls", async () => {
-    const gettingStarted = await (await app.request("/docs/getting-started")).text();
-    const authoring = await (await app.request("/docs/authoring")).text();
+    const gettingStarted = await (await app.request("/docs/getting-started?lang=ja")).text();
+    const authoring = await (await app.request("/docs/authoring?lang=ja")).text();
 
     expect(gettingStarted).toContain('class="language-bash"');
     expect(gettingStarted).toContain('class="language-jsonc"');
@@ -257,7 +297,7 @@ describe("HonoX documentation site", () => {
 
     expect(html).toContain("https://deploy.workers.cloudflare.com/button");
     expect(html).toContain(
-      "https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2Fts-76%2Fhono-slides%2Ftree%2Fmain%2Fexamples%2Fminimal",
+      "https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2Fts-76%2Fhono-decks%2Ftree%2Fmain%2Fexamples%2Fminimal",
     );
     expect(html).not.toContain('aria-disabled="true"');
     expect(html).not.toContain("サンプル準備中");
@@ -270,7 +310,8 @@ describe("HonoX documentation site", () => {
     expect(html).toContain('data-copy-status="true"');
     expect(html).toContain('class="disclosure-trigger mobile-menu-trigger"');
     expect(html).toContain('aria-controls="mobile-menu-panel"');
-    expect(html).toContain('aria-controls="docs-switcher-panel"');
+    expect(html).not.toContain('aria-controls="docs-switcher-panel"');
+    expect(html).not.toContain("Choose a guide");
     expect(html).toContain('aria-controls="mobile-page-nav-panel"');
     expect(html).toContain('data-disclosure-panel="true"');
     expect(html).not.toContain("<details");

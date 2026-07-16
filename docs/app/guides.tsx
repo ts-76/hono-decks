@@ -279,7 +279,7 @@ const languageMiddlewareCode = `import { languageDetector } from "hono/language"
 
 app.use(languageDetector({
   supportedLanguages: ["ja", "en"],
-  fallbackLanguage: "ja",
+  fallbackLanguage: "en",
 }))`;
 
 const nonceMiddlewareCode = `import { Hono } from "hono"
@@ -666,7 +666,7 @@ const recipes = (locale: Locale): Guide => {
 })`} />
         <p>{isJa ? <><code>viewer.openGraph</code>を有効にすると、<code>decks.paths(slug).ogImage</code>（既定では<code>/decks/:slug/og.png</code>）の絶対URLを使ったOpen Graph / Twitter Cardタグを生成します。PNGはWrangler Static Assetsへ保存します。</> : <>Enabling <code>viewer.openGraph</code> emits absolute Open Graph and Twitter Card tags from <code>decks.paths(slug).ogImage</code>, which defaults to <code>/decks/:slug/og.png</code>. Save the PNG under Wrangler Static Assets.</>}</p>
         <Callout title={isJa ? "フォントをビルド対象に含める" : "Keep fonts in the build input"}><p>{isJa ? <>SatoriはTTF / OTF / WOFFを扱えますが、WOFF2には対応していません。日本語を描画する場合は、日本語の文字を含むフォントファイルを同梱し、そのディレクトリを<code>wrangler.jsonc</code>の<code>build.watch_dir</code>にも追加します。</> : <>Satori accepts TTF, OTF, and WOFF, but not WOFF2. Bundle a font that covers every rendered language and add its directory to <code>build.watch_dir</code> in <code>wrangler.jsonc</code>.</>}</p></Callout>
-        <p><a class="text-link" href="https://github.com/ts-76/hono-slides/tree/main/examples/ogp">{isJa ? "Satori + resvgの実装例を見る" : "Open the complete Satori + resvg recipe"} →</a></p>
+        <p><a class="text-link" href="https://github.com/ts-76/hono-decks/tree/main/examples/ogp">{isJa ? "Satori + resvgの実装例を見る" : "Open the complete Satori + resvg recipe"} →</a></p>
         <p>{isJa ? <><code>build.ogpCacheFile</code>はスライド内のリンクカード用キャッシュです。ビューアーのOGP画像とは別に管理されます。</> : <><code>build.ogpCacheFile</code> caches LinkCard metadata inside slides; it is unrelated to this viewer share image.</>}</p>
       </section>
       <section id="browser-export">
@@ -685,7 +685,7 @@ const recipes = (locale: Locale): Guide => {
         <Callout title={isJa ? "authorizeはPDF・PNG出力だけを制御します" : "authorize only controls PDF and PNG export"}><p>{isJa ? <><code>authorize</code>の対象は<code>/:slug/export.pdf</code>、<code>/:slug/export.png</code>と、対応するビューアー上の出力ボタンです。ビューアー、発表画面、発表者画面、<code>print</code>画面の公開範囲は変わりません。<code>authorize: () =&gt; true</code>では誰でもファイルを書き出せます。省略した場合も同じく公開されるため、公開する場合も明示を推奨します。利用者を制限する場合は、既存のセッションやAccess検証の結果を返します。</> : <><code>authorize</code> applies to <code>/:slug/export.pdf</code>, <code>/:slug/export.png</code>, and their viewer controls. It does not protect the viewer, presentation, presenter, or <code>print</code> routes. <code>authorize: () =&gt; true</code> lets anyone export a file. Omitting it has the same public behavior, so an explicit setting is recommended. To restrict exports, return the result of existing session or Access validation.</>}</p></Callout>
         <p>{isJa ? <>Bearerトークンを使う場合は<code>vars</code>へ直書きせず、Wranglerのsecretで管理します。</> : <>Store bearer tokens as Wrangler secrets rather than plain <code>vars</code> values.</>}</p>
         <p><a class="text-link" href="https://developers.cloudflare.com/browser-run/quick-actions/">{isJa ? "Cloudflare Browser Run Quick Actionsを確認する" : "Read the Cloudflare Browser Run Quick Actions docs"} →</a></p>
-        <p><a class="text-link" href="https://github.com/ts-76/hono-slides/tree/main/examples/basic">{isJa ? "Browser Runを組み込んだサンプルを見る" : "Open the example with Browser Run configured"} →</a></p>
+        <p><a class="text-link" href="https://github.com/ts-76/hono-decks/tree/main/examples/basic">{isJa ? "Browser Runを組み込んだサンプルを見る" : "Open the example with Browser Run configured"} →</a></p>
       </section>
     </>,
   };

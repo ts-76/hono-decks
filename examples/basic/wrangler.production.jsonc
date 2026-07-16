@@ -1,6 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "hono-decks-basic",
+  "account_id": "934c6255d681d05e1fa9903560de8a59",
   "main": "src/index.ts",
   "compatibility_date": "2026-07-14",
   "compatibility_flags": ["nodejs_compat"],
@@ -9,7 +10,7 @@
     "watch_dir": ["decks"]
   },
   "browser": { "binding": "BROWSER" },
-  "r2_buckets": [
-    { "binding": "DECK_ASSETS", "bucket_name": "hono-decks-basic-assets" }
+  "routes": [
+    { "pattern": "basic.hono-decks.com", "custom_domain": true }
   ]
 }

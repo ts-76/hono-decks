@@ -1,11 +1,30 @@
 import { jsxRenderer } from "hono/jsx-renderer";
-import { Link, Script } from "honox/server";
+import { Link } from "honox/server";
 import { getLocale, localizedHref, t } from "../i18n";
 import { SiteHeader } from "../site";
+
+interface ViteManifestEntry {
+  file: string;
+}
+
+interface ViteManifestModule {
+  default?: Record<string, ViteManifestEntry>;
+}
+
+const manifests = import.meta.glob<ViteManifestModule>("/dist/.vite/manifest.json", { eager: true });
+
+export function clientEntrySource(prod = import.meta.env.PROD): string | undefined {
+  if (!prod) return "/app/client.ts";
+  for (const manifestModule of Object.values(manifests)) {
+    const file = manifestModule.default?.["app/client.ts"]?.file;
+    if (file) return `/${file.replace(/^\/+/, "")}`;
+  }
+}
 
 export default jsxRenderer(({ children, title, description, activePath }, c) => {
   const locale = getLocale(c);
   const text = t(locale);
+  const clientSrc = clientEntrySource();
   return <html lang={locale}>
     <head>
       <meta charset="utf-8" />
@@ -15,9 +34,13 @@ export default jsxRenderer(({ children, title, description, activePath }, c) => 
         content={description ?? (locale === "ja" ? "MDXスライドをHonoのルートとして配信するためのhono-decksドキュメント" : "Documentation for mounting MDX slide routes in a Hono application")}
       />
       <meta name="theme-color" content="#161412" />
+      <Link href="/favicon.ico" rel="icon" sizes="any" />
+      <Link href="/favicon-32.png" rel="icon" type="image/png" sizes="32x32" />
+      <Link href="/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180" />
+      <Link href="/site.webmanifest" rel="manifest" />
       <title>{title ? `${title} — hono-decks` : "hono-decks — slides in your Hono app"}</title>
       <Link href="/app/style.css" rel="stylesheet" />
-      <Script src="/app/client.ts" async />
+      {clientSrc ? <script type="module" src={clientSrc}></script> : null}
     </head>
     <body>
       <a class="skip-link" href="#main-content">
@@ -32,7 +55,7 @@ export default jsxRenderer(({ children, title, description, activePath }, c) => 
         <nav aria-label={text.footerNavigation}>
           <a href={localizedHref("/docs/getting-started", locale)}>{text.documentation}</a>
           <a href={localizedHref("/api", locale)}>API</a>
-          <a href="https://github.com/ts-76/hono-slides">GitHub</a>
+          <a href="https://github.com/ts-76/hono-decks">GitHub</a>
         </nav>
       </footer>
     </body>

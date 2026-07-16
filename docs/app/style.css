@@ -32,6 +32,7 @@ html {
 body {
   margin: 0;
   min-width: 320px;
+  overflow-x: clip;
   background: var(--surface);
 }
 
@@ -136,15 +137,11 @@ button {
 }
 
 .brand-mark {
-  display: grid;
-  width: 30px;
-  height: 30px;
-  place-items: center;
-  border-radius: 8px;
-  background: var(--accent);
-  color: var(--dark);
-  font-size: 1.12rem;
-  font-weight: 900;
+  display: block;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  object-fit: contain;
 }
 
 .brand-slash {
@@ -231,6 +228,8 @@ button {
 }
 
 .hero-copy {
+  width: 100%;
+  min-width: 0;
   max-width: 620px;
 }
 
@@ -259,12 +258,14 @@ button {
   color: var(--ink-soft);
   font-size: clamp(1.04rem, 1.3vw, 1.18rem);
   line-height: 1.8;
+  overflow-wrap: anywhere;
   text-wrap: pretty;
-  word-break: keep-all;
+  word-break: normal;
 }
 
 .hero-actions {
   display: flex;
+  min-width: 0;
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 32px;
@@ -272,6 +273,7 @@ button {
 
 .button {
   display: inline-flex;
+  max-width: 100%;
   min-height: 48px;
   align-items: center;
   justify-content: center;
@@ -309,6 +311,8 @@ button {
 .hero-demo {
   position: relative;
   width: min(100%, 640px);
+  min-width: 0;
+  max-width: 100%;
   justify-self: end;
   overflow: hidden;
   border-radius: 10px;
@@ -372,11 +376,13 @@ button {
 }
 
 .demo-meta p {
+  min-width: 0;
   max-width: 52ch;
   margin: 0;
   color: oklch(0.76 0.006 264);
   font-size: 0.75rem;
   line-height: 1.55;
+  overflow-wrap: anywhere;
 }
 
 .demo-meta a {
@@ -618,7 +624,6 @@ button {
   height: fit-content;
 }
 
-.docs-switcher,
 .mobile-page-nav {
   display: none;
 }
@@ -631,14 +636,12 @@ button {
   font-weight: 800;
 }
 
-.docs-navigation,
-.docs-switcher nav {
+.docs-navigation {
   display: grid;
   border-top: 1px solid var(--line);
 }
 
-.docs-navigation a,
-.docs-switcher a {
+.docs-navigation a {
   display: grid;
   gap: 4px;
   border-bottom: 1px solid var(--line);
@@ -647,21 +650,17 @@ button {
 }
 
 .docs-navigation a:hover,
-.docs-navigation a[aria-current="page"],
-.docs-switcher a:hover,
-.docs-switcher a[aria-current="page"] {
+.docs-navigation a[aria-current="page"] {
   background: var(--accent-soft);
   color: var(--accent-dark);
 }
 
-.docs-navigation span,
-.docs-switcher nav span {
+.docs-navigation span {
   font-size: 0.88rem;
   font-weight: 760;
 }
 
-.docs-navigation small,
-.docs-switcher small {
+.docs-navigation small {
   color: var(--muted);
   font-size: 0.68rem;
 }
@@ -946,7 +945,7 @@ td:first-child {
 
 @media (max-width: 1050px) {
   .hero {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .hero-copy {
@@ -972,8 +971,7 @@ td:first-child {
     border-block: 1px solid var(--line);
   }
 
-  .mobile-page-nav-trigger,
-  .docs-switcher-trigger {
+  .mobile-page-nav-trigger {
     width: 100%;
     font-size: 0.8rem;
     font-weight: 800;
@@ -996,6 +994,8 @@ td:first-child {
 @media (max-width: 760px) {
   .site-header {
     min-height: 60px;
+    padding-right: max(18px, env(safe-area-inset-right));
+    padding-left: max(18px, env(safe-area-inset-left));
   }
 
   .top-nav {
@@ -1054,8 +1054,11 @@ td:first-child {
   }
 
   .hero {
+    width: 100%;
     min-height: auto;
     padding-top: 68px;
+    padding-right: max(18px, env(safe-area-inset-right));
+    padding-left: max(18px, env(safe-area-inset-left));
   }
 
   .hero h1 {
@@ -1080,23 +1083,7 @@ td:first-child {
   }
 
   .docs-sidebar {
-    position: static;
-    margin-bottom: 28px;
-  }
-
-  .sidebar-label,
-  .docs-navigation {
     display: none;
-  }
-
-  .docs-switcher {
-    display: block;
-    border-block: 1px solid var(--line);
-  }
-
-  .docs-switcher nav {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .docs-heading h1 {
@@ -1127,12 +1114,14 @@ td:first-child {
 }
 
 @media (max-width: 430px) {
-  .hero-actions .button {
-    width: 100%;
+  .demo-meta {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
   }
 
-  .docs-switcher nav {
-    grid-template-columns: 1fr;
+  .hero-actions .button {
+    width: 100%;
   }
 
   th,

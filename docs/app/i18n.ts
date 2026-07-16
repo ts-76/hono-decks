@@ -4,7 +4,7 @@ export const locales = ["ja", "en"] as const;
 export type Locale = (typeof locales)[number];
 
 export function getLocale(c: Context): Locale {
-  return c.get("language") === "en" ? "en" : "ja";
+  return c.get("language") === "ja" ? "ja" : "en";
 }
 
 export function localizedHref(path: string, locale: Locale): string {
@@ -27,7 +27,6 @@ export const messages = {
     documentation: "ドキュメント",
     documentationSections: "ドキュメント一覧",
     onThisPage: "このページの内容",
-    selectGuide: "ガイドを選ぶ",
     copy: "コピー",
     copied: "コピーしました",
     copyFailed: "コピーできませんでした",
@@ -48,7 +47,6 @@ export const messages = {
     documentation: "Documentation",
     documentationSections: "Documentation sections",
     onThisPage: "On this page",
-    selectGuide: "Choose a guide",
     copy: "Copy",
     copied: "Copied",
     copyFailed: "Copy failed",

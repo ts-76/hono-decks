@@ -1,6 +1,6 @@
 import { createClient } from "honox/client";
 
-createClient();
+void createClient();
 
 function setDisclosure(trigger: HTMLButtonElement, open: boolean) {
   const panelId = trigger.getAttribute("aria-controls");

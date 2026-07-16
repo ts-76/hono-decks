@@ -1,6 +1,6 @@
 {
-  "$schema": "../node_modules/wrangler/config-schema.json",
-  "name": "hono-decks-docs",
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "hono-decks-honox",
   "account_id": "934c6255d681d05e1fa9903560de8a59",
   "main": "./dist/index.js",
   "compatibility_date": "2026-07-14",
@@ -9,6 +9,6 @@
     "directory": "./dist"
   },
   "routes": [
-    { "pattern": "hono-decks.com", "custom_domain": true }
+    { "pattern": "honox.hono-decks.com", "custom_domain": true }
   ]
 }

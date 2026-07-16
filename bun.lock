@@ -45,11 +45,14 @@
       "name": "@hono-decks/example-basic",
       "dependencies": {
         "hono": "^4.12.30",
-        "hono-decks": "workspace:*",
+        "hono-decks": "0.1.0",
       },
       "devDependencies": {
-        "vite": "catalog:",
-        "vitest": "catalog:",
+        "@cloudflare/workers-types": "^5.20260714.1",
+        "@types/node": "^25.9.2",
+        "typescript": "^5.9.3",
+        "vite": "npm:@voidzero-dev/vite-plus-core@0.2.4",
+        "vitest": "4.1.10",
         "wrangler": "^4.110.0",
       },
     },
@@ -57,17 +60,18 @@
       "name": "@hono-decks/example-honox",
       "dependencies": {
         "hono": "^4.12.30",
-        "hono-decks": "workspace:*",
+        "hono-decks": "0.1.0",
         "honox": "0.1.59",
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^5.20260714.1",
         "@hono/vite-build": "^1.11.1",
         "@hono/vite-dev-server": "^0.26.1",
+        "@types/node": "^25.9.2",
         "typescript": "^5.9.3",
-        "vite": "catalog:",
-        "vite-plus": "catalog:",
-        "vitest": "catalog:",
+        "vite": "npm:@voidzero-dev/vite-plus-core@0.2.4",
+        "vite-plus": "0.2.4",
+        "vitest": "4.1.10",
         "wrangler": "^4.110.0",
       },
     },
@@ -75,15 +79,15 @@
       "name": "@hono-decks/example-minimal",
       "dependencies": {
         "hono": "^4.12.30",
-        "hono-decks": "file:./vendor/hono-decks-0.1.0.tgz",
+        "hono-decks": "0.1.0",
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^5.20260714.1",
         "@types/node": "^25.9.2",
         "typescript": "^5.9.3",
-        "vite": "catalog:",
-        "vite-plus": "catalog:",
-        "vitest": "catalog:",
+        "vite": "npm:@voidzero-dev/vite-plus-core@0.2.4",
+        "vite-plus": "0.2.4",
+        "vitest": "4.1.10",
         "wrangler": "^4.110.0",
       },
     },
@@ -91,7 +95,7 @@
       "name": "@hono-decks/example-ogp",
       "dependencies": {
         "hono": "^4.12.30",
-        "hono-decks": "workspace:*",
+        "hono-decks": "0.1.0",
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^5.20260714.1",
@@ -99,9 +103,9 @@
         "@types/node": "^25.9.2",
         "satori": "^0.28.0",
         "typescript": "^5.9.3",
-        "vite": "catalog:",
-        "vite-plus": "catalog:",
-        "vitest": "catalog:",
+        "vite": "npm:@voidzero-dev/vite-plus-core@0.2.4",
+        "vite-plus": "0.2.4",
+        "vitest": "4.1.10",
         "wrangler": "^4.110.0",
       },
     },
@@ -1637,8 +1641,6 @@
     "@cloudflare/vitest-pool-workers/wrangler": ["wrangler@4.97.0", "", { "dependencies": { "@cloudflare/kv-asset-handler": "0.5.0", "@cloudflare/unenv-preset": "2.16.1", "blake3-wasm": "2.1.5", "esbuild": "0.27.3", "miniflare": "4.20260601.0", "path-to-regexp": "6.3.0", "unenv": "2.0.0-rc.24", "workerd": "1.20260601.1" }, "optionalDependencies": { "fsevents": "2.3.3" }, "peerDependencies": { "@cloudflare/workers-types": "^4.20260601.1" }, "bin": { "wrangler": "bin/wrangler.js", "wrangler2": "bin/wrangler.js" } }, "sha512-jzW/aNvjerV+4TmwbvwGY6lpcuBk7EFUTonMDNfci45wSmMTj2/OJN+83cc/CeepKdb+6ZjGJw9NRjmcQoxqRg=="],
 
     "@cspotcode/source-map-support/@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.9", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.0.3", "@jridgewell/sourcemap-codec": "^1.4.10" } }, "sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ=="],
-
-    "@hono-decks/example-minimal/hono-decks": ["hono-decks@./vendor/hono-decks-0.1.0.tgz", { "dependencies": { "@mdx-js/mdx": "^3.1.1", "esbuild": "^0.28.1", "remark-directive": "^4.0.0", "remark-gfm": "^4.0.0", "remark-mdx": "^3.1.1", "remark-parse": "^11.0.0", "shiki": "^4.2.0", "unified": "^11.0.5" }, "peerDependencies": { "hono": "^4.12.30", "vite": "^6.0.0 || ^7.0.0 || ^8.0.0" }, "optionalPeers": ["vite"], "bin": { "hono-decks": "./dist/bin.js" } }, "sha512-jMDjUV2Qdleq27hfrKmQPrPoLSSC3eyijBvzvXoNcFaQ62iwFXXg4nH1Pfttz1dWSjaZB3cY6Q1wKUcrY1juqA=="],
 
     "@pnpm/network.ca-file/graceful-fs": ["graceful-fs@4.2.10", "", {}, "sha512-9ByhssR2fPVsNZj478qUUbKfmL0+t5BDVyjShtyZZLiK7ZDAArFFfopyOTj0M05wE2tJPisA4iTnnXl2YoPvOA=="],
 

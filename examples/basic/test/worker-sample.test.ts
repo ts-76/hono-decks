@@ -8,6 +8,15 @@ async function sampleApp() {
 }
 
 describe("sample Worker app", () => {
+  it("blocks indexing and crawling", async () => {
+    const app = await sampleApp();
+    const home = await app.request("/");
+    const robots = await app.request("/robots.txt");
+
+    expect(home.headers.get("x-robots-tag")).toBe("noindex, nofollow, noarchive");
+    expect(await robots.text()).toBe("User-agent: *\nDisallow: /\n");
+  });
+
   it("keeps generated deck imports behind a sample facade", async () => {
     const entrySource = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
     const facadeSource = await readFile(new URL("../src/decks.ts", import.meta.url), "utf8");
