@@ -34,10 +34,10 @@ export default jsxRenderer(({ children, title, description, activePath }, c) => 
         content={description ?? (locale === "ja" ? "MDXスライドをHonoのルートとして配信するためのhono-decksドキュメント" : "Documentation for mounting MDX slide routes in a Hono application")}
       />
       <meta name="theme-color" content="#161412" />
-      <Link href="/favicon.ico" rel="icon" sizes="any" />
-      <Link href="/favicon-32.png" rel="icon" type="image/png" sizes="32x32" />
-      <Link href="/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180" />
-      <Link href="/site.webmanifest" rel="manifest" />
+      <link href="/favicon.ico" rel="icon" sizes="any" />
+      <link href="/favicon-32.png" rel="icon" type="image/png" sizes="32x32" />
+      <link href="/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180" />
+      <link href="/site.webmanifest" rel="manifest" />
       <title>{title ? `${title} — hono-decks` : "hono-decks — slides in your Hono app"}</title>
       <Link href="/app/style.css" rel="stylesheet" />
       {clientSrc ? <script type="module" src={clientSrc}></script> : null}
