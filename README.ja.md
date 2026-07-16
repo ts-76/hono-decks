@@ -1,5 +1,9 @@
 # hono-decks
 
+<p align="center">
+  <img src="docs/public/icon-512.png" alt="Honoの炎と重なったプレゼンテーションスライドを組み合わせたHono Decksアイコン" width="160" />
+</p>
+
 [English](https://github.com/ts-76/hono-decks/blob/main/README.md) | 日本語
 
 Hono / Cloudflare Workers で MDX の slide deck を配信するための monorepo です。MDX は CLI で TypeScript module に変換され、Worker は生成済み module だけを読み込みます。

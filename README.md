@@ -1,5 +1,9 @@
 # hono-decks
 
+<p align="center">
+  <img src="docs/public/icon-512.png" alt="Hono Decks: Hono flame on a stack of presentation slides" width="160" />
+</p>
+
 English | [日本語](https://github.com/ts-76/hono-decks/blob/main/README.ja.md)
 
 This monorepo contains hono-decks, a toolkit for serving MDX slide decks from Hono applications and Cloudflare Workers. The CLI compiles MDX into TypeScript modules, so Workers only load generated modules at runtime.
