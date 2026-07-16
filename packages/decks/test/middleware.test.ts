@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { deckMiddleware } from "../src/node";
 
 describe("deckMiddleware middleware", () => {
@@ -13,7 +13,7 @@ describe("deckMiddleware middleware", () => {
     expect(response.headers.get("content-type")).toContain("text/html");
     const html = await response.text();
     expect(html).toContain("<!doctype html>");
-    expect(html).toContain("data-slide-index=\"1\"");
+    expect(html).toContain('data-slide-index="1"');
     expect(html).toContain("Hello");
   });
 
@@ -31,6 +31,6 @@ describe("deckMiddleware middleware", () => {
     expect(response.status).toBe(200);
     const data = (await response.json()) as { count: number; html: string };
     expect(data.count).toBe(2);
-    expect(data.html).toContain("data-slide-index=\"1\"");
+    expect(data.html).toContain('data-slide-index="1"');
   });
 });

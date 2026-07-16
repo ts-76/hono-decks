@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { serveDecksClientEntry } from "../src/server/client-entry";
 
 describe("serveDecksClientEntry", () => {

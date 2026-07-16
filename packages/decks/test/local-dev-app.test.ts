@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { createLocalDevSlidesApp } from "../src/node/index";
 
 describe("local file-based dev sample app", () => {
@@ -46,10 +46,6 @@ describe("local file-based dev sample app", () => {
 async function createFixture(): Promise<string> {
   const cwd = await mkdtemp(join(tmpdir(), "hono-decks-local-dev-"));
   await mkdir(join(cwd, "decks", "local"), { recursive: true });
-  await writeFile(
-    join(cwd, "decks", "local", "deck.mdx"),
-    `---\ntitle: Local Deck\n---\n\n# Local Deck`,
-    "utf8",
-  );
+  await writeFile(join(cwd, "decks", "local", "deck.mdx"), `---\ntitle: Local Deck\n---\n\n# Local Deck`, "utf8");
   return cwd;
 }

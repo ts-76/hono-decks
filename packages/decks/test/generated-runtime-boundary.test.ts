@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { emitDeckComponentRegistryModule } from "../src/generator/component-registry";
 import { emitDeckManifestModule } from "../src/generator/manifest-generator";
 import { emitModuleDecksRouter } from "../src/generator/mdx/emit";

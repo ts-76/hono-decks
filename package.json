@@ -1,12 +1,12 @@
 {
   "name": "hono-decks-monorepo",
   "private": true,
-  "type": "module",
   "workspaces": [
     "packages/*",
     "examples/*",
     "docs"
   ],
+  "type": "module",
   "scripts": {
     "build": "bun run --cwd packages/decks build",
     "dev": "bun run --cwd examples/basic dev",
@@ -21,9 +21,11 @@
     "smoke:pdf": "bun run --cwd examples/basic smoke:pdf",
     "smoke:viewport": "bun run --cwd examples/basic smoke:viewport",
     "release": "node scripts/verify-release-baseline.mjs && semantic-release",
+    "format": "vp fmt",
+    "lint": "vp lint",
     "typecheck": "bun run --cwd packages/decks typecheck && bun run --cwd examples/basic typecheck && bun run --cwd examples/minimal typecheck && bun run --cwd examples/honox typecheck && bun run --cwd examples/ogp typecheck && bun run --cwd docs typecheck",
     "test": "bun run --cwd packages/decks test && bun run --cwd examples/basic test && bun run --cwd examples/minimal test && bun run --cwd examples/honox test && bun run --cwd examples/ogp test && bun run --cwd docs test",
-    "check": "bun run typecheck && bun run test && bun run build:ogp && bun run build:docs"
+    "check": "vp check && bun run typecheck && bun run test && bun run build:ogp && bun run build:docs"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.16.12",
@@ -37,8 +39,19 @@
     "semantic-release": "^25.0.3",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.14",
+    "vite": "catalog:",
+    "vite-plus": "catalog:",
+    "vitest": "catalog:",
     "wrangler": "^4.110.0"
   },
-  "packageManager": "bun@1.3.13"
+  "overrides": {
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  },
+  "packageManager": "bun@1.3.13",
+  "catalog": {
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.2.4",
+    "vitest": "4.1.10",
+    "vite-plus": "0.2.4"
+  }
 }

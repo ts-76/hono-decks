@@ -8,7 +8,7 @@
     "dev": "bun run --cwd ../../packages/decks build -- --clean=false && CI=1 XDG_CONFIG_HOME=.wrangler-config wrangler dev --live-reload",
     "build": "bun run --cwd ../../packages/decks build && CI=1 XDG_CONFIG_HOME=.wrangler-config wrangler deploy --dry-run --outdir dist",
     "typecheck": "bun run decks:compile && tsc --noEmit",
-    "test": "bun run decks:compile && vitest run",
+    "test": "bun run decks:compile && vp test run",
     "check": "bun run typecheck && bun run test && bun run build"
   },
   "dependencies": {
@@ -21,7 +21,9 @@
     "@types/node": "^25.9.2",
     "satori": "^0.28.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.14",
+    "vite": "catalog:",
+    "vite-plus": "catalog:",
+    "vitest": "catalog:",
     "wrangler": "^4.110.0"
   }
 }

@@ -1,15 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { resolveDeckFiles } from "../src/routing/file-routing";
 
 describe("resolveDeckFiles", () => {
   it("resolves directory decks and single-file decks", () => {
-    expect(
-      resolveDeckFiles([
-        "decks/deck1/deck.mdx",
-        "decks/deck1/assets/image.png",
-        "decks/deck2.mdx",
-      ]),
-    ).toEqual([
+    expect(resolveDeckFiles(["decks/deck1/deck.mdx", "decks/deck1/assets/image.png", "decks/deck2.mdx"])).toEqual([
       {
         slug: "deck1",
         sourcePath: "decks/deck1/deck.mdx",

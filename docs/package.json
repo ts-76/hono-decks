@@ -4,16 +4,16 @@
   "type": "module",
   "scripts": {
     "decks:compile": "bun run --cwd ../packages/decks build -- --clean=false && node ../packages/decks/dist/bin.js compile",
-    "dev": "bun run --cwd ../packages/decks build -- --clean=false && vite",
-    "build": "bun run --cwd ../packages/decks build && vite build --mode client && vite build",
+    "dev": "bun run --cwd ../packages/decks build -- --clean=false && vp dev",
+    "build": "bun run --cwd ../packages/decks build && vp build --mode client && vp build",
     "preview": "wrangler dev",
     "typecheck": "bun run decks:compile && tsc --noEmit",
-    "test": "bun run decks:compile && vitest run",
+    "test": "bun run decks:compile && vp test run",
     "check": "bun run typecheck && bun run test && bun run build"
   },
   "dependencies": {
-    "hono-decks": "workspace:*",
     "hono": "^4.12.30",
+    "hono-decks": "workspace:*",
     "honox": "0.1.59",
     "shiki": "^4.2.0"
   },
@@ -22,8 +22,9 @@
     "@hono/vite-build": "^1.11.1",
     "@hono/vite-dev-server": "^0.26.1",
     "typescript": "^5.9.3",
-    "vite": "^8.1.4",
-    "vitest": "^4.0.14",
+    "vite": "catalog:",
+    "vite-plus": "catalog:",
+    "vitest": "catalog:",
     "wrangler": "^4.110.0"
   }
 }

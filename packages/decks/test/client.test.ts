@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 describe("client island helpers", () => {
   it("exports a hono/jsx/dom hydration helper from the client entrypoint", async () => {

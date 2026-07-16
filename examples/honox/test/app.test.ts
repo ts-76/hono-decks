@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import app from "../app/server";
 
 describe("HonoX example", () => {
@@ -15,7 +15,7 @@ describe("HonoX example", () => {
     expect(viteConfig).not.toContain("alias");
     expect(viteConfig).toContain('from "hono-decks/vite"');
     expect(viteConfig).toContain("honoDecks()");
-    expect(packageJson.scripts.dev).toMatch(/vite$/);
+    expect(packageJson.scripts.dev).toMatch(/vp dev$/);
     expect(packageJson.scripts.dev).not.toContain("decks:compile");
     expect(packageJson.scripts["decks:watch"]).toBeUndefined();
   });

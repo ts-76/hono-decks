@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import app from "../app/server";
 
 describe("HonoX documentation site", () => {
@@ -27,9 +27,15 @@ describe("HonoX documentation site", () => {
   it("uses query, cookie, and Accept-Language detection with Japanese fallback", async () => {
     const query = await app.request("https://docs.example/docs/getting-started?lang=en");
     const queryHtml = await query.text();
-    const cookie = await app.request("https://docs.example/docs/getting-started", { headers: { cookie: "language=en" } });
-    const header = await app.request("https://docs.example/", { headers: { "accept-language": "en-US,en;q=0.9" } });
-    const fallback = await app.request("https://docs.example/", { headers: { "accept-language": "fr-FR" } });
+    const cookie = await app.request("https://docs.example/docs/getting-started", {
+      headers: { cookie: "language=en" },
+    });
+    const header = await app.request("https://docs.example/", {
+      headers: { "accept-language": "en-US,en;q=0.9" },
+    });
+    const fallback = await app.request("https://docs.example/", {
+      headers: { "accept-language": "fr-FR" },
+    });
 
     expect(queryHtml).toContain('<html lang="en">');
     expect(queryHtml).toContain("Check the prerequisites");
@@ -68,7 +74,7 @@ describe("HonoX documentation site", () => {
     expect(embed.status).toBe(200);
     expect(embed.headers.get("content-security-policy")).toContain("frame-ancestors 'self'");
     expect(embedHtml).toContain("data-hono-decks-external-embed-document");
-    expect(embedHtml).toContain('/demo/product/render');
+    expect(embedHtml).toContain("/demo/product/render");
     expect(render.status).toBe(200);
     expect(renderHtml).toContain("MDX slides, served by Hono.");
     expect(viewer.status).toBe(404);
@@ -111,7 +117,16 @@ describe("HonoX documentation site", () => {
   });
 
   it("uses concise Japanese instead of internal architecture jargon", async () => {
-    const paths = ["/", "/docs/getting-started", "/docs/authoring", "/docs/configuration", "/docs/recipes", "/docs/routing", "/docs/security", "/api"];
+    const paths = [
+      "/",
+      "/docs/getting-started",
+      "/docs/authoring",
+      "/docs/configuration",
+      "/docs/recipes",
+      "/docs/routing",
+      "/docs/security",
+      "/api",
+    ];
 
     for (const path of paths) {
       const html = await (await app.request(path)).text();
@@ -177,7 +192,7 @@ describe("HonoX documentation site", () => {
     expect(routing).toContain("step=0</code>は段階表示がまだ発火していない状態");
     expect(routing).toContain("標準ビューアーと外部埋め込みの印刷ボタンも表示されません");
     expect(routing).toContain("ブラウザ本来の印刷として動作します");
-    expect(security).toContain('languageDetector');
+    expect(security).toContain("languageDetector");
     expect(security).toContain("hono-decks独自の認証は付きません");
     expect(security).toContain("同じnonceをCSPヘッダーとHTMLへ渡す");
     expect(security).toContain("許可していないオリジンでは拒否される");
@@ -194,11 +209,11 @@ describe("HonoX documentation site", () => {
     expect(ja).not.toContain("追加設定なしで");
     expect(ja).toContain("&lt;Fire&gt;");
     expect(ja).toContain(":::fire");
-    expect(ja).toContain('each=&quot;item&quot;');
-    expect(ja).toContain('fire=&quot;scale&quot;');
-    expect(ja).toContain('effect=&quot;blur-in&quot;');
+    expect(ja).toContain("each=&quot;item&quot;");
+    expect(ja).toContain("fire=&quot;scale&quot;");
+    expect(ja).toContain("effect=&quot;blur-in&quot;");
     expect(ja).toContain("複数のJSX要素を同時に表示するときは");
-    expect(ja).toContain('data-fire-effect=&quot;blur-in&quot;');
+    expect(ja).toContain("data-fire-effect=&quot;blur-in&quot;");
     expect(ja).toContain("--fire-filter");
     expect(ja).toContain("https://sli.dev/guide/animations");
     expect(ja).toContain("Slidevの");

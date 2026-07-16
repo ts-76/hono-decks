@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { honoDecks } from "../src/vite";
 
 describe("honoDecks Vite plugin", () => {
@@ -39,7 +39,11 @@ describe("honoDecks Vite plugin", () => {
       const deckPath = join(cwd, "decks", "intro", "deck.mdx");
       await writeFile(deckPath, "# Updated title\n", "utf8");
       watcher.emit("change", deckPath);
-      await waitFor(async () => (await readFile(join(cwd, "src", "generated", "decks", "intro", "slide-0.ts"), "utf8")).includes("Updated title"));
+      await waitFor(async () =>
+        (await readFile(join(cwd, "src", "generated", "decks", "intro", "slide-0.ts"), "utf8")).includes(
+          "Updated title",
+        ),
+      );
       await waitFor(() => ws.fullReloads === 1);
 
       await writeFile(deckPath, "<Broken", "utf8");
@@ -49,7 +53,11 @@ describe("honoDecks Vite plugin", () => {
 
       await writeFile(deckPath, "# Recovered title\n", "utf8");
       watcher.emit("change", deckPath);
-      await waitFor(async () => (await readFile(join(cwd, "src", "generated", "decks", "intro", "slide-0.ts"), "utf8")).includes("Recovered title"));
+      await waitFor(async () =>
+        (await readFile(join(cwd, "src", "generated", "decks", "intro", "slide-0.ts"), "utf8")).includes(
+          "Recovered title",
+        ),
+      );
       await waitFor(() => ws.fullReloads === 2);
 
       const nextRoot = join(cwd, "presentations");
@@ -66,7 +74,11 @@ describe("honoDecks Vite plugin", () => {
         "utf8",
       );
       watcher.emit("change", configPath);
-      await waitFor(async () => (await readFile(join(cwd, "src", "generated", "decks", "next", "slide-0.ts"), "utf8")).includes("Configured root"));
+      await waitFor(async () =>
+        (await readFile(join(cwd, "src", "generated", "decks", "next", "slide-0.ts"), "utf8")).includes(
+          "Configured root",
+        ),
+      );
       await waitFor(() => ws.fullReloads === 3);
       expect(watcher.added).toContain(nextRoot);
       expect(watcher.added).not.toContain(join(cwd, "decks"));

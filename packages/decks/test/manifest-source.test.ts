@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { manifestDeckSource } from "../src/source/manifest-source";
 import type { CompiledDeck } from "../src/deck/model";
 

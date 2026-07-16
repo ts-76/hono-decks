@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { Badge } from "../decks/sample/components";
 import { decks } from "../src/decks";
 
@@ -129,7 +129,7 @@ describe("sample Worker app", () => {
     expect(html).toContain("cursor:pointer");
     expect(html).toContain("data-hono-decks-control-icon");
     expect(html).toContain('href="/decks"');
-    expect(html).toContain('data-hono-decks-back-link');
+    expect(html).toContain("data-hono-decks-back-link");
     expect(html).toContain('href="/decks/sample/about"');
     expect(html).toContain('data-sample-control="details"');
     expect(html).toContain('aria-label="Details"');
@@ -172,8 +172,8 @@ describe("sample Worker app", () => {
     expect(projection.status).toBe(200);
     const projectionHtml = await projection.text();
     expect(projectionHtml).toContain('data-hono-decks-projection="true"');
-    expect(projectionHtml).toContain('data-hono-decks-stage');
-    expect(projectionHtml).not.toContain('data-hono-decks-viewer-controls');
+    expect(projectionHtml).toContain("data-hono-decks-stage");
+    expect(projectionHtml).not.toContain("data-hono-decks-viewer-controls");
     expect(projectionHtml).not.toContain("Introduce the clean projection route for talks.");
     expect(projectionHtml).not.toContain("Use the presenter route for notes and next-slide preview.");
 
@@ -188,11 +188,11 @@ describe("sample Worker app", () => {
 
     expect(presenter.status).toBe(200);
     const presenterHtml = await presenter.text();
-    expect(presenterHtml).toContain('data-hono-decks-presenter');
-    expect(presenterHtml).toContain('data-hono-decks-presenter-current');
+    expect(presenterHtml).toContain("data-hono-decks-presenter");
+    expect(presenterHtml).toContain("data-hono-decks-presenter-current");
     expect(presenterHtml).toContain('src="/decks/sample/presentation"');
-    expect(presenterHtml).toContain('data-hono-decks-presenter-next');
-    expect(presenterHtml).toContain('data-hono-decks-presenter-notes');
+    expect(presenterHtml).toContain("data-hono-decks-presenter-next");
+    expect(presenterHtml).toContain("data-hono-decks-presenter-notes");
     expect(presenterHtml).toContain("Introduce the clean projection route for talks.");
     expect(presenterHtml).toContain("Use the presenter route for notes and next-slide preview.");
   });
@@ -271,7 +271,9 @@ describe("sample Worker app", () => {
     expect(response.status).toBe(200);
     const html = await response.text();
     expect(html).toContain("<title>Hono Slides - Details</title>");
-    expect(html).toContain('<meta name="description" content="Hono + Cloudflare Workers で動く MDX-like slide runtime"/>');
+    expect(html).toContain(
+      '<meta name="description" content="Hono + Cloudflare Workers で動く MDX-like slide runtime"/>',
+    );
     expect(html).toContain('<meta property="og:title" content="Hono Slides"/>');
     expect(html).toContain(
       '<meta property="og:description" content="Hono + Cloudflare Workers で動く MDX-like slide runtime"/>',
@@ -296,7 +298,7 @@ describe("sample Worker app", () => {
     expect(html).toContain('<meta name="robots" content="noindex"/>');
     expect(html).toContain('id="hono-decks-external-embed-css"');
     expect(html).toContain('class="hono-decks-embedded-viewer sample-external-deck-embed"');
-    expect(html).toContain('data-hono-decks-frame');
+    expect(html).toContain("data-hono-decks-frame");
     expect(html).toContain('src="/decks/sample/render"');
     expect(html).toContain('data-hono-decks-embed="true"');
     expect(html).toContain("data-hono-decks-embed-style");
@@ -304,7 +306,7 @@ describe("sample Worker app", () => {
     expect(html).toContain('data-hono-decks-print-path="/decks/sample/print"');
     expect(html).toContain("for (const root of roots)");
     expect(html).toContain('data-action="fullscreen"');
-    expect(html).not.toContain('data-hono-decks-back-link');
+    expect(html).not.toContain("data-hono-decks-back-link");
     expect(html).not.toContain('data-hono-decks-print="true"');
     expect(html).not.toContain('data-sample-layout="deck-embed"');
     expect(html).not.toContain('class="sample-page-header"');
@@ -314,10 +316,14 @@ describe("sample Worker app", () => {
 
   it("allows configured blog origins to frame the embed route without enabling CORS", async () => {
     const app = await sampleApp();
-    const response = await app.request("/decks/sample/embed", {}, {
-      DECK_EMBED_ALLOWED_ORIGINS:
-        "https://blog.example.com, https://notes.example.net/article ignored-origin javascript:alert(1)",
-    });
+    const response = await app.request(
+      "/decks/sample/embed",
+      {},
+      {
+        DECK_EMBED_ALLOWED_ORIGINS:
+          "https://blog.example.com, https://notes.example.net/article ignored-origin javascript:alert(1)",
+      },
+    );
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-security-policy")).toBe(
@@ -343,7 +349,7 @@ describe("sample Worker app", () => {
     expect(html).toContain("Interactive count");
     expect(html).toContain('src="/decks/sample/assets/r2-cache.svg"');
     expect(html).not.toContain("/decks/sample//decks/sample/assets");
-    expect(html).toContain('data-hono-decks-deck');
+    expect(html).toContain("data-hono-decks-deck");
     expect(html).toContain("function fitDeck()");
     expect(html).toContain('deck.style.transform = "scale(" + scale + ")"');
     expect(html).toContain('<script type="module" src="/decks/_assets/client.js"></script>');
@@ -377,7 +383,7 @@ describe("sample Worker app", () => {
     expect(html).not.toContain('href="https://www.youtube.com/embed/dQw4w9WgXcQ"');
     expect(html).toContain('src="https://example.com/embed/status"');
     expect(html).toContain('title="Embedded content"');
-    expect(html).toContain('Open embed');
+    expect(html).toContain("Open embed");
     expect(html).toContain('href="https://example.com/embed/status" target="_blank" rel="noreferrer"');
     expect(html).toContain('href="https://example.com/plain-link"');
     expect(html).toContain(">https://example.com/plain-link</a>");
@@ -387,7 +393,9 @@ describe("sample Worker app", () => {
     expect(html).toContain('class="hono-decks-tweet-embed"');
     expect(html).toContain('data-component="TweetEmbed"');
     expect(html).toContain('class="twitter-tweet"');
-    expect(html).toContain('href="https://x.com/honojs/status/1659577874821836801?s=20" target="_blank" rel="noreferrer"');
+    expect(html).toContain(
+      'href="https://x.com/honojs/status/1659577874821836801?s=20" target="_blank" rel="noreferrer"',
+    );
     expect(html).toContain('src="https://platform.twitter.com/widgets.js"');
     expect(html).toContain('class="hono-decks-link-card"');
     expect(html).toContain('href="https://yusukebe.com/"');

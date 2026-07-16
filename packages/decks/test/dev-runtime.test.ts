@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import type { CompiledDeck, DeckFileChange, LocalDeckIO } from "../src/deck/model";
 import { createDevDeckRuntime } from "../src/runtime/dev-runtime";
 import { createPreviewEventHub } from "../src/runtime/preview-events";
@@ -31,7 +31,11 @@ describe("createDevDeckRuntime", () => {
       previewEvents,
     });
 
-    await runtime.handleFileChange({ type: "changed", path: "decks/deck1/deck.mdx", slug: "deck1" });
+    await runtime.handleFileChange({
+      type: "changed",
+      path: "decks/deck1/deck.mdx",
+      slug: "deck1",
+    });
 
     await expect(runtime.source.getCompiledDeck({} as never, "deck1")).resolves.toMatchObject({
       meta: { title: "After" },
@@ -93,11 +97,9 @@ describe("createDevDeckRuntime", () => {
           ],
         },
       ],
-      localDeckIO: createMemoryDeckIO(
-        { deck1: "# Before" },
-        undefined,
-        { "decks/deck1/assets/image.png": new Uint8Array([4, 5, 6]) },
-      ),
+      localDeckIO: createMemoryDeckIO({ deck1: "# Before" }, undefined, {
+        "decks/deck1/assets/image.png": new Uint8Array([4, 5, 6]),
+      }),
       compiler: {
         async compileMarkdown() {
           throw new Error("asset changes should not recompile markdown");
@@ -105,7 +107,11 @@ describe("createDevDeckRuntime", () => {
       },
     });
 
-    await runtime.handleFileChange({ type: "changed", path: "decks/deck1/assets/image.png", slug: "deck1" });
+    await runtime.handleFileChange({
+      type: "changed",
+      path: "decks/deck1/assets/image.png",
+      slug: "deck1",
+    });
     const response = await runtime.source.getAsset?.({} as never, "deck1", "image.png");
 
     expect(await response?.arrayBuffer()).toEqual(new Uint8Array([4, 5, 6]).buffer);
@@ -114,11 +120,9 @@ describe("createDevDeckRuntime", () => {
   it("adds a new local asset after an asset file create event", async () => {
     const runtime = createDevDeckRuntime({
       initialDecks: [initialDeck],
-      localDeckIO: createMemoryDeckIO(
-        { deck1: "# Before" },
-        undefined,
-        { "decks/deck1/assets/new image.svg": new Uint8Array([7, 8, 9]) },
-      ),
+      localDeckIO: createMemoryDeckIO({ deck1: "# Before" }, undefined, {
+        "decks/deck1/assets/new image.svg": new Uint8Array([7, 8, 9]),
+      }),
       compiler: {
         async compileMarkdown() {
           throw new Error("asset creates should not recompile markdown");
@@ -126,7 +130,11 @@ describe("createDevDeckRuntime", () => {
       },
     });
 
-    await runtime.handleFileChange({ type: "created", path: "decks/deck1/assets/new image.svg", slug: "deck1" });
+    await runtime.handleFileChange({
+      type: "created",
+      path: "decks/deck1/assets/new image.svg",
+      slug: "deck1",
+    });
 
     const response = await runtime.source.getAsset?.({} as never, "deck1", "new%20image.svg");
     expect(response?.headers.get("content-type")).toBe("image/svg+xml");
@@ -146,11 +154,9 @@ describe("createDevDeckRuntime", () => {
   it("uses the configured mount path for new local asset public paths", async () => {
     const runtime = createDevDeckRuntime({
       initialDecks: [initialDeck],
-      localDeckIO: createMemoryDeckIO(
-        { deck1: "# Before" },
-        undefined,
-        { "decks/deck1/assets/new.png": new Uint8Array([1]) },
-      ),
+      localDeckIO: createMemoryDeckIO({ deck1: "# Before" }, undefined, {
+        "decks/deck1/assets/new.png": new Uint8Array([1]),
+      }),
       compiler: {
         async compileMarkdown() {
           throw new Error("asset creates should not recompile markdown");
@@ -159,7 +165,11 @@ describe("createDevDeckRuntime", () => {
       mountPath: "/slides",
     });
 
-    await runtime.handleFileChange({ type: "created", path: "decks/deck1/assets/new.png", slug: "deck1" });
+    await runtime.handleFileChange({
+      type: "created",
+      path: "decks/deck1/assets/new.png",
+      slug: "deck1",
+    });
 
     await expect(runtime.source.getCompiledDeck({} as never, "deck1")).resolves.toMatchObject({
       assets: [
@@ -196,11 +206,14 @@ describe("createDevDeckRuntime", () => {
       },
     });
 
-    await runtime.handleFileChange({ type: "deleted", path: "decks/deck1/assets/image.png", slug: "deck1" });
+    await runtime.handleFileChange({
+      type: "deleted",
+      path: "decks/deck1/assets/image.png",
+      slug: "deck1",
+    });
 
     await expect(runtime.source.getAsset?.({} as never, "deck1", "image.png")).resolves.toBeNull();
   });
-
 
   it("keeps the previous compiled deck and publishes an error event when compile fails", async () => {
     const previewEvents = createPreviewEventHub();
@@ -215,7 +228,11 @@ describe("createDevDeckRuntime", () => {
       previewEvents,
     });
 
-    await runtime.handleFileChange({ type: "changed", path: "decks/deck1/deck.mdx", slug: "deck1" });
+    await runtime.handleFileChange({
+      type: "changed",
+      path: "decks/deck1/deck.mdx",
+      slug: "deck1",
+    });
 
     await expect(runtime.source.getCompiledDeck({} as never, "deck1")).resolves.toEqual(initialDeck);
     expect(previewEvents.drain("deck1")).toEqual([
@@ -240,7 +257,11 @@ describe("createDevDeckRuntime", () => {
       previewEvents,
     });
 
-    await runtime.handleFileChange({ type: "deleted", path: "decks/deck1/deck.mdx", slug: "deck1" });
+    await runtime.handleFileChange({
+      type: "deleted",
+      path: "decks/deck1/deck.mdx",
+      slug: "deck1",
+    });
 
     await expect(runtime.source.getCompiledDeck({} as never, "deck1")).resolves.toBeNull();
     expect(previewEvents.drain("deck1")).toEqual([
@@ -276,10 +297,18 @@ describe("createDevDeckRuntime", () => {
       previewEvents,
     });
 
-    const first = runtime.handleFileChange({ type: "changed", path: "decks/deck1/deck.mdx", slug: "deck1" });
+    const first = runtime.handleFileChange({
+      type: "changed",
+      path: "decks/deck1/deck.mdx",
+      slug: "deck1",
+    });
     await waitForAsyncWatchHandler();
     markdownBySlug.deck1 = "# Second";
-    await runtime.handleFileChange({ type: "changed", path: "decks/deck1/deck.mdx", slug: "deck1" });
+    await runtime.handleFileChange({
+      type: "changed",
+      path: "decks/deck1/deck.mdx",
+      slug: "deck1",
+    });
     releaseFirstCompile?.();
     await first;
 
@@ -306,11 +335,9 @@ describe("createDevDeckRuntime", () => {
           ],
         },
       ],
-      localDeckIO: createMemoryDeckIO(
-        { deck1: "# Source Update" },
-        undefined,
-        { "decks/deck1/assets/image.png": new Uint8Array([9]) },
-      ),
+      localDeckIO: createMemoryDeckIO({ deck1: "# Source Update" }, undefined, {
+        "decks/deck1/assets/image.png": new Uint8Array([9]),
+      }),
       compiler: {
         async compileMarkdown(input) {
           await new Promise<void>((resolve) => {
@@ -324,9 +351,17 @@ describe("createDevDeckRuntime", () => {
       },
     });
 
-    const compile = runtime.handleFileChange({ type: "changed", path: "decks/deck1/deck.mdx", slug: "deck1" });
+    const compile = runtime.handleFileChange({
+      type: "changed",
+      path: "decks/deck1/deck.mdx",
+      slug: "deck1",
+    });
     await waitForAsyncWatchHandler();
-    await runtime.handleFileChange({ type: "changed", path: "decks/deck1/assets/image.png", slug: "deck1" });
+    await runtime.handleFileChange({
+      type: "changed",
+      path: "decks/deck1/assets/image.png",
+      slug: "deck1",
+    });
     releaseCompile?.();
     await compile;
 
@@ -354,11 +389,9 @@ describe("createDevDeckRuntime", () => {
           ],
         },
       ],
-      localDeckIO: createMemoryDeckIO(
-        { deck1: "# Source Update" },
-        undefined,
-        { "decks/deck1/assets/image.png": new Uint8Array([9, 10]) },
-      ),
+      localDeckIO: createMemoryDeckIO({ deck1: "# Source Update" }, undefined, {
+        "decks/deck1/assets/image.png": new Uint8Array([9, 10]),
+      }),
       compiler: {
         async compileMarkdown(input) {
           await new Promise<void>((resolve) => {
@@ -372,9 +405,17 @@ describe("createDevDeckRuntime", () => {
       },
     });
 
-    const compile = runtime.handleFileChange({ type: "changed", path: "decks/deck1/deck.mdx", slug: "deck1" });
+    const compile = runtime.handleFileChange({
+      type: "changed",
+      path: "decks/deck1/deck.mdx",
+      slug: "deck1",
+    });
     await waitForAsyncWatchHandler();
-    await runtime.handleFileChange({ type: "changed", path: "decks/deck1/assets/image.png", slug: "deck1" });
+    await runtime.handleFileChange({
+      type: "changed",
+      path: "decks/deck1/assets/image.png",
+      slug: "deck1",
+    });
     releaseCompile?.();
     await compile;
 
@@ -418,7 +459,11 @@ describe("createDevDeckRuntime", () => {
       },
     });
 
-    await runtime.handleFileChange({ type: "changed", path: "decks/deck1/deck.mdx", slug: "deck1" });
+    await runtime.handleFileChange({
+      type: "changed",
+      path: "decks/deck1/deck.mdx",
+      slug: "deck1",
+    });
 
     await expect(runtime.source.getCompiledDeck({} as never, "deck1")).resolves.toMatchObject({
       assets: [
@@ -501,7 +546,11 @@ describe("createDevDeckRuntime", () => {
       previewEvents,
     });
 
-    await runtime.handleFileChange({ type: "changed", path: "decks/deck1/deck.mdx", slug: "deck1" });
+    await runtime.handleFileChange({
+      type: "changed",
+      path: "decks/deck1/deck.mdx",
+      slug: "deck1",
+    });
 
     await expect(runtime.source.getCompiledDeck({} as never, "deck1")).resolves.toEqual(initialDeck);
     expect(previewEvents.drain("deck1")).toEqual([
@@ -518,15 +567,12 @@ describe("createDevDeckRuntime", () => {
     let stopped = false;
     const runtime = createDevDeckRuntime({
       initialDecks: [initialDeck],
-      localDeckIO: createMemoryDeckIO(
-        { deck1: "# Watched" },
-        (next) => {
-          onFileChange = next;
-          return () => {
-            stopped = true;
-          };
-        },
-      ),
+      localDeckIO: createMemoryDeckIO({ deck1: "# Watched" }, (next) => {
+        onFileChange = next;
+        return () => {
+          stopped = true;
+        };
+      }),
       compiler: {
         async compileMarkdown(input) {
           return {

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { parseDeck } from "../src/parser/parser";
 import { renderDeck } from "../src/renderer/render";
 

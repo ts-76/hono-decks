@@ -11,7 +11,7 @@
     "smoke:r2-cache": "node scripts/deployed-r2-cache-smoke.mjs",
     "smoke:viewport": "node scripts/viewport-smoke.mjs",
     "typecheck": "bun run decks:compile && tsc --noEmit",
-    "test": "bun run decks:compile && vitest run",
+    "test": "bun run decks:compile && vp test run",
     "check": "bun run typecheck && bun run test"
   },
   "dependencies": {
@@ -19,6 +19,8 @@
     "hono-decks": "workspace:*"
   },
   "devDependencies": {
+    "vite": "catalog:",
+    "vitest": "catalog:",
     "wrangler": "^4.110.0"
   }
 }

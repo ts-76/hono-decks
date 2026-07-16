@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { compileMarkdown } from "../src/compiler/compiler";
 
 describe("compileMarkdown", () => {
@@ -191,7 +191,12 @@ assets:
             props: {},
             children: [
               { type: "text", value: "Left " },
-              { type: "element", tag: "strong", props: {}, children: [{ type: "text", value: "side" }] },
+              {
+                type: "element",
+                tag: "strong",
+                props: {},
+                children: [{ type: "text", value: "side" }],
+              },
             ],
           },
           {
@@ -260,7 +265,9 @@ transition: fade-out
     expect(deck.meta.transition).toBe("slide-left");
     expect(deck.slides[0].meta.transition).toBe("slide-left");
     expect(deck.slides[1].meta.transition).toBe("fade-out");
-    expect(deck.warnings).not.toEqual(expect.arrayContaining([expect.objectContaining({ code: "unknown-transition" })]));
+    expect(deck.warnings).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: "unknown-transition" })]),
+    );
   });
 
   it("applies deck-level transition timing as slide fallbacks and lets slides override them", async () => {

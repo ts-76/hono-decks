@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { jsx } from "hono/jsx/jsx-runtime";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import type { CompiledDeck } from "../src/deck/model";
 import { configureDecks, defineDecks, defineDecksConfig } from "../src/server/define-decks";
 import { manifestDeckSource } from "../src/source/manifest-source";
@@ -13,7 +13,14 @@ const deck = {
   sourcePath: "decks/deck1/deck.mdx",
   kind: "directory",
   meta: { title: "Deck One", draft: false, meta: {} },
-  slides: [{ index: 0, meta: { title: "Intro", layout: "cover", meta: {} }, html: "<h1>Intro</h1>", components: [] }],
+  slides: [
+    {
+      index: 0,
+      meta: { title: "Intro", layout: "cover", meta: {} },
+      html: "<h1>Intro</h1>",
+      components: [],
+    },
+  ],
   assets: [
     {
       sourcePath: "decks/deck1/assets/image.png",
@@ -39,7 +46,7 @@ describe("decksRouter", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/html");
     const html = await response.text();
-    expect(html).toContain('data-hono-decks-viewer');
+    expect(html).toContain("data-hono-decks-viewer");
     expect(html).toContain('<h1 id="hono-decks-viewer-title" class="hono-decks-viewer-title">Deck One</h1>');
     expect(html).toContain('class="hono-decks-viewer-meta"');
     expect(html).toContain('src="/slides/deck1/render"');
@@ -49,7 +56,9 @@ describe("decksRouter", () => {
     expect(html).toContain("*:focus-visible{outline:none}");
     expect(html).toContain(".hono-decks-frame-stage{width:100%;height:100%");
     expect(html).toContain(".hono-decks-frame-stage iframe{width:100%;height:100%");
-    expect(html).not.toContain(".hono-decks-frame-stage iframe{width:100%;height:100%;border:0;display:block;background:");
+    expect(html).not.toContain(
+      ".hono-decks-frame-stage iframe{width:100%;height:100%;border:0;display:block;background:",
+    );
     expect(html).toContain("@media (prefers-reduced-motion: reduce)");
     expect(html).not.toContain('width="1920"');
     expect(html).not.toContain('height="1080"');
@@ -60,11 +69,13 @@ describe("decksRouter", () => {
     expect(html).toContain('data-viewer-navigation="next"');
     expect(html).toContain(".hono-decks-viewer-navigation-layer{position:absolute;top:0;bottom:0;width:50%");
     expect(html).toContain(".hono-decks-viewport>[data-hono-decks-position]{position:absolute;left:50%");
-    expect(html).toContain('@media (orientation:landscape) and (max-height:600px)');
+    expect(html).toContain("@media (orientation:landscape) and (max-height:600px)");
     expect(html).toContain("grid-template-columns:minmax(0,1fr) auto");
     expect(html).toContain(".hono-decks-viewer-controls{flex-direction:column}");
-    expect(html).toContain('@media (pointer:coarse)');
-    expect(html).toContain('.hono-decks-viewer-controls [data-hono-decks-navigation-control="fullscreen"],.hono-decks-viewer-controls [data-hono-decks-print]{display:none}');
+    expect(html).toContain("@media (pointer:coarse)");
+    expect(html).toContain(
+      '.hono-decks-viewer-controls [data-hono-decks-navigation-control="fullscreen"],.hono-decks-viewer-controls [data-hono-decks-print]{display:none}',
+    );
     expect(html).toContain('data-action="previous"');
     expect(html).toContain('data-action="next"');
     expect(html).toContain('data-action="fullscreen"');
@@ -77,7 +88,7 @@ describe("decksRouter", () => {
     expect(html).toContain('aria-label="Next slide"');
     expect(html).toContain('aria-label="Toggle fullscreen"');
     expect(html).toContain('href="/slides"');
-    expect(html).toContain('data-hono-decks-back-link');
+    expect(html).toContain("data-hono-decks-back-link");
     expect(html).toContain("message.stepCount");
     expect(html).toContain("writeViewerPaginationState(message)");
     expect(html).toContain('params.set("slide", String(message.index + 1))');
@@ -89,8 +100,8 @@ describe("decksRouter", () => {
     expect(html).toContain(".hono-decks-viewer-stage{display:grid;place-items:center;justify-content:center");
     expect(html).toContain("@supports (width:1cqw)");
     expect(html).not.toContain("position:fixed;left:50%;bottom:16px");
-    expect(html).toContain("root.setAttribute(\"data-step-index\", String(message.stepIndex ?? 0))");
-    expect(html).toContain("root.setAttribute(\"data-step-count\", String(message.stepCount ?? 0))");
+    expect(html).toContain('root.setAttribute("data-step-index", String(message.stepIndex ?? 0))');
+    expect(html).toContain('root.setAttribute("data-step-count", String(message.stepCount ?? 0))');
     expect(html).not.toContain('String(message.stepIndex) + " / " + String(message.stepCount)');
     expect(html).toContain("pointerdown");
     expect(html).toContain("pointerup");
@@ -101,14 +112,14 @@ describe("decksRouter", () => {
     expect(html).toContain("clearNavigationClickSuppression()");
     expect(html).toContain("viewport?.focus({ preventScroll: true })");
     expect(html).toContain("target?.__honoDecksPresentationRuntime?.command");
-    expect(html).toContain('command(action, index)');
+    expect(html).toContain("command(action, index)");
     expect(html).toContain("target?.postMessage");
     expect(html).toContain('orientation.lock("landscape")');
     expect(html).toContain("unlockViewerOrientation()");
     expect(html).toContain('document.addEventListener("fullscreenchange"');
-    expect(html).toContain('root.querySelectorAll("[data-action=\'previous\']")');
-    expect(html).toContain('root.querySelectorAll("[data-action=\'next\']")');
-    expect(html).toContain('root.querySelectorAll("[data-action=\'fullscreen\']")');
+    expect(html).toContain("root.querySelectorAll(\"[data-action='previous']\")");
+    expect(html).toContain("root.querySelectorAll(\"[data-action='next']\")");
+    expect(html).toContain("root.querySelectorAll(\"[data-action='fullscreen']\")");
     expect(html).toContain('data-hono-decks-print-path="/slides/deck1/print"');
     expect(html).toContain('(event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "p"');
     expect(html).toContain('printUrl.searchParams.set("autoprint", "1")');
@@ -240,9 +251,7 @@ describe("decksRouter", () => {
     );
 
     const disabledViewer = await (await app.request("/slides/deck1")).text();
-    const enabledViewer = await (
-      await app.request("/slides/deck1", { headers: { "x-print-enabled": "1" } })
-    ).text();
+    const enabledViewer = await (await app.request("/slides/deck1", { headers: { "x-print-enabled": "1" } })).text();
 
     expect(disabledViewer).not.toContain('data-hono-decks-print="true"');
     expect(disabledViewer).not.toContain(' data-hono-decks-print-path="');
@@ -291,8 +300,7 @@ describe("decksRouter", () => {
 
     const response = await app.request("/slides/deck1/embed", {
       headers: {
-        "x-frame-ancestors":
-          "https://blog.example.com, https://notes.example.net/article javascript:alert(1)",
+        "x-frame-ancestors": "https://blog.example.com, https://notes.example.net/article javascript:alert(1)",
       },
     });
     const html = await response.text();
@@ -330,7 +338,9 @@ describe("decksRouter", () => {
     );
     expect((await withEmbed.request("/slides/deck1/embed")).status).toBe(404);
 
-    const enabled = await withEmbed.request("/slides/deck1/embed", { headers: { "x-embed-enabled": "1" } });
+    const enabled = await withEmbed.request("/slides/deck1/embed", {
+      headers: { "x-embed-enabled": "1" },
+    });
     expect(enabled.status).toBe(200);
     expect(enabled.headers.get("content-security-policy")).toBe("frame-ancestors 'self'");
   });
@@ -552,7 +562,9 @@ describe("decksRouter", () => {
     const viewer = await app.request("/slides/deck1", { headers: { "x-runtime-dev": "1" } });
     expect(viewer.status).toBe(200);
 
-    const presenter = await app.request("/slides/deck1/presenter", { headers: { "x-runtime-dev": "1" } });
+    const presenter = await app.request("/slides/deck1/presenter", {
+      headers: { "x-runtime-dev": "1" },
+    });
     expect(presenter.status).toBe(200);
   });
 
@@ -656,7 +668,9 @@ describe("decksRouter", () => {
 
     const response = await app.request("https://slides.example/slides/deck1");
     const html = await response.text();
-    const meta = await (await app.request("https://slides.example/slides/deck1/meta")).json<{
+    const meta = await (
+      await app.request("https://slides.example/slides/deck1/meta")
+    ).json<{
       imagePath: string;
       paths: { ogImage: string };
     }>();
@@ -714,8 +728,10 @@ describe("decksRouter", () => {
     expect(html).toContain("data-hono-decks-embed");
     expect(html).toContain("data-hono-decks-embed-style");
     expect(html).not.toMatch(/\.hono-decks-viewer-shell\{[^}]*gap:12px/);
-    expect(first.embedHtml).toMatch(/\[data-hono-decks-viewer\]\[data-hono-decks-embed\] \.hono-decks-viewer-controls\{[^}]*z-index:4/);
-    expect(html).toContain('[data-hono-decks-viewer][data-hono-decks-embed] *:focus-visible{outline:none}');
+    expect(first.embedHtml).toMatch(
+      /\[data-hono-decks-viewer\]\[data-hono-decks-embed\] \.hono-decks-viewer-controls\{[^}]*z-index:4/,
+    );
+    expect(html).toContain("[data-hono-decks-viewer][data-hono-decks-embed] *:focus-visible{outline:none}");
     expect(html).toContain("data-hono-decks-viewer-runtime");
     expect(html).toContain('data-hono-decks-print-path="/slides/deck1/print"');
     expect(html).toContain('class="hono-decks-embedded-viewer product-tour"');
@@ -752,7 +768,11 @@ describe("decksRouter", () => {
     );
 
     const html = await (
-      await app.request("/slides/deck1", undefined, { LOCALE: "en-GB", TENANT: "docs", NONCE: "request-nonce" })
+      await app.request("/slides/deck1", undefined, {
+        LOCALE: "en-GB",
+        TENANT: "docs",
+        NONCE: "request-nonce",
+      })
     ).text();
     expect(html).toContain('<html lang="en-GB">');
     expect(html).toContain('<meta name="tenant" content="docs"/>');
@@ -773,12 +793,7 @@ describe("decksRouter", () => {
             jsx("section", {
               "data-custom-viewer": meta.title,
               "data-slide-count": String(slides.length),
-              children: [
-                jsx("header", { children: meta.title }),
-                toc.content,
-                frame.content,
-                controls?.content,
-              ],
+              children: [jsx("header", { children: meta.title }), toc.content, frame.content, controls?.content],
             }),
         },
       }),
@@ -788,8 +803,8 @@ describe("decksRouter", () => {
 
     expect(html).toContain('data-custom-viewer="Deck One"');
     expect(html).toContain('data-slide-count="1"');
-    expect(html).toContain('data-hono-decks-frame');
-    expect(html).toContain('data-hono-decks-toc');
+    expect(html).toContain("data-hono-decks-frame");
+    expect(html).toContain("data-hono-decks-toc");
     expect(html).toContain('data-action="goTo"');
     expect(html).toContain('sendCommand("goTo", index)');
   });
@@ -814,9 +829,9 @@ describe("decksRouter", () => {
     expect(html).toContain('data-action="previous"');
     expect(html).toContain('data-action="next"');
     expect(html).not.toContain('data-action="fullscreen"');
-    expect(html.indexOf('data-action="next"')).toBeLessThan(html.indexOf('data-slide-position'));
-    expect(html.indexOf('data-slide-position')).toBeLessThan(html.indexOf('data-action="previous"'));
-    expect(html.indexOf('data-action="previous"')).toBeLessThan(html.indexOf('data-hono-decks-back-link'));
+    expect(html.indexOf('data-action="next"')).toBeLessThan(html.indexOf("data-slide-position"));
+    expect(html.indexOf("data-slide-position")).toBeLessThan(html.indexOf('data-action="previous"'));
+    expect(html.indexOf('data-action="previous"')).toBeLessThan(html.indexOf("data-hono-decks-back-link"));
   });
 
   it("lets callers customize default controls with diff-style options", async () => {
@@ -874,7 +889,7 @@ describe("decksRouter", () => {
     expect(html).toContain('href="/slides/deck1/about"');
     expect(html).toContain('data-extra="details"');
     expect(html).not.toContain('data-action="fullscreen"');
-    expect(html.indexOf('data-extra="home"')).toBeLessThan(html.indexOf('data-hono-decks-back-link'));
+    expect(html.indexOf('data-extra="home"')).toBeLessThan(html.indexOf("data-hono-decks-back-link"));
     expect(html.indexOf('data-action="next"')).toBeLessThan(html.indexOf('data-extra="details"'));
   });
 
@@ -941,7 +956,7 @@ describe("decksRouter", () => {
     const html = await (await app.request("/slides/deck1")).text();
 
     expect(html).toContain('<strong data-render-control="deck1">Custom JSX</strong>');
-    expect(html).toContain('data-slide-position');
+    expect(html).toContain("data-slide-position");
     expect(html).not.toContain('data-action="previous"');
   });
 
@@ -994,7 +1009,7 @@ describe("decksRouter", () => {
     expect(html).toContain("data-slide-position");
     expect(html).toContain("aria-current");
     expect(html).not.toContain("data-hidden");
-    expect(html).not.toContain('data-hono-decks-back-link');
+    expect(html).not.toContain("data-hono-decks-back-link");
     expect(html).not.toContain('data-action="previous"');
     expect(html).not.toContain('data-action="next"');
     expect(html).not.toContain('data-action="fullscreen"');
@@ -1054,18 +1069,29 @@ describe("decksRouter", () => {
           if (!defaults.exportPdf || !defaults.exportPng) throw new Error("Expected export defaults");
 
           return [
-            { ...defaults.back, attributes: { href: "/wrong", "data-hono-decks-back-link": false } },
+            {
+              ...defaults.back,
+              attributes: { href: "/wrong", "data-hono-decks-back-link": false },
+            },
             { ...defaults.previous, attributes: { type: "submit", "data-action": "next" } },
             { ...defaults.position, attributes: { "data-slide-position": false } },
             { ...defaults.next, attributes: { "data-action": "previous" } },
             { ...defaults.fullscreen, attributes: { "data-action": "next" } },
             {
               ...defaults.exportPdf,
-              attributes: { href: "/wrong.pdf", download: "wrong.pdf", "data-hono-decks-export": "png" },
+              attributes: {
+                href: "/wrong.pdf",
+                download: "wrong.pdf",
+                "data-hono-decks-export": "png",
+              },
             },
             {
               ...defaults.exportPng,
-              attributes: { href: "/wrong.png", download: "wrong.png", "data-hono-decks-export": "pdf" },
+              attributes: {
+                href: "/wrong.png",
+                download: "wrong.png",
+                "data-hono-decks-export": "pdf",
+              },
             },
           ];
         },
@@ -1106,7 +1132,10 @@ describe("decksRouter", () => {
   it("creates one configured kit for routes, context, source, and paths", async () => {
     const configured = configureDecks(
       defineDecks({ manifest: { decks: [deck] } }),
-      defineDecksConfig({ mountPath: "/slides/", router: { pages: { index: false, print: false } } }),
+      defineDecksConfig({
+        mountPath: "/slides/",
+        router: { pages: { index: false, print: false } },
+      }),
     );
     const app = new Hono<{ Variables: DeckContextVariables }>();
     app.get(`${configured.mountPath}/:slug/about`, configured.context(), (c) =>
@@ -1128,7 +1157,9 @@ describe("decksRouter", () => {
     });
     expect((await app.request("/slides")).status).toBe(404);
     expect((await app.request("/slides/deck1/render")).status).toBe(200);
-    const about = await (await app.request("/slides/deck1/about")).json<{
+    const about = await (
+      await app.request("/slides/deck1/about")
+    ).json<{
       paths: { viewer: string; print: string };
       availablePages: { print: boolean };
       controlsHtml: string;
@@ -1208,7 +1239,7 @@ describe("decksRouter", () => {
     expect(html).toContain('href="/base"');
     expect(html).toContain('href="/override"');
     expect(html).not.toContain('data-action="fullscreen"');
-    expect(html).not.toContain('data-hono-decks-print-link');
+    expect(html).not.toContain("data-hono-decks-print-link");
     expect(html).toContain("speaker-link");
     expect(html).toContain('aria-label="Speaker"');
     expect(html).toContain('<meta name="viewer-override" content="viewer"/>');
@@ -1246,7 +1277,7 @@ describe("decksRouter", () => {
     expect(html).toContain("--hono-decks-width:1920px");
     expect(html).toContain("--hono-decks-height:1080px");
     expect(html).toContain('window.addEventListener("message"');
-    expect(html).not.toContain('data-hono-decks-controls');
+    expect(html).not.toContain("data-hono-decks-controls");
   });
 
   it("serves a print rendering page with the A4 handout layout", async () => {
@@ -1375,7 +1406,7 @@ describe("decksRouter", () => {
 
     expect(unauthorizedViewer).not.toContain('data-hono-decks-export="pdf"');
     expect(unauthorizedViewer).not.toContain('data-hono-decks-export="png"');
-    expect(unauthorizedViewer).toContain('data-slide-position');
+    expect(unauthorizedViewer).toContain("data-slide-position");
     expect(authorizedViewer.indexOf('data-hono-decks-export="png"')).toBeLessThan(
       authorizedViewer.indexOf("data-slide-position"),
     );
@@ -1673,7 +1704,9 @@ describe("decksRouter", () => {
   it("provides deck-aware context variables for custom routes", async () => {
     const app = new Hono<{ Variables: DeckContextVariables }>();
     app.get("/slides/:slug/embed", deckContext({ source: manifestDeckSource({ decks: [deck] }) }), (c) => {
-      return c.html(`<article data-context-deck="${c.var.deck.slug}" data-render-url="${c.var.deckViewer.renderUrl}" data-toc-count="${c.var.deckToc.length}">${c.var.deckViewer.frame.html}<p>${c.var.deckMeta.title}</p></article>`);
+      return c.html(
+        `<article data-context-deck="${c.var.deck.slug}" data-render-url="${c.var.deckViewer.renderUrl}" data-toc-count="${c.var.deckToc.length}">${c.var.deckViewer.frame.html}<p>${c.var.deckMeta.title}</p></article>`,
+      );
     });
 
     const response = await app.request("/slides/deck1/embed");
@@ -1683,7 +1716,7 @@ describe("decksRouter", () => {
     expect(html).toContain('data-context-deck="deck1"');
     expect(html).toContain('data-render-url="/slides/deck1/render"');
     expect(html).toContain('data-toc-count="1"');
-    expect(html).toContain('data-hono-decks-frame');
+    expect(html).toContain("data-hono-decks-frame");
     expect(html).toContain("Deck One");
   });
 
@@ -1715,7 +1748,10 @@ describe("decksRouter", () => {
             labels: { next: "Forward" },
             renderItem: (item, _context, renderDefault) => {
               if (item.type === "default" && item.key === "next") {
-                return jsx("span", { "data-html-render-item": item.label, children: renderDefault() });
+                return jsx("span", {
+                  "data-html-render-item": item.label,
+                  children: renderDefault(),
+                });
               }
               return renderDefault();
             },
@@ -1735,7 +1771,7 @@ describe("decksRouter", () => {
     expect(html).toContain('data-action="next"');
     expect(html).toContain(">Forward</button>");
     expect(html).not.toContain('data-action="previous"');
-    expect(html).not.toContain('data-hono-decks-back-link');
+    expect(html).not.toContain("data-hono-decks-back-link");
   });
 
   it("reflects export paths in controls HTML only when provided", async () => {

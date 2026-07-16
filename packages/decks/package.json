@@ -2,23 +2,32 @@
   "name": "hono-decks",
   "version": "0.1.0",
   "description": "Slide decks for Hono and Cloudflare Workers",
+  "keywords": [
+    "cloudflare-workers",
+    "hono",
+    "mdx",
+    "slides"
+  ],
+  "homepage": "https://github.com/ts-76/hono-slides#readme",
+  "bugs": {
+    "url": "https://github.com/ts-76/hono-slides/issues"
+  },
   "license": "MIT",
+  "author": "ts-76",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ts-76/hono-slides.git",
     "directory": "packages/decks"
   },
-  "homepage": "https://github.com/ts-76/hono-slides#readme",
-  "bugs": {
-    "url": "https://github.com/ts-76/hono-slides/issues"
+  "bin": {
+    "hono-decks": "./dist/bin.js"
   },
-  "author": "ts-76",
-  "publishConfig": {
-    "access": "public"
-  },
-  "keywords": ["hono", "slides", "mdx", "cloudflare-workers"],
-  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/mod.d.ts",
@@ -45,19 +54,15 @@
       "import": "./dist/vite.js"
     }
   },
-  "bin": {
-    "hono-decks": "./dist/bin.js"
+  "publishConfig": {
+    "access": "public"
   },
-  "files": [
-    "dist",
-    "README.md"
-  ],
   "scripts": {
     "build": "tsup",
     "prepack": "bun run build",
     "decks:compile": "bun run build && node dist/bin.js compile",
     "typecheck": "bun run build && tsc --noEmit && tsc --noEmit -p tsconfig.worker.json",
-    "test": "bun run build && vitest run",
+    "test": "bun run build && vp test run",
     "check": "bun run typecheck && bun run test"
   },
   "dependencies": {
@@ -70,6 +75,12 @@
     "shiki": "^4.2.0",
     "unified": "^11.0.5"
   },
+  "devDependencies": {
+    "hono": "^4.12.30",
+    "vite": "catalog:",
+    "vite-plus": "catalog:",
+    "vitest": "catalog:"
+  },
   "peerDependencies": {
     "hono": "^4.12.30",
     "vite": "^6.0.0 || ^7.0.0 || ^8.0.0"
@@ -78,9 +89,5 @@
     "vite": {
       "optional": true
     }
-  },
-  "devDependencies": {
-    "hono": "^4.12.30",
-    "vite": "^8.1.4"
   }
 }

@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import type { DeckFileChange } from "../src/deck/model";
 import { compileMarkdown } from "../src/compiler/compiler";
 import {
@@ -34,7 +34,9 @@ describe("Node filesystem deck adapter", () => {
         kind: "directory",
         meta: { title: "Deck One" },
       });
-      const encodedAsset = manifest.decks[0].assets.find((asset) => asset.sourcePath === "decks/deck1/assets/my image#1.svg");
+      const encodedAsset = manifest.decks[0].assets.find(
+        (asset) => asset.sourcePath === "decks/deck1/assets/my image#1.svg",
+      );
       expect(encodedAsset).toMatchObject({
         sourcePath: "decks/deck1/assets/my image#1.svg",
         publicPath: "/slides/deck1/assets/my%20image%231.svg",
@@ -179,7 +181,11 @@ describe("Node filesystem deck adapter", () => {
     const cwd = await createFixture();
 
     try {
-      const manifest = await buildDeckManifestFromFileSystem({ cwd, root: "decks", mountPath: "/slides" });
+      const manifest = await buildDeckManifestFromFileSystem({
+        cwd,
+        root: "decks",
+        mountPath: "/slides",
+      });
       const outFile = join(cwd, "src", "generated", "hono-decks-manifest.ts");
 
       await writeDeckManifestModule({ manifest, outFile });
@@ -198,7 +204,11 @@ describe("Node filesystem deck adapter", () => {
     const cwd = await createFixture();
 
     try {
-      const manifest = await buildDeckManifestFromFileSystem({ cwd, root: "decks", mountPath: "/slides" });
+      const manifest = await buildDeckManifestFromFileSystem({
+        cwd,
+        root: "decks",
+        mountPath: "/slides",
+      });
       const source = manifestDeckSource(manifest);
       const response = await source.getAsset?.({} as never, "deck1", "jsx.svg");
 
@@ -353,7 +363,9 @@ const generatedWarning = true;
       expect(manifest.decks[0].meta).toEqual(direct.meta);
       expect(manifest.decks[0].slides.map((slide) => slide.meta)).toEqual(direct.slides.map((slide) => slide.meta));
       expect(manifest.decks[0].warnings).toEqual(direct.warnings);
-      expect(manifest.decks[0].assets).toEqual(expect.arrayContaining(direct.assets.map((asset) => expect.objectContaining(asset))));
+      expect(manifest.decks[0].assets).toEqual(
+        expect.arrayContaining(direct.assets.map((asset) => expect.objectContaining(asset))),
+      );
       expect(manifest.decks[0].meta).toMatchObject({
         description: "Metadata parity",
         author: "Toma",

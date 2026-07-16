@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { jsx } from "hono/jsx/jsx-runtime";
 import {
   defineSlideComponents,
@@ -209,8 +209,7 @@ describe("compiled deck rendering", () => {
     const html = await renderCompiledDeckPageAsync({
       deck: {
         ...deck,
-        themeStyle:
-          '[data-fire-effect="blur-in"]{--fire-filter:blur(12px);--fire-duration:.32s}',
+        themeStyle: '[data-fire-effect="blur-in"]{--fire-filter:blur(12px);--fire-duration:.32s}',
         slides: [
           {
             ...deck.slides[0],
@@ -239,10 +238,10 @@ describe("compiled deck rendering", () => {
 
     expect(html).toContain("<!doctype html>");
     expect(html).toContain("<title>Deck One</title>");
-    expect(html).not.toContain('data-hono-decks-controls');
+    expect(html).not.toContain("data-hono-decks-controls");
     expect(html).not.toContain('data-action="next"');
     expect(html).not.toContain('data-action="fullscreen"');
-    expect(html).not.toContain('data-timer');
+    expect(html).not.toContain("data-timer");
     expect(html).toContain('document.addEventListener("keydown"');
     expect(html).toContain("requestFullscreen");
     expect(html).toContain("data-presenter-mode");
@@ -341,13 +340,17 @@ describe("compiled deck rendering", () => {
     expect(html).toContain('slide.removeEventListener("transitionend", onTransitionEnd)');
     expect(html).toContain("transitionDurationMs(outgoing)");
     expect(html).toContain("transitionDurationMs(incoming)");
-    expect(html).toContain("const expectedDuration = Math.max(transitionDurationMs(outgoing), transitionDurationMs(incoming))");
+    expect(html).toContain(
+      "const expectedDuration = Math.max(transitionDurationMs(outgoing), transitionDurationMs(incoming))",
+    );
     expect(html).toContain("const elapsed = performance.now() - startedAt");
     expect(html).toContain("if (elapsed >= Math.max(expectedDuration - 20, 0)) finish()");
     expect(html).toContain("document.startViewTransition");
     expect(html).toContain("queueNavigation(targetIndex, nextStepIndex)");
     expect(html).toContain("drainPendingNavigation()");
-    expect(html).toContain('const state = { type: "hono-decks:state", index, stepIndex, stepCount, slideCount: slides.length }');
+    expect(html).toContain(
+      'const state = { type: "hono-decks:state", index, stepIndex, stepCount, slideCount: slides.length }',
+    );
     expect(html).toContain('window.parent.postMessage(state, "*")');
     expect(html).toContain("window.opener.postMessage(state, window.location.origin)");
     expect(html).toContain("function next()");
@@ -364,12 +367,20 @@ describe("compiled deck rendering", () => {
 
     expect(html).toContain("--hono-decks-transition-duration");
     expect(html).toContain("--hono-decks-transition-easing");
-    expect(html).toContain("var(--hono-decks-active-transition-duration,var(--hono-decks-slide-transition-duration,var(--hono-decks-transition-duration)))");
-    expect(html).toContain("var(--hono-decks-active-transition-easing,var(--hono-decks-slide-transition-easing,var(--hono-decks-transition-easing)))");
+    expect(html).toContain(
+      "var(--hono-decks-active-transition-duration,var(--hono-decks-slide-transition-duration,var(--hono-decks-transition-duration)))",
+    );
+    expect(html).toContain(
+      "var(--hono-decks-active-transition-easing,var(--hono-decks-slide-transition-easing,var(--hono-decks-transition-easing)))",
+    );
     expect(html).toContain('.slide[data-active-transition="fade"][data-slide-state="entering"]');
     expect(html).toContain('.slide[data-active-transition="fade-out"][data-slide-state="leaving"]');
-    expect(html).toContain('.slide[data-active-transition="slide-left"][data-slide-direction="forward"][data-slide-state="entering"]');
-    expect(html).toContain('.slide[data-active-transition="slide-right"][data-slide-direction="backward"][data-slide-state="leaving"]');
+    expect(html).toContain(
+      '.slide[data-active-transition="slide-left"][data-slide-direction="forward"][data-slide-state="entering"]',
+    );
+    expect(html).toContain(
+      '.slide[data-active-transition="slide-right"][data-slide-direction="backward"][data-slide-state="leaving"]',
+    );
     expect(html).toContain('.slide[data-active-transition="view-transition"]');
     expect(html).not.toContain('.slide[data-transition="zoom"]');
   });
@@ -390,13 +401,15 @@ describe("compiled deck rendering", () => {
 
     expect(html).toContain('class="hono-decks-stage"');
     expect(html).toContain('class="hono-decks-deck"');
-    expect(html).toContain('data-hono-decks-deck');
+    expect(html).toContain("data-hono-decks-deck");
     expect(html).toContain("--hono-decks-width:1920px");
     expect(html).toContain("--hono-decks-height:1080px");
     expect(html).toContain("font-size:32px");
     expect(html).toContain("html,body{margin:0;width:100%;height:100%;overflow:hidden}");
     expect(html).toContain(".hono-decks-stage{width:100vw;height:100vh");
-    expect(html).toContain(".hono-decks-deck{display:grid;gap:1rem;width:var(--hono-decks-width);height:var(--hono-decks-height)");
+    expect(html).toContain(
+      ".hono-decks-deck{display:grid;gap:1rem;width:var(--hono-decks-width);height:var(--hono-decks-height)",
+    );
     expect(html).toContain(".slide{box-sizing:border-box;aspect-ratio:16/9");
     expect(html).toContain('<div class="hono-decks-slide-content">');
     expect(html).not.toContain(".hono-decks-stage{width:100vw;height:100vh;overflow:hidden;background:");
@@ -421,7 +434,9 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("html,body{width:auto;height:auto;overflow:visible}");
     expect(html).toContain(".hono-decks-stage{display:block;width:auto;height:auto;overflow:visible}");
     expect(html).not.toContain("body[data-hono-decks-print-preview]{min-height:100vh;overflow:auto;background:");
-    expect(html).not.toContain(".hono-decks-stage{display:block;width:auto;height:auto;min-height:100vh;overflow:visible;background:");
+    expect(html).not.toContain(
+      ".hono-decks-stage{display:block;width:auto;height:auto;min-height:100vh;overflow:visible;background:",
+    );
     expect(html).not.toContain("@media print{:root{background:");
     expect(html).not.toContain("html,body{width:auto;height:auto;overflow:visible;background:");
     expect(html).not.toContain(".hono-decks-stage{display:block;width:auto;height:auto;overflow:visible;background:");
@@ -546,8 +561,18 @@ describe("compiled deck rendering", () => {
                 name: "Columns",
                 props: { gap: "wide" },
                 children: [
-                  { type: "element", tag: "div", props: {}, children: [{ type: "text", value: "Left" }] },
-                  { type: "element", tag: "div", props: {}, children: [{ type: "text", value: "Right" }] },
+                  {
+                    type: "element",
+                    tag: "div",
+                    props: {},
+                    children: [{ type: "text", value: "Left" }],
+                  },
+                  {
+                    type: "element",
+                    tag: "div",
+                    props: {},
+                    children: [{ type: "text", value: "Right" }],
+                  },
                 ],
               },
             ],
@@ -754,9 +779,7 @@ describe("compiled deck rendering", () => {
     expect(html).toContain('cite="https://x.com/honojs/status/123"');
     expect(html).toContain("Hono decks can keep SNS content link-first.");
     expect(html).toContain("@honojs");
-    expect(html).toContain(
-      '<a href="https://x.com/honojs/status/123" target="_blank" rel="noreferrer">Open on X</a>',
-    );
+    expect(html).toContain('<a href="https://x.com/honojs/status/123" target="_blank" rel="noreferrer">Open on X</a>');
     expect(html).not.toContain("platform.twitter.com/widgets.js");
     expect(html).not.toContain('data-component="TweetEmbed"');
     expect(html).not.toContain('<blockquote class="twitter-tweet"');
@@ -878,7 +901,7 @@ describe("compiled deck rendering", () => {
     expect(html).toContain('data-hono-decks-island="Counter__deck1_abcd1234"');
     expect(html).toContain('data-hono-decks-props="{&quot;label&quot;:&quot;Clicks&quot;}"');
     expect(html).toContain('<script type="module" src="/assets/slides.client.js"></script>');
-    expect(html).toContain("<button type=\"button\">Clicks</button>");
+    expect(html).toContain('<button type="button">Clicks</button>');
   });
 
   it("serializes JSON client island props without dropping nested values", () => {
@@ -926,10 +949,29 @@ describe("compiled deck rendering", () => {
     }
 
     const invalidProps = [
-      { prop: "onClick", value: () => "clicked", message: 'Client island prop "Counter.onClick" must be JSON-serializable; functions cannot be passed to the client.' },
-      { prop: "icon", value: jsx("span", { children: "!" }), message: 'Client island prop "Counter.icon" must be JSON-serializable; JSX values cannot be passed to the client.' },
-      { prop: "createdAt", value: new Date("2026-06-19T00:00:00.000Z"), message: 'Client island prop "Counter.createdAt" must be JSON-serializable; Date values must be converted to strings.' },
-      { prop: "state", value: new FancyValue(), message: 'Client island prop "Counter.state" must be JSON-serializable; class instances are not supported.' },
+      {
+        prop: "onClick",
+        value: () => "clicked",
+        message:
+          'Client island prop "Counter.onClick" must be JSON-serializable; functions cannot be passed to the client.',
+      },
+      {
+        prop: "icon",
+        value: jsx("span", { children: "!" }),
+        message:
+          'Client island prop "Counter.icon" must be JSON-serializable; JSX values cannot be passed to the client.',
+      },
+      {
+        prop: "createdAt",
+        value: new Date("2026-06-19T00:00:00.000Z"),
+        message:
+          'Client island prop "Counter.createdAt" must be JSON-serializable; Date values must be converted to strings.',
+      },
+      {
+        prop: "state",
+        value: new FancyValue(),
+        message: 'Client island prop "Counter.state" must be JSON-serializable; class instances are not supported.',
+      },
     ];
 
     for (const { prop, value, message } of invalidProps) {

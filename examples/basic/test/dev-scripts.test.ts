@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 describe("development scripts", () => {
   it("runs wrangler dev with non-interactive workspace-local configuration", async () => {
@@ -35,7 +35,7 @@ describe("development scripts", () => {
 
     expect(source).toContain('const wranglerConfigHome = path.join(cwd, ".wrangler-config");');
     expect(source).toContain('CI: "1"');
-    expect(source).toContain('XDG_CONFIG_HOME: wranglerConfigHome');
+    expect(source).toContain("XDG_CONFIG_HOME: wranglerConfigHome");
     expect(source).toContain('NO_COLOR: "1"');
   });
 
@@ -44,7 +44,7 @@ describe("development scripts", () => {
 
     expect(source).toContain('const wranglerConfigHome = path.join(cwd, ".wrangler-config");');
     expect(source).toContain('CI: "1"');
-    expect(source).toContain('XDG_CONFIG_HOME: wranglerConfigHome');
+    expect(source).toContain("XDG_CONFIG_HOME: wranglerConfigHome");
     expect(source).toContain('NO_COLOR: "1"');
   });
 });
