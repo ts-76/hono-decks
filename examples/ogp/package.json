@@ -1,0 +1,27 @@
+{
+  "name": "@hono-decks/example-ogp",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "decks:compile": "bun run --cwd ../../packages/decks build -- --clean=false && bun scripts/compile.ts",
+    "decks:compile:hook": "bun scripts/compile.ts",
+    "dev": "bun run --cwd ../../packages/decks build -- --clean=false && CI=1 XDG_CONFIG_HOME=.wrangler-config wrangler dev --live-reload",
+    "build": "bun run --cwd ../../packages/decks build && CI=1 XDG_CONFIG_HOME=.wrangler-config wrangler deploy --dry-run --outdir dist",
+    "typecheck": "bun run decks:compile && tsc --noEmit",
+    "test": "bun run decks:compile && vitest run",
+    "check": "bun run typecheck && bun run test && bun run build"
+  },
+  "dependencies": {
+    "hono": "^4.12.30",
+    "hono-decks": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260714.1",
+    "@resvg/resvg-js": "^2.6.2",
+    "@types/node": "^25.9.2",
+    "satori": "^0.28.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.14",
+    "wrangler": "^4.110.0"
+  }
+}

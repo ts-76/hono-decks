@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "hono_slides",
+  "project_id": "cacc6ce9-1664-4cd5-ad3f-3f8ee35ca7c2"
+}

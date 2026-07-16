@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="title desc">
+  <title id="title">Local JSX asset</title>
+  <desc id="desc">A local image used from a JSX img element in a deck.</desc>
+  <rect width="640" height="360" rx="28" fill="#14b8a6" />
+  <circle cx="160" cy="140" r="64" fill="#fef3c7" />
+  <path d="M80 292h480L394 152 278 246l-60-52z" fill="#042f2e" opacity=".72" />
+  <text x="320" y="86" text-anchor="middle" font-family="Arial, sans-serif" font-size="42" font-weight="700" fill="#042f2e">Local JSX</text>
+</svg>

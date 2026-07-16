@@ -1,0 +1,6 @@
+{
+  "files": ["docs/app/routes/_renderer.tsx"],
+  "insertBefore": "</body>",
+  "commentSyntax": "jsx",
+  "cspChecked": true
+}

@@ -1,0 +1,24 @@
+{
+  "name": "@hono-decks/example-basic",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "decks:compile": "bun run --cwd ../../packages/decks build && node ../../packages/decks/dist/bin.js compile",
+    "decks:compile:hook": "node ../../packages/decks/dist/bin.js compile",
+    "dev": "bun run --cwd ../../packages/decks build -- --clean=false && CI=1 XDG_CONFIG_HOME=.wrangler-config wrangler dev --live-reload",
+    "deploy": "bun run --cwd ../../packages/decks build && wrangler deploy",
+    "smoke:pdf": "node scripts/pdf-smoke.mjs",
+    "smoke:r2-cache": "node scripts/deployed-r2-cache-smoke.mjs",
+    "smoke:viewport": "node scripts/viewport-smoke.mjs",
+    "typecheck": "bun run decks:compile && tsc --noEmit",
+    "test": "bun run decks:compile && vitest run",
+    "check": "bun run typecheck && bun run test"
+  },
+  "dependencies": {
+    "hono": "^4.12.30",
+    "hono-decks": "workspace:*"
+  },
+  "devDependencies": {
+    "wrangler": "^4.110.0"
+  }
+}

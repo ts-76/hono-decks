@@ -1,0 +1,35 @@
+---
+title: Code Verification
+description: Fenced code block rendering checks for hono-decks
+---
+
+---
+title: Fenced Code
+layout: code
+---
+
+# Code verification
+
+```ts
+const view = <Slide title="Hello" />
+
+export function labels(items: Array<{ id: string }>) {
+  return items.map((item) => item.id).join(", ")
+}
+```
+
+Fenced code should preserve whitespace, escape HTML-like syntax, and scroll instead of breaking the fixed canvas.
+
+---
+title: CodeBlock Component
+layout: code
+---
+
+# CodeBlock component
+
+<CodeBlock lang="ts" filename="worker.ts" highlight="2">
+const app = new Hono()
+app.get("/", (c) => c.text("ok"))
+</CodeBlock>
+
+The built-in component should keep code authoring close to the deck source.

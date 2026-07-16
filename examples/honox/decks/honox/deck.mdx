@@ -1,0 +1,22 @@
+---
+title: HonoX Deck
+description: Mounting hono-decks from a HonoX file route
+---
+
+---
+layout: cover
+---
+
+# HonoX + hono-decks
+
+File-based pages and generated slide routes in one Hono app.
+
+---
+layout: default
+---
+
+## Integration boundary
+
+- `app/routes` owns the HonoX pages
+- `app/decks.ts` hides generated modules
+- `app/routes/decks/index.ts` mounts the deck router

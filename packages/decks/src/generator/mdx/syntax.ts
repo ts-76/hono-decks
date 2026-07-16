@@ -1,0 +1,401 @@
+import { codeToHtml } from "shiki";
+import type { LinkCardOgpMetadata } from "./ogp";
+
+export interface MarkdownNode {
+  type: string;
+  name?: string;
+  value?: unknown;
+  lang?: string;
+  meta?: string;
+  url?: string;
+  title?: string | null;
+  attributes?: MarkdownNode[] | Record<string, unknown>;
+  children?: MarkdownNode[];
+  data?: {
+    hProperties?: Record<string, unknown>;
+  };
+}
+
+export function remarkDeckSyntax(input: { linkCardMetadata?: Map<string, LinkCardOgpMetadata> } = {}) {
+  return () => (tree: MarkdownNode) => {
+    transformDeckSyntaxChildren(tree, input);
+  };
+}
+
+export function remarkCodeHighlight() {
+  return async (tree: MarkdownNode) => {
+    await highlightMarkdownNode(tree);
+  };
+}
+
+function transformDeckSyntaxChildren(
+  node: MarkdownNode,
+  input: { linkCardMetadata?: Map<string, LinkCardOgpMetadata> },
+): void {
+  if (!Array.isArray(node.children)) return;
+
+  const children: MarkdownNode[] = [];
+  for (const child of node.children) {
+    transformDeckSyntaxChildren(child, input);
+    rejectRemovedFireAuthoring(child);
+    children.push(
+      fireAttributeNode(child) ??
+      zennEmbedNode(child, input) ??
+      plainUrlLinkNode(child) ??
+      fireDirectiveNode(child) ??
+      unknownDirectiveFallback(child) ??
+      child,
+    );
+  }
+  node.children = children;
+}
+
+function rejectRemovedFireAuthoring(node: MarkdownNode): void {
+  if (node.type !== "mdxJsxFlowElement" && node.type !== "mdxJsxTextElement") return;
+  if (!Array.isArray(node.attributes)) return;
+  if (node.attributes.some((attribute) => attribute.name === "$fire")) {
+    throw new Error('The "$fire" prop is not supported. Use fire or fire="effect" on a block-level custom component.');
+  }
+  if (node.name === "Fire" && node.attributes.some((attribute) => attribute.name === "order")) {
+    throw new Error('The Fire "order" prop is not supported. Fires reveal in source order.');
+  }
+  if (node.name === "Fire") {
+    const atAttribute = node.attributes.find((attribute) => attribute.name === "at");
+    if (atAttribute) fireAtAttributeValue(atAttribute.value);
+  }
+}
+
+function fireAttributeNode(node: MarkdownNode): MarkdownNode | undefined {
+  if (node.type !== "mdxJsxFlowElement" && node.type !== "mdxJsxTextElement") return undefined;
+  if (!Array.isArray(node.attributes)) return undefined;
+
+  const fireAttribute = node.attributes.find(
+    (attribute) => attribute.type === "mdxJsxAttribute" && attribute.name === "fire",
+  );
+  if (!fireAttribute) return undefined;
+  const atAttribute = node.attributes.find(
+    (attribute) => attribute.type === "mdxJsxAttribute" && attribute.name === "at",
+  );
+
+  if (node.name === "Fire") {
+    throw new Error('The "fire" attribute is not supported on <Fire>. Use the effect prop instead.');
+  }
+  if (!node.name || !/^[A-Z]/.test(node.name)) {
+    throw new Error('The "fire" attribute is only supported on custom components. Use :::fire for Markdown content.');
+  }
+  if (node.type !== "mdxJsxFlowElement") {
+    throw new Error('The "fire" attribute is only supported on block-level custom components. Move the component to its own line.');
+  }
+  if (fireAttribute.value !== null && fireAttribute.value !== undefined && typeof fireAttribute.value !== "string") {
+    throw new Error('The "fire" attribute accepts no value or a static effect name such as fire="fade-up".');
+  }
+
+  const effect = typeof fireAttribute.value === "string" ? fireAttribute.value.trim() : "";
+  const at = atAttribute ? fireAtAttributeValue(atAttribute.value) : undefined;
+  node.attributes = node.attributes.filter((attribute) => attribute !== fireAttribute && attribute !== atAttribute);
+  return mdxElement(
+    "Fire",
+    [
+      ...(effect ? [mdxAttribute("effect", effect)] : []),
+      ...(at ? [mdxAttribute("at", at)] : []),
+    ],
+    [node],
+  );
+}
+
+function fireAtAttributeValue(value: unknown): string {
+  if (typeof value === "string") {
+    const at = value.trim();
+    if (/^(?:\d+|[+-]\d+)$/.test(at)) return at;
+  }
+  throw new Error('The fire "at" attribute accepts a non-negative integer or a relative value such as "+1".');
+}
+
+function zennEmbedNode(
+  node: MarkdownNode,
+  input: { linkCardMetadata?: Map<string, LinkCardOgpMetadata> },
+): MarkdownNode | undefined {
+  if (node.type !== "paragraph" || !Array.isArray(node.children) || node.children.length !== 2) return undefined;
+
+  const [prefix, link] = node.children;
+  if (prefix?.type !== "text" || String(prefix.value ?? "").trim() !== "@") return undefined;
+  if (link?.type !== "link" || typeof link.url !== "string") return undefined;
+
+  const name = collectMarkdownText(link).trim().toLowerCase();
+  if (name === "youtube") {
+    return mdxElement(
+      "EmbedFrame",
+      [
+        mdxAttribute("provider", "youtube"),
+        mdxAttribute("src", toYoutubeEmbedUrl(link.url)),
+        mdxAttribute("fallbackHref", link.url),
+        mdxAttribute("title", "YouTube embed example"),
+      ],
+      [{ type: "text", value: "Open YouTube embed" }],
+    );
+  }
+  if (name === "x") {
+    return mdxElement("TweetEmbed", [mdxAttribute("href", link.url), mdxAttribute("label", "Open post on X")], []);
+  }
+  if (name === "card") {
+    const metadata = input.linkCardMetadata?.get(link.url);
+    return mdxElement(
+      "LinkCard",
+      [
+        mdxAttribute("href", link.url),
+        ...metadataAttributes(metadata),
+      ],
+      [],
+    );
+  }
+  if (name === "embed" || name === "iframe") {
+    return mdxElement(
+      "EmbedFrame",
+      [mdxAttribute("src", link.url), mdxAttribute("title", "Embedded content")],
+      [{ type: "text", value: "Open embed" }],
+    );
+  }
+  return undefined;
+}
+
+function metadataAttributes(metadata: LinkCardOgpMetadata | undefined): MarkdownNode[] {
+  if (!metadata) return [];
+  return [
+    ...(metadata.title ? [mdxAttribute("title", metadata.title)] : []),
+    ...(metadata.description ? [mdxAttribute("description", metadata.description)] : []),
+    ...(metadata.image ? [mdxAttribute("image", metadata.image)] : []),
+    ...(metadata.siteName ? [mdxAttribute("siteName", metadata.siteName)] : []),
+  ];
+}
+
+function plainUrlLinkNode(node: MarkdownNode): MarkdownNode | undefined {
+  if (node.type !== "paragraph" || !Array.isArray(node.children) || node.children.length !== 1) return undefined;
+
+  const [child] = node.children;
+  if (child?.type !== "text" || typeof child.value !== "string") return undefined;
+
+  const value = child.value.trim();
+  if (!isHttpUrl(value)) return undefined;
+
+  return {
+    type: "paragraph",
+    children: [
+      {
+        type: "link",
+        url: value,
+        children: [{ type: "text", value }],
+      },
+    ],
+  };
+}
+
+function isHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+function fireDirectiveNode(node: MarkdownNode): MarkdownNode | undefined {
+  if (node.type !== "containerDirective" || node.name !== "fire") return undefined;
+  const attributes = directiveAttributes(node);
+  if (attributes.order !== undefined) {
+    throw new Error('The fire "order" attribute is not supported. Fires reveal in source order.');
+  }
+  if (attributes.each === undefined && (attributes.depth !== undefined || attributes.every !== undefined)) {
+    throw new Error('The fire "depth" and "every" attributes require each="item".');
+  }
+  if (attributes.each !== undefined) return fireEachItemNode(node, attributes);
+  const at = attributes.at !== undefined ? fireAtAttributeValue(attributes.at) : undefined;
+  const fireAttributes = [
+    ...(typeof attributes.effect === "string" ? [mdxAttribute("effect", attributes.effect)] : []),
+    ...(at ? [mdxAttribute("at", at)] : []),
+  ];
+  return mdxElement("Fire", fireAttributes, node.children ?? []);
+}
+
+function fireEachItemNode(node: MarkdownNode, attributes: Record<string, string>): MarkdownNode {
+  if (attributes.each !== "item") {
+    throw new Error('The fire "each" attribute only accepts "item".');
+  }
+  const children = node.children ?? [];
+  const list = children.length === 1 && children[0]?.type === "list" ? children[0] : undefined;
+  if (!list) {
+    throw new Error('fire each="item" must contain exactly one Markdown list.');
+  }
+
+  const depth = positiveFireInteger(attributes.depth, "depth", 1);
+  const every = positiveFireInteger(attributes.every, "every", 1);
+  const at = attributes.at !== undefined ? fireAtAttributeValue(attributes.at) : undefined;
+  const effect = attributes.effect ? fireEffectToken(attributes.effect) : undefined;
+  const items = fireListItems(list, depth);
+  for (const [itemIndex, item] of items.entries()) {
+    const itemAt = fireListItemAt(at, every, itemIndex);
+    item.data = {
+      ...item.data,
+      hProperties: {
+        ...item.data?.hProperties,
+        "data-hono-decks-fire": "true",
+        ...(itemAt ? { "data-fire-at": itemAt } : {}),
+        ...(effect ? { "data-fire-effect": effect } : {}),
+      },
+    };
+  }
+  return list;
+}
+
+function positiveFireInteger(value: string | undefined, name: "depth" | "every", fallback: number): number {
+  if (value === undefined) return fallback;
+  const parsed = Number(value);
+  if (Number.isInteger(parsed) && parsed > 0) return parsed;
+  throw new Error(`The fire "${name}" attribute accepts a positive integer.`);
+}
+
+function fireListItems(list: MarkdownNode, maxDepth: number, depth = 1): MarkdownNode[] {
+  const items: MarkdownNode[] = [];
+  for (const item of list.children ?? []) {
+    if (item.type !== "listItem") continue;
+    items.push(item);
+    if (depth >= maxDepth) continue;
+    for (const child of item.children ?? []) {
+      if (child.type === "list") items.push(...fireListItems(child, maxDepth, depth + 1));
+    }
+  }
+  return items;
+}
+
+function fireListItemAt(at: string | undefined, every: number, itemIndex: number): string | undefined {
+  if (at && /^\d+$/.test(at)) return String(Number(at) + Math.floor(itemIndex / every));
+  if (!at && every === 1) return undefined;
+  if (itemIndex === 0) return at;
+  return itemIndex % every === 0 ? "+1" : "+0";
+}
+
+function fireEffectToken(value: string): string {
+  return value.trim().replace(/[^A-Za-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase() || "fade";
+}
+
+function unknownDirectiveFallback(node: MarkdownNode): MarkdownNode | undefined {
+  if (node.type === "textDirective") return { type: "text", value: `:${node.name ?? ""}` };
+  if (node.type === "leafDirective") return { type: "text", value: `::${node.name ?? ""}` };
+  if (node.type === "containerDirective") {
+    return {
+      type: "paragraph",
+      children: [{ type: "text", value: `:::${node.name ?? ""}` }, ...(node.children ?? [])],
+    };
+  }
+  return undefined;
+}
+
+function directiveAttributes(node: MarkdownNode): Record<string, string> {
+  if (!node.attributes || Array.isArray(node.attributes)) return {};
+  const result: Record<string, string> = {};
+  for (const [key, value] of Object.entries(node.attributes)) {
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+      result[key] = String(value);
+    }
+  }
+  return result;
+}
+
+function mdxElement(name: string, attributes: MarkdownNode[], children: MarkdownNode[]): MarkdownNode {
+  return {
+    type: "mdxJsxFlowElement",
+    name,
+    attributes,
+    children,
+  };
+}
+
+function toYoutubeEmbedUrl(value: string): string {
+  try {
+    const url = new URL(value);
+    const host = url.hostname.replace(/^www\./, "");
+    if (host === "youtu.be") {
+      const id = url.pathname.split("/").filter(Boolean)[0];
+      return id ? `https://www.youtube.com/embed/${id}` : value;
+    }
+    if (host === "youtube.com" || host === "m.youtube.com") {
+      if (url.pathname.startsWith("/embed/")) return value;
+      const id = url.searchParams.get("v");
+      return id ? `https://www.youtube.com/embed/${id}` : value;
+    }
+    return value;
+  } catch {
+    return value;
+  }
+}
+
+async function highlightMarkdownNode(node: MarkdownNode): Promise<void> {
+  if (node.type === "code") {
+    const code = typeof node.value === "string" ? node.value : "";
+    const lang = typeof node.lang === "string" && node.lang ? node.lang : undefined;
+    const highlightedHtml = await highlightCodeBlock(code, lang);
+
+    node.type = "mdxJsxFlowElement";
+    node.name = "CodeBlock";
+    node.attributes = [
+      ...(lang ? [mdxAttribute("lang", lang)] : []),
+      mdxAttribute("highlightedHtml", highlightedHtml),
+    ];
+    node.children = [{ type: "text", value: code }];
+    delete node.value;
+    delete node.lang;
+    delete node.meta;
+    return;
+  }
+
+  if (node.type === "mdxJsxFlowElement" && node.name === "CodeBlock") {
+    const code = collectMarkdownText(node);
+    if (code.trim()) {
+      const lang = getMdxStringAttribute(node, "lang");
+      const highlightedHtml = await highlightCodeBlock(code, lang);
+      node.attributes = upsertMdxStringAttribute(node.attributes, "highlightedHtml", highlightedHtml);
+    }
+    return;
+  }
+
+  if (!Array.isArray(node.children)) return;
+  await Promise.all(node.children.map((child) => highlightMarkdownNode(child)));
+}
+
+async function highlightCodeBlock(code: string, lang: string | undefined): Promise<string> {
+  const language = lang && /^[A-Za-z0-9_#+.-]+$/.test(lang) ? lang : "text";
+  try {
+    return await codeToHtml(code, { lang: language, theme: "github-dark" });
+  } catch (error) {
+    if (language === "text") throw error;
+    return codeToHtml(code, { lang: "text", theme: "github-dark" });
+  }
+}
+
+function mdxAttribute(name: string, value: string): MarkdownNode {
+  return { type: "mdxJsxAttribute", name, value };
+}
+
+function getMdxStringAttribute(node: MarkdownNode, name: string): string | undefined {
+  const attributes = Array.isArray(node.attributes) ? node.attributes : [];
+  const attribute = attributes.find((item) => item.type === "mdxJsxAttribute" && item.name === name);
+  return typeof attribute?.value === "string" ? attribute.value : undefined;
+}
+
+function upsertMdxStringAttribute(
+  attributes: MarkdownNode["attributes"] | undefined,
+  name: string,
+  value: string,
+): MarkdownNode[] {
+  const next = Array.isArray(attributes) ? [...attributes] : [];
+  const index = next.findIndex((item) => item.type === "mdxJsxAttribute" && item.name === name);
+  const attribute = mdxAttribute(name, value);
+  if (index === -1) return [...next, attribute];
+  next[index] = attribute;
+  return next;
+}
+
+function collectMarkdownText(node: MarkdownNode): string {
+  if (typeof node.value === "string") return node.value;
+  if (!Array.isArray(node.children)) return "";
+  return node.children.map((child) => collectMarkdownText(child)).join(node.type === "paragraph" ? "\n" : "");
+}

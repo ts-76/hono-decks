@@ -1,0 +1,44 @@
+{
+  "name": "hono-decks-monorepo",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "examples/*",
+    "docs"
+  ],
+  "scripts": {
+    "build": "bun run --cwd packages/decks build",
+    "dev": "bun run --cwd examples/basic dev",
+    "dev:minimal": "bun run --cwd examples/minimal dev",
+    "dev:honox": "bun run --cwd examples/honox dev",
+    "dev:ogp": "bun run --cwd examples/ogp dev",
+    "dev:docs": "bun run --cwd docs dev",
+    "build:docs": "bun run --cwd docs build",
+    "build:ogp": "bun run --cwd examples/ogp build",
+    "deploy:basic": "bun run --cwd examples/basic deploy",
+    "decks:compile": "bun run --cwd packages/decks decks:compile",
+    "smoke:pdf": "bun run --cwd examples/basic smoke:pdf",
+    "smoke:viewport": "bun run --cwd examples/basic smoke:viewport",
+    "release": "node scripts/verify-release-baseline.mjs && semantic-release",
+    "typecheck": "bun run --cwd packages/decks typecheck && bun run --cwd examples/basic typecheck && bun run --cwd examples/minimal typecheck && bun run --cwd examples/honox typecheck && bun run --cwd examples/ogp typecheck && bun run --cwd docs typecheck",
+    "test": "bun run --cwd packages/decks test && bun run --cwd examples/basic test && bun run --cwd examples/minimal test && bun run --cwd examples/honox test && bun run --cwd examples/ogp test && bun run --cwd docs test",
+    "check": "bun run typecheck && bun run test && bun run build:ogp && bun run build:docs"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.16.12",
+    "@cloudflare/workers-types": "^5.20260714.1",
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/github": "^12.0.6",
+    "@semantic-release/npm": "^13.1.5",
+    "@semantic-release/release-notes-generator": "^14.1.0",
+    "@types/node": "^25.9.2",
+    "conventional-changelog-conventionalcommits": "^9.3.1",
+    "semantic-release": "^25.0.3",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.14",
+    "wrangler": "^4.110.0"
+  },
+  "packageManager": "bun@1.3.13"
+}

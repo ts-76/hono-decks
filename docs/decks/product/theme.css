@@ -1,0 +1,60 @@
+:root {
+  --hono-decks-color: #f7f7f8;
+  --hono-decks-muted-color: #b9bbc2;
+  --hono-decks-accent-color: #ff641f;
+  --hono-decks-border-color: rgba(255, 255, 255, 0.16);
+  --hono-decks-inline-code-background: rgba(255, 255, 255, 0.1);
+  --hono-decks-code-background: #090a0c;
+}
+
+.slide {
+  background: #111216;
+  color: var(--hono-decks-color);
+}
+
+.slide::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 10px;
+  background: var(--hono-decks-accent-color);
+  content: "";
+}
+
+.slide .hono-decks-slide-content {
+  padding: clamp(2rem, 5vw, 4.5rem);
+}
+
+.slide h1,
+.slide h2 {
+  max-width: 12ch;
+  margin: 0;
+  letter-spacing: -0.04em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+.slide h1 {
+  font-size: clamp(3rem, 7.5vw, 6rem);
+}
+
+.slide h2 {
+  font-size: clamp(2.4rem, 6vw, 4.8rem);
+}
+
+.slide p,
+.slide li {
+  color: var(--hono-decks-muted-color);
+  font-size: clamp(1.1rem, 2.25vw, 1.7rem);
+  line-height: 1.55;
+}
+
+.slide code {
+  color: var(--hono-decks-accent-color);
+}
+
+.slide ul {
+  display: grid;
+  gap: 0.7rem;
+  max-width: 28ch;
+  padding-left: 1.2em;
+}

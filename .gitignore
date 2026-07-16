@@ -1,0 +1,9 @@
+node_modules/
+dist/
+dist-dry-run/
+.wrangler/
+.dev.vars
+.env
+.DS_Store
+.superpowers/
+.impeccable/config.local.json

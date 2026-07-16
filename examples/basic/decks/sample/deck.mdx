@@ -1,0 +1,50 @@
+---
+title: Hono Slides
+description: Hono + Cloudflare Workers で動く MDX-like slide runtime
+---
+
+export const badgeLabel = 'Rendered ' + 'by a Hono JSX component'
+export const topics = ['MDX expression props', 'MDX expression children']
+
+---
+title: Hono Slides
+layout: cover
+---
+
+# Hono Slides
+
+Cloudflare Workers で動く Slidev-like deck
+
+<Hero title="MDX-like components" />
+
+<Badge label={badgeLabel} />
+
+{topics.map((topic) => <Badge label={topic} />)}
+
+<Counter label="Interactive count" initial={1} />
+
+{/* Introduce the clean projection route for talks. */}
+
+---
+title: Parse and View
+---
+
+## Parse and View
+
+- Markdown/MDX-like source を compile
+- deck manifest と slide metadata を保持
+- Hono route で viewer/render page を配信
+
+![R2 cached local asset](./assets/r2-cache.svg)
+
+{/* Use the presenter route for notes and next-slide preview. */}
+
+---
+layout: statement
+---
+
+## 次にやること
+
+> 自分の deck source や asset pipeline を接続する
+
+{/* Close with the V1 extension points: viewer, projection, presenter, and assets. */}
