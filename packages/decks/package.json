@@ -8,6 +8,14 @@
     "url": "git+https://github.com/ts-76/hono-slides.git",
     "directory": "packages/decks"
   },
+  "homepage": "https://github.com/ts-76/hono-slides#readme",
+  "bugs": {
+    "url": "https://github.com/ts-76/hono-slides/issues"
+  },
+  "author": "ts-76",
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": ["hono", "slides", "mdx", "cloudflare-workers"],
   "sideEffects": false,
   "type": "module",

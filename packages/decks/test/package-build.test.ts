@@ -13,6 +13,11 @@ describe("package build metadata", () => {
       bin: Record<string, string>;
       files: string[];
       scripts: Record<string, string>;
+      repository: { type: string; url: string; directory: string };
+      homepage: string;
+      bugs: { url: string };
+      author: string;
+      publishConfig: { access: string };
       peerDependencies: Record<string, string>;
       peerDependenciesMeta: Record<string, { optional?: boolean }>;
     };
@@ -49,6 +54,15 @@ describe("package build metadata", () => {
     expect(packageJson.files).toEqual(expect.arrayContaining(["dist", "README.md"]));
     expect(packageJson.scripts.build).toBe("tsup");
     expect(packageJson.scripts.prepack).toBe("bun run build");
+    expect(packageJson.repository).toEqual({
+      type: "git",
+      url: "git+https://github.com/ts-76/hono-slides.git",
+      directory: "packages/decks",
+    });
+    expect(packageJson.homepage).toBe("https://github.com/ts-76/hono-slides#readme");
+    expect(packageJson.bugs.url).toBe("https://github.com/ts-76/hono-slides/issues");
+    expect(packageJson.author).toBe("ts-76");
+    expect(packageJson.publishConfig.access).toBe("public");
     expect(packageJson.peerDependencies.hono).toBe("^4.12.30");
     expect(packageJson.peerDependencies.vite).toContain("^8.0.0");
     expect(packageJson.peerDependenciesMeta.vite?.optional).toBe(true);
