@@ -51,17 +51,17 @@ describe("package build metadata", () => {
       },
     });
     expect(packageJson.bin).toEqual({ "hono-decks": "dist/bin.js" });
-    expect(packageJson.files).toEqual(expect.arrayContaining(["dist", "README.md"]));
+    expect(packageJson.files).toEqual(expect.arrayContaining(["dist", "README.md", "README.ja.md"]));
     expect(packageJson.scripts.build).toBe("tsup");
     expect(packageJson.scripts.prepack).toBe("bun run build");
     expect(packageJson.scripts.typecheck).toContain("bun run build");
     expect(packageJson.repository).toEqual({
       type: "git",
-      url: "git+https://github.com/ts-76/hono-slides.git",
+      url: "git+https://github.com/ts-76/hono-decks.git",
       directory: "packages/decks",
     });
-    expect(packageJson.homepage).toBe("https://github.com/ts-76/hono-slides#readme");
-    expect(packageJson.bugs.url).toBe("https://github.com/ts-76/hono-slides/issues");
+    expect(packageJson.homepage).toBe("https://github.com/ts-76/hono-decks#readme");
+    expect(packageJson.bugs.url).toBe("https://github.com/ts-76/hono-decks/issues");
     expect(packageJson.author).toBe("ts-76");
     expect(packageJson.publishConfig.access).toBe("public");
     expect(packageJson.peerDependencies.hono).toBe("^4.12.30");
@@ -118,21 +118,28 @@ describe("package build metadata", () => {
     expect(nodeTypes).toContain("deckMiddleware");
   });
 
-  it("ships self-contained high-level API and embedding documentation", async () => {
+  it("ships self-contained English and Japanese documentation", async () => {
     const readme = await readFile(join(packageRoot, "README.md"), "utf8");
+    const japaneseReadme = await readFile(join(packageRoot, "README.ja.md"), "utf8");
 
     expect(readme.length).toBeGreaterThan(5_000);
+    expect(japaneseReadme.length).toBeGreaterThan(5_000);
+    expect(readme).toContain("packages/decks/README.ja.md");
+    expect(japaneseReadme).toContain("packages/decks/README.md");
     expect(readme).toContain("createDeckViewerEmbed()");
-    expect(readme).toContain("同じdocumentへ複数配置");
-    expect(readme).toContain("Embedding from an external blog");
+    expect(readme).toContain("embed multiple decks into the same document");
+    expect(readme).toContain("When embedding from an external blog");
     expect(readme).toContain("examples/minimal");
     expect(readme).toContain("examples/honox");
     expect(readme).toContain("frame-ancestors");
     expect(readme).toContain('allow="fullscreen"');
-    expect(readme).toContain("iframe navigationにCORSは不要");
+    expect(readme).toContain("Iframe navigation does not require CORS");
     expect(readme).toContain("defineDecksConfig<AppEnv>");
     expect(readme).toContain("createDecks(config)");
     expect(readme).toContain("viewer.render");
-    expect(readme).not.toContain("root `README.md` を参照");
+    expect(japaneseReadme).toContain("createDeckViewerEmbed()");
+    expect(japaneseReadme).toContain("同じdocumentへ複数配置");
+    expect(japaneseReadme).toContain("iframe navigationにCORSは不要");
+    expect(japaneseReadme).not.toContain("root `README.md` を参照");
   });
 });

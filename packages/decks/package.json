@@ -8,15 +8,15 @@
     "mdx",
     "slides"
   ],
-  "homepage": "https://github.com/ts-76/hono-slides#readme",
+  "homepage": "https://github.com/ts-76/hono-decks#readme",
   "bugs": {
-    "url": "https://github.com/ts-76/hono-slides/issues"
+    "url": "https://github.com/ts-76/hono-decks/issues"
   },
   "license": "MIT",
   "author": "ts-76",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ts-76/hono-slides.git",
+    "url": "git+https://github.com/ts-76/hono-decks.git",
     "directory": "packages/decks"
   },
   "bin": {
@@ -24,7 +24,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "README.ja.md"
   ],
   "type": "module",
   "sideEffects": false,
