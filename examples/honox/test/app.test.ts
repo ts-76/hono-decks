@@ -56,7 +56,15 @@ describe("HonoX example", () => {
     const embed = await app.request("/decks/honox/embed");
 
     expect(index.status).toBe(200);
-    expect(await index.text()).toContain("HonoX Deck");
+    const indexHtml = await index.text();
+    expect(indexHtml).toContain("<title>Talk archive — ts-76 Talks</title>");
+    expect(indexHtml).toContain('id="honox-deck-index-css"');
+    expect(indexHtml).toContain('class="archive-hero"');
+    expect(indexHtml).toContain('id="published-talks"');
+    expect(indexHtml).toContain("HonoX Deck");
+    expect(indexHtml).toContain('src="/decks/honox/embed"');
+    expect(indexHtml).toContain('href="/decks/honox/presentation"');
+    expect(indexHtml).toContain('href="/decks/honox/print"');
     expect(viewer.status).toBe(200);
     expect(await viewer.text()).toContain('src="/decks/honox/render"');
     expect(render.status).toBe(200);

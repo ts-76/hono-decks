@@ -109,6 +109,27 @@ describe("sample Worker app", () => {
     expect(html).toContain('href="/decks/sample/about"');
   });
 
+  it("renders a production-quality deck catalog", async () => {
+    const app = await sampleApp();
+    const response = await app.request("/decks");
+
+    expect(response.status).toBe(200);
+    const html = await response.text();
+    expect(html).toContain("<title>Deck Lab — Hono Decks Basic</title>");
+    expect(html).toContain('id="basic-deck-index-css"');
+    expect(html).toContain('class="deck-index-hero"');
+    expect(html).toContain('id="deck-catalog"');
+    expect(html).toContain("Four decks.");
+    expect(html).toContain("Hono Slides");
+    expect(html).toContain("Code Verification");
+    expect(html).toContain("Media Verification");
+    expect(html).toContain("Motion Verification");
+    expect(html).toContain('src="/decks/sample/embed"');
+    expect(html).toContain('loading="lazy"');
+    expect(html).toContain('href="/decks/sample/presentation"');
+    expect(html).toContain('href="/decks/sample/about"');
+  });
+
   it("serves the sample deck as a public viewer without edit controls", async () => {
     const app = await sampleApp();
     const response = await app.request("/decks/sample");
