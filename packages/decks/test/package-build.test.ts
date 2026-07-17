@@ -1,8 +1,32 @@
 import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { describe, expect, it } from "vite-plus/test";
 
 const packageRoot = join(import.meta.dirname, "..");
+const distRoot = join(packageRoot, "dist");
+
+async function readGeneratedModuleGraph(entry: string): Promise<string> {
+  const pending = [join(distRoot, entry)];
+  const visited = new Set<string>();
+  const modules: string[] = [];
+
+  while (pending.length > 0) {
+    const modulePath = pending.pop();
+    if (!modulePath || visited.has(modulePath)) {
+      continue;
+    }
+
+    visited.add(modulePath);
+    const source = await readFile(modulePath, "utf8");
+    modules.push(source);
+
+    for (const match of source.matchAll(/(?:from\s+|import\s*)["'](\.\/[^"']+\.js)["']/g)) {
+      pending.push(resolve(dirname(modulePath), match[1]));
+    }
+  }
+
+  return modules.join("\n");
+}
 
 describe("package build metadata", () => {
   it("publishes built ESM exports and a built CLI bin", async () => {
@@ -52,7 +76,7 @@ describe("package build metadata", () => {
     });
     expect(packageJson.bin).toEqual({ "hono-decks": "dist/bin.js" });
     expect(packageJson.files).toEqual(expect.arrayContaining(["dist", "README.md", "README.ja.md"]));
-    expect(packageJson.scripts.build).toBe("tsup");
+    expect(packageJson.scripts.build).toBe("tsdown");
     expect(packageJson.scripts.prepack).toBe("bun run build");
     expect(packageJson.scripts.typecheck).toContain("bun run build");
     expect(packageJson.repository).toEqual({
@@ -77,10 +101,10 @@ describe("package build metadata", () => {
   });
 
   it("keeps the standard entry runtime-safe and compiler APIs in the Node entry", async () => {
-    const runtime = await readFile(join(packageRoot, "dist", "mod.js"), "utf8");
-    const advanced = await readFile(join(packageRoot, "dist", "advanced.js"), "utf8");
-    const node = await readFile(join(packageRoot, "dist", "node.js"), "utf8");
-    const vite = await readFile(join(packageRoot, "dist", "vite.js"), "utf8");
+    const runtime = await readGeneratedModuleGraph("mod.js");
+    const advanced = await readGeneratedModuleGraph("advanced.js");
+    const node = await readGeneratedModuleGraph("node.js");
+    const vite = await readGeneratedModuleGraph("vite.js");
 
     expect(runtime).not.toMatch(/from "(?:@mdx-js\/mdx|esbuild|remark-mdx|remark-parse|shiki|unified)"/);
     expect(runtime).not.toContain("node_modules/unified/");

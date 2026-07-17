@@ -59,7 +59,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "tsdown",
     "prepack": "bun run build",
     "decks:compile": "bun run build && node dist/bin.js compile",
     "typecheck": "bun run build && tsc --noEmit && tsc --noEmit -p tsconfig.worker.json",

@@ -4,13 +4,13 @@
   "type": "module",
   "scripts": {
     "decks:compile": "hono-decks compile",
-    "dev": "vp dev",
-    "build": "vp build",
+    "dev": "node ../../scripts/run-with-typescript-parser.cjs vp dev",
+    "build": "node ../../scripts/run-with-typescript-parser.cjs vp build",
     "deploy": "bun run build && wrangler deploy",
     "deploy:production": "bun run build && wrangler deploy --config wrangler.production.jsonc",
     "preview": "wrangler dev",
     "typecheck": "bun run decks:compile && tsc --noEmit",
-    "test": "bun run decks:compile && vp test run",
+    "test": "bun run decks:compile && node ../../scripts/run-with-typescript-parser.cjs vp test run",
     "check": "bun run typecheck && bun run test && bun run build"
   },
   "dependencies": {
