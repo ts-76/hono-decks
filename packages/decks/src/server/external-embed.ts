@@ -162,7 +162,7 @@ function withFrameAncestors(currentPolicy: string | null, ancestors: string[]): 
 }
 
 function externalEmbedPageStyle(): string {
-  return `:root{color-scheme:dark;background:#050816}html,body{width:100%;height:100%;margin:0;overflow:hidden}body{min-height:100vh}@supports (height:100dvh){body{min-height:100dvh}}.hono-decks-embedded-viewer{width:100%;height:100%;min-height:0}.hono-decks-embedded-viewer .hono-decks-viewer-shell{position:relative;height:100%;grid-template-rows:minmax(0,1fr)}.hono-decks-embedded-viewer .hono-decks-viewport{width:min(100%,calc(100vh * 16 / 9));max-height:100%}@supports (height:100dvh){.hono-decks-embedded-viewer .hono-decks-viewport{width:min(100%,calc(100dvh * 16 / 9))}}.hono-decks-embedded-viewer .hono-decks-viewer-controls{bottom:max(.5rem,env(safe-area-inset-bottom,0px));z-index:4}`;
+  return `:root{color-scheme:dark;background:#050816}html,body{width:100%;height:100%;margin:0;overflow:hidden}body{min-height:100vh}@supports (height:100dvh){body{min-height:100dvh}}.hono-decks-embedded-viewer{width:100%;height:100%;min-height:0}.hono-decks-embedded-viewer .hono-decks-viewer-shell{position:relative;height:100%;grid-template-rows:minmax(0,1fr)}.hono-decks-embedded-viewer .hono-decks-viewport{width:min(100%,calc(100vh * 16 / 9));max-height:100%}@supports (height:100dvh){.hono-decks-embedded-viewer .hono-decks-viewport{width:min(100%,calc(100dvh * 16 / 9))}}.hono-decks-embedded-viewer .hono-decks-viewer-controls{bottom:max(.25rem,env(safe-area-inset-bottom,0px));z-index:4}`;
 }
 
 function escapeHtml(value: string): string {

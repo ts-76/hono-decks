@@ -109,7 +109,7 @@ describe("decksRouter", () => {
     expect(html).toContain("container-type:size");
     expect(html).toContain(".hono-decks-viewer-stage{display:grid;place-items:center;justify-content:center");
     expect(html).toContain("@supports (width:1cqw)");
-    expect(html).toContain("bottom:max(.5rem,env(safe-area-inset-bottom,0))");
+    expect(html).toContain("bottom:max(.25rem,env(safe-area-inset-bottom,0))");
     expect(html).toContain('root.setAttribute("data-step-index", String(message.stepIndex ?? 0))');
     expect(html).toContain('root.setAttribute("data-step-count", String(message.stepCount ?? 0))');
     expect(html).not.toContain('String(message.stepIndex) + " / " + String(message.stepCount)');

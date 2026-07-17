@@ -31,7 +31,7 @@ ${viewerViewportRule()}
 .hono-decks-mobile-navigation:active{background:rgba(15,23,42,.28);color:#eef2ff;opacity:1}
 .hono-decks-mobile-navigation .hono-decks-control-icon{width:22px;height:22px}
 .hono-decks-viewport>[data-hono-decks-position]{position:absolute;left:50%;bottom:max(8px,env(safe-area-inset-bottom,0));z-index:3;transform:translateX(-50%);border:0;background:transparent;color:inherit;padding:0;font:inherit;font-size:12px;line-height:1;opacity:.38;pointer-events:none;white-space:nowrap}
-.hono-decks-viewer-controls{position:absolute;left:50%;bottom:max(.5rem,env(safe-area-inset-bottom,0));display:flex;gap:8px;align-items:center;justify-content:center;max-width:calc(100% - 1rem);min-width:0;z-index:4;transform:translateX(-50%)}
+.hono-decks-viewer-controls{position:absolute;left:50%;bottom:max(.25rem,env(safe-area-inset-bottom,0));display:flex;gap:8px;align-items:center;justify-content:center;max-width:calc(100% - 1rem);min-width:0;z-index:4;transform:translateX(-50%)}
 .hono-decks-viewer-controls [data-hono-decks-navigation-control="previous"],.hono-decks-viewer-controls [data-hono-decks-navigation-control="next"],.hono-decks-viewer-controls [data-hono-decks-position]{position:absolute;visibility:hidden;pointer-events:none}
 .hono-decks-viewer-controls button,.hono-decks-viewer-controls a,.hono-decks-viewer-controls span{border:1px solid rgba(148,163,184,.32);border-radius:8px;background:rgba(15,23,42,.78);color:inherit;padding:8px 10px;font:inherit;font-size:14px}
 .hono-decks-viewer-controls span{flex:0 0 auto;white-space:nowrap}
@@ -62,7 +62,7 @@ ${root} .hono-decks-mobile-navigation:focus-visible{outline:2px solid currentCol
 ${root} .hono-decks-mobile-navigation:active{background:rgba(15,23,42,.28);color:#eef2ff;opacity:1}
 ${root} .hono-decks-mobile-navigation .hono-decks-control-icon{width:22px;height:22px}
 ${root} .hono-decks-viewport>[data-hono-decks-position]{position:absolute;left:50%;bottom:8px;z-index:3;transform:translateX(-50%);border:0;background:transparent;color:inherit;padding:0;font:inherit;font-size:12px;line-height:1;opacity:.5;pointer-events:none;white-space:nowrap}
-${root} .hono-decks-viewer-controls{position:absolute;left:50%;bottom:max(.5rem,env(safe-area-inset-bottom,0));display:flex;gap:8px;align-items:center;justify-content:center;max-width:calc(100% - 1rem);min-width:0;z-index:4;transform:translateX(-50%)}
+${root} .hono-decks-viewer-controls{position:absolute;left:50%;bottom:max(.25rem,env(safe-area-inset-bottom,0));display:flex;gap:8px;align-items:center;justify-content:center;max-width:calc(100% - 1rem);min-width:0;z-index:4;transform:translateX(-50%)}
 ${root} .hono-decks-viewer-controls [data-hono-decks-navigation-control="previous"],${root} .hono-decks-viewer-controls [data-hono-decks-navigation-control="next"],${root} .hono-decks-viewer-controls [data-hono-decks-position]{position:absolute;visibility:hidden;pointer-events:none}
 ${root} .hono-decks-viewer-controls button,${root} .hono-decks-viewer-controls a,${root} .hono-decks-viewer-controls span{border:1px solid rgba(148,163,184,.32);border-radius:8px;background:rgba(15,23,42,.78);color:inherit;padding:8px 10px;font:inherit;font-size:14px}
 ${root} .hono-decks-viewer-controls button,${root} .hono-decks-viewer-controls a{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;box-sizing:border-box;text-decoration:none;cursor:pointer}
