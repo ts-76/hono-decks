@@ -6,7 +6,8 @@
     "cloudflare-workers",
     "hono",
     "mdx",
-    "slides"
+    "slides",
+    "tanstack-intent"
   ],
   "homepage": "https://github.com/ts-76/hono-decks#readme",
   "bugs": {
@@ -25,7 +26,8 @@
   "files": [
     "dist",
     "README.md",
-    "README.ja.md"
+    "README.ja.md",
+    "skills"
   ],
   "type": "module",
   "sideEffects": false,
@@ -62,9 +64,11 @@
     "build": "tsdown",
     "prepack": "bun run build",
     "decks:compile": "bun run build && node dist/bin.js compile",
+    "skills:validate": "intent validate skills",
+    "skills:stale": "intent stale .",
     "typecheck": "bun run build && tsc --noEmit && tsc --noEmit -p tsconfig.worker.json",
     "test": "bun run build && vp test run",
-    "check": "bun run typecheck && bun run test"
+    "check": "bun run typecheck && bun run test && bun run skills:validate"
   },
   "dependencies": {
     "@mdx-js/mdx": "^3.1.1",
@@ -77,6 +81,7 @@
     "unified": "^11.0.5"
   },
   "devDependencies": {
+    "@tanstack/intent": "^0.3.6",
     "hono": "^4.12.30",
     "vite": "catalog:",
     "vite-plus": "catalog:",

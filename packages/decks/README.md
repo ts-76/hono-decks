@@ -14,6 +14,8 @@ bunx hono-decks init
 bunx hono-decks compile
 ~~~
 
+If you use an AI agent, run `npx @tanstack/intent@latest install`. The published package includes a versioned hono-decks skill that the agent can discover from `node_modules`.
+
 <code>init</code> creates two files without overwriting existing files:
 
 - <code>hono-decks.config.ts</code>: the shared configuration for the CLI and runtime
