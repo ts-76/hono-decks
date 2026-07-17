@@ -9,8 +9,13 @@ function _createMdxContent(props) {
   }, {LinkCard} = _components;
   if (!LinkCard) _missingMdxReference("LinkCard", true);
   return _jsxs(_Fragment, {
-    children: [_jsx(_components.h1, {
-      children: "Link card"
+    children: [_jsxs("div", {
+      class: "media-heading inline",
+      children: [_jsx("p", {
+        children: "06 / Compile-time metadata"
+      }), _jsx(_components.h1, {
+        children: "Link card"
+      })]
     }), "\n", _jsx(_components.p, {
       children: _jsx(_components.a, {
         href: "https://yusukebe.com/",
@@ -21,8 +26,6 @@ function _createMdxContent(props) {
       title: "ゆーすけべー日記",
       description: "ゆーすけべーの名前で活動しています。天然パーマです。",
       image: "https://yusukebe.com/icons/myicon.png"
-    }), "\n", _jsx(_components.p, {
-      children: "Link cards resolve OGP metadata at compile time when available and stay script-free at runtime."
     })]
   });
 }

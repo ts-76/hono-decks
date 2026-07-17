@@ -1,0 +1,117 @@
+:root {
+  color-scheme: light;
+  --hono-decks-color: #151515;
+  --hono-decks-muted-color: #55514d;
+  --hono-decks-accent-color: #f05a24;
+  --hono-decks-border-color: rgba(21, 21, 21, 0.2);
+  --hono-decks-card-background: #f0efed;
+  --hono-decks-inline-code-background: rgba(240, 90, 36, 0.12);
+  --hono-decks-code-background: #151515;
+  font-family: "Avenir Next", "Segoe UI", ui-sans-serif, sans-serif;
+}
+
+.slide {
+  position: relative;
+  background: #fbfbfa;
+  color: #151515;
+}
+
+.slide::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 14px;
+  background: #f05a24;
+  content: "";
+}
+
+.slide .hono-decks-slide-content {
+  box-sizing: border-box;
+  padding: 2.2rem 2.6rem;
+}
+
+.minimal-cover {
+  display: grid;
+  height: 100%;
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.46fr);
+  grid-template-rows: auto 1fr auto;
+  gap: 0.6rem 2rem;
+  align-items: end;
+}
+
+.minimal-index {
+  grid-column: 1 / -1;
+  align-self: start;
+  color: #f05a24;
+  font-size: 0.68rem;
+  font-weight: 760;
+}
+
+.minimal-cover h1 {
+  grid-row: 2;
+  margin: 0;
+  font-size: 4.6rem;
+  letter-spacing: -0.04em;
+  line-height: 0.88;
+}
+
+.minimal-cover p {
+  grid-row: 2;
+  margin: 0;
+  color: #55514d;
+  font-size: 1.1rem;
+  line-height: 1.45;
+}
+
+.slide .minimal-cover code {
+  grid-column: 1 / -1;
+  justify-self: stretch;
+  border-radius: 8px;
+  background: #151515;
+  padding: 0.7rem 0.9rem;
+  color: #fbfbfa;
+  font-size: 0.72rem;
+}
+
+.slide h2 {
+  max-width: 13ch;
+  margin: 0;
+  font-size: 3.25rem;
+  letter-spacing: -0.04em;
+  line-height: 0.94;
+}
+
+.minimal-stack {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--hono-decks-border-color);
+  border-bottom: 1px solid var(--hono-decks-border-color);
+}
+
+.minimal-stack section {
+  display: grid;
+  min-height: 5rem;
+  align-content: space-between;
+  border-right: 1px solid var(--hono-decks-border-color);
+  padding: 0.75rem;
+}
+
+.minimal-stack section:last-child {
+  border-right: 0;
+}
+
+.minimal-stack strong {
+  font-size: 0.78rem;
+}
+
+.minimal-stack span {
+  color: #f05a24;
+  font-size: 0.62rem;
+  font-weight: 720;
+}
+
+.minimal-result {
+  margin: 1rem 0 0;
+  color: #55514d;
+  font-size: 0.72rem;
+}

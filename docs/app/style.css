@@ -665,6 +665,109 @@ button {
   font-size: 0.68rem;
 }
 
+.examples-list {
+  margin-top: 36px;
+  border-top: 1px solid var(--ink);
+}
+
+.example-row {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  gap: 22px;
+  align-items: start;
+  border-bottom: 1px solid var(--line);
+  padding: 26px 0;
+}
+
+.example-index {
+  color: var(--accent-dark);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.example-row h3 {
+  margin: 0;
+  font-size: 1.35rem;
+  letter-spacing: -0.025em;
+}
+
+.example-row p {
+  max-width: 62ch;
+  margin: 8px 0 0;
+}
+
+.example-row nav {
+  display: flex;
+  gap: 8px;
+}
+
+.example-row nav a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 14px;
+  font-size: 0.75rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.example-row nav a:hover {
+  border-color: var(--accent-dark);
+  color: var(--accent-dark);
+}
+
+.portfolio-demo {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(220px, 0.65fr);
+  gap: 24px;
+  margin-top: 32px;
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  padding: 24px 0;
+}
+
+.portfolio-demo iframe {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: 10px;
+  background: var(--dark);
+}
+
+.portfolio-demo > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10px;
+  border-left: 1px solid var(--line);
+  padding-left: 24px;
+}
+
+.portfolio-demo strong {
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.portfolio-demo code {
+  overflow-wrap: anywhere;
+  font-size: 0.72rem;
+}
+
+@media (min-width: 761px) {
+  .portfolio-demo code {
+    overflow-x: auto;
+    overflow-wrap: normal;
+    white-space: nowrap;
+  }
+}
+
+.portfolio-demo .text-link {
+  margin-top: auto;
+}
+
 .docs-heading {
   padding-bottom: 52px;
   border-bottom: 1px solid var(--line);
@@ -992,6 +1095,28 @@ td:first-child {
 }
 
 @media (max-width: 760px) {
+  .example-row {
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .example-row nav {
+    grid-column: 2;
+    flex-wrap: wrap;
+  }
+
+  .portfolio-demo {
+    grid-template-columns: 1fr;
+  }
+
+  .portfolio-demo > div {
+    min-height: 230px;
+    border-top: 1px solid var(--line);
+    border-left: 0;
+    padding-top: 20px;
+    padding-left: 0;
+  }
+
   .site-header {
     min-height: 60px;
     padding-right: max(18px, env(safe-area-inset-right));

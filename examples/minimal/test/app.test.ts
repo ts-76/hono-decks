@@ -48,6 +48,8 @@ describe("minimal example", () => {
     expect(viewer.status).toBe(200);
     expect(await viewer.text()).toContain('src="/decks/welcome/render"');
     expect(render.status).toBe(200);
-    expect(await render.text()).toContain("One deck, one facade, one mounted Hono router.");
+    const html = await render.text();
+    expect(html).toContain("One deck. One facade.");
+    expect(html).toContain("One mounted Hono router.");
   });
 });

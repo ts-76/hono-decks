@@ -1,21 +1,116 @@
 :root {
-  --hono-decks-color: #eef2ff;
-  --hono-decks-muted-color: #cbd5e1;
-  --hono-decks-accent-color: #2dd4bf;
-  --hono-decks-border-color: rgba(148, 163, 184, .24);
-  --hono-decks-card-background: rgba(8, 18, 34, .82);
-  --hono-decks-inline-code-background: rgba(15, 23, 42, .72);
-  --hono-decks-code-background: rgba(15, 23, 42, .78);
+  --hono-decks-color: #f4fbff;
+  --hono-decks-muted-color: #b9d4e5;
+  --hono-decks-accent-color: #48d7ff;
+  --hono-decks-border-color: rgba(137, 218, 255, 0.24);
+  --hono-decks-card-background: #0d2337;
+  --hono-decks-inline-code-background: rgba(72, 215, 255, 0.12);
+  --hono-decks-code-background: #06101d;
+  font-family: "Avenir Next", "Segoe UI", ui-sans-serif, sans-serif;
 }
 
 .layout-media {
+  position: relative;
   background: #07111f;
-  color: #eef2ff;
+  color: #f4fbff;
+}
+
+.layout-media::after {
+  position: absolute;
+  right: -4rem;
+  bottom: -6rem;
+  width: 17rem;
+  height: 17rem;
+  border: 1px solid rgba(72, 215, 255, 0.28);
+  border-radius: 999px;
+  content: "";
+}
+
+.layout-media .hono-decks-slide-content {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  padding: 1.8rem 2.3rem;
+}
+
+.media-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--hono-decks-border-color);
+  padding-bottom: 0.6rem;
+}
+
+.media-heading.inline {
+  margin-bottom: 0.7rem;
+}
+
+.media-heading p {
+  margin: 0;
+  color: #70ddff;
+  font-size: 0.62rem;
+  font-weight: 720;
+}
+
+.media-heading h1 {
+  margin: 0;
+  font-size: 2.1rem;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+
+.media-showcase {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(10rem, 0.75fr);
+  gap: 2rem;
+  align-items: center;
+  height: calc(100% - 3.2rem);
+}
+
+.media-showcase.reverse .media-image {
+  order: 2;
 }
 
 .layout-media .media-image {
   display: block;
-  width: min(100%, 56rem);
-  max-height: 36rem;
+  width: 100%;
+  max-height: 20rem;
   object-fit: contain;
+}
+
+.media-showcase p {
+  color: var(--hono-decks-muted-color);
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+
+.media-showcase strong {
+  color: #f4fbff;
+}
+
+.layout-media .hono-decks-embed-frame,
+.layout-media .hono-decks-social-embed,
+.layout-media .hono-decks-tweet-embed,
+.layout-media .hono-decks-link-card {
+  width: min(100%, 31rem);
+  margin: 0.55rem auto 0;
+}
+
+.layout-media .hono-decks-embed-viewport {
+  max-height: 18rem;
+}
+
+.layout-media .hono-decks-link-card-anchor,
+.layout-media .hono-decks-social-card,
+.layout-media .twitter-tweet {
+  border-radius: 10px;
+  background: #0d2337;
+}
+
+.layout-media > .hono-decks-slide-content > p {
+  margin: 0.45rem auto;
+  max-width: 31rem;
+  color: var(--hono-decks-muted-color);
+  font-size: 0.62rem;
 }

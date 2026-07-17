@@ -1,14 +1,99 @@
 :root {
-  --hono-decks-color: #eef2ff;
-  --hono-decks-muted-color: #cbd5e1;
-  --hono-decks-accent-color: #8bd3ff;
-  --hono-decks-border-color: rgba(148, 163, 184, .24);
-  --hono-decks-card-background: rgba(15, 23, 42, .78);
-  --hono-decks-inline-code-background: rgba(15, 23, 42, .72);
-  --hono-decks-code-background: rgba(15, 23, 42, .78);
+  --hono-decks-color: #fff9f5;
+  --hono-decks-muted-color: #d9c9bf;
+  --hono-decks-accent-color: #ff6b2c;
+  --hono-decks-border-color: rgba(255, 249, 245, 0.18);
+  --hono-decks-card-background: #202126;
+  --hono-decks-inline-code-background: rgba(255, 107, 44, 0.14);
+  --hono-decks-code-background: #090a0c;
+  font-family: "Avenir Next", "Segoe UI", ui-sans-serif, sans-serif;
 }
 
 .layout-code {
-  background: #0b1020;
-  color: #eef2ff;
+  position: relative;
+  background: #111216;
+  color: #fff9f5;
+}
+
+.layout-code::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 18px;
+  background: #ff6b2c;
+  content: "";
+}
+
+.layout-code .hono-decks-slide-content {
+  display: grid;
+  box-sizing: border-box;
+  grid-template-columns: minmax(14rem, 0.78fr) minmax(0, 1.22fr);
+  gap: 2rem;
+  align-items: center;
+  padding: 2.1rem 2.4rem 2.1rem 2.8rem;
+}
+
+.code-heading p {
+  margin: 0 0 0.65rem;
+  color: #ff9a6e;
+  font-size: 0.68rem;
+  font-weight: 720;
+}
+
+.code-heading h1,
+.code-heading h2 {
+  max-width: 9ch;
+  margin: 0;
+  font-size: 3.4rem;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+  text-wrap: balance;
+}
+
+.code-heading.compact h2 {
+  font-size: 3rem;
+}
+
+.layout-code pre,
+.layout-code .hono-decks-code-block {
+  grid-column: 2;
+  grid-row: 1;
+  margin: 0;
+}
+
+.layout-code pre {
+  max-height: 16.5rem;
+  border: 0;
+  border-radius: 8px;
+  padding: 1rem;
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+
+.layout-code .hono-decks-code-caption {
+  border: 0;
+  background: #ff6b2c;
+  color: #111216;
+  font-size: 0.58rem;
+  font-weight: 760;
+}
+
+.code-caption,
+.code-proof {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 2.8rem;
+  margin: 0;
+  color: var(--hono-decks-muted-color);
+  font-size: 0.58rem;
+}
+
+.code-proof {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.code-proof span {
+  border: 1px solid var(--hono-decks-border-color);
+  border-radius: 999px;
+  padding: 0.22rem 0.42rem;
 }

@@ -7,19 +7,24 @@ function _createMdxContent(props) {
   };
   return _jsxs(_Fragment, {
     children: [_jsx("p", {
-      class: "ogp-context",
-      children: "No browser. No runtime renderer."
-    }), "\n", _jsxs(_components.h2, {
-      children: ["Build once.", _jsx("br", {}), "Share from the edge."]
+      class: "honox-context",
+      children: "One deploy / every audience"
+    }), "\n", _jsx(_components.h2, {
+      children: "Publish the talk once."
     }), "\n", _jsxs("div", {
-      class: "ogp-proof",
+      class: "honox-audiences",
       children: [_jsx("span", {
-        children: "Deterministic"
+        children: "Portfolio"
       }), _jsx("span", {
-        children: "Cacheable"
+        children: "Stage"
       }), _jsx("span", {
-        children: "Worker-safe"
+        children: "Presenter"
+      }), _jsx("span", {
+        children: "Print"
       })]
+    }), "\n", _jsx("p", {
+      class: "honox-closing",
+      children: "The deck stays part of the site that introduces it."
     })]
   });
 }

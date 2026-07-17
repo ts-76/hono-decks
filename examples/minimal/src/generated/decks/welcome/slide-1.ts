@@ -3,21 +3,35 @@ import {Fragment as _Fragment, jsx as _jsx, jsxs as _jsxs} from "hono/jsx/jsx-ru
 function _createMdxContent(props) {
   const _components = {
     h2: "h2",
-    li: "li",
-    ul: "ul",
     ...props.components
   };
   return _jsxs(_Fragment, {
-    children: [_jsx(_components.h2, {
-      children: "What is included"
-    }), "\n", _jsxs(_components.ul, {
-      children: ["\n", _jsx(_components.li, {
-        children: "build-time deck compilation"
-      }), "\n", _jsx(_components.li, {
-        children: "generated Hono JSX modules"
-      }), "\n", _jsx(_components.li, {
-        children: "viewer, render, and print routes"
-      }), "\n"]
+    children: [_jsxs(_components.h2, {
+      children: ["Three files,", _jsx("br", {}), "every presentation surface."]
+    }), "\n", _jsxs("div", {
+      class: "minimal-stack",
+      children: [_jsxs("section", {
+        children: [_jsx("strong", {
+          children: "deck.mdx"
+        }), _jsx("span", {
+          children: "author"
+        })]
+      }), _jsxs("section", {
+        children: [_jsx("strong", {
+          children: "generated/decks.ts"
+        }), _jsx("span", {
+          children: "compile"
+        })]
+      }), _jsxs("section", {
+        children: [_jsx("strong", {
+          children: "src/index.ts"
+        }), _jsx("span", {
+          children: "mount"
+        })]
+      })]
+    }), "\n", _jsx("p", {
+      class: "minimal-result",
+      children: "Viewer · render · presentation · presenter · print"
     })]
   });
 }

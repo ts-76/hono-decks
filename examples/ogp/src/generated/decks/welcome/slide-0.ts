@@ -1,16 +1,25 @@
 // @ts-nocheck
-import {Fragment as _Fragment, jsx as _jsx, jsxs as _jsxs} from "hono/jsx/jsx-runtime";
+import {jsx as _jsx, jsxs as _jsxs} from "hono/jsx/jsx-runtime";
 function _createMdxContent(props) {
   const _components = {
     h1: "h1",
-    p: "p",
     ...props.components
   };
-  return _jsxs(_Fragment, {
-    children: [_jsx(_components.h1, {
-      children: "Build-time Open Graph images"
-    }), "\n", _jsx(_components.p, {
-      children: "Satori + resvg, isolated to this example."
+  return _jsxs("div", {
+    class: "ogp-cover",
+    children: [_jsx("p", {
+      children: "1200 × 630 / deterministic PNG"
+    }), _jsxs(_components.h1, {
+      children: ["Build-time", _jsx("br", {}), "Open Graph images"]
+    }), _jsxs("div", {
+      children: [_jsx("span", {
+        children: "Satori"
+      }), _jsx("span", {
+        "aria-hidden": "true",
+        children: "+"
+      }), _jsx("span", {
+        children: "resvg"
+      })]
     })]
   });
 }

@@ -21,6 +21,7 @@
 }
 
 .slide .hono-decks-slide-content {
+  box-sizing: border-box;
   padding: clamp(2rem, 5vw, 4.5rem);
 }
 

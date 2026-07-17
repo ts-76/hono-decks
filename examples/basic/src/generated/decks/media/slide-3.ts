@@ -9,14 +9,17 @@ function _createMdxContent(props) {
   }, {EmbedFrame} = _components;
   if (!EmbedFrame) _missingMdxReference("EmbedFrame", true);
   return _jsxs(_Fragment, {
-    children: [_jsx(_components.h1, {
-      children: "Generic iframe"
+    children: [_jsxs("div", {
+      class: "media-heading inline",
+      children: [_jsx("p", {
+        children: "04 / External frame"
+      }), _jsx(_components.h1, {
+        children: "Generic iframe"
+      })]
     }), "\n", _jsx(EmbedFrame, {
       src: "https://example.com/embed/status",
       title: "Embedded content",
       children: "Open embed"
-    }), "\n", _jsx(_components.p, {
-      children: "Generic iframe embeds use the same package defaults."
     }), "\n", _jsx(_components.p, {
       children: _jsx(_components.a, {
         href: "https://example.com/plain-link",

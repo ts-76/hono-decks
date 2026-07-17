@@ -1,6 +1,12 @@
 ---
 title: Hono Slides
-description: Hono + Cloudflare Workers で動く MDX-like slide runtime
+description: Hono + Cloudflare Workersで届ける、アプリと一体化したMDXスライド
+author: ts-76
+date: 2026-07-17
+tags: [hono, cloudflare, mdx]
+transition: slide-left
+transitionDuration: 360ms
+transitionEasing: cubic-bezier(.22, 1, .36, 1)
 ---
 
 export const badgeLabel = 'Rendered ' + 'by a Hono JSX component'
@@ -9,42 +15,86 @@ export const topics = ['MDX expression props', 'MDX expression children']
 ---
 title: Hono Slides
 layout: cover
+notes: |
+  hono-decksが「スライド専用サービス」ではなく、Honoアプリへ組み込むルートキットであることを最初に伝える。
 ---
 
-# Hono Slides
+<div class="sample-cover">
+  <div>
+    <p class="sample-context">Hono × MDX × Cloudflare Workers</p>
+    # Hono Slides
+    <p class="sample-lede">登壇資料を、アプリの外側ではなく<br />Honoのルートとして届ける。</p>
+  </div>
+  <div class="sample-mark" aria-hidden="true">H</div>
+</div>
 
-Cloudflare Workers で動く Slidev-like deck
+<div class="sample-runtime">
+  <span>Build with Node.js</span>
+  <span>Serve with Hono</span>
+  <span>Present anywhere</span>
+</div>
 
 <Hero title="MDX-like components" />
 
-<Badge label={badgeLabel} />
-
-{topics.map((topic) => <Badge label={topic} />)}
-
-<Counter label="Interactive count" initial={1} />
+<div class="sample-component-proof">
+  <Badge label={badgeLabel} />
+  {topics.map((topic) => <Badge label={topic} />)}
+  <Counter label="Interactive count" initial={1} />
+</div>
 
 {/* Introduce the clean projection route for talks. */}
 
 ---
-title: Parse and View
+title: Build once, mount everywhere
+layout: pipeline
+notes: |
+  Node側でMDXを変換し、Workerには生成済みのHono JSXだけを渡す境界を説明する。
 ---
 
-## Parse and View
+## Build once. Mount everywhere.
 
-- Markdown/MDX-like source を compile
-- deck manifest と slide metadata を保持
-- Hono route で viewer/render page を配信
+<p class="sample-subtitle">ファイルI/Oはbuild時に閉じ込め、runtimeはHonoのまま軽く保つ。</p>
 
-![R2 cached local asset](./assets/r2-cache.svg)
+<div class="sample-pipeline">
+  <section>
+    <strong>01</strong>
+    <h3>Author</h3>
+    <p>MDXとアセットを書く</p>
+  </section>
+  <span aria-hidden="true">→</span>
+  <section>
+    <strong>02</strong>
+    <h3>Compile</h3>
+    <p>Hono JSXへ生成する</p>
+  </section>
+  <span aria-hidden="true">→</span>
+  <section>
+    <strong>03</strong>
+    <h3>Mount</h3>
+    <p>既存アプリにrouteする</p>
+  </section>
+</div>
+
+<img class="sample-asset" src="./assets/r2-cache.svg" alt="R2-backed local asset pipeline" />
 
 {/* Use the presenter route for notes and next-slide preview. */}
 
 ---
+title: Own the whole presentation
 layout: statement
+notes: |
+  viewer、projection、presenter、printを同じデッキソースから提供できることを締めとして示す。
 ---
 
-## 次にやること
+<p class="sample-context">One source. Every surface.</p>
 
-> 自分の deck source や asset pipeline を接続する
+## 閲覧・発表・配布まで、<br />自分のHonoアプリで。
+
+<div class="sample-route-list">
+  <code>/viewer</code>
+  <code>/presentation</code>
+  <code>/presenter</code>
+  <code>/print</code>
+</div>
 
 {/* Close with the V1 extension points: viewer, projection, presenter, and assets. */}

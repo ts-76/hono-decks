@@ -3,12 +3,12 @@ import { describe, expect, it } from "vite-plus/test";
 import app from "../app/server";
 
 describe("HonoX example", () => {
-  it("blocks indexing and crawling", async () => {
+  it("allows the public portfolio to be indexed", async () => {
     const home = await app.request("/");
     const robots = await app.request("/robots.txt");
 
-    expect(home.headers.get("x-robots-tag")).toBe("noindex, nofollow, noarchive");
-    expect(await robots.text()).toBe("User-agent: *\nDisallow: /\n");
+    expect(home.headers.get("x-robots-tag")).toBeNull();
+    expect(await robots.text()).toBe("User-agent: *\nAllow: /\n");
   });
 
   it("uses the generated runtime entry and compiles through the Vite lifecycle", async () => {
@@ -44,19 +44,71 @@ describe("HonoX example", () => {
 
     expect(response.status).toBe(200);
     expect(html).toContain("HonoX + hono-decks");
-    expect(html).toContain('href="/decks/honox"');
+    expect(html).toContain('href="/decks/honox?lang=en"');
+    expect(html).toContain('src="/decks/honox/embed?lang=en"');
+    expect(html).toContain("Talks built close to the code.");
+  });
+
+  it("localizes HonoX pages from query, cookie, and Accept-Language", async () => {
+    const ja = await app.request("https://honox.example/?lang=ja");
+    const cookie = await app.request("https://honox.example/decks", {
+      headers: { cookie: "language=ja" },
+    });
+    const header = await app.request("https://honox.example/", {
+      headers: { "accept-language": "ja-JP,ja;q=0.9" },
+    });
+    const fallback = await app.request("https://honox.example/", {
+      headers: { "accept-language": "fr-FR" },
+    });
+
+    const jaHtml = await ja.text();
+    expect(jaHtml).toContain('<html lang="ja">');
+    expect(jaHtml).toContain("コードのそばで、登壇資料をつくる。");
+    expect(jaHtml).toContain('href="/decks?lang=ja"');
+    expect(jaHtml).toContain('href="/?lang=en"');
+    expect(ja.headers.get("set-cookie")).toContain("language=ja");
+
+    const cookieHtml = await cookie.text();
+    expect(cookieHtml).toContain('<html lang="ja"');
+    expect(cookieHtml).toContain("登壇資料一覧 — ts-76 Talks");
+    expect(cookieHtml).toContain('href="/decks/honox?lang=ja"');
+    expect(cookieHtml).not.toContain("<iframe");
+
+    expect(await header.text()).toContain('<html lang="ja">');
+    expect(await fallback.text()).toContain('<html lang="en">');
+  });
+
+  it("passes the selected locale to HonoX deck surfaces", async () => {
+    const jaViewer = await app.request("/decks/honox?lang=ja");
+    const enPrint = await app.request("/decks/honox/print?lang=en");
+
+    expect(await jaViewer.text()).toContain('<html lang="ja">');
+    expect(await enPrint.text()).toContain('<html lang="en"');
   });
 
   it("mounts the generated deck router from a file route", async () => {
     const index = await app.request("/decks");
     const viewer = await app.request("/decks/honox");
     const render = await app.request("/decks/honox/render");
+    const embed = await app.request("/decks/honox/embed");
 
     expect(index.status).toBe(200);
-    expect(await index.text()).toContain("HonoX Deck");
+    const indexHtml = await index.text();
+    expect(indexHtml).toContain("<title>Talk archive — ts-76 Talks</title>");
+    expect(indexHtml).toContain('id="honox-deck-index-css"');
+    expect(indexHtml).toContain('class="archive-hero"');
+    expect(indexHtml).toContain('id="published-talks"');
+    expect(indexHtml).toContain("HonoX Deck");
+    expect(indexHtml).toContain('class="archive-talk-poster"');
+    expect(indexHtml).not.toContain("<iframe");
+    expect(indexHtml).not.toContain("/embed");
+    expect(indexHtml).toContain('href="/decks/honox/presentation?lang=en"');
+    expect(indexHtml).toContain('href="/decks/honox/print?lang=en"');
     expect(viewer.status).toBe(200);
     expect(await viewer.text()).toContain('src="/decks/honox/render"');
     expect(render.status).toBe(200);
-    expect(await render.text()).toContain("File-based pages and generated slide routes in one Hono app.");
+    expect(await render.text()).toContain("Pages and presentations,");
+    expect(embed.status).toBe(200);
+    expect(embed.headers.get("content-security-policy")).toBe("frame-ancestors 'self' https://hono-decks.com");
   });
 });

@@ -1,0 +1,136 @@
+:root {
+  --hono-decks-color: #f8f8f5;
+  --hono-decks-muted-color: #c7c8c2;
+  --hono-decks-accent-color: #ff6b35;
+  --hono-decks-border-color: rgba(248, 248, 245, 0.18);
+  --hono-decks-card-background: #202126;
+  --hono-decks-inline-code-background: rgba(255, 107, 53, 0.14);
+  --hono-decks-code-background: #090a0c;
+  font-family: "Atkinson Hyperlegible", "Avenir Next", "Segoe UI", ui-sans-serif, sans-serif;
+}
+
+.slide {
+  position: relative;
+  background: #111216;
+  color: #f8f8f5;
+}
+
+.slide::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 12px;
+  background: #ff6b35;
+  content: "";
+}
+
+.slide .hono-decks-slide-content {
+  box-sizing: border-box;
+  padding: 2rem 2.5rem;
+}
+
+.ogp-cover {
+  display: grid;
+  height: 100%;
+  align-content: space-between;
+}
+
+.ogp-cover > p,
+.ogp-context {
+  margin: 0;
+  color: #ff9a73;
+  font-size: 0.68rem;
+  font-weight: 740;
+}
+
+.ogp-cover h1 {
+  max-width: 13ch;
+  margin: 0;
+  font-size: 4.2rem;
+  letter-spacing: -0.04em;
+  line-height: 0.92;
+}
+
+.ogp-cover > div {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  color: #c7c8c2;
+  font-size: 0.75rem;
+}
+
+.slide h2 {
+  max-width: 13ch;
+  margin: 0;
+  font-size: 3.2rem;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+}
+
+.ogp-flow {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  gap: 0.6rem;
+  align-items: center;
+  margin-top: 1.7rem;
+}
+
+.ogp-flow section {
+  display: grid;
+  min-height: 7.8rem;
+  align-content: space-between;
+  border-top: 3px solid #ff6b35;
+  background: #202126;
+  padding: 0.8rem;
+}
+
+.ogp-flow section.is-accent {
+  background: #ff6b35;
+  color: #111216;
+}
+
+.ogp-flow > span {
+  color: #ff9a73;
+  font-size: 1.3rem;
+}
+
+.ogp-flow code {
+  justify-self: start;
+  color: #ff9a73;
+  font-size: 0.6rem;
+}
+
+.ogp-flow .is-accent code {
+  background: rgba(17, 18, 22, 0.14);
+  color: #111216;
+}
+
+.ogp-flow strong {
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.layout-statement .hono-decks-slide-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.layout-statement h2 {
+  max-width: 15ch;
+  margin-top: 0.75rem;
+  font-size: 3.8rem;
+}
+
+.ogp-proof {
+  display: flex;
+  gap: 0.45rem;
+  margin-top: 1.2rem;
+}
+
+.ogp-proof span {
+  border: 1px solid var(--hono-decks-border-color);
+  border-radius: 999px;
+  padding: 0.3rem 0.6rem;
+  color: #c7c8c2;
+  font-size: 0.66rem;
+}

@@ -10,34 +10,42 @@ function _createMdxContent(props) {
   if (!Fire) _missingMdxReference("Fire", true);
   if (!MotionMeter) _missingMdxReference("MotionMeter", true);
   return _jsxs(_Fragment, {
-    children: [_jsx(_components.h2, {
+    children: [_jsx("p", {
+      class: "motion-context",
+      children: "Hydrate only what moves"
+    }), "\n", _jsx(_components.h2, {
       children: "Animation island"
-    }), "\n", _jsx("p", {
-      children: "Client components can own small interactive animation state with hono/jsx/dom."
-    }), "\n", _jsxs(_components.ul, {
-      children: ["\n", _jsxs(_components.li, {
-        "data-hono-decks-fire": "true",
-        children: ["CSS animation runs before hydration.", "\n", _jsxs(_components.ul, {
-          children: ["\n", _jsx(_components.li, {
+    }), "\n", _jsxs("div", {
+      class: "motion-columns",
+      children: [_jsxs("div", {
+        children: [_jsx("p", {
+          children: "Client components own small, local interaction state."
+        }), _jsxs(_components.ul, {
+          children: ["\n", _jsxs(_components.li, {
             "data-hono-decks-fire": "true",
-            "data-fire-at": "+0",
-            children: "Nested items can join the sequence."
+            children: ["CSS animation runs before hydration.", "\n", _jsxs(_components.ul, {
+              children: ["\n", _jsx(_components.li, {
+                "data-hono-decks-fire": "true",
+                "data-fire-at": "+0",
+                children: "Nested items can join the sequence."
+              }), "\n"]
+            }), "\n"]
+          }), "\n", _jsx(_components.li, {
+            "data-hono-decks-fire": "true",
+            "data-fire-at": "+1",
+            children: "Client island animation keeps local state."
           }), "\n"]
-        }), "\n"]
-      }), "\n", _jsx(_components.li, {
-        "data-hono-decks-fire": "true",
-        "data-fire-at": "+1",
-        children: "Client island animation keeps local state."
-      }), "\n"]
-    }), "\n", _jsx("p", {
-      children: "Use at for an absolute or relative reveal position."
-    }), "\n", _jsx(Fire, {
-      effect: "scale",
-      at: "+1",
-      children: _jsx(MotionMeter, {
-        label: "Animation island",
-        initial: 35
-      })
+        }), _jsx("p", {
+          children: "Use at for an absolute or relative reveal position."
+        })]
+      }), _jsx(Fire, {
+        effect: "scale",
+        at: "+1",
+        children: _jsx(MotionMeter, {
+          label: "Animation island",
+          initial: 35
+        })
+      })]
     })]
   });
 }

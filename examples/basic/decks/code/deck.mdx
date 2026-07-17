@@ -1,14 +1,25 @@
 ---
 title: Code Verification
-description: Fenced code block rendering checks for hono-decks
+description: Shikiで強調表示したコードを、固定16:9キャンバスで読みやすく見せる
+author: ts-76
+date: 2026-07-17
+tags: [code, shiki, mdx]
+transition: fade
+transitionDuration: 280ms
+transitionEasing: cubic-bezier(.22, 1, .36, 1)
 ---
 
 ---
-title: Fenced Code
+title: Fenced code
 layout: code
+notes: |
+  HTMLに見えるJSXも安全にescapeされ、長いコードはキャンバスを壊さずスクロールする。
 ---
 
-# Code verification
+<div class="code-heading">
+  <p>Syntax highlighting / fixed canvas</p>
+  # Code verification
+</div>
 
 ```ts
 const view = <Slide title="Hello" />
@@ -18,18 +29,27 @@ export function labels(items: Array<{ id: string }>) {
 }
 ```
 
-Fenced code should preserve whitespace, escape HTML-like syntax, and scroll instead of breaking the fixed canvas.
+<p class="code-caption">Whitespace preserved. JSX escaped. Overflow contained.</p>
 
 ---
-title: CodeBlock Component
+title: CodeBlock component
 layout: code
+notes: |
+  filenameと行ハイライトをMDXの近くで宣言できることを示す。
 ---
 
-# CodeBlock component
+<div class="code-heading compact">
+  <p>Component API</p>
+  ## CodeBlock component
+</div>
 
 <CodeBlock lang="ts" filename="worker.ts" highlight="2">
 const app = new Hono()
 app.get("/", (c) => c.text("ok"))
 </CodeBlock>
 
-The built-in component should keep code authoring close to the deck source.
+<div class="code-proof">
+  <span>filename</span>
+  <span>highlight</span>
+  <span>build-time Shiki</span>
+</div>
