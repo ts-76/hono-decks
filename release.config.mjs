@@ -11,7 +11,8 @@ export default {
         releaseRules: [
           { breaking: true, release: "minor" },
           { type: "feat", release: "minor" },
-          { type: "fix", release: "patch" },
+          { type: "fix", scope: "ci", release: false },
+          { type: "fix", scope: "!(ci)", release: "patch" },
           { type: "perf", release: "patch" },
         ],
       },
