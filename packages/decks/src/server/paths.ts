@@ -34,5 +34,9 @@ export function createDeckPaths(mountPath: string, slug: string): DeckPaths {
 export function normalizeMountPath(value: string): string {
   const trimmed = value.trim();
   if (!trimmed || trimmed === "/") return "/";
-  return `/${trimmed.replace(/^\/+|\/+$/g, "")}`;
+  let start = 0;
+  let end = trimmed.length;
+  while (trimmed[start] === "/") start += 1;
+  while (end > start && trimmed[end - 1] === "/") end -= 1;
+  return `/${trimmed.slice(start, end)}`;
 }

@@ -30,13 +30,8 @@ export function addExternalAssetWarnings(warnings: CompiledDeck["warnings"], ass
 export function collectMarkdownAssetCandidates(markdown: string): string[] {
   const candidates: string[] = [];
 
-  for (const match of markdown.matchAll(/^\s*(?:background|image|src|asset):\s*['"]?([^'"\n]+)['"]?\s*$/gim)) {
-    candidates.push(match[1].trim());
-  }
-
-  for (const match of markdown.matchAll(/!\[[^\]]*\]\(([^)\s]+)(?:\s+["'][^"']*["'])?\)/g)) {
-    candidates.push(match[1].trim());
-  }
+  candidates.push(...collectDirectiveAssetCandidates(markdown));
+  candidates.push(...collectMarkdownImageCandidates(markdown));
 
   for (const match of markdown.matchAll(/\b(?:src|href|image|background)=["']([^"']+)["']/g)) {
     candidates.push(match[1].trim());
@@ -58,13 +53,87 @@ export function isLocalRelativeAssetCandidate(value: string): boolean {
 }
 
 export function contentTypeForPath(path: string): string | undefined {
-  const pathname = path.replace(/\?.*$/, "").toLowerCase();
-  if (/\.png(?:#.*)?$/.test(pathname)) return "image/png";
-  if (/\.jpe?g(?:#.*)?$/.test(pathname)) return "image/jpeg";
-  if (/\.gif(?:#.*)?$/.test(pathname)) return "image/gif";
-  if (/\.svg(?:#.*)?$/.test(pathname)) return "image/svg+xml";
-  if (/\.webp(?:#.*)?$/.test(pathname)) return "image/webp";
+  const queryIndex = path.indexOf("?");
+  const pathname = (queryIndex === -1 ? path : path.slice(0, queryIndex)).toLowerCase();
+  if (hasExtension(pathname, ".png")) return "image/png";
+  if (hasExtension(pathname, ".jpg") || hasExtension(pathname, ".jpeg")) return "image/jpeg";
+  if (hasExtension(pathname, ".gif")) return "image/gif";
+  if (hasExtension(pathname, ".svg")) return "image/svg+xml";
+  if (hasExtension(pathname, ".webp")) return "image/webp";
   return undefined;
+}
+
+function hasExtension(path: string, extension: string): boolean {
+  return path.endsWith(extension) || path.includes(`${extension}#`);
+}
+
+function collectDirectiveAssetCandidates(markdown: string): string[] {
+  const candidates: string[] = [];
+  for (const sourceLine of markdown.split("\n")) {
+    const line = sourceLine.endsWith("\r") ? sourceLine.slice(0, -1).trim() : sourceLine.trim();
+    const separator = line.indexOf(":");
+    if (separator === -1) continue;
+
+    const key = line.slice(0, separator).toLowerCase();
+    if (key !== "background" && key !== "image" && key !== "src" && key !== "asset") continue;
+
+    let value = line.slice(separator + 1).trim();
+    if (value.startsWith('"') || value.startsWith("'")) value = value.slice(1);
+    if (value.endsWith('"') || value.endsWith("'")) value = value.slice(0, -1);
+    value = value.trim();
+    if (value && !value.includes('"') && !value.includes("'")) candidates.push(value);
+  }
+  return candidates;
+}
+
+function collectMarkdownImageCandidates(markdown: string): string[] {
+  const candidates: string[] = [];
+  let index = 0;
+  while (index < markdown.length - 1) {
+    const imageStart = markdown.indexOf("![", index);
+    if (imageStart === -1) break;
+    const labelEnd = markdown.indexOf("]", imageStart + 2);
+    if (labelEnd === -1) break;
+    if (markdown[labelEnd + 1] !== "(") {
+      index = labelEnd + 1;
+      continue;
+    }
+
+    let cursor = labelEnd + 2;
+    const destinationStart = cursor;
+    while (cursor < markdown.length && markdown[cursor] !== ")" && !isMarkdownWhitespace(markdown[cursor])) cursor += 1;
+    if (cursor === destinationStart) {
+      index = cursor + 1;
+      continue;
+    }
+    const destination = markdown.slice(destinationStart, cursor);
+
+    while (cursor < markdown.length && isMarkdownWhitespace(markdown[cursor])) cursor += 1;
+    if (markdown[cursor] !== ")") {
+      const quote = markdown[cursor];
+      if (quote !== '"' && quote !== "'") {
+        index = cursor + 1;
+        continue;
+      }
+      cursor += 1;
+      while (cursor < markdown.length && markdown[cursor] !== '"' && markdown[cursor] !== "'") cursor += 1;
+      if (cursor >= markdown.length) break;
+      cursor += 1;
+      while (cursor < markdown.length && isMarkdownWhitespace(markdown[cursor])) cursor += 1;
+    }
+
+    if (markdown[cursor] === ")") {
+      candidates.push(destination);
+      index = cursor + 1;
+    } else {
+      index = cursor + 1;
+    }
+  }
+  return candidates;
+}
+
+function isMarkdownWhitespace(value: string | undefined): boolean {
+  return value === " " || value === "\t" || value === "\r" || value === "\n";
 }
 
 function assetRefType(value: string): AssetRef["type"] | undefined {
