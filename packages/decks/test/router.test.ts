@@ -172,7 +172,7 @@ describe("decksRouter", () => {
       expect(html, surface).toContain(`<html lang="${lang}"`);
       expect(html, surface).toContain(`data-document-surface="${surface}"`);
 
-      for (const tag of html.match(/<(?:style|script)\b[^>]*>/g) ?? []) {
+      for (const tag of html.match(/<(?:style|script)\b[^>]*>/gi) ?? []) {
         expect(tag, `${surface}: ${tag}`).toContain(`nonce="${nonce}"`);
       }
     }
@@ -317,7 +317,7 @@ describe("decksRouter", () => {
     expect(html).toContain('class="hono-decks-embedded-viewer product-tour"');
     expect(html).toContain(".product-tour{isolation:isolate}");
     expect(html).not.toContain("data-hono-decks-viewer-controls");
-    for (const tag of html.match(/<(?:style|script)\b[^>]*>/g) ?? []) {
+    for (const tag of html.match(/<(?:style|script)\b[^>]*>/gi) ?? []) {
       expect(tag).toContain('nonce="embed-nonce"');
     }
   });

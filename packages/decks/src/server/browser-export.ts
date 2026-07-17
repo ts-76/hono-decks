@@ -183,9 +183,11 @@ function recordValue(value: unknown): Record<string, unknown> {
 }
 
 function safeFilename(value: string): string {
-  const normalized = value
-    .trim()
-    .replaceAll(/[^a-zA-Z0-9._-]+/g, "-")
-    .replaceAll(/^-+|-+$/g, "");
+  const sanitized = value.trim().replaceAll(/[^a-zA-Z0-9._-]+/g, "-");
+  let start = 0;
+  let end = sanitized.length;
+  while (sanitized[start] === "-") start += 1;
+  while (end > start && sanitized[end - 1] === "-") end -= 1;
+  const normalized = sanitized.slice(start, end);
   return normalized || "deck";
 }

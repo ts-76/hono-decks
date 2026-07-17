@@ -78,6 +78,20 @@ describe("Node filesystem deck adapter", () => {
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
+  it("decodes each OGP HTML entity exactly once", async () => {
+    const fetch = vi.fn().mockResolvedValue(
+      new Response(
+        '<meta property="og:title" content="&amp;quot;Nested&amp;quot; &quot;Plain&quot; &amp;" />',
+        { headers: { "content-type": "text/html" } },
+      ),
+    );
+    vi.stubGlobal("fetch", fetch);
+
+    const metadata = await resolveOgpMetadata("http://93.184.216.34/card");
+
+    expect(metadata?.title).toBe('&quot;Nested&quot; "Plain" &');
+  });
+
   it("uses cached OGP metadata without refreshing from the network", async () => {
     const cwd = await createFixture();
     const resolveOgp = vi.fn().mockResolvedValue({

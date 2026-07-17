@@ -574,5 +574,5 @@ function localAssetRelativePath(sourcePath: string): string {
 }
 
 function normalizeVoidElementSpacing(html: string): string {
-  return html.replace(/<(img|br|hr)([^>]*)\/>/g, "<$1$2 />");
+  return html.replace(/<(img|br|hr)([^<>]*)\/>/g, "<$1$2 />");
 }

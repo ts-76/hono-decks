@@ -217,11 +217,11 @@ function absoluteUrl(value: string | undefined, base: string): string | undefine
 
 function decodeHtmlEntities(value: string): string {
   return value
-    .replaceAll("&amp;", "&")
     .replaceAll("&quot;", '"')
     .replaceAll("&#39;", "'")
     .replaceAll("&lt;", "<")
-    .replaceAll("&gt;", ">");
+    .replaceAll("&gt;", ">")
+    .replaceAll("&amp;", "&");
 }
 
 function isHttpUrl(value: string): boolean {

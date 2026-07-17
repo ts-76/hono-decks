@@ -73,7 +73,7 @@ async function resolveBucket<E extends Env, RequestEnv extends E>(
 }
 
 function findRoutableAsset(assets: AssetRef[], slug: string, assetPath: string): AssetRef | undefined {
-  const normalized = assetPath.replace(/^\/+/, "");
+  const normalized = stripLeadingSlashes(assetPath);
   return assets.find((asset) => {
     if (asset.type !== "local" && asset.type !== "r2") return false;
     const suffix = `/${slug}/assets/${normalized}`;
@@ -85,8 +85,21 @@ function resolveR2Key<E extends Env>(input: R2AssetKeyInput, options: R2AssetSou
   if (options.key) return options.key(input);
   if (input.asset.r2Key) return input.asset.r2Key;
   const key = input.asset.sourcePath || `${input.slug}/assets/${input.assetPath}`;
-  const prefix = options.keyPrefix?.replace(/\/+$/, "");
-  return prefix ? `${prefix}/${key.replace(/^\/+/, "")}` : key.replace(/^\/+/, "");
+  const prefix = options.keyPrefix ? stripTrailingSlashes(options.keyPrefix) : undefined;
+  const normalizedKey = stripLeadingSlashes(key);
+  return prefix ? `${prefix}/${normalizedKey}` : normalizedKey;
+}
+
+function stripLeadingSlashes(value: string): string {
+  let index = 0;
+  while (value[index] === "/") index += 1;
+  return value.slice(index);
+}
+
+function stripTrailingSlashes(value: string): string {
+  let end = value.length;
+  while (end > 0 && value[end - 1] === "/") end -= 1;
+  return value.slice(0, end);
 }
 
 async function responseFromR2Object<E extends Env>(
