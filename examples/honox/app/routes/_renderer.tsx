@@ -47,12 +47,24 @@ export default jsxRenderer(({ children }, c) => {
             <a class="site-deck-index-link" href={localizedHref("/decks", locale)}>
               {isJa ? "デッキ一覧" : "Deck index"}
             </a>
-            <span class="site-language-switcher" aria-label={isJa ? "言語" : "Language"} role="group">
-              <a href={localizedHref(currentPath, "ja")} lang="ja" aria-current={isJa ? "true" : undefined}>
+            <span
+              class="site-language-switcher"
+              aria-label={isJa ? "言語" : "Language"}
+              role="group"
+            >
+              <a
+                href={localizedHref(currentPath, "ja")}
+                lang="ja"
+                aria-current={isJa ? "true" : undefined}
+              >
                 JA
               </a>
               <span aria-hidden="true">/</span>
-              <a href={localizedHref(currentPath, "en")} lang="en" aria-current={!isJa ? "true" : undefined}>
+              <a
+                href={localizedHref(currentPath, "en")}
+                lang="en"
+                aria-current={!isJa ? "true" : undefined}
+              >
                 EN
               </a>
             </span>
@@ -62,7 +74,9 @@ export default jsxRenderer(({ children }, c) => {
         {children}
         <footer class="site-footer">
           <p>{isJa ? "HonoXとhono-decksで構築。" : "Built with HonoX and hono-decks."}</p>
-          <a href="https://github.com/ts-76/hono-decks">{isJa ? "ソースを見る" : "View source"} ↗</a>
+          <a href="https://github.com/ts-76/hono-decks">
+            {isJa ? "ソースを見る" : "View source"} ↗
+          </a>
         </footer>
       </body>
     </html>
@@ -93,14 +107,15 @@ a { color: inherit; }
 .skip-link { position: fixed; z-index: 30; top: 10px; left: 10px; translate: 0 -160%; background: var(--ink); padding: 10px 14px; color: white; text-decoration: none; }
 .skip-link:focus { translate: 0; }
 .site-header { position: absolute; z-index: 10; top: 0; left: 50%; display: flex; width: min(var(--content), calc(100% - 48px)); min-height: 80px; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,.18); color: white; translate: -50% 0; }
-.site-brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
+.site-brand { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 10px; white-space: nowrap; text-decoration: none; }
 .site-brand span { display: grid; width: 34px; height: 34px; place-items: center; background: var(--accent); color: var(--ink); font-weight: 800; transform: rotate(-4deg); }
 .site-brand strong { font-size: .95rem; letter-spacing: -.02em; }
-.site-header nav { display: flex; align-items: center; gap: 28px; font-size: .84rem; font-weight: 650; }
-.site-header nav a { padding: 28px 0; text-decoration: none; }
+.site-header nav { display: flex; flex: 0 0 auto; align-items: center; gap: 28px; font-size: .84rem; font-weight: 650; }
+.site-header nav a, .site-language-switcher { display: inline-flex; min-height: 44px; align-items: center; }
+.site-header nav a { padding: 0; text-decoration: none; }
 .site-header nav a:hover { color: #ff9b70; }
 .site-language-switcher { display: inline-flex; align-items: center; gap: 6px; }
-.site-header .site-language-switcher a { padding: 0; opacity: .58; }
+.site-header .site-language-switcher a { display: inline-flex; min-width: 44px; min-height: 44px; align-items: center; justify-content: center; padding: 0; opacity: .58; }
 .site-header .site-language-switcher a[aria-current] { opacity: 1; color: #ff9b70; }
 .portfolio-hero { min-height: 720px; display: grid; background: var(--ink); color: white; }
 .portfolio-hero-inner { display: grid; width: min(var(--content), calc(100% - 48px)); grid-template-columns: minmax(0, 1fr) minmax(320px, .6fr); gap: clamp(48px, 8vw, 112px); align-items: end; margin: 0 auto; padding: 176px 0 92px; }
@@ -153,6 +168,9 @@ a { color: inherit; }
   .talk-preview { padding-top: 20px; }
   .talk-copy { min-height: 340px; }
   .site-footer { align-items: flex-start; flex-direction: column; justify-content: center; gap: 8px; }
+}
+@media (max-width: 420px) {
+  .site-brand strong { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

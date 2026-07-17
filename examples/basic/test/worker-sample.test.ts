@@ -20,7 +20,10 @@ describe("sample Worker app", () => {
   it("keeps generated deck imports behind a sample facade", async () => {
     const entrySource = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
     const facadeSource = await readFile(new URL("../src/decks.ts", import.meta.url), "utf8");
-    const configSource = await readFile(new URL("../hono-decks.config.ts", import.meta.url), "utf8");
+    const configSource = await readFile(
+      new URL("../hono-decks.config.ts", import.meta.url),
+      "utf8",
+    );
     const packageSource = await readFile(new URL("../package.json", import.meta.url), "utf8");
     const pagesSource = await readFile(new URL("../src/pages.tsx", import.meta.url), "utf8");
 
@@ -84,8 +87,12 @@ describe("sample Worker app", () => {
       slug: "sample",
       sourcePath: "decks/sample/deck.mdx",
     });
-    expect(sampleDeck?.slides[0]?.notes).toContain("Introduce the clean projection route for talks.");
-    expect(sampleDeck?.slides[1]?.notes).toContain("Use the presenter route for notes and next-slide preview.");
+    expect(sampleDeck?.slides[0]?.notes).toContain(
+      "Introduce the clean projection route for talks.",
+    );
+    expect(sampleDeck?.slides[1]?.notes).toContain(
+      "Use the presenter route for notes and next-slide preview.",
+    );
     expect(typeof decks.router).toBe("function");
   });
 
@@ -140,6 +147,24 @@ describe("sample Worker app", () => {
     expect(await fallback.text()).toContain('<html lang="en">');
   });
 
+  it("localizes deck detail descriptions and metadata", async () => {
+    const app = await sampleApp();
+    const enSample = await app.request("/decks/sample/about?lang=en");
+    const jaMedia = await app.request("/decks/media/about?lang=ja");
+
+    const enSampleHtml = await enSample.text();
+    expect(enSampleHtml).toContain(
+      '<meta name="description" content="An MDX deck delivered as part of a Hono application on Cloudflare Workers."',
+    );
+    expect(enSampleHtml).not.toContain("Hono + Cloudflare Workersで届ける");
+
+    const jaMediaHtml = await jaMedia.text();
+    expect(jaMediaHtml).toContain(
+      '<meta name="description" content="ローカルアセット、R2、動画、SNS投稿、リンクカードを1つの資料に"',
+    );
+    expect(jaMediaHtml).not.toContain("Local assets, R2, video");
+  });
+
   it("passes the selected locale to generated deck surfaces", async () => {
     const app = await sampleApp();
     const jaViewer = await app.request("/decks/sample?lang=ja");
@@ -186,7 +211,9 @@ describe("sample Worker app", () => {
     expect(html).not.toContain("DESIGN_WIDTH");
     expect(html).not.toContain("stage.style.transform");
     expect(html).toContain('id="hono-css"');
-    expect(html).toContain("linear-gradient(145deg, oklch(99% 0 0) 0%, oklch(94% 0 0) 58%, oklch(88% 0 0) 100%)");
+    expect(html).toContain(
+      "linear-gradient(145deg, oklch(99% 0 0) 0%, oklch(94% 0 0) 58%, oklch(88% 0 0) 100%)",
+    );
     expect(html).toContain("color: #111827");
     expect(html).not.toContain("radial-gradient(circle at top, #1e2b5c, #050816 62%)");
     expect(html).toContain("border-radius: 8px");
@@ -222,8 +249,12 @@ describe("sample Worker app", () => {
     expect(html).toContain('orientation.lock("landscape")');
     expect(html).not.toContain('href="/decks/sample/presenter"');
     expect(html).not.toContain('data-sample-control="presenter"');
-    expect(html.indexOf('data-sample-control="home"')).toBeLessThan(html.indexOf('data-action="previous"'));
-    expect(html.indexOf('data-action="next"')).toBeLessThan(html.indexOf('data-sample-control="details"'));
+    expect(html.indexOf('data-sample-control="home"')).toBeLessThan(
+      html.indexOf('data-action="previous"'),
+    );
+    expect(html.indexOf('data-action="next"')).toBeLessThan(
+      html.indexOf('data-sample-control="details"'),
+    );
     expect(html).not.toContain('href="/decks/sample/export.pdf"');
     expect(html).not.toContain('data-hono-decks-export="pdf"');
     expect(html).not.toContain('href="/decks/sample/export.png"');
@@ -247,7 +278,9 @@ describe("sample Worker app", () => {
     expect(projectionHtml).toContain("data-hono-decks-stage");
     expect(projectionHtml).not.toContain("data-hono-decks-viewer-controls");
     expect(projectionHtml).not.toContain("Introduce the clean projection route for talks.");
-    expect(projectionHtml).not.toContain("Use the presenter route for notes and next-slide preview.");
+    expect(projectionHtml).not.toContain(
+      "Use the presenter route for notes and next-slide preview.",
+    );
 
     expect(disabledPresenter.status).toBe(404);
 
@@ -344,11 +377,11 @@ describe("sample Worker app", () => {
     const html = await response.text();
     expect(html).toContain("<title>Hono Slides — Details</title>");
     expect(html).toContain(
-      '<meta name="description" content="Hono + Cloudflare Workersで届ける、アプリと一体化したMDXスライド"/>',
+      '<meta name="description" content="An MDX deck delivered as part of a Hono application on Cloudflare Workers."/>',
     );
     expect(html).toContain('<meta property="og:title" content="Hono Slides"/>');
     expect(html).toContain(
-      '<meta property="og:description" content="Hono + Cloudflare Workersで届ける、アプリと一体化したMDXスライド"/>',
+      '<meta property="og:description" content="An MDX deck delivered as part of a Hono application on Cloudflare Workers."/>',
     );
     expect(html).toContain('<meta property="og:url" content="/decks/sample"/>');
     expect(html).toContain('data-sample-layout="deck-details"');
@@ -439,7 +472,9 @@ describe("sample Worker app", () => {
     expect(html).toContain(".layout-media {");
     expect(html).toContain("background: #07111f;");
     expect(html).not.toContain(".slide{box-sizing:border-box;aspect-ratio:16/9;border:");
-    expect(html).not.toContain(".hono-decks-stage{width:100vw;height:100vh;overflow:hidden;background:");
+    expect(html).not.toContain(
+      ".hono-decks-stage{width:100vw;height:100vh;overflow:hidden;background:",
+    );
     expect(html).toContain('src="/decks/media/assets/local-jsx.svg"');
     expect(html).toContain('alt="Local JSX asset"');
     expect(html).toContain('src="/decks/media/assets/r2-remote.svg"');
@@ -449,14 +484,20 @@ describe("sample Worker app", () => {
     expect(html).toContain('src="https://www.youtube.com/embed/dQw4w9WgXcQ"');
     expect(html).toContain('title="YouTube embed example"');
     expect(html).toContain('loading="lazy"');
-    expect(html).toContain('sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"');
+    expect(html).toContain(
+      'sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"',
+    );
     expect(html).toContain('allow="fullscreen; picture-in-picture"');
-    expect(html).toContain('href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank" rel="noreferrer"');
+    expect(html).toContain(
+      'href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank" rel="noreferrer"',
+    );
     expect(html).not.toContain('href="https://www.youtube.com/embed/dQw4w9WgXcQ"');
     expect(html).toContain('src="https://example.com/embed/status"');
     expect(html).toContain('title="Embedded content"');
     expect(html).toContain("Open embed");
-    expect(html).toContain('href="https://example.com/embed/status" target="_blank" rel="noreferrer"');
+    expect(html).toContain(
+      'href="https://example.com/embed/status" target="_blank" rel="noreferrer"',
+    );
     expect(html).toContain('href="https://example.com/plain-link"');
     expect(html).toContain(">https://example.com/plain-link</a>");
     expect(html).not.toContain('class="hono-decks-social-embed"');
@@ -612,7 +653,9 @@ describe("sample Worker app", () => {
     const app = await sampleApp();
 
     expect((await app.request("/decks/sample/edit")).status).toBe(404);
-    expect((await app.request("/decks/sample/edit/agent/chat", { method: "POST" })).status).toBe(404);
+    expect((await app.request("/decks/sample/edit/agent/chat", { method: "POST" })).status).toBe(
+      404,
+    );
     expect((await app.request("/decks/sample/edit/apply", { method: "POST" })).status).toBe(404);
     expect((await app.request("/deck")).status).toBe(404);
     expect((await app.request("/api/parse", { method: "POST" })).status).toBe(404);

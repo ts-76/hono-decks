@@ -3,7 +3,11 @@ import { localizedHref, type Locale } from "./i18n";
 
 type DeckPathResolver = (slug: string) => DeckPaths;
 
-export function renderHonoXDeckIndexPage(input: { decks: CompiledDeck[]; paths: DeckPathResolver; locale: Locale }) {
+export function renderHonoXDeckIndexPage(input: {
+  decks: CompiledDeck[];
+  paths: DeckPathResolver;
+  locale: Locale;
+}) {
   const isJa = input.locale === "ja";
   return (
     <>
@@ -11,7 +15,11 @@ export function renderHonoXDeckIndexPage(input: { decks: CompiledDeck[]; paths: 
         {isJa ? "登壇資料へ移動" : "Skip to published talks"}
       </a>
       <header class="archive-header">
-        <a class="archive-brand" href={localizedHref("/", input.locale)} aria-label="ts-76 Talks home">
+        <a
+          class="archive-brand"
+          href={localizedHref("/", input.locale)}
+          aria-label="ts-76 Talks home"
+        >
           <span aria-hidden="true">H</span>
           <strong>ts-76 / Talks</strong>
         </a>
@@ -19,12 +27,24 @@ export function renderHonoXDeckIndexPage(input: { decks: CompiledDeck[]; paths: 
           <a class="archive-portfolio-link" href={localizedHref("/", input.locale)}>
             Portfolio
           </a>
-          <span class="archive-language-switcher" aria-label={isJa ? "言語" : "Language"} role="group">
-            <a href={localizedHref("/decks", "ja")} lang="ja" aria-current={isJa ? "true" : undefined}>
+          <span
+            class="archive-language-switcher"
+            aria-label={isJa ? "言語" : "Language"}
+            role="group"
+          >
+            <a
+              href={localizedHref("/decks", "ja")}
+              lang="ja"
+              aria-current={isJa ? "true" : undefined}
+            >
               JA
             </a>
             <span aria-hidden="true">/</span>
-            <a href={localizedHref("/decks", "en")} lang="en" aria-current={!isJa ? "true" : undefined}>
+            <a
+              href={localizedHref("/decks", "en")}
+              lang="en"
+              aria-current={!isJa ? "true" : undefined}
+            >
               EN
             </a>
           </span>
@@ -54,7 +74,11 @@ export function renderHonoXDeckIndexPage(input: { decks: CompiledDeck[]; paths: 
           </div>
         </section>
 
-        <section id="published-talks" class="published-talks" aria-labelledby="published-talks-title">
+        <section
+          id="published-talks"
+          class="published-talks"
+          aria-labelledby="published-talks-title"
+        >
           <header class="published-talks-heading">
             <h2 id="published-talks-title">{isJa ? "公開中の登壇資料" : "Published talks"}</h2>
             <p>
@@ -82,7 +106,9 @@ export function renderHonoXDeckIndexPage(input: { decks: CompiledDeck[]; paths: 
                     aria-label={isJa ? `${title}を開く` : `Open ${title}`}
                   >
                     <span class="archive-talk-poster">
-                      <small>{isJa ? "HonoXポートフォリオパターン" : "HonoX portfolio pattern"}</small>
+                      <small>
+                        {isJa ? "HonoXポートフォリオパターン" : "HonoX portfolio pattern"}
+                      </small>
                       <strong>
                         HonoX +<br />
                         hono-decks
@@ -98,9 +124,13 @@ export function renderHonoXDeckIndexPage(input: { decks: CompiledDeck[]; paths: 
                   <div class="archive-talk-copy">
                     <p class="archive-talk-meta">
                       {deck.meta.date ? (
-                        <time datetime={deck.meta.date}>{formatArchiveDate(deck.meta.date, input.locale)}</time>
+                        <time datetime={deck.meta.date}>
+                          {formatArchiveDate(deck.meta.date, input.locale)}
+                        </time>
                       ) : null}
-                      <span>{isJa ? `${deck.slides.length}枚` : `${deck.slides.length} slides`}</span>
+                      <span>
+                        {isJa ? `${deck.slides.length}枚` : `${deck.slides.length} slides`}
+                      </span>
                     </p>
                     <h3>{title}</h3>
                     <p class="archive-talk-description">
@@ -109,7 +139,10 @@ export function renderHonoXDeckIndexPage(input: { decks: CompiledDeck[]; paths: 
                         : "Embed a presentation directly in a HonoX portfolio."}
                     </p>
                     {deck.meta.tags?.length ? (
-                      <ul class="archive-talk-tags" aria-label={isJa ? `${title}のトピック` : `${title} topics`}>
+                      <ul
+                        class="archive-talk-tags"
+                        aria-label={isJa ? `${title}のトピック` : `${title} topics`}
+                      >
                         {deck.meta.tags.map((tag) => (
                           <li>{tag}</li>
                         ))}
@@ -125,7 +158,9 @@ export function renderHonoXDeckIndexPage(input: { decks: CompiledDeck[]; paths: 
                       <a href={localizedHref(paths.presentation, input.locale)}>
                         {isJa ? "発表画面" : "Presentation"} <span aria-hidden="true">↗</span>
                       </a>
-                      <a href={localizedHref(paths.print, input.locale)}>{isJa ? "印刷表示" : "Print view"}</a>
+                      <a href={localizedHref(paths.print, input.locale)}>
+                        {isJa ? "印刷表示" : "Print view"}
+                      </a>
                     </nav>
                   </div>
                 </article>
@@ -153,7 +188,9 @@ export function renderHonoXDeckIndexPage(input: { decks: CompiledDeck[]; paths: 
 
       <footer class="archive-footer">
         <p>{isJa ? "HonoXとhono-decksで構築。" : "Built with HonoX and hono-decks."}</p>
-        <a href={localizedHref("/", input.locale)}>{isJa ? "Portfolioへ戻る" : "Back to portfolio"}</a>
+        <a href={localizedHref("/", input.locale)}>
+          {isJa ? "Portfolioへ戻る" : "Back to portfolio"}
+        </a>
       </footer>
     </>
   );
@@ -174,7 +211,10 @@ export function renderHonoXDeckIndexHead(locale: Locale) {
       <meta name="theme-color" content="#111216" />
       <meta property="og:type" content="website" />
       <meta property="og:locale" content={isJa ? "ja_JP" : "en_US"} />
-      <meta property="og:title" content={isJa ? "登壇資料一覧 — ts-76 Talks" : "Talk archive — ts-76 Talks"} />
+      <meta
+        property="og:title"
+        content={isJa ? "登壇資料一覧 — ts-76 Talks" : "Talk archive — ts-76 Talks"}
+      />
       <meta
         property="og:description"
         content={
@@ -226,14 +266,15 @@ a { color: inherit; }
 .archive-skip { position: fixed; z-index: 20; top: 12px; left: 12px; translate: 0 -180%; background: white; padding: 10px 14px; color: var(--archive-ink); font-weight: 720; text-decoration: none; }
 .archive-skip:focus { translate: 0; }
 .archive-header { display: flex; width: min(var(--archive-content), calc(100% - 48px)); min-height: 82px; align-items: center; justify-content: space-between; gap: 24px; margin: 0 auto; border-bottom: 1px solid rgba(255, 248, 243, .2); color: var(--archive-copy); }
-.archive-brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
+.archive-brand { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 10px; white-space: nowrap; text-decoration: none; }
 .archive-brand span { display: grid; width: 36px; height: 36px; place-items: center; background: var(--archive-accent); color: var(--archive-ink); font-weight: 850; transform: rotate(-4deg); }
 .archive-brand strong { font-size: .94rem; letter-spacing: -.02em; }
-.archive-header nav { display: flex; gap: 28px; font-size: .82rem; font-weight: 680; }
-.archive-header nav a { padding: 30px 0; text-decoration: none; }
+.archive-header nav { display: flex; flex: 0 0 auto; align-items: center; gap: 28px; font-size: .82rem; font-weight: 680; }
+.archive-header nav a, .archive-language-switcher { display: inline-flex; min-height: 44px; align-items: center; }
+.archive-header nav a { padding: 0; text-decoration: none; }
 .archive-header nav a:hover { color: var(--archive-accent-soft); }
 .archive-language-switcher { display: inline-flex; align-items: center; gap: 6px; }
-.archive-header .archive-language-switcher a { padding: 0; opacity: .58; }
+.archive-header .archive-language-switcher a { display: inline-flex; min-width: 44px; min-height: 44px; align-items: center; justify-content: center; padding: 0; opacity: .58; }
 .archive-header .archive-language-switcher a[aria-current] { opacity: 1; color: var(--archive-accent-soft); }
 .talk-archive { margin-top: -82px; }
 .archive-hero { display: grid; min-height: 720px; grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr); gap: clamp(48px, 8vw, 120px); align-items: center; background: var(--archive-ink); padding: 154px max(24px, calc((100vw - var(--archive-content)) / 2)) 88px; color: var(--archive-copy); }
@@ -292,6 +333,9 @@ a { color: inherit; }
   .archive-poster { width: min(88vw, 360px); }
   .archive-method { padding-right: 16px; padding-left: 16px; }
   .archive-footer { align-items: flex-start; flex-direction: column; justify-content: center; }
+}
+@media (max-width: 420px) {
+  .archive-brand strong { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .archive-brand span, .archive-poster { transform: none; }
