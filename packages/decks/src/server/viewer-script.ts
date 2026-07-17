@@ -17,12 +17,7 @@ export function renderViewerScript(nonce?: string): string {
     const iframe = root.querySelector("iframe");
     const frameOrigin = iframe?.src ? new URL(iframe.src, window.location.href).origin : window.location.origin;
     const position = root.querySelector("[data-slide-position]");
-    const navigationLayers = root.querySelectorAll("[data-viewer-navigation]");
     const printPath = root.getAttribute("data-hono-decks-print-path") || "";
-    let pointerStartX = null;
-    let pointerStartY = null;
-    let suppressNavigationClick = false;
-    let suppressNavigationClickTimer = null;
 
     if (position && viewport) viewport.append(position);
 
@@ -38,53 +33,6 @@ export function renderViewerScript(nonce?: string): string {
         // Cross-origin frames cannot expose their runtime. Use postMessage below.
       }
       target?.postMessage({ type: ${JSON.stringify(VIEWER_COMMAND_MESSAGE_TYPE)}, action, index }, frameOrigin);
-    }
-
-    function navigationClick(event) {
-      if (suppressNavigationClick) {
-        clearNavigationClickSuppression();
-        event.preventDefault();
-        return;
-      }
-      const action = event.currentTarget?.getAttribute("data-viewer-navigation");
-      if (action === "previous" || action === "next") {
-        sendCommand(action);
-        viewport?.focus({ preventScroll: true });
-      }
-    }
-
-    function clearNavigationClickSuppression() {
-      suppressNavigationClick = false;
-      if (suppressNavigationClickTimer !== null) window.clearTimeout(suppressNavigationClickTimer);
-      suppressNavigationClickTimer = null;
-    }
-
-    function suppressCurrentNavigationClick() {
-      clearNavigationClickSuppression();
-      suppressNavigationClick = true;
-      suppressNavigationClickTimer = window.setTimeout(clearNavigationClickSuppression, 0);
-    }
-
-    function viewerPointerDown(event) {
-      pointerStartX = event.clientX;
-      pointerStartY = event.clientY;
-    }
-
-    function viewerPointerUp(event) {
-      if (pointerStartX === null || pointerStartY === null) return;
-      const deltaX = event.clientX - pointerStartX;
-      const deltaY = event.clientY - pointerStartY;
-      pointerStartX = null;
-      pointerStartY = null;
-      if (Math.abs(deltaX) < 48 || Math.abs(deltaX) < Math.abs(deltaY)) return;
-      suppressCurrentNavigationClick();
-      sendCommand(deltaX < 0 ? "next" : "previous");
-    }
-
-    function viewerPointerCancel() {
-      pointerStartX = null;
-      pointerStartY = null;
-      clearNavigationClickSuppression();
     }
 
     function isPortraitMobile() {
@@ -156,7 +104,13 @@ export function renderViewerScript(nonce?: string): string {
     root.querySelectorAll("[data-action='previous']").forEach((control) => {
       control.addEventListener("click", () => sendCommand("previous"));
     });
+    root.querySelectorAll("[data-hono-decks-mobile-action='previous']").forEach((control) => {
+      control.addEventListener("click", () => sendCommand("previous"));
+    });
     root.querySelectorAll("[data-action='next']").forEach((control) => {
+      control.addEventListener("click", () => sendCommand("next"));
+    });
+    root.querySelectorAll("[data-hono-decks-mobile-action='next']").forEach((control) => {
       control.addEventListener("click", () => sendCommand("next"));
     });
     root.querySelectorAll("[data-action='fullscreen']").forEach((control) => {
@@ -168,10 +122,6 @@ export function renderViewerScript(nonce?: string): string {
         if (Number.isFinite(index)) sendCommand("goTo", index);
       });
     });
-    navigationLayers.forEach((layer) => layer.addEventListener("click", navigationClick));
-    viewport?.addEventListener("pointerdown", viewerPointerDown);
-    viewport?.addEventListener("pointerup", viewerPointerUp);
-    viewport?.addEventListener("pointercancel", viewerPointerCancel);
     window.addEventListener("message", handleMessage);
     controllers.set(root, { handleKeydown, unlockViewerOrientation });
   }

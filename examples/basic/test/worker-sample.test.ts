@@ -244,8 +244,10 @@ describe("sample Worker app", () => {
     expect(html).toContain('href="/decks/sample/print"');
     expect(html).toContain('data-hono-decks-print="true"');
     expect(html).toContain('aria-label="Print view"');
-    expect(html).toContain('data-viewer-navigation="previous"');
-    expect(html).toContain('data-viewer-navigation="next"');
+    expect(html).not.toContain("data-viewer-navigation");
+    expect(html).not.toContain("hono-decks-viewer-navigation-layer");
+    expect(html).toContain('data-hono-decks-mobile-navigation="previous"');
+    expect(html).toContain('data-hono-decks-mobile-navigation="next"');
     expect(html).toContain('orientation.lock("landscape")');
     expect(html).not.toContain('href="/decks/sample/presenter"');
     expect(html).not.toContain('data-sample-control="presenter"');

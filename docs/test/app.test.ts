@@ -1,9 +1,16 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vite-plus/test";
 import app from "../app/server";
+import { locales, messages } from "../app/i18n";
 import { clientEntrySource } from "../app/routes/_renderer";
 
 describe("HonoX documentation site", () => {
+  it("keeps every locale catalog aligned with the English source keys", () => {
+    const sourceKeys = Object.keys(messages.en).sort();
+
+    for (const locale of locales) expect(Object.keys(messages[locale]).sort()).toEqual(sourceKeys);
+  });
+
   it("allows indexing and crawling", async () => {
     const home = await app.request("/");
     const robots = await app.request("/robots.txt");
@@ -294,6 +301,7 @@ describe("HonoX documentation site", () => {
 
   it("links the Deploy to Cloudflare button to the isolated minimal example", async () => {
     const html = await (await app.request("/")).text();
+    const css = await readFile(new URL("../app/style.css", import.meta.url), "utf8");
 
     expect(html).toContain("https://deploy.workers.cloudflare.com/button");
     expect(html).toContain(
@@ -301,6 +309,8 @@ describe("HonoX documentation site", () => {
     );
     expect(html).not.toContain('aria-disabled="true"');
     expect(html).not.toContain("サンプル準備中");
+    expect(css).toMatch(/\.cloudflare-deploy\s*\{[^}]*display:\s*inline-flex/);
+    expect(css).not.toMatch(/\.cloudflare-deploy\s*\{[^}]*border:/);
   });
 
   it("uses button-controlled SP navigation without details or summary", async () => {

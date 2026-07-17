@@ -9,30 +9,18 @@ import tsx from "shiki/langs/tsx.mjs";
 import typescript from "shiki/langs/typescript.mjs";
 import githubDarkHighContrast from "shiki/themes/github-dark-high-contrast.mjs";
 import { deployToCloudflareUrl } from "./deploy";
-import { localizedHref, t, type Locale } from "./i18n";
+import { localizedHref, t, type Locale, type MessageKey } from "./i18n";
 
-const navigationByLocale = {
-  ja: [
-    { href: "/docs/getting-started", label: "導入", detail: "インストールから最初の表示まで" },
-    { href: "/docs/examples", label: "実例", detail: "公開デッキ / HonoXポートフォリオ" },
-    { href: "/docs/authoring", label: "スライドを書く", detail: "MDX / コンポーネント / 画像 / テーマ" },
-    { href: "/docs/configuration", label: "設定", detail: "設定ファイル / 開発 / 上書き" },
-    { href: "/docs/recipes", label: "レシピ", detail: "OGP画像 / PDF・PNG出力" },
-    { href: "/docs/routing", label: "ルートと画面", detail: "閲覧 / 発表 / 印刷" },
-    { href: "/docs/security", label: "HTMLとセキュリティ", detail: "言語 / CSP / 埋め込み" },
-    { href: "/api", label: "API", detail: "エントリー / 用途 / 型" },
-  ],
-  en: [
-    { href: "/docs/getting-started", label: "Get started", detail: "install and render your first deck" },
-    { href: "/docs/examples", label: "Examples", detail: "live decks / HonoX portfolio" },
-    { href: "/docs/authoring", label: "Author slides", detail: "MDX / components / assets / theme" },
-    { href: "/docs/configuration", label: "Configure", detail: "config file / development / overrides" },
-    { href: "/docs/recipes", label: "Recipes", detail: "OGP images / PDF and PNG export" },
-    { href: "/docs/routing", label: "Choose surfaces", detail: "viewer / presenter / print" },
-    { href: "/docs/security", label: "Publish safely", detail: "language / CSP / embeds" },
-    { href: "/api", label: "API", detail: "entries / use cases / types" },
-  ],
-} as const;
+const navigationItems = [
+  { href: "/docs/getting-started", label: "navGettingStarted", detail: "navGettingStartedDetail" },
+  { href: "/docs/examples", label: "navExamples", detail: "navExamplesDetail" },
+  { href: "/docs/authoring", label: "navAuthoring", detail: "navAuthoringDetail" },
+  { href: "/docs/configuration", label: "navConfiguration", detail: "navConfigurationDetail" },
+  { href: "/docs/recipes", label: "navRecipes", detail: "navRecipesDetail" },
+  { href: "/docs/routing", label: "navRouting", detail: "navRoutingDetail" },
+  { href: "/docs/security", label: "navSecurity", detail: "navSecurityDetail" },
+  { href: "/api", label: "navApi", detail: "navApiDetail" },
+] as const satisfies ReadonlyArray<{ href: string; label: MessageKey; detail: MessageKey }>;
 
 export interface PageSection {
   id: string;
@@ -68,7 +56,12 @@ function DisclosureButton({
 }
 
 function navigation(locale: Locale) {
-  return navigationByLocale[locale];
+  const text = t(locale);
+  return navigationItems.map((item) => ({
+    href: item.href,
+    label: text[item.label],
+    detail: text[item.detail],
+  }));
 }
 
 export function SiteHeader({ activePath = "", locale }: { activePath?: string; locale: Locale }) {
@@ -77,13 +70,20 @@ export function SiteHeader({ activePath = "", locale }: { activePath?: string; l
     <header class="site-header">
       <a class="brand" href={localizedHref("/", locale)} aria-label="hono decks documentation home">
         <img class="brand-mark" src="/icon-192.png" width="32" height="32" alt="" aria-hidden="true" />
-        <span>hono<span class="brand-slash">-</span>decks</span>
+        <span>
+          hono<span class="brand-slash">-</span>decks
+        </span>
       </a>
       <nav class="top-nav" aria-label={text.primaryNavigation}>
-        <a href={localizedHref("/docs/getting-started", locale)} aria-current={activePath.startsWith("/docs") ? "page" : undefined}>
+        <a
+          href={localizedHref("/docs/getting-started", locale)}
+          aria-current={activePath.startsWith("/docs") ? "page" : undefined}
+        >
           {text.guides}
         </a>
-        <a href={localizedHref("/api", locale)} aria-current={activePath === "/api" ? "page" : undefined}>{text.api}</a>
+        <a href={localizedHref("/api", locale)} aria-current={activePath === "/api" ? "page" : undefined}>
+          {text.api}
+        </a>
         <LanguageSwitcher locale={locale} path={activePath || "/"} />
         <a href="https://github.com/ts-76/hono-decks">GitHub ↗</a>
       </nav>
@@ -94,13 +94,28 @@ export function SiteHeader({ activePath = "", locale }: { activePath?: string; l
           label={text.menu}
           openLabel={text.close}
         />
-        <nav id="mobile-menu-panel" class="mobile-menu-panel" aria-label={text.mobileNavigation} data-disclosure-panel hidden>
+        <nav
+          id="mobile-menu-panel"
+          class="mobile-menu-panel"
+          aria-label={text.mobileNavigation}
+          data-disclosure-panel
+          hidden
+        >
           {navigation(locale).map((item) => (
-            <a href={localizedHref(item.href, locale)} aria-current={activePath === item.href || (item.href.startsWith("/docs") && activePath === item.href) ? "page" : undefined}>
+            <a
+              href={localizedHref(item.href, locale)}
+              aria-current={
+                activePath === item.href || (item.href.startsWith("/docs") && activePath === item.href)
+                  ? "page"
+                  : undefined
+              }
+            >
               {item.label}
             </a>
           ))}
-          <div class="mobile-language"><LanguageSwitcher locale={locale} path={activePath || "/"} /></div>
+          <div class="mobile-language">
+            <LanguageSwitcher locale={locale} path={activePath || "/"} />
+          </div>
           <a href="https://github.com/ts-76/hono-decks">GitHub ↗</a>
         </nav>
       </div>
@@ -112,9 +127,13 @@ function LanguageSwitcher({ locale, path }: { locale: Locale; path: string }) {
   const text = t(locale);
   return (
     <span class="language-switcher" aria-label={text.language} role="group">
-      <a href={localizedHref(path, "ja")} lang="ja" aria-current={locale === "ja" ? "true" : undefined}>JA</a>
+      <a href={localizedHref(path, "ja")} lang="ja" aria-current={locale === "ja" ? "true" : undefined}>
+        JA
+      </a>
       <span aria-hidden="true">/</span>
-      <a href={localizedHref(path, "en")} lang="en" aria-current={locale === "en" ? "true" : undefined}>EN</a>
+      <a href={localizedHref(path, "en")} lang="en" aria-current={locale === "en" ? "true" : undefined}>
+        EN
+      </a>
     </span>
   );
 }
@@ -143,7 +162,8 @@ export function DocsLayout({
         <nav class="docs-navigation">
           {links.map((item) => (
             <a href={localizedHref(item.href, locale)} aria-current={activePath === item.href ? "page" : undefined}>
-              <span>{item.label}</span><small>{item.detail}</small>
+              <span>{item.label}</span>
+              <small>{item.detail}</small>
             </a>
           ))}
         </nav>
@@ -155,16 +175,24 @@ export function DocsLayout({
           <p>{description}</p>
         </header>
         <div class="mobile-page-nav" data-disclosure>
-          <DisclosureButton className="mobile-page-nav-trigger" controls="mobile-page-nav-panel" label={text.onThisPage} />
+          <DisclosureButton
+            className="mobile-page-nav-trigger"
+            controls="mobile-page-nav-panel"
+            label={text.onThisPage}
+          />
           <nav id="mobile-page-nav-panel" data-disclosure-panel hidden>
-            {sections.map((section) => <a href={`#${section.id}`}>{section.label}</a>)}
+            {sections.map((section) => (
+              <a href={`#${section.id}`}>{section.label}</a>
+            ))}
           </nav>
         </div>
         <div class="prose">{children}</div>
       </article>
       <aside class="docs-rail" aria-label={text.onThisPage}>
         <p>{text.onThisPage}</p>
-        {sections.map((section) => <a href={`#${section.id}`}>{section.label}</a>)}
+        {sections.map((section) => (
+          <a href={`#${section.id}`}>{section.label}</a>
+        ))}
       </aside>
     </main>
   );
@@ -229,20 +257,42 @@ export function CodeBlock({
         {copy ? (
           <button class="copy-button" type="button" data-copy={id} aria-label={`${text.copy}: ${label}`}>
             <span aria-hidden="true">⧉</span>
-            <span data-copy-status data-idle={text.copy} data-success={text.copied} data-error={text.copyFailed} aria-live="polite">{text.copy}</span>
+            <span
+              data-copy-status
+              data-idle={text.copy}
+              data-success={text.copied}
+              data-error={text.copyFailed}
+              aria-live="polite"
+            >
+              {text.copy}
+            </span>
           </button>
         ) : null}
       </figcaption>
-      <pre><code id={id} class={`language-${language}`} data-language={language} data-source={code}>{highlighted.tokens.map((line, lineIndex) => <>{line.map((token) => {
-        const style = tokenStyle(token.color, token.fontStyle);
-        return <span style={style || undefined}>{token.content}</span>;
-      })}{lineIndex < highlighted.tokens.length - 1 ? "\n" : null}</>)}</code></pre>
+      <pre>
+        <code id={id} class={`language-${language}`} data-language={language} data-source={code}>
+          {highlighted.tokens.map((line, lineIndex) => (
+            <>
+              {line.map((token) => {
+                const style = tokenStyle(token.color, token.fontStyle);
+                return <span style={style || undefined}>{token.content}</span>;
+              })}
+              {lineIndex < highlighted.tokens.length - 1 ? "\n" : null}
+            </>
+          ))}
+        </code>
+      </pre>
     </figure>
   );
 }
 
 export function Callout({ title, children }: { title: string; children: Child }) {
-  return <aside class="callout"><strong>{title}</strong><div>{children}</div></aside>;
+  return (
+    <aside class="callout">
+      <strong>{title}</strong>
+      <div>{children}</div>
+    </aside>
+  );
 }
 
 export function RouteTable({ rows, locale = "ja" }: { rows: Array<[string, string]>; locale?: Locale }) {
@@ -250,8 +300,22 @@ export function RouteTable({ rows, locale = "ja" }: { rows: Array<[string, strin
   return (
     <div class="table-wrap">
       <table>
-        <thead><tr><th>{text.route}</th><th>{text.role}</th></tr></thead>
-        <tbody>{rows.map(([route, role]) => <tr><td><code>{route}</code></td><td>{role}</td></tr>)}</tbody>
+        <thead>
+          <tr>
+            <th>{text.route}</th>
+            <th>{text.role}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(([route, role]) => (
+            <tr>
+              <td>
+                <code>{route}</code>
+              </td>
+              <td>{role}</td>
+            </tr>
+          ))}
+        </tbody>
       </table>
     </div>
   );
@@ -259,14 +323,9 @@ export function RouteTable({ rows, locale = "ja" }: { rows: Array<[string, strin
 
 export function DeployToCloudflare({ locale }: { locale: Locale }) {
   const href = deployToCloudflareUrl();
-  const label = locale === "ja" ? "Deploy to Cloudflare" : "Deploy to Cloudflare";
-  const note = href
-    ? locale === "ja"
-      ? "最小構成のサンプルをCloudflareアカウントに複製し、Workerとしてデプロイします。"
-      : "Clone the minimal example into your Cloudflare account and deploy it as a Worker."
-    : locale === "ja"
-      ? "公開サンプルリポジトリを準備中です。"
-      : "The public sample repository is coming soon.";
+  const text = t(locale);
+  const label = text.deployTitle;
+  const note = href ? text.deployNote : text.deployUnavailable;
   return (
     <aside class="deploy-panel" aria-labelledby="deploy-title">
       <div>
@@ -281,7 +340,7 @@ export function DeployToCloudflare({ locale }: { locale: Locale }) {
       ) : (
         <span class="cloudflare-deploy is-disabled" aria-disabled="true">
           <img src="https://deploy.workers.cloudflare.com/button" alt={label} width="217" height="32" />
-          <small>{locale === "ja" ? "サンプル準備中" : "Sample coming soon"}</small>
+          <small>{text.deployComingSoon}</small>
         </span>
       )}
     </aside>

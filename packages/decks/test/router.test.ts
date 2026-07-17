@@ -65,16 +65,26 @@ describe("decksRouter", () => {
     expect(html).not.toContain("DESIGN_WIDTH");
     expect(html).not.toContain("stage.style.transform");
     expect(html).toContain('tabindex="0"');
-    expect(html).toContain('data-viewer-navigation="previous"');
-    expect(html).toContain('data-viewer-navigation="next"');
-    expect(html).toContain(".hono-decks-viewer-navigation-layer{position:absolute;top:0;bottom:0;width:50%");
+    expect(html).not.toContain("data-viewer-navigation");
+    expect(html).not.toContain("hono-decks-viewer-navigation-layer");
+    expect(html).toContain('data-hono-decks-mobile-navigation="previous"');
+    expect(html).toContain('data-hono-decks-mobile-navigation="next"');
+    expect(html).toContain("[data-hono-decks-mobile-action='previous']");
+    expect(html).toContain("[data-hono-decks-mobile-action='next']");
+    expect(html).toContain(".hono-decks-mobile-navigation{position:absolute;top:25%;bottom:25%;display:none");
+    expect(html).toContain("width:clamp(2.25rem,6%,2.75rem)");
+    expect(html).toContain("background:rgba(15,23,42,.12)");
+    expect(html).toContain("opacity:.72;pointer-events:none");
+    expect(html).toContain(".hono-decks-mobile-navigation{display:inline-flex;pointer-events:auto}");
     expect(html).toContain(".hono-decks-viewport>[data-hono-decks-position]{position:absolute;left:50%");
     expect(html).toContain("@media (orientation:landscape) and (max-height:600px)");
-    expect(html).toContain("grid-template-columns:minmax(0,1fr) auto");
-    expect(html).toContain(".hono-decks-viewer-controls{flex-direction:column}");
+    expect(html).toContain("bottom:auto;flex-direction:column");
     expect(html).toContain("@media (pointer:coarse)");
     expect(html).toContain(
       '.hono-decks-viewer-controls [data-hono-decks-navigation-control="fullscreen"],.hono-decks-viewer-controls [data-hono-decks-print]{display:none}',
+    );
+    expect(html).toContain(
+      '.hono-decks-viewer-controls [data-hono-decks-navigation-control="previous"],.hono-decks-viewer-controls [data-hono-decks-navigation-control="next"]',
     );
     expect(html).toContain('data-action="previous"');
     expect(html).toContain('data-action="next"');
@@ -94,23 +104,17 @@ describe("decksRouter", () => {
     expect(html).toContain('params.set("slide", String(message.index + 1))');
     expect(html).toContain('content="width=device-width, initial-scale=1, viewport-fit=cover"');
     expect(html).toContain("@supports (height:100dvh)");
-    expect(html).toContain("grid-template-rows:minmax(0,1fr) auto");
+    expect(html).toContain("grid-template-rows:minmax(0,1fr)");
     expect(html).toContain("padding:env(safe-area-inset-top,0)");
     expect(html).toContain("container-type:size");
     expect(html).toContain(".hono-decks-viewer-stage{display:grid;place-items:center;justify-content:center");
     expect(html).toContain("@supports (width:1cqw)");
-    expect(html).not.toContain("position:fixed;left:50%;bottom:16px");
+    expect(html).toContain("bottom:max(.5rem,env(safe-area-inset-bottom,0))");
     expect(html).toContain('root.setAttribute("data-step-index", String(message.stepIndex ?? 0))');
     expect(html).toContain('root.setAttribute("data-step-count", String(message.stepCount ?? 0))');
     expect(html).not.toContain('String(message.stepIndex) + " / " + String(message.stepCount)');
-    expect(html).toContain("pointerdown");
-    expect(html).toContain("pointerup");
-    expect(html).toContain("pointercancel");
     expect(html).toContain("touch-action:pan-y");
-    expect(html).toContain("suppressCurrentNavigationClick()");
-    expect(html).toContain("window.setTimeout(clearNavigationClickSuppression, 0)");
-    expect(html).toContain("clearNavigationClickSuppression()");
-    expect(html).toContain("viewport?.focus({ preventScroll: true })");
+    expect(html).not.toContain("suppressCurrentNavigationClick");
     expect(html).toContain("target?.__honoDecksPresentationRuntime?.command");
     expect(html).toContain("command(action, index)");
     expect(html).toContain("target?.postMessage");
