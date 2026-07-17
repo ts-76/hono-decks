@@ -2,23 +2,6 @@
 name: hono-decks
 description: >
   Create, style, integrate, and troubleshoot hono-decks presentations in Hono and Cloudflare Workers. Load for installation, deck.mdx and frontmatter authoring, Fire reveals, theme.css, generated createDecks modules, Hono routing, Vite or Wrangler builds, R2 assets, PDF or PNG export, OGP generation, embeds, or custom DeckSource pipelines.
-metadata:
-  type: core
-  library: hono-decks
-  library_version: '0.1.0'
-sources:
-  - 'ts-76/hono-decks:packages/decks/README.md'
-  - 'ts-76/hono-decks:packages/decks/src/deck/frontmatter.ts'
-  - 'ts-76/hono-decks:packages/decks/src/generator/mdx/syntax.ts'
-  - 'ts-76/hono-decks:packages/decks/src/renderer/jsx-renderer.ts'
-  - 'ts-76/hono-decks:packages/decks/src/renderer/presentation-style.ts'
-  - 'ts-76/hono-decks:packages/decks/src/server/define-decks.ts'
-  - 'ts-76/hono-decks:packages/decks/src/server/external-embed.ts'
-  - 'ts-76/hono-decks:packages/decks/src/server/browser-export.ts'
-  - 'ts-76/hono-decks:examples/basic/hono-decks.config.ts'
-  - 'ts-76/hono-decks:examples/basic/decks/sample/deck.mdx'
-  - 'ts-76/hono-decks:examples/basic/decks/motion/deck.mdx'
-  - 'ts-76/hono-decks:examples/ogp/README.md'
 ---
 
 # hono-decks
