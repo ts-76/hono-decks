@@ -16,16 +16,16 @@
     "hono": "^4.12.30",
     "hono-decks": "workspace:*",
     "honox": "0.1.59",
-    "shiki": "^4.2.0"
+    "shiki": "^4.3.1"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20260714.1",
+    "@cloudflare/workers-types": "^5.20260716.1",
     "@hono/vite-build": "^1.11.1",
     "@hono/vite-dev-server": "^0.26.1",
     "typescript": "^5.9.3",
     "vite": "catalog:",
     "vite-plus": "catalog:",
     "vitest": "catalog:",
-    "wrangler": "^4.110.0"
+    "wrangler": "^4.111.0"
   }
 }
