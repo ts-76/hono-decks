@@ -1,0 +1,155 @@
+:root {
+  --hono-decks-color: #fff8f3;
+  --hono-decks-muted-color: #d0c2b9;
+  --hono-decks-accent-color: #ff6b2c;
+  --hono-decks-border-color: rgba(255, 248, 243, 0.19);
+  --hono-decks-card-background: #1d1e23;
+  --hono-decks-inline-code-background: rgba(255, 107, 44, 0.14);
+  --hono-decks-code-background: #090a0c;
+  font-family: "Avenir Next", "Hiragino Sans", "Yu Gothic", ui-sans-serif, sans-serif;
+}
+
+.slide {
+  position: relative;
+  background: #111216;
+  color: #fff8f3;
+}
+
+.slide::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 12px;
+  background: #ff6b2c;
+  content: "";
+}
+
+.slide .hono-decks-slide-content {
+  box-sizing: border-box;
+  padding: 2rem 2.5rem;
+}
+
+.honox-cover {
+  display: grid;
+  height: 100%;
+  grid-template-columns: minmax(0, 1fr) 11rem;
+  grid-template-rows: auto 1fr auto;
+  gap: 0.7rem 2rem;
+  align-items: end;
+}
+
+.honox-cover::after {
+  display: grid;
+  grid-column: 2;
+  grid-row: 1 / -1;
+  width: 10rem;
+  height: 10rem;
+  place-items: center;
+  align-self: center;
+  background: #ff6b2c;
+  color: #111216;
+  content: "X";
+  font-size: 6rem;
+  font-weight: 820;
+  letter-spacing: -0.08em;
+  transform: rotate(-4deg);
+}
+
+.honox-cover p,
+.honox-context {
+  margin: 0;
+  color: #ff9a6e;
+  font-size: 0.68rem;
+  font-weight: 740;
+}
+
+.honox-cover h1 {
+  margin: 0;
+  font-size: 4.2rem;
+  letter-spacing: -0.04em;
+  line-height: 0.91;
+}
+
+.honox-cover > span {
+  color: #d0c2b9;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.slide h2 {
+  max-width: 15ch;
+  margin: 0;
+  font-size: 3.15rem;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+}
+
+.honox-boundary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-top: 1.5rem;
+}
+
+.honox-boundary section {
+  display: flex;
+  min-height: 7.5rem;
+  flex-direction: column;
+  border-top: 3px solid #ff6b2c;
+  background: #1d1e23;
+  padding: 0.75rem;
+}
+
+.honox-boundary code {
+  align-self: flex-start;
+  color: #ff9a6e;
+  font-size: 0.58rem;
+}
+
+.honox-boundary strong {
+  margin-top: auto;
+  font-size: 0.92rem;
+}
+
+.honox-boundary span {
+  margin-top: 0.3rem;
+  color: #d0c2b9;
+  font-size: 0.62rem;
+  line-height: 1.4;
+}
+
+.layout-statement .hono-decks-slide-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.layout-statement h2 {
+  margin-top: 0.7rem;
+  font-size: 4rem;
+}
+
+.honox-audiences {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 1.25rem;
+}
+
+.honox-audiences span {
+  border: 1px solid var(--hono-decks-border-color);
+  border-radius: 999px;
+  padding: 0.28rem 0.56rem;
+  color: #d0c2b9;
+  font-size: 0.65rem;
+}
+
+.honox-closing {
+  margin: 1rem 0 0;
+  color: #d0c2b9;
+  font-size: 0.78rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .honox-cover::after {
+    transform: none;
+  }
+}

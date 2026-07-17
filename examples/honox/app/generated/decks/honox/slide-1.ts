@@ -2,29 +2,39 @@
 import {Fragment as _Fragment, jsx as _jsx, jsxs as _jsxs} from "hono/jsx/jsx-runtime";
 function _createMdxContent(props) {
   const _components = {
-    code: "code",
     h2: "h2",
-    li: "li",
-    ul: "ul",
     ...props.components
   };
   return _jsxs(_Fragment, {
-    children: [_jsx(_components.h2, {
-      children: "Integration boundary"
-    }), "\n", _jsxs(_components.ul, {
-      children: ["\n", _jsxs(_components.li, {
-        children: [_jsx(_components.code, {
+    children: [_jsxs(_components.h2, {
+      children: ["A clear boundary,", _jsx("br", {}), "not a second app."]
+    }), "\n", _jsxs("div", {
+      class: "honox-boundary",
+      children: [_jsxs("section", {
+        children: [_jsx("code", {
           children: "app/routes"
-        }), " owns the HonoX pages"]
-      }), "\n", _jsxs(_components.li, {
-        children: [_jsx(_components.code, {
+        }), _jsx("strong", {
+          children: "Portfolio pages"
+        }), _jsx("span", {
+          children: "HonoX owns navigation and SEO."
+        })]
+      }), _jsxs("section", {
+        children: [_jsx("code", {
           children: "app/decks.ts"
-        }), " hides generated modules"]
-      }), "\n", _jsxs(_components.li, {
-        children: [_jsx(_components.code, {
-          children: "app/routes/decks/index.ts"
-        }), " mounts the deck router"]
-      }), "\n"]
+        }), _jsx("strong", {
+          children: "Stable facade"
+        }), _jsx("span", {
+          children: "Generated modules stay behind one import."
+        })]
+      }), _jsxs("section", {
+        children: [_jsx("code", {
+          children: "/decks"
+        }), _jsx("strong", {
+          children: "Presentation routes"
+        }), _jsx("span", {
+          children: "Viewer, stage, presenter, and print."
+        })]
+      })]
     })]
   });
 }

@@ -1,31 +1,66 @@
 ---
 title: Build-time Open Graph images
-description: Generate share images from deck metadata without launching a browser.
+description: Generate deterministic social images from deck metadata without launching a browser.
 author: hono-decks
+date: 2026-07-17
+tags: [ogp, satori, resvg]
+transition: slide-up
+transitionDuration: 320ms
+transitionEasing: cubic-bezier(.22, 1, .36, 1)
 ---
 
 ---
+title: Build-time Open Graph images
 layout: cover
+notes: |
+  browserを起動せず、デッキのmetadataから共有画像を生成できることを提示する。
 ---
 
-# Build-time Open Graph images
-
-Satori + resvg, isolated to this example.
+<div class="ogp-cover">
+  <p>1200 × 630 / deterministic PNG</p>
+  # Build-time<br />Open Graph images
+  <div><span>Satori</span><span aria-hidden="true">+</span><span>resvg</span></div>
+</div>
 
 ---
+title: One source of truth
 layout: default
+notes: |
+  viewer metadataと画像の文字情報が同じfrontmatterを参照するため、共有時の不整合が起きない。
 ---
 
 ## One source of truth
 
-- Deck title, description, and author come from frontmatter
-- `decks.paths(slug).ogImage` defines the public image URL
-- `viewer.openGraph` emits absolute social metadata
+<div class="ogp-flow">
+  <section>
+    <code>deck.mdx</code>
+    <strong>title<br />description<br />author</strong>
+  </section>
+  <span aria-hidden="true">→</span>
+  <section>
+    <code>compile</code>
+    <strong>manifest<br />paths<br />metadata</strong>
+  </section>
+  <span aria-hidden="true">→</span>
+  <section class="is-accent">
+    <code>og.png</code>
+    <strong>1200 × 630<br />social-ready</strong>
+  </section>
+</div>
 
 ---
-layout: default
+title: Browserless output
+layout: statement
+notes: |
+  出力はStatic Assetsへ保存し、Worker runtimeには画像rendererを持ち込まない。
 ---
 
-## Browserless output
+<p class="ogp-context">No browser. No runtime renderer.</p>
 
-The build writes a deterministic 1200×630 PNG to Workers Static Assets.
+## Build once.<br />Share from the edge.
+
+<div class="ogp-proof">
+  <span>Deterministic</span>
+  <span>Cacheable</span>
+  <span>Worker-safe</span>
+</div>

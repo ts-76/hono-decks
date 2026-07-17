@@ -1,22 +1,58 @@
 ---
 title: HonoX Deck
-description: Mounting hono-decks from a HonoX file route
+description: HonoXのポートフォリオに、登壇資料をそのまま組み込む
+author: ts-76
+date: 2026-07-17
+tags: [honox, portfolio, talks]
+transition: slide-left
+transitionDuration: 360ms
+transitionEasing: cubic-bezier(.22, 1, .36, 1)
 ---
 
 ---
+title: HonoX + hono-decks
 layout: cover
+notes: |
+  HonoXの通常ページと登壇資料が、同じアプリ・同じデプロイ単位で動くことを伝える。
 ---
 
-# HonoX + hono-decks
-
-File-based pages and generated slide routes in one Hono app.
+<div class="honox-cover">
+  <p>HonoX portfolio pattern</p>
+  # HonoX +<br />hono-decks
+  <span>Pages and presentations,<br />one Hono application.</span>
+</div>
 
 ---
+title: Integration boundary
 layout: default
+notes: |
+  file-based routingとgenerated routerの責務を3つのファイルで示す。
 ---
 
-## Integration boundary
+## A clear boundary,<br />not a second app.
 
-- `app/routes` owns the HonoX pages
-- `app/decks.ts` hides generated modules
-- `app/routes/decks/index.ts` mounts the deck router
+<div class="honox-boundary">
+  <section><code>app/routes</code><strong>Portfolio pages</strong><span>HonoX owns navigation and SEO.</span></section>
+  <section><code>app/decks.ts</code><strong>Stable facade</strong><span>Generated modules stay behind one import.</span></section>
+  <section><code>/decks</code><strong>Presentation routes</strong><span>Viewer, stage, presenter, and print.</span></section>
+</div>
+
+---
+title: Publish the talk once
+layout: statement
+notes: |
+  ポートフォリオ、登壇画面、配布用PDFのために別々の成果物を管理する必要がない点を締めにする。
+---
+
+<p class="honox-context">One deploy / every audience</p>
+
+## Publish the talk once.
+
+<div class="honox-audiences">
+  <span>Portfolio</span>
+  <span>Stage</span>
+  <span>Presenter</span>
+  <span>Print</span>
+</div>
+
+<p class="honox-closing">The deck stays part of the site that introduces it.</p>

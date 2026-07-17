@@ -45,9 +45,19 @@ const generatedDecks = defineDecks({
       meta: {
         "meta": {},
         "title": "Code Verification",
-        "description": "Fenced code block rendering checks for hono-decks"
+        "description": "Shikiで強調表示したコードを、固定16:9キャンバスで読みやすく見せる",
+        "author": "ts-76",
+        "date": "2026-07-17",
+        "transition": "fade",
+        "transitionDuration": "280ms",
+        "transitionEasing": "cubic-bezier(.22, 1, .36, 1)",
+        "tags": [
+          "code",
+          "shiki",
+          "mdx"
+        ]
       },
-      "themeStyle": ":root {\n  --hono-decks-color: #eef2ff;\n  --hono-decks-muted-color: #cbd5e1;\n  --hono-decks-accent-color: #8bd3ff;\n  --hono-decks-border-color: rgba(148, 163, 184, .24);\n  --hono-decks-card-background: rgba(15, 23, 42, .78);\n  --hono-decks-inline-code-background: rgba(15, 23, 42, .72);\n  --hono-decks-code-background: rgba(15, 23, 42, .78);\n}\n\n.layout-code {\n  background: #0b1020;\n  color: #eef2ff;\n}\n",
+      "themeStyle": ":root {\n  --hono-decks-color: #fff9f5;\n  --hono-decks-muted-color: #d9c9bf;\n  --hono-decks-accent-color: #ff6b2c;\n  --hono-decks-border-color: rgba(255, 249, 245, 0.18);\n  --hono-decks-card-background: #202126;\n  --hono-decks-inline-code-background: rgba(255, 107, 44, 0.14);\n  --hono-decks-code-background: #090a0c;\n  font-family: \"Avenir Next\", \"Segoe UI\", ui-sans-serif, sans-serif;\n}\n\n.layout-code {\n  position: relative;\n  background: #111216;\n  color: #fff9f5;\n}\n\n.layout-code::before {\n  position: absolute;\n  inset: 0 auto 0 0;\n  width: 18px;\n  background: #ff6b2c;\n  content: \"\";\n}\n\n.layout-code .hono-decks-slide-content {\n  display: grid;\n  box-sizing: border-box;\n  grid-template-columns: minmax(14rem, 0.78fr) minmax(0, 1.22fr);\n  gap: 2rem;\n  align-items: center;\n  padding: 2.1rem 2.4rem 2.1rem 2.8rem;\n}\n\n.code-heading p {\n  margin: 0 0 0.65rem;\n  color: #ff9a6e;\n  font-size: 0.68rem;\n  font-weight: 720;\n}\n\n.code-heading h1,\n.code-heading h2 {\n  max-width: 9ch;\n  margin: 0;\n  font-size: 3.4rem;\n  letter-spacing: -0.04em;\n  line-height: 0.95;\n  text-wrap: balance;\n}\n\n.code-heading.compact h2 {\n  font-size: 3rem;\n}\n\n.layout-code pre,\n.layout-code .hono-decks-code-block {\n  grid-column: 2;\n  grid-row: 1;\n  margin: 0;\n}\n\n.layout-code pre {\n  max-height: 16.5rem;\n  border: 0;\n  border-radius: 8px;\n  padding: 1rem;\n  font-size: 0.72rem;\n  line-height: 1.55;\n}\n\n.layout-code .hono-decks-code-caption {\n  border: 0;\n  background: #ff6b2c;\n  color: #111216;\n  font-size: 0.58rem;\n  font-weight: 760;\n}\n\n.code-caption,\n.code-proof {\n  position: absolute;\n  bottom: 1.5rem;\n  left: 2.8rem;\n  margin: 0;\n  color: var(--hono-decks-muted-color);\n  font-size: 0.58rem;\n}\n\n.code-proof {\n  display: flex;\n  gap: 0.35rem;\n}\n\n.code-proof span {\n  border: 1px solid var(--hono-decks-border-color);\n  border-radius: 999px;\n  padding: 0.22rem 0.42rem;\n}\n",
       "themeSourcePath": "decks/code/theme.css",
 
       assets: [],
@@ -57,25 +67,33 @@ const generatedDecks = defineDecks({
         {
           index: 0,
           meta: {
-            "title": "Fenced Code",
+            "title": "Fenced code",
             "layout": "code",
+            "notes": "HTMLに見えるJSXも安全にescapeされ、長いコードはキャンバスを壊さずスクロールする。",
+            "transition": "fade",
+            "transitionDuration": "280ms",
+            "transitionEasing": "cubic-bezier(.22, 1, .36, 1)",
             "meta": {}
           },
           html: "",
           components: [],
-          notes: undefined,
+          notes: "HTMLに見えるJSXも安全にescapeされ、長いコードはキャンバスを壊さずスクロールする。",
           render: Slide_code_0
         },
         {
           index: 1,
           meta: {
-            "title": "CodeBlock Component",
+            "title": "CodeBlock component",
             "layout": "code",
+            "notes": "filenameと行ハイライトをMDXの近くで宣言できることを示す。",
+            "transition": "fade",
+            "transitionDuration": "280ms",
+            "transitionEasing": "cubic-bezier(.22, 1, .36, 1)",
             "meta": {}
           },
           html: "",
           components: [],
-          notes: undefined,
+          notes: "filenameと行ハイライトをMDXの近くで宣言できることを示す。",
           render: Slide_code_1
         }
       ]
@@ -87,9 +105,19 @@ const generatedDecks = defineDecks({
       meta: {
         "meta": {},
         "title": "Media Verification",
-        "description": "Local and remote image asset checks for hono-decks"
+        "description": "Local assets, R2, video, social posts, and link cards in one deck",
+        "author": "ts-76",
+        "date": "2026-07-17",
+        "transition": "fade",
+        "transitionDuration": "300ms",
+        "transitionEasing": "cubic-bezier(.22, 1, .36, 1)",
+        "tags": [
+          "media",
+          "r2",
+          "embeds"
+        ]
       },
-      "themeStyle": ":root {\n  --hono-decks-color: #eef2ff;\n  --hono-decks-muted-color: #cbd5e1;\n  --hono-decks-accent-color: #2dd4bf;\n  --hono-decks-border-color: rgba(148, 163, 184, .24);\n  --hono-decks-card-background: rgba(8, 18, 34, .82);\n  --hono-decks-inline-code-background: rgba(15, 23, 42, .72);\n  --hono-decks-code-background: rgba(15, 23, 42, .78);\n}\n\n.layout-media {\n  background: #07111f;\n  color: #eef2ff;\n}\n\n.layout-media .media-image {\n  display: block;\n  width: min(100%, 56rem);\n  max-height: 36rem;\n  object-fit: contain;\n}\n",
+      "themeStyle": ":root {\n  --hono-decks-color: #f4fbff;\n  --hono-decks-muted-color: #b9d4e5;\n  --hono-decks-accent-color: #48d7ff;\n  --hono-decks-border-color: rgba(137, 218, 255, 0.24);\n  --hono-decks-card-background: #0d2337;\n  --hono-decks-inline-code-background: rgba(72, 215, 255, 0.12);\n  --hono-decks-code-background: #06101d;\n  font-family: \"Avenir Next\", \"Segoe UI\", ui-sans-serif, sans-serif;\n}\n\n.layout-media {\n  position: relative;\n  background: #07111f;\n  color: #f4fbff;\n}\n\n.layout-media::after {\n  position: absolute;\n  right: -4rem;\n  bottom: -6rem;\n  width: 17rem;\n  height: 17rem;\n  border: 1px solid rgba(72, 215, 255, 0.28);\n  border-radius: 999px;\n  content: \"\";\n}\n\n.layout-media .hono-decks-slide-content {\n  position: relative;\n  z-index: 1;\n  box-sizing: border-box;\n  padding: 1.8rem 2.3rem;\n}\n\n.media-heading {\n  display: flex;\n  align-items: baseline;\n  justify-content: space-between;\n  gap: 1rem;\n  border-bottom: 1px solid var(--hono-decks-border-color);\n  padding-bottom: 0.6rem;\n}\n\n.media-heading.inline {\n  margin-bottom: 0.7rem;\n}\n\n.media-heading p {\n  margin: 0;\n  color: #70ddff;\n  font-size: 0.62rem;\n  font-weight: 720;\n}\n\n.media-heading h1 {\n  margin: 0;\n  font-size: 2.1rem;\n  letter-spacing: -0.035em;\n  line-height: 1;\n}\n\n.media-showcase {\n  display: grid;\n  grid-template-columns: minmax(0, 1.25fr) minmax(10rem, 0.75fr);\n  gap: 2rem;\n  align-items: center;\n  height: calc(100% - 3.2rem);\n}\n\n.media-showcase.reverse .media-image {\n  order: 2;\n}\n\n.layout-media .media-image {\n  display: block;\n  width: 100%;\n  max-height: 20rem;\n  object-fit: contain;\n}\n\n.media-showcase p {\n  color: var(--hono-decks-muted-color);\n  font-size: 1.05rem;\n  line-height: 1.5;\n}\n\n.media-showcase strong {\n  color: #f4fbff;\n}\n\n.layout-media .hono-decks-embed-frame,\n.layout-media .hono-decks-social-embed,\n.layout-media .hono-decks-tweet-embed,\n.layout-media .hono-decks-link-card {\n  width: min(100%, 31rem);\n  margin: 0.55rem auto 0;\n}\n\n.layout-media .hono-decks-embed-viewport {\n  max-height: 18rem;\n}\n\n.layout-media .hono-decks-link-card-anchor,\n.layout-media .hono-decks-social-card,\n.layout-media .twitter-tweet {\n  border-radius: 10px;\n  background: #0d2337;\n}\n\n.layout-media > .hono-decks-slide-content > p {\n  margin: 0.45rem auto;\n  max-width: 31rem;\n  color: var(--hono-decks-muted-color);\n  font-size: 0.62rem;\n}\n",
       "themeSourcePath": "decks/media/theme.css",
 
       assets: [
@@ -114,73 +142,97 @@ const generatedDecks = defineDecks({
         {
           index: 0,
           meta: {
-            "title": "Local JSX Image",
+            "title": "Local JSX image",
             "layout": "media",
+            "notes": "相対パスのまま書いた画像が、compile時に公開アセットURLへ書き換えられる。",
+            "transition": "fade",
+            "transitionDuration": "300ms",
+            "transitionEasing": "cubic-bezier(.22, 1, .36, 1)",
             "meta": {}
           },
           html: "",
           components: [],
-          notes: undefined,
+          notes: "相対パスのまま書いた画像が、compile時に公開アセットURLへ書き換えられる。",
           render: Slide_media_0
         },
         {
           index: 1,
           meta: {
-            "title": "R2-backed Image",
+            "title": "R2-backed image",
             "layout": "media",
+            "notes": "同じ相対パスを保ったまま、配信元だけR2へ切り替えられる。",
+            "transition": "fade",
+            "transitionDuration": "300ms",
+            "transitionEasing": "cubic-bezier(.22, 1, .36, 1)",
             "meta": {}
           },
           html: "",
           components: [],
-          notes: undefined,
+          notes: "同じ相対パスを保ったまま、配信元だけR2へ切り替えられる。",
           render: Slide_media_1
         },
         {
           index: 2,
           meta: {
-            "title": "YouTube Embed",
+            "title": "YouTube embed",
             "layout": "media",
+            "notes": "Zenn形式の短い記法からsandbox付きのEmbedFrameを生成する。",
+            "transition": "fade",
+            "transitionDuration": "300ms",
+            "transitionEasing": "cubic-bezier(.22, 1, .36, 1)",
             "meta": {}
           },
           html: "",
           components: [],
-          notes: undefined,
+          notes: "Zenn形式の短い記法からsandbox付きのEmbedFrameを生成する。",
           render: Slide_media_2
         },
         {
           index: 3,
           meta: {
-            "title": "Generic Embed",
+            "title": "Generic iframe",
             "layout": "media",
+            "notes": "任意のiframeも同じfallbackとprint挙動を共有する。",
+            "transition": "fade",
+            "transitionDuration": "300ms",
+            "transitionEasing": "cubic-bezier(.22, 1, .36, 1)",
             "meta": {}
           },
           html: "",
           components: [],
-          notes: undefined,
+          notes: "任意のiframeも同じfallbackとprint挙動を共有する。",
           render: Slide_media_3
         },
         {
           index: 4,
           meta: {
-            "title": "X Post Embed",
+            "title": "X post embed",
             "layout": "media",
+            "notes": "公式ウィジェットを使いつつ、印刷時にはリンクへ退避する。",
+            "transition": "fade",
+            "transitionDuration": "300ms",
+            "transitionEasing": "cubic-bezier(.22, 1, .36, 1)",
             "meta": {}
           },
           html: "",
           components: [],
-          notes: undefined,
+          notes: "公式ウィジェットを使いつつ、印刷時にはリンクへ退避する。",
           render: Slide_media_4
         },
         {
           index: 5,
           meta: {
-            "title": "Link Card",
+            "title": "Link card",
             "layout": "media",
+            "notes": "OGPメタデータをcompile時に解決し、runtimeはscriptなしのカードを配信する。",
+            "transition": "fade",
+            "transitionDuration": "300ms",
+            "transitionEasing": "cubic-bezier(.22, 1, .36, 1)",
             "meta": {}
           },
           html: "",
           components: [],
-          notes: undefined,
+          notes: "OGPメタデータをcompile時に解決し、runtimeはscriptなしのカードを配信する。",
           render: Slide_media_5
         }
       ]
@@ -192,12 +244,19 @@ const generatedDecks = defineDecks({
       meta: {
         "meta": {},
         "title": "Motion Verification",
-        "description": "CSS and client island animation checks for hono-decks",
+        "description": "Slide transitions, Fire reveals, and hydrated islands with reduced-motion support",
+        "author": "ts-76",
+        "date": "2026-07-17",
         "transition": "slide-left",
         "transitionDuration": "420ms",
-        "transitionEasing": "cubic-bezier(.2, 0, 0, 1)"
+        "transitionEasing": "cubic-bezier(.2, 0, 0, 1)",
+        "tags": [
+          "motion",
+          "islands",
+          "accessibility"
+        ]
       },
-      "themeStyle": ":root {\n  --hono-decks-color: #eef2ff;\n  --hono-decks-muted-color: #cbd5e1;\n  --hono-decks-accent-color: #8bd3ff;\n  --hono-decks-border-color: rgba(148, 163, 184, .24);\n  --hono-decks-card-background: rgba(15, 23, 42, .78);\n  --hono-decks-inline-code-background: rgba(15, 23, 42, .72);\n  --hono-decks-code-background: rgba(15, 23, 42, .78);\n}\n\n.layout-motion {\n  background: #0b1020;\n  color: #eef2ff;\n}\n",
+      "themeStyle": ":root {\n  --hono-decks-color: #fff8f3;\n  --hono-decks-muted-color: #cabfb9;\n  --hono-decks-accent-color: #ff6b2c;\n  --hono-decks-border-color: rgba(255, 248, 243, 0.19);\n  --hono-decks-card-background: #1c1e24;\n  --hono-decks-inline-code-background: rgba(255, 107, 44, 0.14);\n  --hono-decks-code-background: #090a0c;\n  font-family: \"Avenir Next\", \"Segoe UI\", ui-sans-serif, sans-serif;\n}\n\n.layout-motion {\n  position: relative;\n  background: #111216;\n  color: #fff8f3;\n}\n\n.layout-motion::before {\n  position: absolute;\n  inset: auto 0 0;\n  height: 12px;\n  background: #ff6b2c;\n  content: \"\";\n}\n\n.layout-motion .hono-decks-slide-content {\n  position: relative;\n  z-index: 1;\n  box-sizing: border-box;\n  padding: 2rem 2.5rem;\n}\n\n.layout-motion h1,\n.layout-motion h2 {\n  max-width: 12ch;\n  margin: 0;\n  font-size: 3.25rem;\n  letter-spacing: -0.04em;\n  line-height: 0.96;\n  text-wrap: balance;\n}\n\n.layout-motion p,\n.layout-motion li {\n  color: var(--hono-decks-muted-color);\n  font-size: 0.83rem;\n  line-height: 1.52;\n}\n\n.motion-context {\n  margin: 0 0 0.7rem;\n  color: #ff9a6e !important;\n  font-size: 0.62rem !important;\n  font-weight: 740;\n}\n\n.motion-columns {\n  display: grid;\n  grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.7fr);\n  gap: 2.5rem;\n  align-items: center;\n  margin-top: 1.4rem;\n}\n\n.motion-columns ul {\n  display: grid;\n  gap: 0.35rem;\n  padding-left: 1.2em;\n}\n\n.motion-meter {\n  display: grid;\n  gap: 0.65rem;\n  border-top: 3px solid #ff6b2c;\n  background: #1c1e24;\n  padding: 1rem;\n}\n\n.motion-meter > span {\n  font-size: 0.72rem;\n  font-weight: 720;\n}\n\n.motion-meter-track {\n  height: 0.36rem;\n  overflow: hidden;\n  border-radius: 999px;\n  background: #383b44;\n}\n\n.motion-meter-fill {\n  display: block;\n  height: 100%;\n  border-radius: inherit;\n  background: #ff6b2c;\n}\n\n.motion-meter button {\n  justify-self: start;\n  min-height: 1.5rem;\n  border: 0;\n  border-radius: 999px;\n  background: #fff8f3;\n  padding: 0.2rem 0.55rem;\n  color: #111216;\n  font: inherit;\n  font-size: 0.62rem;\n  font-weight: 760;\n}\n\n.motion-sequence {\n  display: grid;\n  grid-template-columns: 1fr auto 1fr auto 1fr;\n  gap: 0.65rem;\n  align-items: center;\n  max-width: 34rem;\n  margin: 1.8rem 0 1.2rem;\n}\n\n.motion-sequence span,\n.motion-sequence strong {\n  display: grid;\n  min-height: 4rem;\n  place-items: center;\n  background: #1c1e24;\n  font-size: 0.8rem;\n}\n\n.motion-sequence > span[aria-hidden] {\n  min-height: 0;\n  background: transparent;\n  color: #ff9a6e;\n  font-size: 1.3rem;\n}\n\n.motion-sequence strong {\n  background: #ff6b2c;\n  color: #111216;\n}\n",
       "themeSourcePath": "decks/motion/theme.css",
 
       assets: [],
@@ -209,8 +268,9 @@ const generatedDecks = defineDecks({
         {
           index: 0,
           meta: {
-            "title": "CSS Animation",
+            "title": "CSS animation",
             "layout": "motion",
+            "notes": "最初のスライドではCSSだけで動き、prefers-reduced-motionでは静止する軌道を見せる。",
             "transition": "slide-left",
             "transitionDuration": "420ms",
             "transitionEasing": "cubic-bezier(.2, 0, 0, 1)",
@@ -218,14 +278,15 @@ const generatedDecks = defineDecks({
           },
           html: "",
           components: [],
-          notes: undefined,
+          notes: "最初のスライドではCSSだけで動き、prefers-reduced-motionでは静止する軌道を見せる。",
           render: Slide_motion_0
         },
         {
           index: 1,
           meta: {
-            "title": "Client Island Animation",
+            "title": "Client island animation",
             "layout": "motion",
+            "notes": "server-rendered markupの後から、必要な箇所だけhono/jsx/domでhydrateする。",
             "transition": "slide-left",
             "transitionDuration": "420ms",
             "transitionEasing": "cubic-bezier(.2, 0, 0, 1)",
@@ -233,14 +294,15 @@ const generatedDecks = defineDecks({
           },
           html: "",
           components: [],
-          notes: undefined,
+          notes: "server-rendered markupの後から、必要な箇所だけhono/jsx/domでhydrateする。",
           render: Slide_motion_1
         },
         {
           index: 2,
           meta: {
-            "title": "Queued Transition",
+            "title": "Queued navigation",
             "layout": "motion",
+            "notes": "入力をロックするのではなく、遷移中の連続入力を最新の行き先へ畳み込む。",
             "transition": "slide-left",
             "transitionDuration": "420ms",
             "transitionEasing": "cubic-bezier(.2, 0, 0, 1)",
@@ -248,7 +310,7 @@ const generatedDecks = defineDecks({
           },
           html: "",
           components: [],
-          notes: undefined,
+          notes: "入力をロックするのではなく、遷移中の連続入力を最新の行き先へ畳み込む。",
           render: Slide_motion_2
         }
       ]
@@ -260,9 +322,19 @@ const generatedDecks = defineDecks({
       meta: {
         "meta": {},
         "title": "Hono Slides",
-        "description": "Hono + Cloudflare Workers で動く MDX-like slide runtime"
+        "description": "Hono + Cloudflare Workersで届ける、アプリと一体化したMDXスライド",
+        "author": "ts-76",
+        "date": "2026-07-17",
+        "transition": "slide-left",
+        "transitionDuration": "360ms",
+        "transitionEasing": "cubic-bezier(.22, 1, .36, 1)",
+        "tags": [
+          "hono",
+          "cloudflare",
+          "mdx"
+        ]
       },
-      "themeStyle": ":root {\n  --hono-decks-color: #eef2ff;\n  --hono-decks-muted-color: #cbd5e1;\n  --hono-decks-accent-color: #8bd3ff;\n  --hono-decks-border-color: rgba(148, 163, 184, .24);\n  --hono-decks-card-background: rgba(15, 23, 42, .78);\n  --hono-decks-inline-code-background: rgba(15, 23, 42, .72);\n  --hono-decks-code-background: rgba(15, 23, 42, .78);\n}\n\n.layout-cover,\n.layout-default,\n.layout-statement {\n  background: #0b1020;\n  color: #eef2ff;\n}\n",
+      "themeStyle": ":root {\n  --hono-decks-color: #fff8f3;\n  --hono-decks-muted-color: #d4c6bd;\n  --hono-decks-accent-color: #ff6b2c;\n  --hono-decks-border-color: rgba(255, 248, 243, 0.2);\n  --hono-decks-card-background: #1b1d22;\n  --hono-decks-inline-code-background: rgba(255, 107, 44, 0.16);\n  --hono-decks-code-background: #090a0c;\n  font-family: \"Avenir Next\", \"Hiragino Sans\", \"Yu Gothic\", ui-sans-serif, sans-serif;\n}\n\n.slide {\n  position: relative;\n  background: #111216;\n  color: var(--hono-decks-color);\n}\n\n.slide::before {\n  position: absolute;\n  inset: 0 0 auto;\n  height: 12px;\n  background: var(--hono-decks-accent-color);\n  content: \"\";\n}\n\n.slide .hono-decks-slide-content {\n  position: relative;\n  z-index: 1;\n  box-sizing: border-box;\n  padding: 1.9rem 2.4rem;\n}\n\n.slide h1,\n.slide h2,\n.slide h3 {\n  letter-spacing: -0.04em;\n  text-wrap: balance;\n}\n\n.slide h1 {\n  margin: 0;\n  font-size: 4.5rem;\n  line-height: 0.92;\n}\n\n.slide h2 {\n  max-width: 16ch;\n  margin: 0;\n  font-size: 2.65rem;\n  line-height: 1;\n}\n\n.sample-cover {\n  display: grid;\n  grid-template-columns: minmax(0, 1fr) 11rem;\n  gap: 2rem;\n  align-items: center;\n}\n\n.sample-context {\n  margin: 0 0 0.8rem;\n  color: #ff9a6e;\n  font-size: 0.78rem;\n  font-weight: 720;\n}\n\n.sample-lede {\n  margin: 1rem 0 0;\n  color: var(--hono-decks-muted-color);\n  font-size: 1.22rem;\n  line-height: 1.42;\n}\n\n.sample-mark {\n  display: grid;\n  width: 10rem;\n  height: 10rem;\n  place-items: center;\n  background: var(--hono-decks-accent-color);\n  color: #111216;\n  font-size: 6rem;\n  font-weight: 820;\n  letter-spacing: -0.08em;\n  line-height: 1;\n  transform: rotate(4deg);\n}\n\n.sample-runtime {\n  display: flex;\n  gap: 0.65rem;\n  margin-top: 1.25rem;\n  color: #fff8f3;\n  font-size: 0.66rem;\n}\n\n.sample-runtime span,\n.sample-route-list code,\n.sample-component-proof > * {\n  border: 1px solid var(--hono-decks-border-color);\n  border-radius: 999px;\n  padding: 0.28rem 0.56rem;\n}\n\n.layout-cover .mdx-hero {\n  position: absolute;\n  right: 2.4rem;\n  bottom: 1.9rem;\n  display: block;\n  width: 10rem;\n  height: auto;\n}\n\n.layout-cover .mdx-hero h1 {\n  color: #ff9a6e;\n  font-size: 0.7rem;\n  letter-spacing: 0;\n}\n\n.sample-component-proof {\n  position: absolute;\n  bottom: 1.8rem;\n  left: 2.4rem;\n  display: flex;\n  max-width: 35rem;\n  flex-wrap: wrap;\n  gap: 0.35rem;\n  align-items: center;\n}\n\n.sample-component-proof .sample-badge,\n.sample-component-proof .sample-counter {\n  margin: 0;\n  border: 1px solid var(--hono-decks-border-color);\n  border-radius: 999px;\n  background: transparent;\n  color: #fff8f3;\n  font-size: 0.56rem;\n  font-weight: 650;\n}\n\n.sample-component-proof .sample-badge {\n  padding: 0.25rem 0.48rem;\n}\n\n.sample-component-proof .sample-counter {\n  padding: 0.18rem 0.3rem 0.18rem 0.46rem;\n}\n\n.sample-component-proof button {\n  min-width: 1.6rem;\n  min-height: 1.2rem;\n  border: 0;\n  border-radius: 999px;\n  background: var(--hono-decks-accent-color);\n  color: #111216;\n  font: inherit;\n}\n\n.sample-subtitle {\n  max-width: 38ch;\n  margin: 0.7rem 0 1.25rem;\n  color: var(--hono-decks-muted-color);\n  font-size: 0.92rem;\n}\n\n.sample-pipeline {\n  display: grid;\n  grid-template-columns: 1fr auto 1fr auto 1fr;\n  gap: 0.7rem;\n  align-items: center;\n}\n\n.sample-pipeline section {\n  min-height: 6.6rem;\n  border-top: 3px solid var(--hono-decks-accent-color);\n  background: #1b1d22;\n  padding: 0.75rem;\n}\n\n.sample-pipeline > span {\n  color: #ff9a6e;\n  font-size: 1.4rem;\n}\n\n.sample-pipeline strong {\n  color: #ff9a6e;\n  font-size: 0.66rem;\n}\n\n.sample-pipeline h3 {\n  margin: 0.45rem 0 0.2rem;\n  font-size: 1.18rem;\n}\n\n.sample-pipeline p {\n  margin: 0;\n  color: var(--hono-decks-muted-color);\n  font-size: 0.68rem;\n}\n\n.sample-asset {\n  position: absolute;\n  right: 2.4rem;\n  bottom: 1.9rem;\n  width: 8rem;\n  max-height: 3.2rem;\n  object-fit: contain;\n  opacity: 0.72;\n}\n\n.layout-statement .hono-decks-slide-content {\n  display: flex;\n  flex-direction: column;\n  justify-content: center;\n}\n\n.layout-statement h2 {\n  max-width: 18ch;\n  font-size: 3.25rem;\n}\n\n.sample-route-list {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 0.5rem;\n  margin-top: 1.4rem;\n}\n\n.sample-route-list code {\n  background: #1b1d22;\n  color: #ff9a6e;\n  font-size: 0.68rem;\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .sample-mark {\n    transform: none;\n  }\n}\n",
       "themeSourcePath": "decks/sample/theme.css",
 
       assets: [
@@ -284,35 +356,47 @@ const generatedDecks = defineDecks({
           meta: {
             "title": "Hono Slides",
             "layout": "cover",
+            "notes": "hono-decksが「スライド専用サービス」ではなく、Honoアプリへ組み込むルートキットであることを最初に伝える。",
+            "transition": "slide-left",
+            "transitionDuration": "360ms",
+            "transitionEasing": "cubic-bezier(.22, 1, .36, 1)",
             "meta": {}
           },
           html: "",
           components: [],
-          notes: "Introduce the clean projection route for talks.",
+          notes: "hono-decksが「スライド専用サービス」ではなく、Honoアプリへ組み込むルートキットであることを最初に伝える。\n\nIntroduce the clean projection route for talks.",
           render: Slide_sample_0
         },
         {
           index: 1,
           meta: {
-            "title": "Parse and View",
-            "layout": "cover",
+            "title": "Build once, mount everywhere",
+            "layout": "pipeline",
+            "notes": "Node側でMDXを変換し、Workerには生成済みのHono JSXだけを渡す境界を説明する。",
+            "transition": "slide-left",
+            "transitionDuration": "360ms",
+            "transitionEasing": "cubic-bezier(.22, 1, .36, 1)",
             "meta": {}
           },
           html: "",
           components: [],
-          notes: "Use the presenter route for notes and next-slide preview.",
+          notes: "Node側でMDXを変換し、Workerには生成済みのHono JSXだけを渡す境界を説明する。\n\nUse the presenter route for notes and next-slide preview.",
           render: Slide_sample_1
         },
         {
           index: 2,
           meta: {
-            "title": "次にやること",
+            "title": "Own the whole presentation",
             "layout": "statement",
+            "notes": "viewer、projection、presenter、printを同じデッキソースから提供できることを締めとして示す。",
+            "transition": "slide-left",
+            "transitionDuration": "360ms",
+            "transitionEasing": "cubic-bezier(.22, 1, .36, 1)",
             "meta": {}
           },
           html: "",
           components: [],
-          notes: "Close with the V1 extension points: viewer, projection, presenter, and assets.",
+          notes: "viewer、projection、presenter、printを同じデッキソースから提供できることを締めとして示す。\n\nClose with the V1 extension points: viewer, projection, presenter, and assets.",
           render: Slide_sample_2
         }
       ]

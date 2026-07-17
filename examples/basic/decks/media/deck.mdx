@@ -1,78 +1,104 @@
 ---
 title: Media Verification
-description: Local and remote image asset checks for hono-decks
+description: Local assets, R2, video, social posts, and link cards in one deck
+author: ts-76
+date: 2026-07-17
+tags: [media, r2, embeds]
+transition: fade
+transitionDuration: 300ms
+transitionEasing: cubic-bezier(.22, 1, .36, 1)
 ---
 
 ---
-title: Local JSX Image
+title: Local JSX image
 layout: media
+notes: |
+  相対パスのまま書いた画像が、compile時に公開アセットURLへ書き換えられる。
 ---
 
-# Media verification
+<div class="media-heading">
+  <p>01 / Local asset</p>
+  # Media verification
+</div>
 
-<img class="media-image" src="./assets/local-jsx.svg" alt="Local JSX asset" />
-
-Local JSX image paths are rewritten to generated public asset URLs.
+<div class="media-showcase">
+  <img class="media-image" src="./assets/local-jsx.svg" alt="Local JSX asset" />
+  <p>Relative in MDX.<br /><strong>Public after compile.</strong></p>
+</div>
 
 ---
-title: R2-backed Image
+title: R2-backed image
 layout: media
+notes: |
+  同じ相対パスを保ったまま、配信元だけR2へ切り替えられる。
 ---
 
-# R2-backed image
+<div class="media-heading">
+  <p>02 / R2 asset source</p>
+  # R2-backed image
+</div>
 
-<img
-  class="media-image"
-  src="./assets/r2-remote.svg"
-  alt="R2-backed media asset"
-/>
-
-The generated asset URL renders locally and can be served from an R2 binding with long-lived cache headers.
+<div class="media-showcase reverse">
+  <img class="media-image" src="./assets/r2-remote.svg" alt="R2-backed media asset" />
+  <p>One authoring path.<br /><strong>Edge-cached delivery.</strong></p>
+</div>
 
 ---
-title: YouTube Embed
+title: YouTube embed
 layout: media
+notes: |
+  Zenn形式の短い記法からsandbox付きのEmbedFrameを生成する。
 ---
 
-# YouTube embed
+<div class="media-heading inline">
+  <p>03 / Video</p>
+  # YouTube embed
+</div>
 
 @[youtube](https://www.youtube.com/watch?v=dQw4w9WgXcQ)
 
-Zenn-style shorthand compiles to the built-in `EmbedFrame`.
-
 ---
-title: Generic Embed
+title: Generic iframe
 layout: media
+notes: |
+  任意のiframeも同じfallbackとprint挙動を共有する。
 ---
 
-# Generic iframe
+<div class="media-heading inline">
+  <p>04 / External frame</p>
+  # Generic iframe
+</div>
 
 @[embed](https://example.com/embed/status)
-
-Generic iframe embeds use the same package defaults.
 
 https://example.com/plain-link
 
 ---
-title: X Post Embed
+title: X post embed
 layout: media
+notes: |
+  公式ウィジェットを使いつつ、印刷時にはリンクへ退避する。
 ---
 
-# X post embed
+<div class="media-heading inline">
+  <p>05 / Social</p>
+  # X post embed
+</div>
 
 @[x](https://x.com/honojs/status/1659577874821836801?s=20)
 
-`@[x]` renders the official post embed markup by default.
-
 ---
-title: Link Card
+title: Link card
 layout: media
+notes: |
+  OGPメタデータをcompile時に解決し、runtimeはscriptなしのカードを配信する。
 ---
 
-# Link card
+<div class="media-heading inline">
+  <p>06 / Compile-time metadata</p>
+  # Link card
+</div>
 
 https://yusukebe.com/
 
 @[card](https://yusukebe.com/)
-
-Link cards resolve OGP metadata at compile time when available and stay script-free at runtime.

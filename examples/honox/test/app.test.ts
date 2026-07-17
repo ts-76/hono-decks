@@ -3,12 +3,12 @@ import { describe, expect, it } from "vite-plus/test";
 import app from "../app/server";
 
 describe("HonoX example", () => {
-  it("blocks indexing and crawling", async () => {
+  it("allows the public portfolio to be indexed", async () => {
     const home = await app.request("/");
     const robots = await app.request("/robots.txt");
 
-    expect(home.headers.get("x-robots-tag")).toBe("noindex, nofollow, noarchive");
-    expect(await robots.text()).toBe("User-agent: *\nDisallow: /\n");
+    expect(home.headers.get("x-robots-tag")).toBeNull();
+    expect(await robots.text()).toBe("User-agent: *\nAllow: /\n");
   });
 
   it("uses the generated runtime entry and compiles through the Vite lifecycle", async () => {
@@ -45,18 +45,23 @@ describe("HonoX example", () => {
     expect(response.status).toBe(200);
     expect(html).toContain("HonoX + hono-decks");
     expect(html).toContain('href="/decks/honox"');
+    expect(html).toContain('src="/decks/honox/embed"');
+    expect(html).toContain("Talks built close to the code.");
   });
 
   it("mounts the generated deck router from a file route", async () => {
     const index = await app.request("/decks");
     const viewer = await app.request("/decks/honox");
     const render = await app.request("/decks/honox/render");
+    const embed = await app.request("/decks/honox/embed");
 
     expect(index.status).toBe(200);
     expect(await index.text()).toContain("HonoX Deck");
     expect(viewer.status).toBe(200);
     expect(await viewer.text()).toContain('src="/decks/honox/render"');
     expect(render.status).toBe(200);
-    expect(await render.text()).toContain("File-based pages and generated slide routes in one Hono app.");
+    expect(await render.text()).toContain("Pages and presentations,");
+    expect(embed.status).toBe(200);
+    expect(embed.headers.get("content-security-policy")).toBe("frame-ancestors 'self' https://hono-decks.com");
   });
 });

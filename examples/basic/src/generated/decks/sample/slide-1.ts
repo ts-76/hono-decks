@@ -5,28 +5,51 @@ export const topics = ['MDX expression props', 'MDX expression children'];
 function _createMdxContent(props) {
   const _components = {
     h2: "h2",
-    img: "img",
-    li: "li",
-    p: "p",
-    ul: "ul",
     ...props.components
   };
   return _jsxs(_Fragment, {
     children: [_jsx(_components.h2, {
-      children: "Parse and View"
-    }), "\n", _jsxs(_components.ul, {
-      children: ["\n", _jsx(_components.li, {
-        children: "Markdown/MDX-like source を compile"
-      }), "\n", _jsx(_components.li, {
-        children: "deck manifest と slide metadata を保持"
-      }), "\n", _jsx(_components.li, {
-        children: "Hono route で viewer/render page を配信"
-      }), "\n"]
-    }), "\n", _jsx(_components.p, {
-      children: _jsx(_components.img, {
-        src: "/decks/sample/assets/r2-cache.svg",
-        alt: "R2 cached local asset"
-      })
+      children: "Build once. Mount everywhere."
+    }), "\n", _jsx("p", {
+      class: "sample-subtitle",
+      children: "ファイルI/Oはbuild時に閉じ込め、runtimeはHonoのまま軽く保つ。"
+    }), "\n", _jsxs("div", {
+      class: "sample-pipeline",
+      children: [_jsxs("section", {
+        children: [_jsx("strong", {
+          children: "01"
+        }), _jsx("h3", {
+          children: "Author"
+        }), _jsx("p", {
+          children: "MDXとアセットを書く"
+        })]
+      }), _jsx("span", {
+        "aria-hidden": "true",
+        children: "→"
+      }), _jsxs("section", {
+        children: [_jsx("strong", {
+          children: "02"
+        }), _jsx("h3", {
+          children: "Compile"
+        }), _jsx("p", {
+          children: "Hono JSXへ生成する"
+        })]
+      }), _jsx("span", {
+        "aria-hidden": "true",
+        children: "→"
+      }), _jsxs("section", {
+        children: [_jsx("strong", {
+          children: "03"
+        }), _jsx("h3", {
+          children: "Mount"
+        }), _jsx("p", {
+          children: "既存アプリにrouteする"
+        })]
+      })]
+    }), "\n", _jsx("img", {
+      class: "sample-asset",
+      src: "/decks/sample/assets/r2-cache.svg",
+      alt: "R2-backed local asset pipeline"
     })]
   });
 }

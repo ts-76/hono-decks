@@ -5,26 +5,50 @@ export const topics = ['MDX expression props', 'MDX expression children'];
 function _createMdxContent(props) {
   const _components = {
     h1: "h1",
-    p: "p",
     ...props.components
   }, {Badge, Counter, Hero} = _components;
   if (!Badge) _missingMdxReference("Badge", true);
   if (!Counter) _missingMdxReference("Counter", true);
   if (!Hero) _missingMdxReference("Hero", true);
   return _jsxs(_Fragment, {
-    children: [_jsx(_components.h1, {
-      children: "Hono Slides"
-    }), "\n", _jsx(_components.p, {
-      children: "Cloudflare Workers で動く Slidev-like deck"
+    children: [_jsxs("div", {
+      class: "sample-cover",
+      children: [_jsxs("div", {
+        children: [_jsx("p", {
+          class: "sample-context",
+          children: "Hono × MDX × Cloudflare Workers"
+        }), _jsx(_components.h1, {
+          children: "Hono Slides"
+        }), _jsxs("p", {
+          class: "sample-lede",
+          children: ["登壇資料を、アプリの外側ではなく", _jsx("br", {}), "Honoのルートとして届ける。"]
+        })]
+      }), _jsx("div", {
+        class: "sample-mark",
+        "aria-hidden": "true",
+        children: "H"
+      })]
+    }), "\n", _jsxs("div", {
+      class: "sample-runtime",
+      children: [_jsx("span", {
+        children: "Build with Node.js"
+      }), _jsx("span", {
+        children: "Serve with Hono"
+      }), _jsx("span", {
+        children: "Present anywhere"
+      })]
     }), "\n", _jsx(Hero, {
       title: "MDX-like components"
-    }), "\n", _jsx(Badge, {
-      label: badgeLabel
-    }), "\n", topics.map(topic => _jsx(Badge, {
-      label: topic
-    })), "\n", _jsx(Counter, {
-      label: "Interactive count",
-      initial: 1
+    }), "\n", _jsxs("div", {
+      class: "sample-component-proof",
+      children: [_jsx(Badge, {
+        label: badgeLabel
+      }), topics.map(topic => _jsx(Badge, {
+        label: topic
+      })), _jsx(Counter, {
+        label: "Interactive count",
+        initial: 1
+      })]
     })]
   });
 }

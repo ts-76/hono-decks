@@ -1,22 +1,41 @@
 ---
 title: Minimal Hono Deck
-description: The smallest hono-decks Worker example
+description: The smallest production-shaped hono-decks Worker example
+author: ts-76
+date: 2026-07-17
+tags: [hono, minimal, worker]
+transition: fade
+transitionDuration: 260ms
+transitionEasing: cubic-bezier(.22, 1, .36, 1)
 ---
 
 ---
+title: Minimal Hono Deck
 layout: cover
+notes: |
+  hono-decksの最小構成は、deck source、生成facade、mountの3点だけで成立する。
 ---
 
-# Minimal Hono Deck
-
-One deck, one facade, one mounted Hono router.
+<div class="minimal-cover">
+  <span class="minimal-index">00—02</span>
+  # Minimal<br />Hono Deck
+  <p>One deck. One facade.<br />One mounted Hono router.</p>
+  <code>app.route(decks.mountPath, decks.router())</code>
+</div>
 
 ---
+title: What is included
 layout: default
+notes: |
+  小ささは機能不足ではなく、build/runtime境界が整理されている結果だと伝える。
 ---
 
-## What is included
+## Three files,<br />every presentation surface.
 
-- build-time deck compilation
-- generated Hono JSX modules
-- viewer, render, and print routes
+<div class="minimal-stack">
+  <section><strong>deck.mdx</strong><span>author</span></section>
+  <section><strong>generated/decks.ts</strong><span>compile</span></section>
+  <section><strong>src/index.ts</strong><span>mount</span></section>
+</div>
+
+<p class="minimal-result">Viewer · render · presentation · presenter · print</p>

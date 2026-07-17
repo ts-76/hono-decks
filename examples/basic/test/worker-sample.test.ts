@@ -281,11 +281,11 @@ describe("sample Worker app", () => {
     const html = await response.text();
     expect(html).toContain("<title>Hono Slides - Details</title>");
     expect(html).toContain(
-      '<meta name="description" content="Hono + Cloudflare Workers で動く MDX-like slide runtime"/>',
+      '<meta name="description" content="Hono + Cloudflare Workersで届ける、アプリと一体化したMDXスライド"/>',
     );
     expect(html).toContain('<meta property="og:title" content="Hono Slides"/>');
     expect(html).toContain(
-      '<meta property="og:description" content="Hono + Cloudflare Workers で動く MDX-like slide runtime"/>',
+      '<meta property="og:description" content="Hono + Cloudflare Workersで届ける、アプリと一体化したMDXスライド"/>',
     );
     expect(html).toContain('<meta property="og:url" content="/decks/sample"/>');
     expect(html).toContain('data-sample-layout="deck-details"');

@@ -8,8 +8,27 @@ function _createMdxContent(props) {
   }, {Fire} = _components;
   if (!Fire) _missingMdxReference("Fire", true);
   return _jsxs(_Fragment, {
-    children: [_jsx(_components.h2, {
+    children: [_jsx("p", {
+      class: "motion-context",
+      children: "Keep input responsive"
+    }), "\n", _jsx(_components.h2, {
       children: "Queued navigation"
+    }), "\n", _jsxs("div", {
+      class: "motion-sequence",
+      "aria-label": "Queued slide navigation",
+      children: [_jsx("span", {
+        children: "command"
+      }), _jsx("span", {
+        "aria-hidden": "true",
+        children: "→"
+      }), _jsx("span", {
+        children: "pending"
+      }), _jsx("span", {
+        "aria-hidden": "true",
+        children: "→"
+      }), _jsx("strong", {
+        children: "latest slide"
+      })]
     }), "\n", _jsx(_components.p, {
       children: "Rapid commands during a slide transition are folded into the latest pending navigation."
     }), "\n", _jsx(Fire, {

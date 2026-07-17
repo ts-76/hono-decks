@@ -713,7 +713,81 @@ const security = (locale: Locale): Guide => {
   };
 };
 
+const examples = (locale: Locale): Guide => {
+  const isJa = locale === "ja";
+  const deployments = [
+    {
+      index: "01",
+      name: "Basic",
+      description: isJa ? "コード、画像、埋め込み、Fire、Islandを1つずつ確認できる総合例。" : "The full example for code, assets, embeds, Fire reveals, and hydrated islands.",
+      href: "https://basic.hono-decks.com/decks/sample",
+      source: "https://github.com/ts-76/hono-decks/tree/main/examples/basic",
+    },
+    {
+      index: "02",
+      name: "Minimal",
+      description: isJa ? "1デッキ、1つのfacade、1回のmountだけで動く最小Worker。" : "The smallest Worker: one deck, one facade, and one mounted router.",
+      href: "https://minimal.hono-decks.com/decks/welcome",
+      source: "https://github.com/ts-76/hono-decks/tree/main/examples/minimal",
+    },
+    {
+      index: "03",
+      name: "HonoX portfolio",
+      description: isJa ? "通常ページと登壇資料を同じHonoXアプリから公開するポートフォリオ例。" : "A portfolio that publishes ordinary pages and talks from the same HonoX app.",
+      href: "https://honox.hono-decks.com/",
+      source: "https://github.com/ts-76/hono-decks/tree/main/examples/honox",
+    },
+    {
+      index: "04",
+      name: "Build-time OGP",
+      description: isJa ? "Satoriとresvgで、デッキ情報から1200×630の共有画像を生成。" : "Generate deterministic 1200×630 share images from deck metadata with Satori and resvg.",
+      href: "https://ogp.hono-decks.com/decks/welcome",
+      source: "https://github.com/ts-76/hono-decks/tree/main/examples/ogp",
+    },
+  ];
+  return {
+    title: isJa ? "実例" : "Examples",
+    description: isJa
+      ? "デザイン済みの公開デッキと、登壇資料をポートフォリオへ組み込むHonoX構成を確認できます。"
+      : "Explore polished live decks and a HonoX portfolio that keeps talks inside the application that introduces them.",
+    sections: isJa
+      ? [{ id: "live", label: "公開例" }, { id: "portfolio", label: "HonoXポートフォリオ" }, { id: "choose", label: "構成を選ぶ" }]
+      : [{ id: "live", label: "Live deployments" }, { id: "portfolio", label: "HonoX portfolio" }, { id: "choose", label: "Choose a starting point" }],
+    content: <>
+      <section id="live">
+        <h2>{isJa ? "実際のWorkerでデッキを開く" : "Open each deck on a live Worker"}</h2>
+        <p>{isJa ? "すべての例は同じhono-decksパッケージを使いながら、目的に合わせて情報量、色、レイアウトを変えています。" : "Every example uses the same hono-decks package, with density, color, and composition tuned to its purpose."}</p>
+        <div class="examples-list">
+          {deployments.map((deployment) => <article class="example-row">
+            <span class="example-index" aria-hidden="true">{deployment.index}</span>
+            <div><h3>{deployment.name}</h3><p>{deployment.description}</p></div>
+            <nav aria-label={`${deployment.name} links`}><a href={deployment.href}>{isJa ? "公開例" : "Live"} ↗</a><a href={deployment.source}>{isJa ? "ソース" : "Source"} ↗</a></nav>
+          </article>)}
+        </div>
+      </section>
+      <section id="portfolio">
+        <h2>{isJa ? "登壇資料をポートフォリオの一部にする" : "Make the talk part of the portfolio"}</h2>
+        <p>{isJa ? <><code>examples/honox</code>は、作品紹介ページの中に同一オリジンのembedを置き、viewerとpresentationへつなぎます。HonoXがSEOとナビゲーション、hono-decksが発表用の各画面を担当します。</> : <><code>examples/honox</code> embeds the deck inside its portfolio page and links to viewer and presentation surfaces. HonoX owns SEO and navigation; hono-decks owns presentation routes.</>}</p>
+        <div class="portfolio-demo">
+          <iframe src="https://honox.hono-decks.com/decks/honox/embed" title={isJa ? "HonoXポートフォリオの登壇資料" : "Talk embedded in the HonoX portfolio"} loading="lazy" allow="fullscreen"></iframe>
+          <div><strong>{isJa ? "同じデプロイに含まれる画面" : "Surfaces in the same deployment"}</strong><code>/</code><code>/decks/honox</code><code>/decks/honox/presentation</code><code>/decks/honox/print</code><a class="text-link" href="https://honox.hono-decks.com/">{isJa ? "ポートフォリオ全体を見る" : "Open the full portfolio"} →</a></div>
+        </div>
+      </section>
+      <section id="choose">
+        <h2>{isJa ? "目的に近い構成から始める" : "Start from the closest architecture"}</h2>
+        <dl class="configuration-map">
+          <div><dt>Minimal</dt><dd>{isJa ? "既存のHono Workerへ、最小のデッキ配信を追加するとき。" : "Adding the smallest deck surface to an existing Hono Worker."}</dd></div>
+          <div><dt>HonoX</dt><dd>{isJa ? "ブログ、プロフィール、作品一覧と登壇資料を同じサイトで公開するとき。" : "Publishing talks beside a blog, profile, or work index."}</dd></div>
+          <div><dt>Basic</dt><dd>{isJa ? "R2、埋め込み、アニメーション、出力まで含めて検証するとき。" : "Evaluating R2, embeds, motion, and export in one project."}</dd></div>
+          <div><dt>OGP</dt><dd>{isJa ? "SNSで共有する画像をbuild時に自動生成するとき。" : "Generating social share images during the build."}</dd></div>
+        </dl>
+        <p><a class="text-link" href={localizedHref("/docs/getting-started", locale)}>{isJa ? "導入手順へ進む" : "Continue to installation"} →</a></p>
+      </section>
+    </>,
+  };
+};
+
 export function getGuide(slug: string, locale: Locale): Guide | undefined {
-  const factories: Record<string, (locale: Locale) => Guide> = { "getting-started": gettingStarted, authoring, configuration, recipes, routing, security };
+  const factories: Record<string, (locale: Locale) => Guide> = { "getting-started": gettingStarted, examples, authoring, configuration, recipes, routing, security };
   return factories[slug]?.(locale);
 }

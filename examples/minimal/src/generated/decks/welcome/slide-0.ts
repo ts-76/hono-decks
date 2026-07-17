@@ -1,16 +1,21 @@
 // @ts-nocheck
-import {Fragment as _Fragment, jsx as _jsx, jsxs as _jsxs} from "hono/jsx/jsx-runtime";
+import {jsx as _jsx, jsxs as _jsxs} from "hono/jsx/jsx-runtime";
 function _createMdxContent(props) {
   const _components = {
     h1: "h1",
-    p: "p",
     ...props.components
   };
-  return _jsxs(_Fragment, {
-    children: [_jsx(_components.h1, {
-      children: "Minimal Hono Deck"
-    }), "\n", _jsx(_components.p, {
-      children: "One deck, one facade, one mounted Hono router."
+  return _jsxs("div", {
+    class: "minimal-cover",
+    children: [_jsx("span", {
+      class: "minimal-index",
+      children: "00—02"
+    }), _jsxs(_components.h1, {
+      children: ["Minimal", _jsx("br", {}), "Hono Deck"]
+    }), _jsxs("p", {
+      children: ["One deck. One facade.", _jsx("br", {}), "One mounted Hono router."]
+    }), _jsx("code", {
+      children: "app.route(decks.mountPath, decks.router())"
     })]
   });
 }

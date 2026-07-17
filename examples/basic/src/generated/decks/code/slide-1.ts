@@ -2,14 +2,19 @@
 import {Fragment as _Fragment, jsx as _jsx, jsxs as _jsxs} from "hono/jsx/jsx-runtime";
 function _createMdxContent(props) {
   const _components = {
-    h1: "h1",
+    h2: "h2",
     p: "p",
     ...props.components
   }, {CodeBlock} = _components;
   if (!CodeBlock) _missingMdxReference("CodeBlock", true);
   return _jsxs(_Fragment, {
-    children: [_jsx(_components.h1, {
-      children: "CodeBlock component"
+    children: [_jsxs("div", {
+      class: "code-heading compact",
+      children: [_jsx("p", {
+        children: "Component API"
+      }), _jsx(_components.h2, {
+        children: "CodeBlock component"
+      })]
     }), "\n", _jsx(CodeBlock, {
       lang: "ts",
       filename: "worker.ts",
@@ -18,8 +23,15 @@ function _createMdxContent(props) {
       children: _jsx(_components.p, {
         children: "const app = new Hono()\napp.get(\"/\", (c) => c.text(\"ok\"))"
       })
-    }), "\n", _jsx(_components.p, {
-      children: "The built-in component should keep code authoring close to the deck source."
+    }), "\n", _jsxs("div", {
+      class: "code-proof",
+      children: [_jsx("span", {
+        children: "filename"
+      }), _jsx("span", {
+        children: "highlight"
+      }), _jsx("span", {
+        children: "build-time Shiki"
+      })]
     })]
   });
 }

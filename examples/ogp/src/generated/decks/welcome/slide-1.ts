@@ -2,27 +2,40 @@
 import {Fragment as _Fragment, jsx as _jsx, jsxs as _jsxs} from "hono/jsx/jsx-runtime";
 function _createMdxContent(props) {
   const _components = {
-    code: "code",
     h2: "h2",
-    li: "li",
-    ul: "ul",
     ...props.components
   };
   return _jsxs(_Fragment, {
     children: [_jsx(_components.h2, {
       children: "One source of truth"
-    }), "\n", _jsxs(_components.ul, {
-      children: ["\n", _jsx(_components.li, {
-        children: "Deck title, description, and author come from frontmatter"
-      }), "\n", _jsxs(_components.li, {
-        children: [_jsx(_components.code, {
-          children: "decks.paths(slug).ogImage"
-        }), " defines the public image URL"]
-      }), "\n", _jsxs(_components.li, {
-        children: [_jsx(_components.code, {
-          children: "viewer.openGraph"
-        }), " emits absolute social metadata"]
-      }), "\n"]
+    }), "\n", _jsxs("div", {
+      class: "ogp-flow",
+      children: [_jsxs("section", {
+        children: [_jsx("code", {
+          children: "deck.mdx"
+        }), _jsxs("strong", {
+          children: ["title", _jsx("br", {}), "description", _jsx("br", {}), "author"]
+        })]
+      }), _jsx("span", {
+        "aria-hidden": "true",
+        children: "→"
+      }), _jsxs("section", {
+        children: [_jsx("code", {
+          children: "compile"
+        }), _jsxs("strong", {
+          children: ["manifest", _jsx("br", {}), "paths", _jsx("br", {}), "metadata"]
+        })]
+      }), _jsx("span", {
+        "aria-hidden": "true",
+        children: "→"
+      }), _jsxs("section", {
+        class: "is-accent",
+        children: [_jsx("code", {
+          children: "og.png"
+        }), _jsxs("strong", {
+          children: ["1200 × 630", _jsx("br", {}), "social-ready"]
+        })]
+      })]
     })]
   });
 }

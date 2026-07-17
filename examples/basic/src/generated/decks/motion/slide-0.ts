@@ -9,20 +9,24 @@ function _createMdxContent(props) {
   return _jsxs(_Fragment, {
     children: [_jsx("style", {
       children: `
-.motion-stage{display:grid;grid-template-columns:minmax(0,1fr) 18rem;gap:2rem;align-items:center;height:100%}
-.motion-orbit{position:relative;inline-size:15rem;block-size:15rem;border:1px solid rgba(139,211,255,.34);border-radius:999px;background:rgba(8,47,73,.34)}
-.motion-orbit::before{content:"";position:absolute;inset:1.1rem;border:1px dashed rgba(223,247,255,.48);border-radius:inherit}
-.motion-orbit-dot{position:absolute;inset-block-start:50%;inset-inline-start:50%;inline-size:2.25rem;block-size:2.25rem;margin:-1.125rem;border-radius:999px;background:#8bd3ff;box-shadow:0 0 2.25rem rgba(139,211,255,.76);animation:hono-decks-motion-orbit 4s linear infinite}
+.motion-stage{display:grid;grid-template-columns:minmax(0,1fr) 18rem;gap:3rem;align-items:center;height:100%}
+.motion-orbit{position:relative;inline-size:15rem;block-size:15rem;border:1px solid rgba(255,122,61,.45);border-radius:999px;background:#17191f}
+.motion-orbit::before{content:"";position:absolute;inset:1.1rem;border:1px dashed rgba(255,240,230,.34);border-radius:inherit}
+.motion-orbit::after{content:"CSS";position:absolute;inset:0;display:grid;place-items:center;color:#fff0e6;font-size:1.35rem;font-weight:760;letter-spacing:-.03em}
+.motion-orbit-dot{position:absolute;z-index:2;inset-block-start:50%;inset-inline-start:50%;inline-size:2.25rem;block-size:2.25rem;margin:-1.125rem;border-radius:999px;background:#ff6b2c;box-shadow:0 0 1.4rem rgba(255,107,44,.62);animation:hono-decks-motion-orbit 4s linear infinite}
 @keyframes hono-decks-motion-orbit{from{transform:rotate(0deg) translateX(5.7rem) rotate(0deg)}to{transform:rotate(360deg) translateX(5.7rem) rotate(-360deg)}}
 @media (prefers-reduced-motion: reduce){.motion-orbit-dot{animation:none;transform:translateX(5.7rem)}}
 `
     }), "\n", _jsxs("div", {
       class: "motion-stage",
       children: [_jsxs("div", {
-        children: [_jsx("h1", {
+        children: [_jsx("p", {
+          class: "motion-context",
+          children: "CSS first / accessible by default"
+        }), _jsx("h1", {
           children: "Motion verification"
         }), _jsxs("p", {
-          children: ["CSS animation stays inside the fixed 16", ":9", " slide and respects reduced motion."]
+          children: ["Animation stays inside the 16", ":9", " canvas and yields to the viewer's reduced-motion policy."]
         }), _jsxs(Fire, {
           effect: "fade-up",
           children: [_jsx(_components.p, {

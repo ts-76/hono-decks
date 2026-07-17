@@ -2,22 +2,21 @@
 import {Fragment as _Fragment, jsx as _jsx, jsxs as _jsxs} from "hono/jsx/jsx-runtime";
 function _createMdxContent(props) {
   const _components = {
-    code: "code",
     h1: "h1",
-    p: "p",
     ...props.components
   }, {TweetEmbed} = _components;
   if (!TweetEmbed) _missingMdxReference("TweetEmbed", true);
   return _jsxs(_Fragment, {
-    children: [_jsx(_components.h1, {
-      children: "X post embed"
+    children: [_jsxs("div", {
+      class: "media-heading inline",
+      children: [_jsx("p", {
+        children: "05 / Social"
+      }), _jsx(_components.h1, {
+        children: "X post embed"
+      })]
     }), "\n", _jsx(TweetEmbed, {
       href: "https://x.com/honojs/status/1659577874821836801?s=20",
       label: "Open post on X"
-    }), "\n", _jsxs(_components.p, {
-      children: [_jsx(_components.code, {
-        children: "@[x]"
-      }), " renders the official post embed markup by default."]
     })]
   });
 }

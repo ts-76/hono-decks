@@ -1,16 +1,18 @@
 // @ts-nocheck
-import {Fragment as _Fragment, jsx as _jsx, jsxs as _jsxs} from "hono/jsx/jsx-runtime";
+import {jsx as _jsx, jsxs as _jsxs} from "hono/jsx/jsx-runtime";
 function _createMdxContent(props) {
   const _components = {
     h1: "h1",
-    p: "p",
     ...props.components
   };
-  return _jsxs(_Fragment, {
-    children: [_jsx(_components.h1, {
-      children: "HonoX + hono-decks"
-    }), "\n", _jsx(_components.p, {
-      children: "File-based pages and generated slide routes in one Hono app."
+  return _jsxs("div", {
+    class: "honox-cover",
+    children: [_jsx("p", {
+      children: "HonoX portfolio pattern"
+    }), _jsxs(_components.h1, {
+      children: ["HonoX +", _jsx("br", {}), "hono-decks"]
+    }), _jsxs("span", {
+      children: ["Pages and presentations,", _jsx("br", {}), "one Hono application."]
     })]
   });
 }
