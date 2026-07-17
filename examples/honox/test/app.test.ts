@@ -62,7 +62,9 @@ describe("HonoX example", () => {
     expect(indexHtml).toContain('class="archive-hero"');
     expect(indexHtml).toContain('id="published-talks"');
     expect(indexHtml).toContain("HonoX Deck");
-    expect(indexHtml).toContain('src="/decks/honox/embed"');
+    expect(indexHtml).toContain('class="archive-talk-poster"');
+    expect(indexHtml).not.toContain("<iframe");
+    expect(indexHtml).not.toContain("/embed");
     expect(indexHtml).toContain('href="/decks/honox/presentation"');
     expect(indexHtml).toContain('href="/decks/honox/print"');
     expect(viewer.status).toBe(200);

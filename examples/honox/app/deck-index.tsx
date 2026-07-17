@@ -47,19 +47,22 @@ export function renderHonoXDeckIndexPage(input: { decks: CompiledDeck[]; paths: 
           </header>
 
           <div class="archive-talk-list">
-            {input.decks.map((deck, index) => {
+            {input.decks.map((deck) => {
               const paths = input.paths(deck.slug);
               const title = deck.meta.title ?? deck.slug;
               return (
                 <article class="archive-talk">
-                  <div class="archive-talk-preview">
-                    <iframe
-                      src={paths.embed}
-                      title={`${title} slide preview`}
-                      loading={index === 0 ? "eager" : "lazy"}
-                      allow="fullscreen"
-                    ></iframe>
-                  </div>
+                  <a class="archive-talk-preview" href={paths.viewer} aria-label={`${title}を開く`}>
+                    <span class="archive-talk-poster">
+                      <small>HonoX portfolio pattern</small>
+                      <strong>
+                        HonoX +<br />
+                        hono-decks
+                      </strong>
+                      <i aria-hidden="true">X</i>
+                      <b>Pages and presentations, one Hono application.</b>
+                    </span>
+                  </a>
                   <div class="archive-talk-copy">
                     <p class="archive-talk-meta">
                       {deck.meta.date ? (
@@ -180,8 +183,13 @@ a { color: inherit; }
 .published-talks-heading p { max-width: 40ch; margin: 0; color: var(--archive-muted); line-height: 1.7; text-wrap: pretty; }
 .archive-talk-list { border-top: 1px solid var(--archive-ink); }
 .archive-talk { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(300px, .65fr); border-bottom: 1px solid var(--archive-line); }
-.archive-talk-preview { min-width: 0; padding: clamp(26px, 4vw, 46px) clamp(26px, 4vw, 46px) clamp(26px, 4vw, 46px) 0; border-right: 1px solid var(--archive-line); }
-.archive-talk-preview iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; background: var(--archive-ink); }
+.archive-talk-preview { display: block; min-width: 0; border-right: 1px solid var(--archive-line); padding: clamp(26px, 4vw, 46px) clamp(26px, 4vw, 46px) clamp(26px, 4vw, 46px) 0; text-decoration: none; }
+.archive-talk-poster { position: relative; display: grid; width: 100%; aspect-ratio: 16 / 9; grid-template-rows: auto 1fr auto; overflow: hidden; background: var(--archive-ink); padding: clamp(22px, 4vw, 48px); color: var(--archive-copy); transition: translate 200ms cubic-bezier(.22, 1, .36, 1); }
+.archive-talk-preview:hover .archive-talk-poster { translate: 0 -4px; }
+.archive-talk-poster small { color: var(--archive-accent-soft); font-size: clamp(.62rem, 1.1vw, .78rem); font-weight: 720; }
+.archive-talk-poster strong { max-width: 9ch; align-self: end; font-size: clamp(2.2rem, 4.8vw, 4.8rem); letter-spacing: -.04em; line-height: .86; text-wrap: balance; }
+.archive-talk-poster i { position: absolute; right: 8%; top: 28%; display: grid; width: 22%; aspect-ratio: 1; place-items: center; background: var(--archive-accent); color: var(--archive-ink); font-size: clamp(2.8rem, 7vw, 6.5rem); font-style: normal; font-weight: 850; transform: rotate(-4deg); }
+.archive-talk-poster b { max-width: 28ch; margin-top: 20px; color: #d7d0cb; font-size: clamp(.66rem, 1.1vw, .84rem); font-weight: 550; line-height: 1.45; }
 .archive-talk-copy { display: flex; min-width: 0; flex-direction: column; padding: clamp(30px, 4vw, 48px) 0 clamp(30px, 4vw, 48px) clamp(28px, 4vw, 48px); }
 .archive-talk-meta { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 0; color: var(--archive-muted); font-size: .74rem; }
 .archive-talk-copy h3 { max-width: 12ch; margin: clamp(42px, 7vw, 92px) 0 20px; font-size: clamp(2.5rem, 4.5vw, 4.25rem); letter-spacing: -.04em; line-height: .94; overflow-wrap: anywhere; text-wrap: balance; }
@@ -220,7 +228,8 @@ a { color: inherit; }
 }
 @media (prefers-reduced-motion: reduce) {
   .archive-brand span, .archive-poster { transform: none; }
-  .archive-talk-actions a { transition: none; }
-  .archive-talk-actions a:hover { translate: none; }
+  .archive-talk-poster, .archive-talk-actions a { transition: none; }
+  .archive-talk-preview:hover .archive-talk-poster, .archive-talk-actions a:hover { translate: none; }
+  .archive-talk-poster i { transform: none; }
 }
 `;

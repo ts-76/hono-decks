@@ -102,9 +102,10 @@ describe("sample Worker app", () => {
     const html = await response.text();
     expect(html).toContain("<title>Hono Decks Basic</title>");
     expect(html).toContain('data-sample-layout="home"');
-    expect(html).toContain("color-scheme: light");
-    expect(html).toContain("linear-gradient(145deg, oklch(99% 0 0) 0%, oklch(94% 0 0) 58%, oklch(88% 0 0) 100%)");
-    expect(html).not.toContain("background: #050816");
+    expect(html).toContain("color-scheme: dark");
+    expect(html).toContain('class="sample-home-hero"');
+    expect(html).toContain("Slides belong");
+    expect(html).toContain("--sample-accent: #ff6b2c");
     expect(html).toContain('href="/decks"');
     expect(html).toContain('href="/decks/sample/about"');
   });
@@ -124,8 +125,10 @@ describe("sample Worker app", () => {
     expect(html).toContain("Code Verification");
     expect(html).toContain("Media Verification");
     expect(html).toContain("Motion Verification");
-    expect(html).toContain('src="/decks/sample/embed"');
-    expect(html).toContain('loading="lazy"');
+    expect(html).toContain('class="deck-showcase-preview"');
+    expect(html).toContain('data-deck-art="sample"');
+    expect(html).not.toContain("<iframe");
+    expect(html).not.toContain("/embed");
     expect(html).toContain('href="/decks/sample/presentation"');
     expect(html).toContain('href="/decks/sample/about"');
   });
