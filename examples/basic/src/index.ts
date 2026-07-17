@@ -64,7 +64,7 @@ app.route(
         async render(input) {
           const compiledDecks = (
             await Promise.all(input.decks.map((entry) => decks.source.getCompiledDeck(input.c, entry.slug)))
-          ).filter((deck) => deck !== null);
+          ).filter((deck): deck is NonNullable<typeof deck> => deck !== null);
           return renderDeckIndexPage({
             decks: compiledDecks,
             paths: (slug) => decks.paths(slug),
