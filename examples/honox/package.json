@@ -22,7 +22,7 @@
     "@cloudflare/workers-types": "^5.20260716.1",
     "@hono/vite-build": "^1.11.1",
     "@hono/vite-dev-server": "^0.26.1",
-    "@types/node": "^25.9.2",
+    "@types/node": "^26.1.1",
     "typescript": "^5.9.3",
     "vite": "npm:@voidzero-dev/vite-plus-core@0.2.4",
     "vite-plus": "0.2.4",
