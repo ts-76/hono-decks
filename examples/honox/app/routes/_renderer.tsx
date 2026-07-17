@@ -1,39 +1,73 @@
 import { jsxRenderer } from "hono/jsx-renderer";
+import { getLocale, localizedHref } from "../i18n";
 
-export default jsxRenderer(({ children }) => (
-  <html lang="ja">
-    <head>
-      <meta charset="utf-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-      <meta name="description" content="HonoXとhono-decksで作る、登壇資料をそのまま掲載できるポートフォリオ実装例" />
-      <meta name="theme-color" content="#111216" />
-      <meta property="og:type" content="website" />
-      <meta property="og:title" content="ts-76 Talks — HonoX + hono-decks" />
-      <meta property="og:description" content="HonoXのページと登壇資料を、ひとつのHonoアプリから公開する。" />
-      <title>ts-76 Talks — HonoX + hono-decks</title>
-      <style>{pageStyle}</style>
-    </head>
-    <body>
-      <a class="skip-link" href="#main-content">本文へ移動</a>
-      <header class="site-header">
-        <a class="site-brand" href="/" aria-label="ts-76 Talks home">
-          <span aria-hidden="true">H</span>
-          <strong>ts-76 / Talks</strong>
+export default jsxRenderer(({ children }, c) => {
+  const locale = getLocale(c);
+  const isJa = locale === "ja";
+  const currentPath = c.req.path;
+  const description = isJa
+    ? "HonoXとhono-decksで作る、登壇資料をそのまま掲載できるポートフォリオ実装例"
+    : "A HonoX and hono-decks portfolio example that publishes presentations alongside the rest of the site.";
+  return (
+    <html lang={locale}>
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="description" content={description} />
+        <meta name="theme-color" content="#111216" />
+        <meta property="og:type" content="website" />
+        <meta property="og:locale" content={isJa ? "ja_JP" : "en_US"} />
+        <meta property="og:title" content="ts-76 Talks — HonoX + hono-decks" />
+        <meta
+          property="og:description"
+          content={
+            isJa
+              ? "HonoXのページと登壇資料を、ひとつのHonoアプリから公開する。"
+              : "Publish HonoX pages and presentations from one Hono application."
+          }
+        />
+        <link rel="alternate" hreflang="ja" href={localizedHref(currentPath, "ja")} />
+        <link rel="alternate" hreflang="en" href={localizedHref(currentPath, "en")} />
+        <title>ts-76 Talks — HonoX + hono-decks</title>
+        <style>{pageStyle}</style>
+      </head>
+      <body>
+        <a class="skip-link" href="#main-content">
+          {isJa ? "本文へ移動" : "Skip to content"}
         </a>
-        <nav aria-label="Primary navigation">
-          <a href="#talks">Talks</a>
-          <a href="/decks">Deck index</a>
-          <a href="https://github.com/ts-76/hono-decks">GitHub ↗</a>
-        </nav>
-      </header>
-      {children}
-      <footer class="site-footer">
-        <p>Built with HonoX and hono-decks.</p>
-        <a href="https://github.com/ts-76/hono-decks">View source ↗</a>
-      </footer>
-    </body>
-  </html>
-));
+        <header class="site-header">
+          <a class="site-brand" href={localizedHref("/", locale)} aria-label="ts-76 Talks home">
+            <span aria-hidden="true">H</span>
+            <strong>ts-76 / Talks</strong>
+          </a>
+          <nav aria-label={isJa ? "メインナビゲーション" : "Primary navigation"}>
+            <a class="site-talks-link" href="#talks">
+              {isJa ? "登壇資料" : "Talks"}
+            </a>
+            <a class="site-deck-index-link" href={localizedHref("/decks", locale)}>
+              {isJa ? "デッキ一覧" : "Deck index"}
+            </a>
+            <span class="site-language-switcher" aria-label={isJa ? "言語" : "Language"} role="group">
+              <a href={localizedHref(currentPath, "ja")} lang="ja" aria-current={isJa ? "true" : undefined}>
+                JA
+              </a>
+              <span aria-hidden="true">/</span>
+              <a href={localizedHref(currentPath, "en")} lang="en" aria-current={!isJa ? "true" : undefined}>
+                EN
+              </a>
+            </span>
+            <a href="https://github.com/ts-76/hono-decks">GitHub ↗</a>
+          </nav>
+        </header>
+        {children}
+        <footer class="site-footer">
+          <p>{isJa ? "HonoXとhono-decksで構築。" : "Built with HonoX and hono-decks."}</p>
+          <a href="https://github.com/ts-76/hono-decks">{isJa ? "ソースを見る" : "View source"} ↗</a>
+        </footer>
+      </body>
+    </html>
+  );
+});
 
 const pageStyle = `
 :root {
@@ -65,6 +99,9 @@ a { color: inherit; }
 .site-header nav { display: flex; align-items: center; gap: 28px; font-size: .84rem; font-weight: 650; }
 .site-header nav a { padding: 28px 0; text-decoration: none; }
 .site-header nav a:hover { color: #ff9b70; }
+.site-language-switcher { display: inline-flex; align-items: center; gap: 6px; }
+.site-header .site-language-switcher a { padding: 0; opacity: .58; }
+.site-header .site-language-switcher a[aria-current] { opacity: 1; color: #ff9b70; }
 .portfolio-hero { min-height: 720px; display: grid; background: var(--ink); color: white; }
 .portfolio-hero-inner { display: grid; width: min(var(--content), calc(100% - 48px)); grid-template-columns: minmax(0, 1fr) minmax(320px, .6fr); gap: clamp(48px, 8vw, 112px); align-items: end; margin: 0 auto; padding: 176px 0 92px; }
 .portfolio-intro { margin: 0 0 22px; color: #ff9b70; font-size: .82rem; font-weight: 720; }
@@ -99,7 +136,7 @@ a { color: inherit; }
 .site-footer { display: flex; width: min(var(--content), calc(100% - 48px)); min-height: 110px; align-items: center; justify-content: space-between; margin: 0 auto; color: var(--ink-soft); font-size: .8rem; }
 .site-footer a { font-weight: 700; text-decoration: none; }
 @media (max-width: 820px) {
-  .site-header nav a:first-child { display: none; }
+  .site-talks-link { display: none; }
   .portfolio-hero-inner, .talk-feature, .portfolio-note { grid-template-columns: 1fr; }
   .portfolio-hero-inner { align-items: end; padding-top: 150px; }
   .talk-preview { padding-right: 0; border-right: 0; }
@@ -109,7 +146,7 @@ a { color: inherit; }
 @media (max-width: 560px) {
   .site-header { width: min(100% - 32px, var(--content)); }
   .site-header nav { gap: 16px; }
-  .site-header nav a:nth-child(2) { display: none; }
+  .site-deck-index-link { display: none; }
   .portfolio-hero-inner, .talks, .site-footer { width: min(100% - 32px, var(--content)); }
   .portfolio-hero h1 { font-size: clamp(3.2rem, 17vw, 4.8rem); }
   .portfolio-facts { grid-template-columns: 1fr; }

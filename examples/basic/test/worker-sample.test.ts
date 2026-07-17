@@ -106,8 +106,47 @@ describe("sample Worker app", () => {
     expect(html).toContain('class="sample-home-hero"');
     expect(html).toContain("Slides belong");
     expect(html).toContain("--sample-accent: #ff6b2c");
-    expect(html).toContain('href="/decks"');
-    expect(html).toContain('href="/decks/sample/about"');
+    expect(html).toContain('href="/decks?lang=en"');
+    expect(html).toContain('href="/decks/sample/about?lang=en"');
+  });
+
+  it("localizes Basic pages from query, cookie, and Accept-Language", async () => {
+    const app = await sampleApp();
+    const ja = await app.request("https://basic.example/?lang=ja");
+    const cookie = await app.request("https://basic.example/decks", {
+      headers: { cookie: "language=ja" },
+    });
+    const header = await app.request("https://basic.example/decks/sample/about", {
+      headers: { "accept-language": "ja-JP,ja;q=0.9" },
+    });
+    const fallback = await app.request("https://basic.example/", {
+      headers: { "accept-language": "fr-FR" },
+    });
+
+    const jaHtml = await ja.text();
+    expect(jaHtml).toContain('<html lang="ja">');
+    expect(jaHtml).toContain("スライドを、");
+    expect(jaHtml).toContain('href="/decks?lang=ja"');
+    expect(jaHtml).toContain('href="/?lang=en"');
+    expect(ja.headers.get("set-cookie")).toContain("language=ja");
+
+    const cookieHtml = await cookie.text();
+    expect(cookieHtml).toContain('<html lang="ja"');
+    expect(cookieHtml).toContain("デッキ一覧 — Hono Decks Basic");
+    expect(cookieHtml).toContain('href="/decks/sample?lang=ja"');
+    expect(cookieHtml).not.toContain("<iframe");
+
+    expect(await header.text()).toContain('<html lang="ja">');
+    expect(await fallback.text()).toContain('<html lang="en">');
+  });
+
+  it("passes the selected locale to generated deck surfaces", async () => {
+    const app = await sampleApp();
+    const jaViewer = await app.request("/decks/sample?lang=ja");
+    const enPrint = await app.request("/decks/sample/print?lang=en");
+
+    expect(await jaViewer.text()).toContain('<html lang="ja">');
+    expect(await enPrint.text()).toContain('<html lang="en"');
   });
 
   it("renders a production-quality deck catalog", async () => {
@@ -129,8 +168,8 @@ describe("sample Worker app", () => {
     expect(html).toContain('data-deck-art="sample"');
     expect(html).not.toContain("<iframe");
     expect(html).not.toContain("/embed");
-    expect(html).toContain('href="/decks/sample/presentation"');
-    expect(html).toContain('href="/decks/sample/about"');
+    expect(html).toContain('href="/decks/sample/presentation?lang=en"');
+    expect(html).toContain('href="/decks/sample/about?lang=en"');
   });
 
   it("serves the sample deck as a public viewer without edit controls", async () => {
@@ -303,7 +342,7 @@ describe("sample Worker app", () => {
 
     expect(response.status).toBe(200);
     const html = await response.text();
-    expect(html).toContain("<title>Hono Slides - Details</title>");
+    expect(html).toContain("<title>Hono Slides — Details</title>");
     expect(html).toContain(
       '<meta name="description" content="Hono + Cloudflare Workersで届ける、アプリと一体化したMDXスライド"/>',
     );
@@ -314,7 +353,7 @@ describe("sample Worker app", () => {
     expect(html).toContain('<meta property="og:url" content="/decks/sample"/>');
     expect(html).toContain('data-sample-layout="deck-details"');
     expect(html).toContain("decks/sample/deck.mdx");
-    expect(html).toContain('href="/decks/sample/render"');
+    expect(html).toContain('href="/decks/sample/render?lang=en"');
   });
 
   it("serves a minimal external iframe document with a same-origin default policy", async () => {

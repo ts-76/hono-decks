@@ -44,9 +44,46 @@ describe("HonoX example", () => {
 
     expect(response.status).toBe(200);
     expect(html).toContain("HonoX + hono-decks");
-    expect(html).toContain('href="/decks/honox"');
-    expect(html).toContain('src="/decks/honox/embed"');
+    expect(html).toContain('href="/decks/honox?lang=en"');
+    expect(html).toContain('src="/decks/honox/embed?lang=en"');
     expect(html).toContain("Talks built close to the code.");
+  });
+
+  it("localizes HonoX pages from query, cookie, and Accept-Language", async () => {
+    const ja = await app.request("https://honox.example/?lang=ja");
+    const cookie = await app.request("https://honox.example/decks", {
+      headers: { cookie: "language=ja" },
+    });
+    const header = await app.request("https://honox.example/", {
+      headers: { "accept-language": "ja-JP,ja;q=0.9" },
+    });
+    const fallback = await app.request("https://honox.example/", {
+      headers: { "accept-language": "fr-FR" },
+    });
+
+    const jaHtml = await ja.text();
+    expect(jaHtml).toContain('<html lang="ja">');
+    expect(jaHtml).toContain("コードのそばで、登壇資料をつくる。");
+    expect(jaHtml).toContain('href="/decks?lang=ja"');
+    expect(jaHtml).toContain('href="/?lang=en"');
+    expect(ja.headers.get("set-cookie")).toContain("language=ja");
+
+    const cookieHtml = await cookie.text();
+    expect(cookieHtml).toContain('<html lang="ja"');
+    expect(cookieHtml).toContain("登壇資料一覧 — ts-76 Talks");
+    expect(cookieHtml).toContain('href="/decks/honox?lang=ja"');
+    expect(cookieHtml).not.toContain("<iframe");
+
+    expect(await header.text()).toContain('<html lang="ja">');
+    expect(await fallback.text()).toContain('<html lang="en">');
+  });
+
+  it("passes the selected locale to HonoX deck surfaces", async () => {
+    const jaViewer = await app.request("/decks/honox?lang=ja");
+    const enPrint = await app.request("/decks/honox/print?lang=en");
+
+    expect(await jaViewer.text()).toContain('<html lang="ja">');
+    expect(await enPrint.text()).toContain('<html lang="en"');
   });
 
   it("mounts the generated deck router from a file route", async () => {
@@ -65,8 +102,8 @@ describe("HonoX example", () => {
     expect(indexHtml).toContain('class="archive-talk-poster"');
     expect(indexHtml).not.toContain("<iframe");
     expect(indexHtml).not.toContain("/embed");
-    expect(indexHtml).toContain('href="/decks/honox/presentation"');
-    expect(indexHtml).toContain('href="/decks/honox/print"');
+    expect(indexHtml).toContain('href="/decks/honox/presentation?lang=en"');
+    expect(indexHtml).toContain('href="/decks/honox/print?lang=en"');
     expect(viewer.status).toBe(200);
     expect(await viewer.text()).toContain('src="/decks/honox/render"');
     expect(render.status).toBe(200);

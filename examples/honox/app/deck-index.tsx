@@ -1,20 +1,33 @@
 import type { CompiledDeck, DeckPaths } from "hono-decks";
+import { localizedHref, type Locale } from "./i18n";
 
 type DeckPathResolver = (slug: string) => DeckPaths;
 
-export function renderHonoXDeckIndexPage(input: { decks: CompiledDeck[]; paths: DeckPathResolver }) {
+export function renderHonoXDeckIndexPage(input: { decks: CompiledDeck[]; paths: DeckPathResolver; locale: Locale }) {
+  const isJa = input.locale === "ja";
   return (
     <>
       <a class="archive-skip" href="#published-talks">
-        登壇資料へ移動
+        {isJa ? "登壇資料へ移動" : "Skip to published talks"}
       </a>
       <header class="archive-header">
-        <a class="archive-brand" href="/" aria-label="ts-76 Talks home">
+        <a class="archive-brand" href={localizedHref("/", input.locale)} aria-label="ts-76 Talks home">
           <span aria-hidden="true">H</span>
           <strong>ts-76 / Talks</strong>
         </a>
-        <nav aria-label="Archive navigation">
-          <a href="/">Portfolio</a>
+        <nav aria-label={isJa ? "アーカイブナビゲーション" : "Archive navigation"}>
+          <a class="archive-portfolio-link" href={localizedHref("/", input.locale)}>
+            Portfolio
+          </a>
+          <span class="archive-language-switcher" aria-label={isJa ? "言語" : "Language"} role="group">
+            <a href={localizedHref("/decks", "ja")} lang="ja" aria-current={isJa ? "true" : undefined}>
+              JA
+            </a>
+            <span aria-hidden="true">/</span>
+            <a href={localizedHref("/decks", "en")} lang="en" aria-current={!isJa ? "true" : undefined}>
+              EN
+            </a>
+          </span>
           <a href="https://github.com/ts-76/hono-decks">GitHub ↗</a>
         </nav>
       </header>
@@ -28,7 +41,11 @@ export function renderHonoXDeckIndexPage(input: { decks: CompiledDeck[]; paths: 
               <br />
               archive.
             </h1>
-            <span>登壇資料を、ポートフォリオと同じHonoXアプリから届ける。</span>
+            <span>
+              {isJa
+                ? "登壇資料を、ポートフォリオと同じHonoXアプリから届ける。"
+                : "Publish presentations from the same HonoX application as the portfolio."}
+            </span>
           </div>
           <div class="archive-poster" aria-hidden="true">
             <span>HonoX</span>
@@ -39,10 +56,17 @@ export function renderHonoXDeckIndexPage(input: { decks: CompiledDeck[]; paths: 
 
         <section id="published-talks" class="published-talks" aria-labelledby="published-talks-title">
           <header class="published-talks-heading">
-            <h2 id="published-talks-title">Published talks</h2>
+            <h2 id="published-talks-title">{isJa ? "公開中の登壇資料" : "Published talks"}</h2>
             <p>
-              {input.decks.length === 1 ? "1 presentation" : `${input.decks.length} presentations`} —
-              viewer、発表画面、印刷レイアウトを同じMDXから生成。
+              {isJa
+                ? `${input.decks.length}件の登壇資料`
+                : input.decks.length === 1
+                  ? "1 presentation"
+                  : `${input.decks.length} presentations`}{" "}
+              —{" "}
+              {isJa
+                ? "viewer、発表画面、印刷レイアウトを同じMDXから生成。"
+                : "viewer, presentation, and print layouts generated from the same MDX."}
             </p>
           </header>
 
@@ -52,41 +76,56 @@ export function renderHonoXDeckIndexPage(input: { decks: CompiledDeck[]; paths: 
               const title = deck.meta.title ?? deck.slug;
               return (
                 <article class="archive-talk">
-                  <a class="archive-talk-preview" href={paths.viewer} aria-label={`${title}を開く`}>
+                  <a
+                    class="archive-talk-preview"
+                    href={localizedHref(paths.viewer, input.locale)}
+                    aria-label={isJa ? `${title}を開く` : `Open ${title}`}
+                  >
                     <span class="archive-talk-poster">
-                      <small>HonoX portfolio pattern</small>
+                      <small>{isJa ? "HonoXポートフォリオパターン" : "HonoX portfolio pattern"}</small>
                       <strong>
                         HonoX +<br />
                         hono-decks
                       </strong>
                       <i aria-hidden="true">X</i>
-                      <b>Pages and presentations, one Hono application.</b>
+                      <b>
+                        {isJa
+                          ? "ページと登壇資料を、1つのHonoアプリで。"
+                          : "Pages and presentations, one Hono application."}
+                      </b>
                     </span>
                   </a>
                   <div class="archive-talk-copy">
                     <p class="archive-talk-meta">
                       {deck.meta.date ? (
-                        <time datetime={deck.meta.date}>{formatArchiveDate(deck.meta.date)}</time>
+                        <time datetime={deck.meta.date}>{formatArchiveDate(deck.meta.date, input.locale)}</time>
                       ) : null}
-                      <span>{deck.slides.length} slides</span>
+                      <span>{isJa ? `${deck.slides.length}枚` : `${deck.slides.length} slides`}</span>
                     </p>
                     <h3>{title}</h3>
-                    {deck.meta.description ? <p class="archive-talk-description">{deck.meta.description}</p> : null}
+                    <p class="archive-talk-description">
+                      {isJa
+                        ? "HonoXのポートフォリオに、登壇資料をそのまま組み込む"
+                        : "Embed a presentation directly in a HonoX portfolio."}
+                    </p>
                     {deck.meta.tags?.length ? (
-                      <ul class="archive-talk-tags" aria-label={`${title} topics`}>
+                      <ul class="archive-talk-tags" aria-label={isJa ? `${title}のトピック` : `${title} topics`}>
                         {deck.meta.tags.map((tag) => (
                           <li>{tag}</li>
                         ))}
                       </ul>
                     ) : null}
-                    <nav class="archive-talk-actions" aria-label={`${title} presentation links`}>
-                      <a class="primary" href={paths.viewer}>
-                        スライドを見る <span aria-hidden="true">→</span>
+                    <nav
+                      class="archive-talk-actions"
+                      aria-label={isJa ? `${title}の登壇資料リンク` : `${title} presentation links`}
+                    >
+                      <a class="primary" href={localizedHref(paths.viewer, input.locale)}>
+                        {isJa ? "スライドを見る" : "View slides"} <span aria-hidden="true">→</span>
                       </a>
-                      <a href={paths.presentation}>
-                        発表画面 <span aria-hidden="true">↗</span>
+                      <a href={localizedHref(paths.presentation, input.locale)}>
+                        {isJa ? "発表画面" : "Presentation"} <span aria-hidden="true">↗</span>
                       </a>
-                      <a href={paths.print}>印刷表示</a>
+                      <a href={localizedHref(paths.print, input.locale)}>{isJa ? "印刷表示" : "Print view"}</a>
                     </nav>
                   </div>
                 </article>
@@ -97,45 +136,70 @@ export function renderHonoXDeckIndexPage(input: { decks: CompiledDeck[]; paths: 
 
         <section class="archive-method" aria-labelledby="archive-method-title">
           <h2 id="archive-method-title">
-            The deck is
+            {isJa ? "デッキも" : "The deck is"}
             <br />
-            part of the site.
+            {isJa ? "サイトの一部。" : "part of the site."}
           </h2>
           <div>
-            <p>資料だけを別サービスへ切り離さず、プロフィール、登壇履歴、SEO、共有URLと一緒に育てられる構成です。</p>
+            <p>
+              {isJa
+                ? "資料だけを別サービスへ切り離さず、プロフィール、登壇履歴、SEO、共有URLと一緒に育てられる構成です。"
+                : "Keep talks together with your profile, speaking history, SEO, and shareable URLs instead of moving them to a separate service."}
+            </p>
             <code>app/routes/decks/index.ts</code>
           </div>
         </section>
       </main>
 
       <footer class="archive-footer">
-        <p>Built with HonoX and hono-decks.</p>
-        <a href="/">Portfolioへ戻る</a>
+        <p>{isJa ? "HonoXとhono-decksで構築。" : "Built with HonoX and hono-decks."}</p>
+        <a href={localizedHref("/", input.locale)}>{isJa ? "Portfolioへ戻る" : "Back to portfolio"}</a>
       </footer>
     </>
   );
 }
 
-export function renderHonoXDeckIndexHead() {
+export function renderHonoXDeckIndexHead(locale: Locale) {
+  const isJa = locale === "ja";
   return (
     <>
-      <meta name="description" content="ts-76の登壇資料をHonoXポートフォリオから閲覧できるトークアーカイブ" />
+      <meta
+        name="description"
+        content={
+          isJa
+            ? "ts-76の登壇資料をHonoXポートフォリオから閲覧できるトークアーカイブ"
+            : "A talk archive published from the ts-76 HonoX portfolio."
+        }
+      />
       <meta name="theme-color" content="#111216" />
       <meta property="og:type" content="website" />
-      <meta property="og:title" content="Talk archive — ts-76 Talks" />
-      <meta property="og:description" content="HonoXとhono-decksで公開する登壇資料アーカイブ" />
+      <meta property="og:locale" content={isJa ? "ja_JP" : "en_US"} />
+      <meta property="og:title" content={isJa ? "登壇資料一覧 — ts-76 Talks" : "Talk archive — ts-76 Talks"} />
+      <meta
+        property="og:description"
+        content={
+          isJa
+            ? "HonoXとhono-decksで公開する登壇資料アーカイブ"
+            : "A presentation archive powered by HonoX and hono-decks."
+        }
+      />
+      <link rel="alternate" hreflang="ja" href={localizedHref("/decks", "ja")} />
+      <link rel="alternate" hreflang="en" href={localizedHref("/decks", "en")} />
       <style id="honox-deck-index-css">{honoXDeckIndexStyle}</style>
     </>
   );
 }
 
-function formatArchiveDate(value: string): string {
+function formatArchiveDate(value: string, locale: Locale): string {
   const date = new Date(`${value}T00:00:00Z`);
   return Number.isNaN(date.valueOf())
     ? value
-    : new Intl.DateTimeFormat("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: "UTC" }).format(
-        date,
-      );
+    : new Intl.DateTimeFormat(locale === "ja" ? "ja-JP" : "en", {
+        year: "numeric",
+        month: locale === "ja" ? "2-digit" : "short",
+        day: "numeric",
+        timeZone: "UTC",
+      }).format(date);
 }
 
 const honoXDeckIndexStyle = `
@@ -168,6 +232,9 @@ a { color: inherit; }
 .archive-header nav { display: flex; gap: 28px; font-size: .82rem; font-weight: 680; }
 .archive-header nav a { padding: 30px 0; text-decoration: none; }
 .archive-header nav a:hover { color: var(--archive-accent-soft); }
+.archive-language-switcher { display: inline-flex; align-items: center; gap: 6px; }
+.archive-header .archive-language-switcher a { padding: 0; opacity: .58; }
+.archive-header .archive-language-switcher a[aria-current] { opacity: 1; color: var(--archive-accent-soft); }
 .talk-archive { margin-top: -82px; }
 .archive-hero { display: grid; min-height: 720px; grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr); gap: clamp(48px, 8vw, 120px); align-items: center; background: var(--archive-ink); padding: 154px max(24px, calc((100vw - var(--archive-content)) / 2)) 88px; color: var(--archive-copy); }
 .archive-hero-copy > p { margin: 0 0 24px; color: var(--archive-accent-soft); font-size: .82rem; font-weight: 720; }
@@ -218,7 +285,7 @@ a { color: inherit; }
 @media (max-width: 560px) {
   .archive-header, .archive-footer { width: min(var(--archive-content), calc(100% - 32px)); }
   .archive-header nav { gap: 16px; }
-  .archive-header nav a:first-child { display: none; }
+  .archive-portfolio-link { display: none; }
   .archive-hero { padding-right: 16px; padding-left: 16px; }
   .archive-hero-copy h1 { font-size: clamp(3.7rem, 18vw, 5rem); }
   .published-talks { padding-right: 16px; padding-left: 16px; }

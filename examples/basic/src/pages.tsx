@@ -8,43 +8,57 @@ import {
   type DeckRenderable,
   type DeckTocItem,
 } from "hono-decks";
+import { localizedHref, type Locale } from "./i18n";
 
 type DeckPathResolver = (slug: string) => DeckPaths;
 
-export function renderHomePage(decks: DeckEntry[]) {
+export function renderHomePage(decks: DeckEntry[], locale: Locale) {
+  const isJa = locale === "ja";
   return (
-    <SampleLayout title="Hono Decks Basic" layout="home">
+    <SampleLayout title="Hono Decks Basic" layout="home" locale={locale} path="/">
       <section class="sample-home-hero" aria-labelledby="sample-home-title">
         <div>
           <p class="sample-home-intro">Hono + MDX + Cloudflare Workers</p>
           <h1 id="sample-home-title">
-            Slides belong
+            {isJa ? "スライドを、" : "Slides belong"}
             <br />
-            <span>inside your app.</span>
+            <span>{isJa ? "アプリの中に。" : "inside your app."}</span>
           </h1>
         </div>
         <div class="sample-home-summary">
-          <p>hono-decks は登壇資料を別サービスへ切り離さず、Honoアプリのルートとして公開するための実装例です。</p>
-          <nav class="sample-actions" aria-label="Primary">
-            <a class="primary" href="/decks">
-              Explore the deck lab <span aria-hidden="true">→</span>
+          <p>
+            {isJa
+              ? "hono-decks は登壇資料を別サービスへ切り離さず、Honoアプリのルートとして公開するための実装例です。"
+              : "hono-decks keeps presentations inside your Hono application instead of moving them to a separate service."}
+          </p>
+          <nav class="sample-actions" aria-label={isJa ? "主要リンク" : "Primary links"}>
+            <a class="primary" href={localizedHref("/decks", locale)}>
+              {isJa ? "デッキ一覧を見る" : "Explore the deck lab"} <span aria-hidden="true">→</span>
             </a>
-            <a href="/decks/sample/about">How it is wired</a>
+            <a href={localizedHref("/decks/sample/about", locale)}>{isJa ? "構成を見る" : "How it is wired"}</a>
           </nav>
         </div>
       </section>
 
       <section class="sample-home-decks" aria-labelledby="sample-home-decks-title">
         <header>
-          <h2 id="sample-home-decks-title">Built to prove it.</h2>
-          <p>同じWorkerで動く4つの資料。コード、メディア、モーション、アプリ統合をそれぞれ確認できます。</p>
+          <h2 id="sample-home-decks-title">{isJa ? "実装を確かめる。" : "Built to prove it."}</h2>
+          <p>
+            {isJa
+              ? "同じWorkerで動く4つの資料。コード、メディア、モーション、アプリ統合をそれぞれ確認できます。"
+              : "Four decks on one Worker, covering code, media, motion, and application integration."}
+          </p>
         </header>
         <ul>
           {decks.map((deck) => (
             <li>
-              <a href={`/decks/${encodeURIComponent(deck.slug)}`}>
+              <a href={localizedHref(`/decks/${encodeURIComponent(deck.slug)}`, locale)}>
                 <span>{deck.title ?? deck.slug}</span>
-                <small>{deck.description ?? "Open presentation"}</small>
+                <small>
+                  {localizedDeckDescription(deck.slug, locale) ??
+                    deck.description ??
+                    (isJa ? "資料を開く" : "Open presentation")}
+                </small>
                 <strong aria-hidden="true">↗</strong>
               </a>
             </li>
@@ -54,14 +68,15 @@ export function renderHomePage(decks: DeckEntry[]) {
 
       <section class="sample-home-system" aria-labelledby="sample-home-system-title">
         <h2 id="sample-home-system-title">
-          Author in MDX.
+          {isJa ? "MDXで書く。" : "Author in MDX."}
           <br />
-          Own the runtime.
+          {isJa ? "ランタイムを所有する。" : "Own the runtime."}
         </h2>
         <div>
           <p>
-            compile時に生成したdeck
-            routerを、通常のHonoルートと同じアプリへmount。配信、埋め込み、印刷、発表画面までURL設計を自分で所有できます。
+            {isJa
+              ? "compile時に生成したdeck routerを、通常のHonoルートと同じアプリへmount。配信、埋め込み、印刷、発表画面までURL設計を自分で所有できます。"
+              : "Mount the deck router generated at compile time beside your regular Hono routes. You own the URLs for delivery, embedding, printing, and presenting."}
           </p>
           <code>app.route(decks.mountPath, decks.router())</code>
         </div>
@@ -70,7 +85,8 @@ export function renderHomePage(decks: DeckEntry[]) {
   );
 }
 
-export function renderDeckIndexPage(input: { decks: CompiledDeck[]; paths: DeckPathResolver }) {
+export function renderDeckIndexPage(input: { decks: CompiledDeck[]; paths: DeckPathResolver; locale: Locale }) {
+  const isJa = input.locale === "ja";
   const priority = new Map(["sample", "code", "media", "motion"].map((slug, index) => [slug, index]));
   const decks = [...input.decks].sort(
     (left, right) =>
@@ -81,33 +97,37 @@ export function renderDeckIndexPage(input: { decks: CompiledDeck[]; paths: DeckP
   return (
     <>
       <a class="deck-index-skip" href="#deck-catalog">
-        Skip to deck catalog
+        {isJa ? "デッキ一覧へ移動" : "Skip to deck catalog"}
       </a>
       <header class="deck-index-header">
-        <a class="deck-index-brand" href="/" aria-label="Hono Decks Basic home">
+        <a class="deck-index-brand" href={localizedHref("/", input.locale)} aria-label="Hono Decks Basic home">
           <span aria-hidden="true">H</span>
           <strong>Hono Decks / Basic</strong>
         </a>
-        <nav aria-label="Deck index navigation">
-          <a href="#deck-catalog">All decks</a>
-          <a href="https://github.com/ts-76/hono-decks">Source ↗</a>
+        <nav aria-label={isJa ? "デッキ一覧ナビゲーション" : "Deck index navigation"}>
+          <a class="deck-index-all-link" href="#deck-catalog">
+            {isJa ? "全デッキ" : "All decks"}
+          </a>
+          <LanguageSwitcher locale={input.locale} path="/decks" className="deck-language-switcher" />
+          <a href="https://github.com/ts-76/hono-decks">{isJa ? "ソース" : "Source"} ↗</a>
         </nav>
       </header>
 
       <main class="deck-index-main">
         <section class="deck-index-hero" aria-labelledby="deck-index-title">
           <div>
-            <p class="deck-index-intro">A working catalog for Hono + MDX</p>
+            <p class="deck-index-intro">{isJa ? "Hono + MDXの動くカタログ" : "A working catalog for Hono + MDX"}</p>
             <h1 id="deck-index-title">
-              Four decks.
+              {isJa ? "4つのデッキ。" : "Four decks."}
               <br />
-              <span>One edge runtime.</span>
+              <span>{isJa ? "1つのエッジランタイム。" : "One edge runtime."}</span>
             </h1>
           </div>
           <div class="deck-index-summary">
             <p>
-              Code、media、motion、custom components。hono-decks
-              の主要な表現を、それぞれ独立した登壇資料として確認できます。
+              {isJa
+                ? "Code、media、motion、custom components。hono-decksの主要な表現を、それぞれ独立した登壇資料として確認できます。"
+                : "Explore code, media, motion, and custom components as four independent presentation examples."}
             </p>
             <dl>
               <div>
@@ -119,13 +139,16 @@ export function renderDeckIndexPage(input: { decks: CompiledDeck[]; paths: DeckP
                 <dd>MDX + Hono JSX</dd>
               </div>
               <div>
-                <dt>Collection</dt>
-                <dd>{decks.length} compiled decks</dd>
+                <dt>{isJa ? "コレクション" : "Collection"}</dt>
+                <dd>{isJa ? `${decks.length}件のコンパイル済みデッキ` : `${decks.length} compiled decks`}</dd>
               </div>
             </dl>
             {featured ? (
-              <a class="deck-index-hero-link" href={input.paths(featured.slug).viewer}>
-                Start with {featured.meta.title ?? featured.slug} <span aria-hidden="true">→</span>
+              <a class="deck-index-hero-link" href={localizedHref(input.paths(featured.slug).viewer, input.locale)}>
+                {isJa
+                  ? `${featured.meta.title ?? featured.slug}から見る`
+                  : `Start with ${featured.meta.title ?? featured.slug}`}{" "}
+                <span aria-hidden="true">→</span>
               </a>
             ) : null}
           </div>
@@ -133,8 +156,12 @@ export function renderDeckIndexPage(input: { decks: CompiledDeck[]; paths: DeckP
 
         <section id="deck-catalog" class="deck-catalog" aria-labelledby="deck-catalog-title">
           <header class="deck-catalog-heading">
-            <h2 id="deck-catalog-title">Deck catalog</h2>
-            <p>各資料を閲覧・発表・印刷できる、軽量な静的カタログです。</p>
+            <h2 id="deck-catalog-title">{isJa ? "デッキ一覧" : "Deck catalog"}</h2>
+            <p>
+              {isJa
+                ? "各資料を閲覧・発表・印刷できる、軽量な静的カタログです。"
+                : "A lightweight static catalog for viewing, presenting, and printing every deck."}
+            </p>
           </header>
 
           <div class="deck-showcase-list">
@@ -142,40 +169,48 @@ export function renderDeckIndexPage(input: { decks: CompiledDeck[]; paths: DeckP
               const paths = input.paths(deck.slug);
               const title = deck.meta.title ?? deck.slug;
               const tags = deck.meta.tags ?? [];
+              const description = localizedDeckDescription(deck.slug, input.locale) ?? deck.meta.description;
               return (
                 <article class={`deck-showcase deck-showcase--${deck.slug}`}>
-                  <a class="deck-showcase-preview" href={paths.viewer} aria-label={`Open ${title}`}>
-                    <span class="deck-poster-label">{deckPosterLabel(deck.slug)}</span>
+                  <a
+                    class="deck-showcase-preview"
+                    href={localizedHref(paths.viewer, input.locale)}
+                    aria-label={isJa ? `${title}を開く` : `Open ${title}`}
+                  >
+                    <span class="deck-poster-label">{deckPosterLabel(deck.slug, input.locale)}</span>
                     <strong>{title}</strong>
                     <span class="deck-poster-art" data-deck-art={deck.slug} aria-hidden="true">
                       {renderDeckPosterArt(deck.slug)}
                     </span>
                     <small>
-                      {deck.slides.length} slides <span aria-hidden="true">→</span>
+                      {isJa ? `${deck.slides.length}枚` : `${deck.slides.length} slides`}{" "}
+                      <span aria-hidden="true">→</span>
                     </small>
                   </a>
                   <div class="deck-showcase-copy">
                     <div class="deck-showcase-meta">
-                      {deck.meta.date ? <time datetime={deck.meta.date}>{formatDeckDate(deck.meta.date)}</time> : null}
-                      <span>{deck.slides.length} slides</span>
+                      {deck.meta.date ? (
+                        <time datetime={deck.meta.date}>{formatDeckDate(deck.meta.date, input.locale)}</time>
+                      ) : null}
+                      <span>{isJa ? `${deck.slides.length}枚` : `${deck.slides.length} slides`}</span>
                     </div>
                     <h3>{title}</h3>
-                    {deck.meta.description ? <p>{deck.meta.description}</p> : null}
+                    {description ? <p>{description}</p> : null}
                     {tags.length > 0 ? (
-                      <ul class="deck-showcase-tags" aria-label={`${title} topics`}>
+                      <ul class="deck-showcase-tags" aria-label={isJa ? `${title}のトピック` : `${title} topics`}>
                         {tags.map((tag) => (
                           <li>{tag}</li>
                         ))}
                       </ul>
                     ) : null}
-                    <nav class="deck-showcase-actions" aria-label={`${title} actions`}>
-                      <a class="primary" href={paths.viewer}>
-                        View deck <span aria-hidden="true">→</span>
+                    <nav class="deck-showcase-actions" aria-label={isJa ? `${title}の操作` : `${title} actions`}>
+                      <a class="primary" href={localizedHref(paths.viewer, input.locale)}>
+                        {isJa ? "資料を見る" : "View deck"} <span aria-hidden="true">→</span>
                       </a>
-                      <a href={paths.presentation}>
-                        Present <span aria-hidden="true">↗</span>
+                      <a href={localizedHref(paths.presentation, input.locale)}>
+                        {isJa ? "発表画面" : "Present"} <span aria-hidden="true">↗</span>
                       </a>
-                      <a href={`${paths.viewer}/about`}>Details</a>
+                      <a href={localizedHref(`${paths.viewer}/about`, input.locale)}>{isJa ? "詳細" : "Details"}</a>
                     </nav>
                   </div>
                 </article>
@@ -186,39 +221,65 @@ export function renderDeckIndexPage(input: { decks: CompiledDeck[]; paths: DeckP
       </main>
 
       <footer class="deck-index-footer">
-        <p>Compiled at build time. Served from the edge.</p>
-        <a href="/">Back to Basic example</a>
+        <p>{isJa ? "ビルド時にコンパイルし、エッジから配信。" : "Compiled at build time. Served from the edge."}</p>
+        <a href={localizedHref("/", input.locale)}>{isJa ? "Basicのトップへ戻る" : "Back to Basic example"}</a>
       </footer>
     </>
   );
 }
 
-export function renderDeckIndexHead() {
+export function renderDeckIndexHead(locale: Locale) {
+  const isJa = locale === "ja";
   return (
     <>
       <meta
         name="description"
-        content="Four production-ready hono-decks examples for code, media, motion, and Hono integration."
+        content={
+          isJa
+            ? "コード、メディア、モーション、Hono統合を扱う4つのhono-decks実装例"
+            : "Four production-ready hono-decks examples for code, media, motion, and Hono integration."
+        }
       />
       <meta name="theme-color" content="#111216" />
-      <meta property="og:title" content="Deck Lab — Hono Decks Basic" />
+      <meta property="og:locale" content={isJa ? "ja_JP" : "en_US"} />
+      <meta property="og:title" content={isJa ? "デッキ一覧 — Hono Decks Basic" : "Deck Lab — Hono Decks Basic"} />
       <meta
         property="og:description"
-        content="Explore four MDX presentation patterns running on Hono and Cloudflare Workers."
+        content={
+          isJa
+            ? "HonoとCloudflare Workersで動く4つのMDXプレゼンテーションパターン"
+            : "Explore four MDX presentation patterns running on Hono and Cloudflare Workers."
+        }
       />
+      <link rel="alternate" hreflang="ja" href={localizedHref("/decks", "ja")} />
+      <link rel="alternate" hreflang="en" href={localizedHref("/decks", "en")} />
       <style id="basic-deck-index-css">{basicDeckIndexStyle}</style>
     </>
   );
 }
 
-function formatDeckDate(value: string): string {
+function formatDeckDate(value: string, locale: Locale): string {
   const date = new Date(`${value}T00:00:00Z`);
   return Number.isNaN(date.valueOf())
     ? value
-    : new Intl.DateTimeFormat("en", { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }).format(date);
+    : new Intl.DateTimeFormat(locale === "ja" ? "ja-JP" : "en", {
+        year: "numeric",
+        month: locale === "ja" ? "2-digit" : "short",
+        day: "numeric",
+        timeZone: "UTC",
+      }).format(date);
 }
 
-function deckPosterLabel(slug: string): string {
+function deckPosterLabel(slug: string, locale: Locale): string {
+  if (locale === "ja")
+    return (
+      {
+        sample: "Hono + MDX + Workers",
+        code: "コードのシンタックスハイライト",
+        media: "アセットとソーシャルメディア",
+        motion: "動きとreduced-motion",
+      }[slug] ?? "hono-decksの登壇資料"
+    );
   return (
     {
       sample: "Hono + MDX + Workers",
@@ -227,6 +288,24 @@ function deckPosterLabel(slug: string): string {
       motion: "Motion with reduced-motion",
     }[slug] ?? "hono-decks presentation"
   );
+}
+
+function localizedDeckDescription(slug: string, locale: Locale): string | undefined {
+  const descriptions = {
+    ja: {
+      sample: "Hono + Cloudflare Workersで届ける、アプリと一体化したMDXスライド",
+      code: "Shikiで強調表示したコードを、固定16:9キャンバスで読みやすく見せる",
+      media: "ローカルアセット、R2、動画、SNS投稿、リンクカードを1つの資料に",
+      motion: "スライド遷移、段階表示、Islandをreduced-motion対応で実装",
+    },
+    en: {
+      sample: "An MDX deck delivered as part of a Hono application on Cloudflare Workers.",
+      code: "Make Shiki-highlighted code readable on a fixed 16:9 canvas.",
+      media: "Local assets, R2, video, social posts, and link cards in one deck.",
+      motion: "Slide transitions, staged reveals, and islands with reduced-motion support.",
+    },
+  } as const;
+  return descriptions[locale][slug as keyof (typeof descriptions)[Locale]];
 }
 
 function renderDeckPosterArt(slug: string) {
@@ -244,13 +323,21 @@ function renderDeckPosterArt(slug: string) {
   return <b>↗</b>;
 }
 
-export function renderDeckDetailsPage(input: { deck: CompiledDeck; meta: DeckPageMeta; toc: DeckTocItem[] }) {
+export function renderDeckDetailsPage(input: {
+  deck: CompiledDeck;
+  meta: DeckPageMeta;
+  toc: DeckTocItem[];
+  locale: Locale;
+}) {
   const description = input.meta.description;
+  const isJa = input.locale === "ja";
 
   return (
     <SampleLayout
-      title={`${input.meta.title} - Details`}
+      title={`${input.meta.title} — ${isJa ? "詳細" : "Details"}`}
       layout="deck-details"
+      locale={input.locale}
+      path={`${input.meta.paths.viewer}/about`}
       head={
         <>
           {description ? <meta name="description" content={description} /> : null}
@@ -262,28 +349,30 @@ export function renderDeckDetailsPage(input: { deck: CompiledDeck; meta: DeckPag
       }
     >
       <section class="sample-page-section">
-        <p class="sample-kicker">Deck details</p>
+        <p class="sample-kicker">{isJa ? "デッキ詳細" : "Deck details"}</p>
         <h1>{input.meta.title}</h1>
         {input.meta.description ? <p>{input.meta.description}</p> : null}
         <dl class="sample-meta-list">
           <div>
-            <dt>Source</dt>
+            <dt>{isJa ? "ソース" : "Source"}</dt>
             <dd>{input.deck.sourcePath}</dd>
           </div>
           <div>
-            <dt>Slides</dt>
+            <dt>{isJa ? "枚数" : "Slides"}</dt>
             <dd>{input.deck.slides.length}</dd>
           </div>
         </dl>
-        <nav class="sample-actions" aria-label="Deck actions">
-          <a href={input.meta.paths.viewer}>Open viewer</a>
-          <a href={input.meta.paths.render}>Open render page</a>
-          <a href={input.meta.paths.print}>Open print page</a>
-          <a href={input.meta.paths.embed}>Embed view</a>
+        <nav class="sample-actions" aria-label={isJa ? "デッキ操作" : "Deck actions"}>
+          <a href={localizedHref(input.meta.paths.viewer, input.locale)}>{isJa ? "ビューアー" : "Open viewer"}</a>
+          <a href={localizedHref(input.meta.paths.render, input.locale)}>
+            {isJa ? "レンダー画面" : "Open render page"}
+          </a>
+          <a href={localizedHref(input.meta.paths.print, input.locale)}>{isJa ? "印刷画面" : "Open print page"}</a>
+          <a href={localizedHref(input.meta.paths.embed, input.locale)}>{isJa ? "埋め込み表示" : "Embed view"}</a>
         </nav>
       </section>
       <section class="sample-page-section">
-        <h2>Table of contents</h2>
+        <h2>{isJa ? "目次" : "Table of contents"}</h2>
         <ol class="sample-toc">
           {input.toc.map((slide) => (
             <li>
@@ -297,39 +386,66 @@ export function renderDeckDetailsPage(input: { deck: CompiledDeck; meta: DeckPag
   );
 }
 
-function SampleLayout(props: { title: string; layout: string; head?: DeckRenderable; children?: DeckRenderable }) {
+function SampleLayout(props: {
+  title: string;
+  layout: string;
+  locale: Locale;
+  path: string;
+  head?: DeckRenderable;
+  children?: DeckRenderable;
+}) {
+  const isJa = props.locale === "ja";
   return (
-    <html lang="ja">
+    <html lang={props.locale}>
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>{props.title}</title>
+        <link rel="alternate" hreflang="ja" href={localizedHref(props.path, "ja")} />
+        <link rel="alternate" hreflang="en" href={localizedHref(props.path, "en")} />
         {props.head}
         <style id="hono-css">{samplePageStyle}</style>
       </head>
       <body>
         <a class="sample-skip" href="#main-content">
-          本文へ移動
+          {isJa ? "本文へ移動" : "Skip to content"}
         </a>
         <main data-sample-layout={props.layout}>
           <header class="sample-page-header">
-            <a class="sample-page-brand" href="/" aria-label="Hono Decks Basic home">
+            <a class="sample-page-brand" href={localizedHref("/", props.locale)} aria-label="Hono Decks Basic home">
               <span aria-hidden="true">H</span>
               <strong>Hono Decks / Basic</strong>
             </a>
-            <nav aria-label="Sample">
-              <a href="/decks">Deck lab</a>
-              <a href="/decks/sample/about">Details</a>
+            <nav aria-label={isJa ? "サンプルナビゲーション" : "Sample navigation"}>
+              <a href={localizedHref("/decks", props.locale)}>{isJa ? "デッキ一覧" : "Deck lab"}</a>
+              <a class="sample-details-link" href={localizedHref("/decks/sample/about", props.locale)}>
+                {isJa ? "詳細" : "Details"}
+              </a>
+              <LanguageSwitcher locale={props.locale} path={props.path} className="sample-language-switcher" />
             </nav>
           </header>
           <div id="main-content">{props.children}</div>
           <footer class="sample-page-footer">
-            <p>Compiled at build time. Served from the edge.</p>
-            <a href="https://github.com/ts-76/hono-decks">View source ↗</a>
+            <p>{isJa ? "ビルド時にコンパイルし、エッジから配信。" : "Compiled at build time. Served from the edge."}</p>
+            <a href="https://github.com/ts-76/hono-decks">{isJa ? "ソースを見る" : "View source"} ↗</a>
           </footer>
         </main>
       </body>
     </html>
+  );
+}
+
+function LanguageSwitcher(props: { locale: Locale; path: string; className: string }) {
+  return (
+    <span class={props.className} aria-label={props.locale === "ja" ? "言語" : "Language"} role="group">
+      <a href={localizedHref(props.path, "ja")} lang="ja" aria-current={props.locale === "ja" ? "true" : undefined}>
+        JA
+      </a>
+      <span aria-hidden="true">/</span>
+      <a href={localizedHref(props.path, "en")} lang="en" aria-current={props.locale === "en" ? "true" : undefined}>
+        EN
+      </a>
+    </span>
   );
 }
 
@@ -363,6 +479,9 @@ a { color: inherit; }
 .sample-page-header nav { display: flex; gap: 28px; font-size: .82rem; font-weight: 680; }
 .sample-page-header nav a { padding: 30px 0; text-decoration: none; }
 .sample-page-header nav a:hover { color: var(--sample-accent-soft); }
+.sample-language-switcher, .deck-language-switcher { display: inline-flex; align-items: center; gap: 6px; }
+.sample-page-header .sample-language-switcher a, .deck-index-header .deck-language-switcher a { padding: 0; opacity: .58; }
+.sample-language-switcher a[aria-current], .deck-language-switcher a[aria-current] { opacity: 1; color: var(--sample-accent-soft); }
 .sample-home-hero { display: grid; width: min(var(--sample-content), calc(100% - 48px)); min-height: 640px; grid-template-columns: minmax(0, 1.25fr) minmax(320px, .75fr); gap: clamp(48px, 8vw, 120px); align-items: end; margin: 0 auto; padding: clamp(96px, 12vw, 164px) 0 88px; }
 .sample-home-intro { margin: 0 0 24px; color: var(--sample-accent-soft); font-size: .84rem; font-weight: 720; }
 .sample-home-hero h1 { max-width: 11ch; margin: 0; font-size: clamp(3.8rem, 7.4vw, 6rem); letter-spacing: -.04em; line-height: .9; text-wrap: balance; }
@@ -415,7 +534,7 @@ a { color: inherit; }
 @media (max-width: 560px) {
   .sample-page-header, .sample-home-hero, .sample-page-section, .sample-page-footer { width: min(var(--sample-content), calc(100% - 32px)); }
   .sample-page-header nav { gap: 16px; }
-  .sample-page-header nav a:last-child { display: none; }
+  .sample-details-link { display: none; }
   .sample-home-hero h1 { font-size: clamp(3.2rem, 16vw, 4.6rem); }
   .sample-home-decks, .sample-home-system { padding-right: 16px; padding-left: 16px; }
   .sample-page-footer { align-items: flex-start; flex-direction: column; justify-content: center; }
@@ -459,6 +578,7 @@ a { color: inherit; }
 .deck-index-header nav { display: flex; gap: 28px; font-size: .82rem; font-weight: 680; }
 .deck-index-header nav a { padding: 30px 0; text-decoration: none; }
 .deck-index-header nav a:hover { color: var(--deck-index-accent-soft); }
+.deck-language-switcher a[aria-current] { color: var(--deck-index-accent-soft); }
 .deck-index-main { overflow: hidden; }
 .deck-index-hero { display: grid; width: min(var(--deck-index-content), calc(100% - 48px)); min-height: 650px; grid-template-columns: minmax(0, 1.3fr) minmax(320px, .7fr); gap: clamp(48px, 8vw, 120px); align-items: end; margin: 0 auto; padding: clamp(100px, 12vw, 174px) 0 88px; }
 .deck-index-intro { margin: 0 0 24px; color: var(--deck-index-accent-soft); font-size: .84rem; font-weight: 720; }
@@ -522,7 +642,7 @@ a { color: inherit; }
 @media (max-width: 560px) {
   .deck-index-header, .deck-index-hero, .deck-index-footer { width: min(var(--deck-index-content), calc(100% - 32px)); }
   .deck-index-header nav { gap: 16px; }
-  .deck-index-header nav a:first-child { display: none; }
+  .deck-index-all-link { display: none; }
   .deck-index-hero h1 { font-size: clamp(3.25rem, 16vw, 4.7rem); }
   .deck-index-summary dl div { grid-template-columns: 80px minmax(0, 1fr); }
   .deck-catalog { padding-right: 16px; padding-left: 16px; }
