@@ -7,9 +7,28 @@ export default defineDecksConfig({
     embed: {
       document: { lang: "en" },
       robots: false,
-      viewer: { controls: { items: (controls) => [controls.fullscreen] } },
+      viewer: {
+        controls: {
+          items: (_controls, context) => [
+            {
+              type: "link",
+              key: "open-viewer",
+              href: context.meta.paths.viewer,
+              label: "Open full viewer",
+              icon: "fullscreen",
+              attributes: {
+                "aria-label": "Open full viewer",
+                "data-hono-decks-viewer-link": true,
+                target: "_blank",
+                rel: "noreferrer",
+              },
+            },
+          ],
+        },
+      },
     },
-    pages: { index: false, viewer: false, print: false, presentation: false, presenter: false },
+    pages: { index: false, viewer: true, print: false, presentation: false, presenter: false },
+    viewer: { controls: { items: (controls) => [controls.fullscreen] } },
     presenter: false,
   },
 });
