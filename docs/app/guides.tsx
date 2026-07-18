@@ -322,7 +322,7 @@ const gettingStarted = (locale: Locale): Guide => locale === "ja" ? {
   title: "導入",
   description: "パッケージを追加し、最初のデッキをHonoアプリで表示するまでの手順です。",
   sections: [
-    { id: "prerequisites", label: "Hono 4のアプリ" },
+    { id: "prerequisites", label: "Honoアプリ" },
     { id: "install", label: "インストール" },
     { id: "deck", label: "最初のデッキ" },
     { id: "mount", label: "ルーターの登録" },
@@ -333,8 +333,8 @@ const gettingStarted = (locale: Locale): Guide => locale === "ja" ? {
   ],
   content: <>
     <section id="prerequisites">
-      <h2>Hono 4のアプリを用意する</h2>
-      <p>npm、pnpm、Yarn、Bunのいずれかと、起動できるHono 4アプリが必要です。この手順が終わると、2枚のスライドを<code>/decks/welcome</code>で表示できます。</p>
+      <h2>Honoアプリを用意する</h2>
+      <p>npm、pnpm、Yarn、Bunのいずれかと、起動できるHonoアプリが必要です。この手順が終わると、2枚のスライドを<code>/decks/welcome</code>で表示できます。</p>
       <Callout title="コンパイルと配信は分かれています"><p>MDXの変換はローカルの開発・ビルド環境で行います。Honoアプリは生成済みモジュールを読み込むため、Cloudflare Workers上でファイルシステムへアクセスする必要はありません。</p></Callout>
     </section>
     <section id="install">
@@ -392,7 +392,7 @@ const gettingStarted = (locale: Locale): Guide => locale === "ja" ? {
   title: "Get started",
   description: "Compile an MDX deck, mount the generated router in an existing Hono application, and verify it in your browser.",
   sections: [
-    { id: "prerequisites", label: "Hono 4 app" },
+    { id: "prerequisites", label: "Hono app" },
     { id: "install", label: "Install" },
     { id: "deck", label: "First deck" },
     { id: "mount", label: "Mount the router" },
@@ -402,7 +402,7 @@ const gettingStarted = (locale: Locale): Guide => locale === "ja" ? {
     { id: "next", label: "Next steps" },
   ],
   content: <>
-    <section id="prerequisites"><h2>Start with a working Hono 4 app</h2><p>You need npm, pnpm, Yarn, or Bun and a Hono 4 app that already runs. By the end of this guide, it will serve a two-slide deck at <code>/decks/welcome</code>.</p><Callout title="Compilation and delivery are separate"><p>Compile MDX in your local development or build environment. The Hono app imports generated modules, so the deployed Worker does not need filesystem access.</p></Callout></section>
+    <section id="prerequisites"><h2>Start with a working Hono app</h2><p>You need npm, pnpm, Yarn, or Bun and a Hono app that already runs. By the end of this guide, it will serve a two-slide deck at <code>/decks/welcome</code>.</p><Callout title="Compilation and delivery are separate"><p>Compile MDX in your local development or build environment. The Hono app imports generated modules, so the deployed Worker does not need filesystem access.</p></Callout></section>
     <section id="install"><h2>Install the package and create the config</h2><p>The example uses npm. <code>init</code> creates the shared <code>hono-decks.config.ts</code> and the app-owned <code>src/decks.ts</code> facade. It refuses to overwrite existing files.</p><CodeBlock label="Terminal" code={installCode} locale={locale} /><PackageManagerTable locale={locale} /><p>Replace <code>&lt;command&gt;</code> with <code>init</code> or <code>compile</code>, and use the same package manager for the remaining examples.</p></section>
     <section id="deck"><h2>Create and compile the first deck</h2><p>Create <code>decks/welcome/deck.mdx</code>. The first frontmatter block describes the whole deck; the next <code>---</code> starts slide one.</p><CodeBlock label="decks/welcome/deck.mdx" code={firstDeckCode} locale={locale} /><p>Compile the MDX into Hono JSX modules. A successful run creates <code>src/generated/</code>.</p><CodeBlock label="Terminal" code={compileCode} locale={locale} /><CodeBlock label="Generated files" code={expectedFiles(locale)} locale={locale} /><p>Edit <code>src/decks.ts</code> and <code>deck.mdx</code> as needed. Never edit <code>src/generated/</code>; each compile replaces it.</p></section>
     <section id="mount"><h2>Mount the generated router in Hono</h2><p>Add the generated router to the existing Hono app.</p><CodeBlock code={mountCode} locale={locale} /><p><code>decks.mountPath</code> comes from the shared config, keeping compile-time assets and runtime routes on the same public path.</p></section>

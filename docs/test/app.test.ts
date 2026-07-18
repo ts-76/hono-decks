@@ -85,10 +85,10 @@ describe("HonoX documentation site", () => {
     const noPreference = await app.request("https://docs.example/");
 
     expect(queryHtml).toContain('<html lang="en">');
-    expect(queryHtml).toContain("Start with a working Hono 4 app");
+    expect(queryHtml).toContain("Start with a working Hono app");
     expect(queryHtml).toContain('href="/docs/getting-started?lang=ja"');
     expect(query.headers.get("set-cookie")).toContain("language=en");
-    expect(await cookie.text()).toContain("Start with a working Hono 4 app");
+    expect(await cookie.text()).toContain("Start with a working Hono app");
     expect(await header.text()).toContain("Get started");
     expect(await fallback.text()).toContain('<html lang="en">');
     expect(await noPreference.text()).toContain('<html lang="en">');
