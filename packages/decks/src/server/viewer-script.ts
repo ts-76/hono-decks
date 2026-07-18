@@ -17,6 +17,7 @@ export function renderViewerScript(nonce?: string): string {
     const iframe = root.querySelector("iframe");
     const frameOrigin = iframe?.src ? new URL(iframe.src, window.location.href).origin : window.location.origin;
     const position = root.querySelector("[data-slide-position]");
+    const viewerLinks = Array.from(root.querySelectorAll("[data-hono-decks-viewer-link]"));
     const printPath = root.getAttribute("data-hono-decks-print-path") || "";
 
     if (position && viewport) viewport.append(position);
@@ -72,6 +73,14 @@ export function renderViewerScript(nonce?: string): string {
       params.set("slide", String(message.index + 1));
       params.set("step", String(Number.isInteger(message.stepIndex) ? message.stepIndex : 0));
       window.history.replaceState(null, "", url);
+      for (const link of viewerLinks) {
+        const href = link.getAttribute("href");
+        if (!href) continue;
+        const viewerUrl = new URL(href, window.location.href);
+        viewerUrl.searchParams.set("slide", params.get("slide"));
+        viewerUrl.searchParams.set("step", params.get("step"));
+        link.setAttribute("href", viewerUrl.href);
+      }
     }
 
     function handleMessage(event) {

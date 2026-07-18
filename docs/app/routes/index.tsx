@@ -64,7 +64,7 @@ export default createRoute((c) => {
                 ? "MDXから生成したデッキを、このページと同じHonoXアプリに組み込んでいます。タッチ端末では左右の矢印、PCでは矢印キーで操作できます。"
                 : "This deck is compiled from MDX and mounted in the same HonoX app as this page. Use the edge arrows on touch devices or the arrow keys on desktop."}
             </p>
-            <a href="/demo/product/embed" target="_blank" rel="noreferrer">
+            <a href="/demo/product" target="_blank" rel="noreferrer">
               {isJa ? "別ページで開く" : "Open full size"} <span aria-hidden="true">↗</span>
             </a>
           </div>

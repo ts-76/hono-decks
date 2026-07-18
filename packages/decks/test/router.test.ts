@@ -347,6 +347,11 @@ describe("decksRouter", () => {
     });
     expect(enabled.status).toBe(200);
     expect(enabled.headers.get("content-security-policy")).toBe("frame-ancestors 'self'");
+    const html = await enabled.text();
+    expect(html).toContain(".hono-decks-embedded-viewer{width:100%;height:100%;min-height:0;overflow:hidden}");
+    expect(html).toContain(
+      ".hono-decks-embedded-viewer .hono-decks-viewer-shell{position:relative;height:100%;grid-template-rows:minmax(0,1fr);overflow:hidden}",
+    );
   });
 
   it("keeps viewer pagination in query parameters", async () => {
@@ -737,6 +742,8 @@ describe("decksRouter", () => {
     );
     expect(html).toContain("[data-hono-decks-viewer][data-hono-decks-embed] *:focus-visible{outline:none}");
     expect(html).toContain("data-hono-decks-viewer-runtime");
+    expect(html).toContain('root.querySelectorAll("[data-hono-decks-viewer-link]")');
+    expect(html).toContain('link.setAttribute("href", viewerUrl.href)');
     expect(html).toContain('data-hono-decks-print-path="/slides/deck1/print"');
     expect(html).toContain('class="hono-decks-embedded-viewer product-tour"');
     expect(second.embedHtml).toContain('data-hono-decks-embed-style nonce="embed-nonce"');

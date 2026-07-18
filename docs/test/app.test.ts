@@ -59,6 +59,7 @@ describe("HonoX documentation site", () => {
     expect(html).toContain("閲覧・発表・発表者・印刷の各画面を既存のHonoアプリに追加します");
     expect(html).toContain('href="/docs/getting-started?lang=ja"');
     expect(html).toContain('src="/demo/product/embed"');
+    expect(html).toContain('href="/demo/product"');
     expect(html).toContain('href="/api?lang=ja"');
     expect(html).toContain("ルートと画面");
     expect(html).toContain("セキュリティ");
@@ -122,9 +123,13 @@ describe("HonoX documentation site", () => {
     expect(embed.headers.get("content-security-policy")).toContain("frame-ancestors 'self'");
     expect(embedHtml).toContain("data-hono-decks-external-embed-document");
     expect(embedHtml).toContain("/demo/product/render");
+    expect(embedHtml).toContain('href="/demo/product"');
+    expect(embedHtml).toContain('data-hono-decks-viewer-link="true"');
+    expect(embedHtml).toContain('aria-label="Open full viewer"');
     expect(render.status).toBe(200);
     expect(renderHtml).toContain("MDX slides, served by Hono.");
-    expect(viewer.status).toBe(404);
+    expect(viewer.status).toBe(200);
+    expect(await viewer.text()).toContain('data-hono-decks-navigation-control="fullscreen"');
   });
 
   it("separates shared configuration from optional build and export recipes", async () => {
