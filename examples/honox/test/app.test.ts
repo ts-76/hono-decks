@@ -110,5 +110,15 @@ describe("HonoX example", () => {
     expect(await render.text()).toContain("Pages and presentations,");
     expect(embed.status).toBe(200);
     expect(embed.headers.get("content-security-policy")).toBe("frame-ancestors 'self' https://hono-decks.com");
+    const embedHtml = await embed.text();
+    expect(embedHtml).not.toContain('data-hono-decks-viewer-link="true"');
+    expect(embedHtml).toContain("data-hono-decks-back-link");
+    expect(embedHtml).toContain('data-action="previous"');
+    expect(embedHtml).toContain('data-slide-position="true"');
+    expect(embedHtml).toContain('data-action="next"');
+    expect(embedHtml).toContain('data-action="fullscreen"');
+    expect(embedHtml).toContain('data-hono-decks-print="true"');
+    expect(embedHtml).not.toContain('data-hono-decks-export="pdf"');
+    expect(embedHtml).not.toContain('data-hono-decks-export="png"');
   });
 });

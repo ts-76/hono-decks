@@ -62,6 +62,7 @@ export default defineDecksConfig<DecksConfigEnv>({
       frameAncestors: ({ c }) => c.env?.DECK_EMBED_ALLOWED_ORIGINS,
       viewer: {
         className: "sample-external-deck-embed",
+        controls: { hidden: ["exportPdf", "exportPng"] },
       },
     },
     viewer: {
