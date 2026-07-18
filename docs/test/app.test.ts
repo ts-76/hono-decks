@@ -310,10 +310,10 @@ describe("HonoX documentation site", () => {
     expect(html).not.toContain('aria-disabled="true"');
     expect(html).not.toContain("サンプル準備中");
     expect(css).toMatch(/\.cloudflare-deploy\s*\{[^}]*display:\s*inline-flex/);
-    expect(css).toMatch(/\.cloudflare-deploy\s*\{[^}]*border:\s*0/);
-    expect(css).toMatch(/\.cloudflare-deploy\s*\{[^}]*background:\s*transparent/);
-    expect(css).toMatch(/\.cloudflare-deploy\s*\{[^}]*padding:\s*0/);
-    expect(css).toMatch(/\.cloudflare-deploy\s*\{[^}]*border-radius:\s*0/);
+    expect(css).toMatch(/\.cloudflare-deploy\s*\{[^}]*border:\s*0\s*;/);
+    expect(css).toMatch(/\.cloudflare-deploy\s*\{[^}]*background:\s*transparent\s*;/);
+    expect(css).toMatch(/\.cloudflare-deploy\s*\{[^}]*padding:\s*0\s*;/);
+    expect(css).toMatch(/\.cloudflare-deploy\s*\{[^}]*border-radius:\s*0\s*;/);
     expect(css).toMatch(/\.cloudflare-deploy\s+img\s*\{[^}]*display:\s*block/);
   });
 
