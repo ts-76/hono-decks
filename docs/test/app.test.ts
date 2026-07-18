@@ -125,7 +125,8 @@ describe("HonoX documentation site", () => {
     expect(embedHtml).toContain("/demo/product/render");
     expect(embedHtml).toContain('href="/demo/product"');
     expect(embedHtml).toContain('data-hono-decks-viewer-link="true"');
-    expect(embedHtml).toContain('aria-label="Open full viewer"');
+    expect(embedHtml).toContain('aria-label="Open full viewer in new tab"');
+    expect(embedHtml).toContain('d="M15 3h6v6"');
     expect(render.status).toBe(200);
     expect(renderHtml).toContain("MDX slides, served by Hono.");
     expect(viewer.status).toBe(200);
