@@ -457,6 +457,9 @@ button {
 
 .cloudflare-deploy img {
   display: block;
+  width: 244px;
+  max-width: 100%;
+  height: auto;
 }
 
 .cloudflare-deploy.is-disabled {

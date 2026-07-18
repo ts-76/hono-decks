@@ -355,6 +355,13 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("window.opener.postMessage(state, window.location.origin)");
     expect(html).toContain("function next()");
     expect(html).toContain("function previous()");
+    expect(html).toContain("function handleTouchStart(event)");
+    expect(html).toContain("function handleTouchEnd(event)");
+    expect(html).toContain("target.closest(\"a,button,input,select,textarea,[contenteditable],[role='button']\")");
+    expect(html).toContain("const threshold = Math.max(48, window.innerWidth * 0.08)");
+    expect(html).toContain('handleCommand(deltaX < 0 ? "next" : "previous")');
+    expect(html).toContain('document.addEventListener("touchstart", handleTouchStart, { passive: true })');
+    expect(html).toContain('document.addEventListener("touchend", handleTouchEnd, { passive: true })');
     expect(html).toContain("const isAtDeckEnd = index >= slides.length - 1 && stepIndex >= stepCount");
     expect(html).toContain("if (isAtDeckEnd) return");
     expect(html).toContain("if (stepIndex < stepCount)");

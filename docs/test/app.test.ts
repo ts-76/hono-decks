@@ -321,6 +321,8 @@ describe("HonoX documentation site", () => {
     expect(css).toMatch(/\.cloudflare-deploy\s*\{[^}]*padding:\s*0\s*;/);
     expect(css).toMatch(/\.cloudflare-deploy\s*\{[^}]*border-radius:\s*0\s*;/);
     expect(css).toMatch(/\.cloudflare-deploy\s+img\s*\{[^}]*display:\s*block/);
+    expect(css).toMatch(/\.cloudflare-deploy\s+img\s*\{[^}]*width:\s*244px/);
+    expect(css).toMatch(/\.cloudflare-deploy\s+img\s*\{[^}]*max-width:\s*100%/);
   });
 
   it("uses button-controlled SP navigation without details or summary", async () => {

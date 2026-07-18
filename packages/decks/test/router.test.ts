@@ -268,8 +268,10 @@ describe("decksRouter", () => {
     ).text();
     expect(disabledEmbed).not.toContain('data-hono-decks-print="true"');
     expect(disabledEmbed).not.toContain(' data-hono-decks-print-path="');
-    expect(enabledEmbed).toContain('data-hono-decks-print="true"');
+    expect(enabledEmbed).not.toContain('data-hono-decks-print="true"');
     expect(enabledEmbed).toContain('data-hono-decks-print-path="/slides/deck1/print"');
+    expect(enabledEmbed).toContain('data-hono-decks-viewer-link="true"');
+    expect(enabledEmbed).toContain('href="/slides/deck1"');
     expect((await app.request("/slides/deck1/print")).status).toBe(404);
     expect((await app.request("/slides/deck1/print", { headers: { "x-print-enabled": "1" } })).status).toBe(200);
   });
@@ -352,6 +354,13 @@ describe("decksRouter", () => {
     expect(html).toContain(
       ".hono-decks-embedded-viewer .hono-decks-viewer-shell{position:relative;height:100%;grid-template-rows:minmax(0,1fr);overflow:hidden}",
     );
+    expect(html).toContain('data-hono-decks-viewer-link="true"');
+    expect(html).toContain('aria-label="Open full viewer in new tab"');
+    expect(html).toContain('href="/slides/deck1"');
+    expect(html).not.toContain('data-action="previous"');
+    expect(html).not.toContain('data-action="next"');
+    expect(html).not.toContain('data-action="fullscreen"');
+    expect(html).not.toContain('data-hono-decks-print="true"');
   });
 
   it("keeps viewer pagination in query parameters", async () => {

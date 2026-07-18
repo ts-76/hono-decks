@@ -62,7 +62,6 @@ export default defineDecksConfig<DecksConfigEnv>({
       frameAncestors: ({ c }) => c.env?.DECK_EMBED_ALLOWED_ORIGINS,
       viewer: {
         className: "sample-external-deck-embed",
-        controls: { items: (controls) => [controls.previous, controls.position, controls.next, controls.fullscreen] },
       },
     },
     viewer: {
@@ -70,27 +69,35 @@ export default defineDecksConfig<DecksConfigEnv>({
       controls: {
         className: "sample-viewer-controls",
         itemClassName: "sample-viewer-control",
-        before: [{
-          type: "link",
-          href: "/",
-          label: "Home",
-          icon: "home",
-          attributes: { "data-sample-control": "home" },
-        }],
-        after: (context) => [{
-          type: "link",
-          href: `${context.meta.paths.viewer}/about`,
-          label: "Details",
-          icon: "details",
-          attributes: { "data-sample-control": "details" },
-        }],
+        before: [
+          {
+            type: "link",
+            href: "/",
+            label: "Home",
+            icon: "home",
+            attributes: { "data-sample-control": "home" },
+          },
+        ],
+        after: (context) => [
+          {
+            type: "link",
+            href: `${context.meta.paths.viewer}/about`,
+            label: "Details",
+            icon: "details",
+            attributes: { "data-sample-control": "details" },
+          },
+        ],
       },
     },
     export: {
       authorize: ({ c }) => {
         const token = c.env?.DECK_EXPORT_TOKEN;
         const authorization = c.req.header("authorization");
-        return typeof token === "string" && token.length > 0 && authorization?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim() === token;
+        return (
+          typeof token === "string" &&
+          token.length > 0 &&
+          authorization?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim() === token
+        );
       },
       browser: ({ c }) => c.env?.BROWSER,
       pdf: true,

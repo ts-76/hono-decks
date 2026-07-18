@@ -46,7 +46,7 @@ describe("HonoX example", () => {
     expect(html).toContain("HonoX + hono-decks");
     expect(html).toContain('href="/decks/honox?lang=en"');
     expect(html).toContain('src="/decks/honox/embed?lang=en"');
-    expect(html).toContain("Talks built close to the code.");
+    expect(html).toContain("Publish talks with HonoX");
   });
 
   it("localizes HonoX pages from query, cookie, and Accept-Language", async () => {
@@ -63,7 +63,7 @@ describe("HonoX example", () => {
 
     const jaHtml = await ja.text();
     expect(jaHtml).toContain('<html lang="ja">');
-    expect(jaHtml).toContain("コードのそばで、登壇資料をつくる。");
+    expect(jaHtml).toContain("HonoXで登壇資料を公開する");
     expect(jaHtml).toContain('href="/decks?lang=ja"');
     expect(jaHtml).toContain('href="/?lang=en"');
     expect(ja.headers.get("set-cookie")).toContain("language=ja");

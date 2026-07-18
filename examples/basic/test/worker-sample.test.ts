@@ -20,10 +20,7 @@ describe("sample Worker app", () => {
   it("keeps generated deck imports behind a sample facade", async () => {
     const entrySource = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
     const facadeSource = await readFile(new URL("../src/decks.ts", import.meta.url), "utf8");
-    const configSource = await readFile(
-      new URL("../hono-decks.config.ts", import.meta.url),
-      "utf8",
-    );
+    const configSource = await readFile(new URL("../hono-decks.config.ts", import.meta.url), "utf8");
     const packageSource = await readFile(new URL("../package.json", import.meta.url), "utf8");
     const pagesSource = await readFile(new URL("../src/pages.tsx", import.meta.url), "utf8");
 
@@ -87,12 +84,8 @@ describe("sample Worker app", () => {
       slug: "sample",
       sourcePath: "decks/sample/deck.mdx",
     });
-    expect(sampleDeck?.slides[0]?.notes).toContain(
-      "Introduce the clean projection route for talks.",
-    );
-    expect(sampleDeck?.slides[1]?.notes).toContain(
-      "Use the presenter route for notes and next-slide preview.",
-    );
+    expect(sampleDeck?.slides[0]?.notes).toContain("Introduce the clean projection route for talks.");
+    expect(sampleDeck?.slides[1]?.notes).toContain("Use the presenter route for notes and next-slide preview.");
     expect(typeof decks.router).toBe("function");
   });
 
@@ -111,7 +104,7 @@ describe("sample Worker app", () => {
     expect(html).toContain('data-sample-layout="home"');
     expect(html).toContain("color-scheme: dark");
     expect(html).toContain('class="sample-home-hero"');
-    expect(html).toContain("Slides belong");
+    expect(html).toContain("Publish slides with Hono");
     expect(html).toContain("--sample-accent: #ff6b2c");
     expect(html).toContain('href="/decks?lang=en"');
     expect(html).toContain('href="/decks/sample/about?lang=en"');
@@ -132,7 +125,7 @@ describe("sample Worker app", () => {
 
     const jaHtml = await ja.text();
     expect(jaHtml).toContain('<html lang="ja">');
-    expect(jaHtml).toContain("スライドを、");
+    expect(jaHtml).toContain("Honoでスライドを公開する");
     expect(jaHtml).toContain('href="/decks?lang=ja"');
     expect(jaHtml).toContain('href="/?lang=en"');
     expect(ja.headers.get("set-cookie")).toContain("language=ja");
@@ -184,7 +177,7 @@ describe("sample Worker app", () => {
     expect(html).toContain('id="basic-deck-index-css"');
     expect(html).toContain('class="deck-index-hero"');
     expect(html).toContain('id="deck-catalog"');
-    expect(html).toContain("Four decks.");
+    expect(html).toContain("Four sample decks");
     expect(html).toContain("Hono Slides");
     expect(html).toContain("Code Verification");
     expect(html).toContain("Media Verification");
@@ -211,9 +204,7 @@ describe("sample Worker app", () => {
     expect(html).not.toContain("DESIGN_WIDTH");
     expect(html).not.toContain("stage.style.transform");
     expect(html).toContain('id="hono-css"');
-    expect(html).toContain(
-      "linear-gradient(145deg, oklch(99% 0 0) 0%, oklch(94% 0 0) 58%, oklch(88% 0 0) 100%)",
-    );
+    expect(html).toContain("linear-gradient(145deg, oklch(99% 0 0) 0%, oklch(94% 0 0) 58%, oklch(88% 0 0) 100%)");
     expect(html).toContain("color: #111827");
     expect(html).not.toContain("radial-gradient(circle at top, #1e2b5c, #050816 62%)");
     expect(html).toContain("border-radius: 8px");
@@ -251,12 +242,8 @@ describe("sample Worker app", () => {
     expect(html).toContain('orientation.lock("landscape")');
     expect(html).not.toContain('href="/decks/sample/presenter"');
     expect(html).not.toContain('data-sample-control="presenter"');
-    expect(html.indexOf('data-sample-control="home"')).toBeLessThan(
-      html.indexOf('data-action="previous"'),
-    );
-    expect(html.indexOf('data-action="next"')).toBeLessThan(
-      html.indexOf('data-sample-control="details"'),
-    );
+    expect(html.indexOf('data-sample-control="home"')).toBeLessThan(html.indexOf('data-action="previous"'));
+    expect(html.indexOf('data-action="next"')).toBeLessThan(html.indexOf('data-sample-control="details"'));
     expect(html).not.toContain('href="/decks/sample/export.pdf"');
     expect(html).not.toContain('data-hono-decks-export="pdf"');
     expect(html).not.toContain('href="/decks/sample/export.png"');
@@ -280,9 +267,7 @@ describe("sample Worker app", () => {
     expect(projectionHtml).toContain("data-hono-decks-stage");
     expect(projectionHtml).not.toContain("data-hono-decks-viewer-controls");
     expect(projectionHtml).not.toContain("Introduce the clean projection route for talks.");
-    expect(projectionHtml).not.toContain(
-      "Use the presenter route for notes and next-slide preview.",
-    );
+    expect(projectionHtml).not.toContain("Use the presenter route for notes and next-slide preview.");
 
     expect(disabledPresenter.status).toBe(404);
 
@@ -412,7 +397,12 @@ describe("sample Worker app", () => {
     expect(html).toContain("data-hono-decks-viewer-runtime");
     expect(html).toContain('data-hono-decks-print-path="/decks/sample/print"');
     expect(html).toContain("for (const root of roots)");
-    expect(html).toContain('data-action="fullscreen"');
+    expect(html).toContain('data-hono-decks-viewer-link="true"');
+    expect(html).toContain('aria-label="Open full viewer in new tab"');
+    expect(html).toContain('href="/decks/sample"');
+    expect(html).not.toContain('data-action="previous"');
+    expect(html).not.toContain('data-action="next"');
+    expect(html).not.toContain('data-action="fullscreen"');
     expect(html).not.toContain("data-hono-decks-back-link");
     expect(html).not.toContain('data-hono-decks-print="true"');
     expect(html).not.toContain('data-sample-layout="deck-embed"');
@@ -474,9 +464,7 @@ describe("sample Worker app", () => {
     expect(html).toContain(".layout-media {");
     expect(html).toContain("background: #07111f;");
     expect(html).not.toContain(".slide{box-sizing:border-box;aspect-ratio:16/9;border:");
-    expect(html).not.toContain(
-      ".hono-decks-stage{width:100vw;height:100vh;overflow:hidden;background:",
-    );
+    expect(html).not.toContain(".hono-decks-stage{width:100vw;height:100vh;overflow:hidden;background:");
     expect(html).toContain('src="/decks/media/assets/local-jsx.svg"');
     expect(html).toContain('alt="Local JSX asset"');
     expect(html).toContain('src="/decks/media/assets/r2-remote.svg"');
@@ -486,20 +474,14 @@ describe("sample Worker app", () => {
     expect(html).toContain('src="https://www.youtube.com/embed/dQw4w9WgXcQ"');
     expect(html).toContain('title="YouTube embed example"');
     expect(html).toContain('loading="lazy"');
-    expect(html).toContain(
-      'sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"',
-    );
+    expect(html).toContain('sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"');
     expect(html).toContain('allow="fullscreen; picture-in-picture"');
-    expect(html).toContain(
-      'href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank" rel="noreferrer"',
-    );
+    expect(html).toContain('href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank" rel="noreferrer"');
     expect(html).not.toContain('href="https://www.youtube.com/embed/dQw4w9WgXcQ"');
     expect(html).toContain('src="https://example.com/embed/status"');
     expect(html).toContain('title="Embedded content"');
     expect(html).toContain("Open embed");
-    expect(html).toContain(
-      'href="https://example.com/embed/status" target="_blank" rel="noreferrer"',
-    );
+    expect(html).toContain('href="https://example.com/embed/status" target="_blank" rel="noreferrer"');
     expect(html).toContain('href="https://example.com/plain-link"');
     expect(html).toContain(">https://example.com/plain-link</a>");
     expect(html).not.toContain('class="hono-decks-social-embed"');
@@ -655,9 +637,7 @@ describe("sample Worker app", () => {
     const app = await sampleApp();
 
     expect((await app.request("/decks/sample/edit")).status).toBe(404);
-    expect((await app.request("/decks/sample/edit/agent/chat", { method: "POST" })).status).toBe(
-      404,
-    );
+    expect((await app.request("/decks/sample/edit/agent/chat", { method: "POST" })).status).toBe(404);
     expect((await app.request("/decks/sample/edit/apply", { method: "POST" })).status).toBe(404);
     expect((await app.request("/deck")).status).toBe(404);
     expect((await app.request("/api/parse", { method: "POST" })).status).toBe(404);

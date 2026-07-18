@@ -47,24 +47,12 @@ export default jsxRenderer(({ children }, c) => {
             <a class="site-deck-index-link" href={localizedHref("/decks", locale)}>
               {isJa ? "デッキ一覧" : "Deck index"}
             </a>
-            <span
-              class="site-language-switcher"
-              aria-label={isJa ? "言語" : "Language"}
-              role="group"
-            >
-              <a
-                href={localizedHref(currentPath, "ja")}
-                lang="ja"
-                aria-current={isJa ? "true" : undefined}
-              >
+            <span class="site-language-switcher" aria-label={isJa ? "言語" : "Language"} role="group">
+              <a href={localizedHref(currentPath, "ja")} lang="ja" aria-current={isJa ? "true" : undefined}>
                 JA
               </a>
               <span aria-hidden="true">/</span>
-              <a
-                href={localizedHref(currentPath, "en")}
-                lang="en"
-                aria-current={!isJa ? "true" : undefined}
-              >
+              <a href={localizedHref(currentPath, "en")} lang="en" aria-current={!isJa ? "true" : undefined}>
                 EN
               </a>
             </span>
@@ -74,9 +62,7 @@ export default jsxRenderer(({ children }, c) => {
         {children}
         <footer class="site-footer">
           <p>{isJa ? "HonoXとhono-decksで構築。" : "Built with HonoX and hono-decks."}</p>
-          <a href="https://github.com/ts-76/hono-decks">
-            {isJa ? "ソースを見る" : "View source"} ↗
-          </a>
+          <a href="https://github.com/ts-76/hono-decks">{isJa ? "ソースを見る" : "View source"} ↗</a>
         </footer>
       </body>
     </html>
@@ -117,25 +103,25 @@ a { color: inherit; }
 .site-language-switcher { display: inline-flex; align-items: center; gap: 6px; }
 .site-header .site-language-switcher a { display: inline-flex; min-width: 44px; min-height: 44px; align-items: center; justify-content: center; padding: 0; opacity: .58; }
 .site-header .site-language-switcher a[aria-current] { opacity: 1; color: #ff9b70; }
-.portfolio-hero { min-height: 720px; display: grid; background: var(--ink); color: white; }
-.portfolio-hero-inner { display: grid; width: min(var(--content), calc(100% - 48px)); grid-template-columns: minmax(0, 1fr) minmax(320px, .6fr); gap: clamp(48px, 8vw, 112px); align-items: end; margin: 0 auto; padding: 176px 0 92px; }
+.portfolio-hero { min-height: 560px; display: grid; background: var(--ink); color: white; }
+.portfolio-hero-inner { display: grid; width: min(var(--content), calc(100% - 48px)); grid-template-columns: minmax(0, 1fr) minmax(320px, .6fr); gap: clamp(40px, 7vw, 92px); align-items: end; margin: 0 auto; padding: 148px 0 76px; }
 .portfolio-intro { margin: 0 0 22px; color: #ff9b70; font-size: .82rem; font-weight: 720; }
-.portfolio-hero h1 { max-width: 10ch; margin: 0; font-size: clamp(3.6rem, 7.2vw, 6rem); letter-spacing: -.04em; line-height: .91; text-wrap: balance; }
+.portfolio-hero h1 { max-width: 14ch; margin: 0; font-size: clamp(2.8rem, 5.6vw, 4.5rem); letter-spacing: -.035em; line-height: 1; text-wrap: balance; }
 .portfolio-lede { max-width: 38ch; margin: 0 0 10px; color: #d5d0cc; font-size: clamp(1.08rem, 1.8vw, 1.35rem); line-height: 1.65; text-wrap: pretty; }
 .portfolio-facts { display: grid; grid-template-columns: repeat(2, 1fr); margin: 30px 0 0; border-top: 1px solid rgba(255,255,255,.2); }
 .portfolio-facts div { padding: 18px 0; border-bottom: 1px solid rgba(255,255,255,.2); }
 .portfolio-facts dt { color: #9c9895; font-size: .72rem; }
 .portfolio-facts dd { margin: 5px 0 0; font-size: .92rem; font-weight: 650; }
-.talks { width: min(var(--content), calc(100% - 48px)); margin: 0 auto; padding: clamp(80px, 10vw, 144px) 0; }
+.talks { width: min(var(--content), calc(100% - 48px)); margin: 0 auto; padding: clamp(64px, 8vw, 104px) 0; }
 .talks-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 42px; }
-.talks-heading h2 { margin: 0; font-size: clamp(2.5rem, 5vw, 4.25rem); letter-spacing: -.04em; line-height: .96; }
+.talks-heading h2 { margin: 0; font-size: clamp(2.1rem, 4vw, 3.25rem); letter-spacing: -.035em; line-height: 1; }
 .talks-heading p { max-width: 34ch; margin: 0; color: var(--ink-soft); line-height: 1.7; }
 .talk-feature { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(300px, .65fr); border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink); }
 .talk-preview { min-width: 0; padding: 28px 28px 28px 0; border-right: 1px solid var(--line); }
 .talk-preview iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: 10px; background: var(--ink); }
 .talk-copy { display: flex; min-width: 0; flex-direction: column; padding: 28px 0 28px 34px; }
 .talk-meta { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 0; color: var(--ink-soft); font-size: .76rem; }
-.talk-copy h3 { margin: auto 0 18px; font-size: clamp(2.2rem, 3.8vw, 3.7rem); letter-spacing: -.04em; line-height: .98; text-wrap: balance; }
+.talk-copy h3 { margin: auto 0 18px; font-size: clamp(2rem, 3.2vw, 3rem); letter-spacing: -.035em; line-height: 1; text-wrap: balance; }
 .talk-description { margin: 0; color: var(--ink-soft); line-height: 1.75; text-wrap: pretty; }
 .talk-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
 .talk-tags span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 11px; font-size: .72rem; }
@@ -144,8 +130,8 @@ a { color: inherit; }
 .talk-actions .primary { background: var(--accent); color: var(--ink); }
 .talk-actions .secondary { border: 1px solid var(--ink); }
 .talk-actions a:hover { translate: 0 -2px; }
-.portfolio-note { display: grid; grid-template-columns: minmax(220px, .55fr) minmax(0, 1.45fr); gap: clamp(36px, 8vw, 100px); background: var(--accent); padding: clamp(68px, 8vw, 112px) max(24px, calc((100vw - var(--content)) / 2)); color: var(--ink); }
-.portfolio-note h2 { margin: 0; font-size: clamp(2.2rem, 4.5vw, 4rem); letter-spacing: -.04em; line-height: .96; }
+.portfolio-note { display: grid; grid-template-columns: minmax(220px, .55fr) minmax(0, 1.45fr); gap: clamp(36px, 7vw, 84px); border-top: 1px solid #f2b89f; background: var(--accent-soft); padding: clamp(56px, 7vw, 84px) max(24px, calc((100vw - var(--content)) / 2)); color: var(--ink); }
+.portfolio-note h2 { margin: 0; font-size: clamp(2rem, 3.6vw, 3rem); letter-spacing: -.035em; line-height: 1; }
 .portfolio-note p { max-width: 58ch; margin: 0; font-size: clamp(1.05rem, 1.8vw, 1.3rem); line-height: 1.75; }
 .portfolio-note code { background: rgba(17,18,22,.12); border-radius: 6px; padding: .12em .34em; }
 .site-footer { display: flex; width: min(var(--content), calc(100% - 48px)); min-height: 110px; align-items: center; justify-content: space-between; margin: 0 auto; color: var(--ink-soft); font-size: .8rem; }
@@ -163,7 +149,7 @@ a { color: inherit; }
   .site-header nav { gap: 16px; }
   .site-deck-index-link { display: none; }
   .portfolio-hero-inner, .talks, .site-footer { width: min(100% - 32px, var(--content)); }
-  .portfolio-hero h1 { font-size: clamp(3.2rem, 17vw, 4.8rem); }
+  .portfolio-hero h1 { font-size: clamp(2.7rem, 13vw, 3.8rem); }
   .portfolio-facts { grid-template-columns: 1fr; }
   .talk-preview { padding-top: 20px; }
   .talk-copy { min-height: 340px; }

@@ -29,6 +29,7 @@ export function renderPresentationScript(nonce?: string): string {
   let isTransitioning = false;
   let pendingNavigation = null;
   let transitionToken = 0;
+  let touchStart = null;
 
   function fitDeck() {
     if (!(stage instanceof HTMLElement) || !(deck instanceof HTMLElement)) return;
@@ -361,6 +362,33 @@ export function renderPresentationScript(nonce?: string): string {
     if (action === "overview") toggleOverview();
   }
 
+  function isInteractiveTouchTarget(target) {
+    return target instanceof Element && Boolean(target.closest("a,button,input,select,textarea,[contenteditable],[role='button']"));
+  }
+
+  function handleTouchStart(event) {
+    if (event.touches.length !== 1 || isInteractiveTouchTarget(event.target)) {
+      touchStart = null;
+      return;
+    }
+    const touch = event.touches[0];
+    touchStart = { x: touch.clientX, y: touch.clientY };
+  }
+
+  function handleTouchEnd(event) {
+    if (!touchStart || event.changedTouches.length !== 1) {
+      touchStart = null;
+      return;
+    }
+    const touch = event.changedTouches[0];
+    const deltaX = touch.clientX - touchStart.x;
+    const deltaY = touch.clientY - touchStart.y;
+    touchStart = null;
+    const threshold = Math.max(48, window.innerWidth * 0.08);
+    if (Math.abs(deltaX) < threshold || Math.abs(deltaX) <= Math.abs(deltaY) * 1.25) return;
+    handleCommand(deltaX < 0 ? "next" : "previous");
+  }
+
   async function toggleFullscreen() {
     if (document.fullscreenElement) {
       await document.exitFullscreen?.();
@@ -384,6 +412,9 @@ export function renderPresentationScript(nonce?: string): string {
     if (event.key === "p") handleCommand("presenter");
     if (event.key === "o") handleCommand("overview");
   });
+  document.addEventListener("touchstart", handleTouchStart, { passive: true });
+  document.addEventListener("touchend", handleTouchEnd, { passive: true });
+  document.addEventListener("touchcancel", () => { touchStart = null; }, { passive: true });
 
   window.addEventListener("message", (event) => {
     const message = event.data;

@@ -12,6 +12,8 @@ import {
 import {
   createDeckViewerEmbed,
   type DeckViewerAvailablePages,
+  type DeckViewerControlsOptions,
+  type DeckViewerControlsContext,
   type DeckViewerEmbed,
   type DeckViewerEmbedOptions,
 } from "./viewer";
@@ -71,10 +73,31 @@ export async function renderDeckExternalEmbedResponse<E extends Env>(input: {
   );
   const viewerOptions =
     typeof input.options.viewer === "function" ? await input.options.viewer(input.context) : input.options.viewer;
+  const controls: false | DeckViewerControlsOptions =
+    viewerOptions?.controls === undefined
+      ? {
+          items: (_defaults: unknown, context: DeckViewerControlsContext) => [
+            {
+              type: "link" as const,
+              key: "open-viewer",
+              href: context.meta.paths.viewer,
+              label: "Open full viewer in new tab",
+              icon: "external-link" as const,
+              attributes: {
+                "aria-label": "Open full viewer in new tab",
+                "data-hono-decks-viewer-link": true,
+                target: "_blank",
+                rel: "noreferrer",
+              },
+            },
+          ],
+        }
+      : viewerOptions.controls;
   const viewer = await createDeckViewerEmbed({
     deck,
     mountPath,
     ...viewerOptions,
+    controls,
     availablePages: input.availablePages,
     nonce: document.nonce,
   });
