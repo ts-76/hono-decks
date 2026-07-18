@@ -1052,6 +1052,7 @@ describe("decksRouter", () => {
                 type: "link",
                 href: "https://example.com/deck",
                 label: "Safe",
+                icon: "external-link",
               },
             ],
           },
@@ -1065,6 +1066,9 @@ describe("decksRouter", () => {
     expect(html).toContain('data-safe-link="yes"');
     expect(html).toContain(">Unsafe</a>");
     expect(html).toContain('href="https://example.com/deck"');
+    expect(html).toContain('aria-label="Safe"');
+    expect(html).toContain('title="Safe"');
+    expect(html).toContain('d="M15 3h6v6"');
     expect(html).not.toContain("onclick");
     expect(html).not.toContain("onmouseover");
     expect(html).not.toContain("javascript:alert");

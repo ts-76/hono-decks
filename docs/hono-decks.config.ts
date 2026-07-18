@@ -14,10 +14,10 @@ export default defineDecksConfig({
               type: "link",
               key: "open-viewer",
               href: context.meta.paths.viewer,
-              label: "Open full viewer",
-              icon: "fullscreen",
+              label: "Open full viewer in new tab",
+              icon: "external-link",
               attributes: {
-                "aria-label": "Open full viewer",
+                "aria-label": "Open full viewer in new tab",
                 "data-hono-decks-viewer-link": true,
                 target: "_blank",
                 rel: "noreferrer",
