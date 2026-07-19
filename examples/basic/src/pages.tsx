@@ -18,37 +18,31 @@ export function renderHomePage(decks: DeckEntry[], locale: Locale) {
     <SampleLayout title="Hono Decks Basic" layout="home" locale={locale} path="/">
       <section class="sample-home-hero" aria-labelledby="sample-home-title">
         <div>
-          <p class="sample-home-intro">Hono + MDX + Cloudflare Workers</p>
-          <h1 id="sample-home-title">
-            {isJa ? "スライドを、" : "Slides belong"}
-            <br />
-            <span>{isJa ? "アプリの中に。" : "inside your app."}</span>
-          </h1>
+          <p class="sample-home-intro">Hono + MDX example</p>
+          <h1 id="sample-home-title">{isJa ? "Honoでスライドを公開する" : "Publish slides with Hono"}</h1>
         </div>
         <div class="sample-home-summary">
           <p>
             {isJa
-              ? "hono-decks は登壇資料を別サービスへ切り離さず、Honoアプリのルートとして公開するための実装例です。"
-              : "hono-decks keeps presentations inside your Hono application instead of moving them to a separate service."}
+              ? "MDXで書いた資料を、Honoアプリのルートから配信する最小構成のサンプルです。"
+              : "A small example that serves MDX slides from routes in a Hono application."}
           </p>
           <nav class="sample-actions" aria-label={isJa ? "主要リンク" : "Primary links"}>
             <a class="primary" href={localizedHref("/decks", locale)}>
-              {isJa ? "デッキ一覧を見る" : "Explore the deck lab"} <span aria-hidden="true">→</span>
+              {isJa ? "デッキ一覧" : "View decks"} <span aria-hidden="true">→</span>
             </a>
-            <a href={localizedHref("/decks/sample/about", locale)}>
-              {isJa ? "構成を見る" : "How it is wired"}
-            </a>
+            <a href={localizedHref("/decks/sample/about", locale)}>{isJa ? "実装を見る" : "View setup"}</a>
           </nav>
         </div>
       </section>
 
       <section class="sample-home-decks" aria-labelledby="sample-home-decks-title">
         <header>
-          <h2 id="sample-home-decks-title">{isJa ? "実装を確かめる。" : "Built to prove it."}</h2>
+          <h2 id="sample-home-decks-title">{isJa ? "サンプルデッキ" : "Sample decks"}</h2>
           <p>
             {isJa
-              ? "同じWorkerで動く4つの資料。コード、メディア、モーション、アプリ統合をそれぞれ確認できます。"
-              : "Four decks on one Worker, covering code, media, motion, and application integration."}
+              ? "コード、メディア、モーション、アプリ統合の例を1つのWorkerで公開しています。"
+              : "Four decks cover code, media, motion, and application integration on one Worker."}
           </p>
         </header>
         <ul>
@@ -69,16 +63,12 @@ export function renderHomePage(decks: DeckEntry[], locale: Locale) {
       </section>
 
       <section class="sample-home-system" aria-labelledby="sample-home-system-title">
-        <h2 id="sample-home-system-title">
-          {isJa ? "MDXで書く。" : "Author in MDX."}
-          <br />
-          {isJa ? "ランタイムを所有する。" : "Own the runtime."}
-        </h2>
+        <h2 id="sample-home-system-title">{isJa ? "Honoルートとして配信" : "Serve from a Hono route"}</h2>
         <div>
           <p>
             {isJa
-              ? "compile時に生成したdeck routerを、通常のHonoルートと同じアプリへmount。配信、埋め込み、印刷、発表画面までURL設計を自分で所有できます。"
-              : "Mount the deck router generated at compile time beside your regular Hono routes. You own the URLs for delivery, embedding, printing, and presenting."}
+              ? "ビルド時に生成したdeck routerを、通常のHonoルートと同じアプリへマウントします。"
+              : "Mount the deck router generated at build time beside the rest of your Hono routes."}
           </p>
           <code>app.route(decks.mountPath, decks.router())</code>
         </div>
@@ -87,19 +77,12 @@ export function renderHomePage(decks: DeckEntry[], locale: Locale) {
   );
 }
 
-export function renderDeckIndexPage(input: {
-  decks: CompiledDeck[];
-  paths: DeckPathResolver;
-  locale: Locale;
-}) {
+export function renderDeckIndexPage(input: { decks: CompiledDeck[]; paths: DeckPathResolver; locale: Locale }) {
   const isJa = input.locale === "ja";
-  const priority = new Map(
-    ["sample", "code", "media", "motion"].map((slug, index) => [slug, index]),
-  );
+  const priority = new Map(["sample", "code", "media", "motion"].map((slug, index) => [slug, index]));
   const decks = [...input.decks].sort(
     (left, right) =>
-      (priority.get(left.slug) ?? Number.MAX_SAFE_INTEGER) -
-      (priority.get(right.slug) ?? Number.MAX_SAFE_INTEGER),
+      (priority.get(left.slug) ?? Number.MAX_SAFE_INTEGER) - (priority.get(right.slug) ?? Number.MAX_SAFE_INTEGER),
   );
   const featured = decks[0];
 
@@ -109,11 +92,7 @@ export function renderDeckIndexPage(input: {
         {isJa ? "デッキ一覧へ移動" : "Skip to deck catalog"}
       </a>
       <header class="deck-index-header">
-        <a
-          class="deck-index-brand"
-          href={localizedHref("/", input.locale)}
-          aria-label="Hono Decks Basic home"
-        >
+        <a class="deck-index-brand" href={localizedHref("/", input.locale)} aria-label="Hono Decks Basic home">
           <span aria-hidden="true">H</span>
           <strong>Hono Decks / Basic</strong>
         </a>
@@ -121,11 +100,7 @@ export function renderDeckIndexPage(input: {
           <a class="deck-index-all-link" href="#deck-catalog">
             {isJa ? "全デッキ" : "All decks"}
           </a>
-          <LanguageSwitcher
-            locale={input.locale}
-            path="/decks"
-            className="deck-language-switcher"
-          />
+          <LanguageSwitcher locale={input.locale} path="/decks" className="deck-language-switcher" />
           <a href="https://github.com/ts-76/hono-decks">{isJa ? "ソース" : "Source"} ↗</a>
         </nav>
       </header>
@@ -133,20 +108,14 @@ export function renderDeckIndexPage(input: {
       <main class="deck-index-main">
         <section class="deck-index-hero" aria-labelledby="deck-index-title">
           <div>
-            <p class="deck-index-intro">
-              {isJa ? "Hono + MDXの動くカタログ" : "A working catalog for Hono + MDX"}
-            </p>
-            <h1 id="deck-index-title">
-              {isJa ? "4つのデッキ。" : "Four decks."}
-              <br />
-              <span>{isJa ? "1つのエッジランタイム。" : "One edge runtime."}</span>
-            </h1>
+            <p class="deck-index-intro">{isJa ? "Hono + MDX サンプル" : "Hono + MDX examples"}</p>
+            <h1 id="deck-index-title">{isJa ? "4つのデッキ" : "Four sample decks"}</h1>
           </div>
           <div class="deck-index-summary">
             <p>
               {isJa
-                ? "Code、media、motion、custom components。hono-decksの主要な表現を、それぞれ独立した登壇資料として確認できます。"
-                : "Explore code, media, motion, and custom components as four independent presentation examples."}
+                ? "コード、メディア、モーション、カスタムコンポーネントの実装を確認できます。"
+                : "Review implementations for code, media, motion, and custom components."}
             </p>
             <dl>
               <div>
@@ -159,21 +128,14 @@ export function renderDeckIndexPage(input: {
               </div>
               <div>
                 <dt>{isJa ? "コレクション" : "Collection"}</dt>
-                <dd>
-                  {isJa
-                    ? `${decks.length}件のコンパイル済みデッキ`
-                    : `${decks.length} compiled decks`}
-                </dd>
+                <dd>{isJa ? `${decks.length}件のコンパイル済みデッキ` : `${decks.length} compiled decks`}</dd>
               </div>
             </dl>
             {featured ? (
-              <a
-                class="deck-index-hero-link"
-                href={localizedHref(input.paths(featured.slug).viewer, input.locale)}
-              >
+              <a class="deck-index-hero-link" href={localizedHref(input.paths(featured.slug).viewer, input.locale)}>
                 {isJa
-                  ? `${featured.meta.title ?? featured.slug}から見る`
-                  : `Start with ${featured.meta.title ?? featured.slug}`}{" "}
+                  ? `${featured.meta.title ?? featured.slug}を見る`
+                  : `View ${featured.meta.title ?? featured.slug}`}{" "}
                 <span aria-hidden="true">→</span>
               </a>
             ) : null}
@@ -195,8 +157,7 @@ export function renderDeckIndexPage(input: {
               const paths = input.paths(deck.slug);
               const title = deck.meta.title ?? deck.slug;
               const tags = deck.meta.tags ?? [];
-              const description =
-                localizedDeckDescription(deck.slug, input.locale) ?? deck.meta.description;
+              const description = localizedDeckDescription(deck.slug, input.locale) ?? deck.meta.description;
               return (
                 <article class={`deck-showcase deck-showcase--${deck.slug}`}>
                   <a
@@ -204,9 +165,7 @@ export function renderDeckIndexPage(input: {
                     href={localizedHref(paths.viewer, input.locale)}
                     aria-label={isJa ? `${title}を開く` : `Open ${title}`}
                   >
-                    <span class="deck-poster-label">
-                      {deckPosterLabel(deck.slug, input.locale)}
-                    </span>
+                    <span class="deck-poster-label">{deckPosterLabel(deck.slug, input.locale)}</span>
                     <strong>{title}</strong>
                     <span class="deck-poster-art" data-deck-art={deck.slug} aria-hidden="true">
                       {renderDeckPosterArt(deck.slug)}
@@ -219,39 +178,27 @@ export function renderDeckIndexPage(input: {
                   <div class="deck-showcase-copy">
                     <div class="deck-showcase-meta">
                       {deck.meta.date ? (
-                        <time datetime={deck.meta.date}>
-                          {formatDeckDate(deck.meta.date, input.locale)}
-                        </time>
+                        <time datetime={deck.meta.date}>{formatDeckDate(deck.meta.date, input.locale)}</time>
                       ) : null}
-                      <span>
-                        {isJa ? `${deck.slides.length}枚` : `${deck.slides.length} slides`}
-                      </span>
+                      <span>{isJa ? `${deck.slides.length}枚` : `${deck.slides.length} slides`}</span>
                     </div>
                     <h3>{title}</h3>
                     {description ? <p>{description}</p> : null}
                     {tags.length > 0 ? (
-                      <ul
-                        class="deck-showcase-tags"
-                        aria-label={isJa ? `${title}のトピック` : `${title} topics`}
-                      >
+                      <ul class="deck-showcase-tags" aria-label={isJa ? `${title}のトピック` : `${title} topics`}>
                         {tags.map((tag) => (
                           <li>{tag}</li>
                         ))}
                       </ul>
                     ) : null}
-                    <nav
-                      class="deck-showcase-actions"
-                      aria-label={isJa ? `${title}の操作` : `${title} actions`}
-                    >
+                    <nav class="deck-showcase-actions" aria-label={isJa ? `${title}の操作` : `${title} actions`}>
                       <a class="primary" href={localizedHref(paths.viewer, input.locale)}>
                         {isJa ? "資料を見る" : "View deck"} <span aria-hidden="true">→</span>
                       </a>
                       <a href={localizedHref(paths.presentation, input.locale)}>
                         {isJa ? "発表画面" : "Present"} <span aria-hidden="true">↗</span>
                       </a>
-                      <a href={localizedHref(`${paths.viewer}/about`, input.locale)}>
-                        {isJa ? "詳細" : "Details"}
-                      </a>
+                      <a href={localizedHref(`${paths.viewer}/about`, input.locale)}>{isJa ? "詳細" : "Details"}</a>
                     </nav>
                   </div>
                 </article>
@@ -262,14 +209,8 @@ export function renderDeckIndexPage(input: {
       </main>
 
       <footer class="deck-index-footer">
-        <p>
-          {isJa
-            ? "ビルド時にコンパイルし、エッジから配信。"
-            : "Compiled at build time. Served from the edge."}
-        </p>
-        <a href={localizedHref("/", input.locale)}>
-          {isJa ? "Basicのトップへ戻る" : "Back to Basic example"}
-        </a>
+        <p>{isJa ? "ビルド時にコンパイルし、エッジから配信。" : "Compiled at build time. Served from the edge."}</p>
+        <a href={localizedHref("/", input.locale)}>{isJa ? "Basicのトップへ戻る" : "Back to Basic example"}</a>
       </footer>
     </>
   );
@@ -289,10 +230,7 @@ export function renderDeckIndexHead(locale: Locale) {
       />
       <meta name="theme-color" content="#111216" />
       <meta property="og:locale" content={isJa ? "ja_JP" : "en_US"} />
-      <meta
-        property="og:title"
-        content={isJa ? "デッキ一覧 — Hono Decks Basic" : "Deck Lab — Hono Decks Basic"}
-      />
+      <meta property="og:title" content={isJa ? "デッキ一覧 — Hono Decks Basic" : "Deck Lab — Hono Decks Basic"} />
       <meta
         property="og:description"
         content={
@@ -379,8 +317,7 @@ export function renderDeckDetailsPage(input: {
   toc: DeckTocItem[];
   locale: Locale;
 }) {
-  const description =
-    localizedDeckDescription(input.deck.slug, input.locale) ?? input.meta.description;
+  const description = localizedDeckDescription(input.deck.slug, input.locale) ?? input.meta.description;
   const isJa = input.locale === "ja";
 
   return (
@@ -395,9 +332,7 @@ export function renderDeckDetailsPage(input: {
           <meta property="og:title" content={input.meta.title} />
           {description ? <meta property="og:description" content={description} /> : null}
           <meta property="og:url" content={input.meta.paths.viewer} />
-          {input.meta.imagePath ? (
-            <meta property="og:image" content={input.meta.imagePath} />
-          ) : null}
+          {input.meta.imagePath ? <meta property="og:image" content={input.meta.imagePath} /> : null}
         </>
       }
     >
@@ -416,18 +351,12 @@ export function renderDeckDetailsPage(input: {
           </div>
         </dl>
         <nav class="sample-actions" aria-label={isJa ? "デッキ操作" : "Deck actions"}>
-          <a href={localizedHref(input.meta.paths.viewer, input.locale)}>
-            {isJa ? "ビューアー" : "Open viewer"}
-          </a>
+          <a href={localizedHref(input.meta.paths.viewer, input.locale)}>{isJa ? "ビューアー" : "Open viewer"}</a>
           <a href={localizedHref(input.meta.paths.render, input.locale)}>
             {isJa ? "レンダー画面" : "Open render page"}
           </a>
-          <a href={localizedHref(input.meta.paths.print, input.locale)}>
-            {isJa ? "印刷画面" : "Open print page"}
-          </a>
-          <a href={localizedHref(input.meta.paths.embed, input.locale)}>
-            {isJa ? "埋め込み表示" : "Embed view"}
-          </a>
+          <a href={localizedHref(input.meta.paths.print, input.locale)}>{isJa ? "印刷画面" : "Open print page"}</a>
+          <a href={localizedHref(input.meta.paths.embed, input.locale)}>{isJa ? "埋め込み表示" : "Embed view"}</a>
         </nav>
       </section>
       <section class="sample-page-section">
@@ -471,39 +400,22 @@ function SampleLayout(props: {
         </a>
         <main data-sample-layout={props.layout}>
           <header class="sample-page-header">
-            <a
-              class="sample-page-brand"
-              href={localizedHref("/", props.locale)}
-              aria-label="Hono Decks Basic home"
-            >
+            <a class="sample-page-brand" href={localizedHref("/", props.locale)} aria-label="Hono Decks Basic home">
               <span aria-hidden="true">H</span>
               <strong>Hono Decks / Basic</strong>
             </a>
             <nav aria-label={isJa ? "サンプルナビゲーション" : "Sample navigation"}>
               <a href={localizedHref("/decks", props.locale)}>{isJa ? "デッキ一覧" : "Deck lab"}</a>
-              <a
-                class="sample-details-link"
-                href={localizedHref("/decks/sample/about", props.locale)}
-              >
+              <a class="sample-details-link" href={localizedHref("/decks/sample/about", props.locale)}>
                 {isJa ? "詳細" : "Details"}
               </a>
-              <LanguageSwitcher
-                locale={props.locale}
-                path={props.path}
-                className="sample-language-switcher"
-              />
+              <LanguageSwitcher locale={props.locale} path={props.path} className="sample-language-switcher" />
             </nav>
           </header>
           <div id="main-content">{props.children}</div>
           <footer class="sample-page-footer">
-            <p>
-              {isJa
-                ? "ビルド時にコンパイルし、エッジから配信。"
-                : "Compiled at build time. Served from the edge."}
-            </p>
-            <a href="https://github.com/ts-76/hono-decks">
-              {isJa ? "ソースを見る" : "View source"} ↗
-            </a>
+            <p>{isJa ? "ビルド時にコンパイルし、エッジから配信。" : "Compiled at build time. Served from the edge."}</p>
+            <a href="https://github.com/ts-76/hono-decks">{isJa ? "ソースを見る" : "View source"} ↗</a>
           </footer>
         </main>
       </body>
@@ -513,24 +425,12 @@ function SampleLayout(props: {
 
 function LanguageSwitcher(props: { locale: Locale; path: string; className: string }) {
   return (
-    <span
-      class={props.className}
-      aria-label={props.locale === "ja" ? "言語" : "Language"}
-      role="group"
-    >
-      <a
-        href={localizedHref(props.path, "ja")}
-        lang="ja"
-        aria-current={props.locale === "ja" ? "true" : undefined}
-      >
+    <span class={props.className} aria-label={props.locale === "ja" ? "言語" : "Language"} role="group">
+      <a href={localizedHref(props.path, "ja")} lang="ja" aria-current={props.locale === "ja" ? "true" : undefined}>
         JA
       </a>
       <span aria-hidden="true">/</span>
-      <a
-        href={localizedHref(props.path, "en")}
-        lang="en"
-        aria-current={props.locale === "en" ? "true" : undefined}
-      >
+      <a href={localizedHref(props.path, "en")} lang="en" aria-current={props.locale === "en" ? "true" : undefined}>
         EN
       </a>
     </span>
@@ -571,18 +471,17 @@ a { color: inherit; }
 .sample-language-switcher, .deck-language-switcher { display: inline-flex; align-items: center; gap: 6px; }
 .sample-page-header .sample-language-switcher a, .deck-index-header .deck-language-switcher a { display: inline-flex; min-width: 44px; min-height: 44px; align-items: center; justify-content: center; padding: 0; opacity: .58; }
 .sample-language-switcher a[aria-current], .deck-language-switcher a[aria-current] { opacity: 1; color: var(--sample-accent-soft); }
-.sample-home-hero { display: grid; width: min(var(--sample-content), calc(100% - 48px)); min-height: 640px; grid-template-columns: minmax(0, 1.25fr) minmax(320px, .75fr); gap: clamp(48px, 8vw, 120px); align-items: end; margin: 0 auto; padding: clamp(96px, 12vw, 164px) 0 88px; }
+.sample-home-hero { display: grid; width: min(var(--sample-content), calc(100% - 48px)); min-height: 520px; grid-template-columns: minmax(0, 1.25fr) minmax(320px, .75fr); gap: clamp(40px, 7vw, 96px); align-items: end; margin: 0 auto; padding: clamp(88px, 10vw, 132px) 0 72px; }
 .sample-home-intro { margin: 0 0 24px; color: var(--sample-accent-soft); font-size: .84rem; font-weight: 720; }
-.sample-home-hero h1 { max-width: 11ch; margin: 0; font-size: clamp(3.8rem, 7.4vw, 6rem); letter-spacing: -.04em; line-height: .9; text-wrap: balance; }
-.sample-home-hero h1 span { color: var(--sample-accent); }
+.sample-home-hero h1 { max-width: 14ch; margin: 0; font-size: clamp(2.8rem, 5.6vw, 4.5rem); letter-spacing: -.035em; line-height: 1; text-wrap: balance; }
 .sample-home-summary > p { max-width: 38ch; margin: 0; color: var(--sample-muted); font-size: clamp(1.02rem, 1.6vw, 1.2rem); line-height: 1.7; text-wrap: pretty; }
 .sample-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; padding: 0; }
 .sample-actions a { display: inline-flex; min-height: 46px; align-items: center; justify-content: center; gap: 18px; border: 1px solid currentColor; padding: 0 16px; font-size: .8rem; font-weight: 720; text-decoration: none; transition: background-color 160ms ease, color 160ms ease, translate 180ms cubic-bezier(.22, 1, .36, 1); }
 .sample-actions a.primary { border-color: var(--sample-accent); background: var(--sample-accent); color: var(--sample-ink); }
 .sample-actions a:hover { translate: 0 -2px; background: var(--sample-copy); color: var(--sample-ink); }
-.sample-home-decks { background: #f6f3f1; padding: clamp(78px, 9vw, 132px) max(24px, calc((100vw - var(--sample-content)) / 2)); color: var(--sample-ink); }
+.sample-home-decks { background: #f7f7f6; padding: clamp(64px, 8vw, 104px) max(24px, calc((100vw - var(--sample-content)) / 2)); color: var(--sample-ink); }
 .sample-home-decks > header { display: flex; align-items: end; justify-content: space-between; gap: 32px; margin-bottom: 52px; }
-.sample-home-decks h2 { margin: 0; font-size: clamp(2.8rem, 5.5vw, 4.8rem); letter-spacing: -.04em; line-height: .94; }
+.sample-home-decks h2 { margin: 0; font-size: clamp(2.2rem, 4vw, 3.3rem); letter-spacing: -.035em; line-height: 1; }
 .sample-home-decks header p { max-width: 38ch; margin: 0; color: #555257; line-height: 1.72; text-wrap: pretty; }
 .sample-home-decks ul { margin: 0; border-top: 1px solid var(--sample-ink); padding: 0; list-style: none; }
 .sample-home-decks li { border-bottom: 1px solid #bbb5b1; }
@@ -591,11 +490,11 @@ a { color: inherit; }
 .sample-home-decks li span { font-size: clamp(1.35rem, 2.4vw, 2rem); font-weight: 760; letter-spacing: -.035em; }
 .sample-home-decks li small { color: #555257; font-size: .86rem; line-height: 1.5; }
 .sample-home-decks li strong { color: var(--sample-accent); font-size: 1.3rem; }
-.sample-home-system { display: grid; grid-template-columns: minmax(280px, .8fr) minmax(0, 1.2fr); gap: clamp(44px, 8vw, 110px); background: var(--sample-accent); padding: clamp(72px, 9vw, 120px) max(24px, calc((100vw - var(--sample-content)) / 2)); color: var(--sample-ink); }
-.sample-home-system h2 { margin: 0; font-size: clamp(2.6rem, 5vw, 4.5rem); letter-spacing: -.04em; line-height: .91; }
+.sample-home-system { display: grid; grid-template-columns: minmax(280px, .8fr) minmax(0, 1.2fr); gap: clamp(40px, 7vw, 88px); border-top: 1px solid var(--sample-line); background: #1b1c20; padding: clamp(60px, 8vw, 92px) max(24px, calc((100vw - var(--sample-content)) / 2)); color: var(--sample-copy); }
+.sample-home-system h2 { margin: 0; font-size: clamp(2.1rem, 4vw, 3.2rem); letter-spacing: -.035em; line-height: 1; text-wrap: balance; }
 .sample-home-system div { align-self: end; }
 .sample-home-system p { max-width: 54ch; margin: 0; font-size: clamp(1.05rem, 1.8vw, 1.28rem); line-height: 1.75; text-wrap: pretty; }
-.sample-home-system code { display: inline-block; margin-top: 28px; background: rgba(17, 18, 22, .13); padding: 7px 10px; color: var(--sample-ink); font-size: .76rem; }
+.sample-home-system code { display: inline-block; margin-top: 28px; background: rgba(255, 255, 255, .08); padding: 7px 10px; color: var(--sample-copy); font-size: .76rem; }
 .sample-page-section { width: min(var(--sample-content), calc(100% - 48px)); margin: 64px auto 0; background: #f6f3f1; padding: clamp(28px, 5vw, 60px); color: var(--sample-ink); }
 .sample-page-section + .sample-page-section { margin-top: 24px; }
 .sample-page-section h1, .sample-page-section h2 { margin: 0 0 16px; letter-spacing: -.035em; }
@@ -624,7 +523,7 @@ a { color: inherit; }
   .sample-page-header, .sample-home-hero, .sample-page-section, .sample-page-footer { width: min(var(--sample-content), calc(100% - 32px)); }
   .sample-page-header nav { gap: 16px; }
   .sample-details-link { display: none; }
-  .sample-home-hero h1 { font-size: clamp(3.2rem, 16vw, 4.6rem); }
+  .sample-home-hero h1 { font-size: clamp(2.7rem, 13vw, 3.8rem); }
   .sample-home-decks, .sample-home-system { padding-right: 16px; padding-left: 16px; }
   .sample-page-footer { align-items: flex-start; flex-direction: column; justify-content: center; }
 }
@@ -673,10 +572,9 @@ a { color: inherit; }
 .deck-index-header nav a:hover { color: var(--deck-index-accent-soft); }
 .deck-language-switcher a[aria-current] { color: var(--deck-index-accent-soft); }
 .deck-index-main { overflow: hidden; }
-.deck-index-hero { display: grid; width: min(var(--deck-index-content), calc(100% - 48px)); min-height: 650px; grid-template-columns: minmax(0, 1.3fr) minmax(320px, .7fr); gap: clamp(48px, 8vw, 120px); align-items: end; margin: 0 auto; padding: clamp(100px, 12vw, 174px) 0 88px; }
+.deck-index-hero { display: grid; width: min(var(--deck-index-content), calc(100% - 48px)); min-height: 520px; grid-template-columns: minmax(0, 1.3fr) minmax(320px, .7fr); gap: clamp(40px, 7vw, 96px); align-items: end; margin: 0 auto; padding: clamp(88px, 10vw, 132px) 0 72px; }
 .deck-index-intro { margin: 0 0 24px; color: var(--deck-index-accent-soft); font-size: .84rem; font-weight: 720; }
-.deck-index-hero h1 { max-width: 10ch; margin: 0; font-size: clamp(3.8rem, 7.4vw, 6rem); letter-spacing: -.04em; line-height: .9; text-wrap: balance; }
-.deck-index-hero h1 span { color: var(--deck-index-accent); }
+.deck-index-hero h1 { max-width: 14ch; margin: 0; font-size: clamp(2.8rem, 5.6vw, 4.5rem); letter-spacing: -.035em; line-height: 1; text-wrap: balance; }
 .deck-index-summary { padding-bottom: 3px; }
 .deck-index-summary > p { max-width: 38ch; margin: 0; color: var(--deck-index-muted); font-size: clamp(1.02rem, 1.6vw, 1.2rem); line-height: 1.7; text-wrap: pretty; }
 .deck-index-summary dl { margin: 30px 0 0; border-top: 1px solid var(--deck-index-line); }
@@ -685,9 +583,9 @@ a { color: inherit; }
 .deck-index-summary dd { margin: 0; font-size: .82rem; font-weight: 680; }
 .deck-index-hero-link { display: inline-flex; min-height: 48px; align-items: center; justify-content: space-between; gap: 20px; margin-top: 30px; background: var(--deck-index-accent); padding: 0 18px; color: var(--deck-index-ink); font-size: .82rem; font-weight: 780; text-decoration: none; transition: translate 180ms cubic-bezier(.22, 1, .36, 1); }
 .deck-index-hero-link:hover { translate: 4px 0; }
-.deck-catalog { background: #f6f3f1; padding: clamp(78px, 9vw, 132px) max(24px, calc((100vw - var(--deck-index-content)) / 2)); color: var(--deck-index-ink); }
+.deck-catalog { background: #f7f7f6; padding: clamp(64px, 8vw, 104px) max(24px, calc((100vw - var(--deck-index-content)) / 2)); color: var(--deck-index-ink); }
 .deck-catalog-heading { display: flex; align-items: end; justify-content: space-between; gap: 32px; margin-bottom: 58px; }
-.deck-catalog-heading h2 { margin: 0; font-size: clamp(2.8rem, 5.5vw, 4.8rem); letter-spacing: -.04em; line-height: .94; text-wrap: balance; }
+.deck-catalog-heading h2 { margin: 0; font-size: clamp(2.2rem, 4vw, 3.3rem); letter-spacing: -.035em; line-height: 1; text-wrap: balance; }
 .deck-catalog-heading p { max-width: 38ch; margin: 0; color: #555257; line-height: 1.72; text-wrap: pretty; }
 .deck-showcase-list { border-top: 1px solid var(--deck-index-ink); }
 .deck-showcase { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(300px, .8fr); gap: clamp(32px, 5vw, 70px); align-items: center; padding: clamp(42px, 6vw, 78px) 0; border-bottom: 1px solid #bab5b1; }
@@ -697,7 +595,7 @@ a { color: inherit; }
 .deck-showcase-preview:hover { translate: 0 -4px; }
 .deck-showcase-preview > span, .deck-showcase-preview > strong, .deck-showcase-preview > small { position: relative; z-index: 1; }
 .deck-poster-label { color: var(--deck-index-accent-soft); font-size: clamp(.65rem, 1.2vw, .82rem); font-weight: 720; }
-.deck-showcase-preview > strong { max-width: 8ch; align-self: end; font-size: clamp(2.1rem, 4.7vw, 4.8rem); letter-spacing: -.04em; line-height: .86; overflow-wrap: anywhere; text-wrap: balance; }
+.deck-showcase-preview > strong { max-width: 10ch; align-self: end; font-size: clamp(2rem, 3.8vw, 3.5rem); letter-spacing: -.035em; line-height: .94; overflow-wrap: anywhere; text-wrap: balance; }
 .deck-showcase-preview > small { justify-self: end; margin-top: 20px; color: #d8cec8; font-size: .72rem; font-weight: 680; }
 .deck-poster-art { position: absolute !important; z-index: 0 !important; inset: 0; pointer-events: none; }
 .deck-showcase--sample .deck-poster-art b { position: absolute; right: 8%; top: 22%; display: grid; width: 25%; aspect-ratio: 1; place-items: center; background: var(--deck-index-accent); color: var(--deck-index-ink); font-size: clamp(3rem, 8vw, 7rem); font-weight: 850; transform: rotate(4deg); }
@@ -715,7 +613,7 @@ a { color: inherit; }
 .deck-showcase--motion .deck-poster-art i::after { position: absolute; top: 50%; left: -5px; width: 10px; height: 10px; border-radius: 50%; background: var(--deck-index-accent); box-shadow: 0 0 8px rgba(255, 107, 44, .78); content: ""; translate: 0 -50%; }
 .deck-showcase-copy { min-width: 0; }
 .deck-showcase-meta { display: flex; flex-wrap: wrap; gap: 8px 22px; color: #625e5b; font-size: .74rem; }
-.deck-showcase-copy h3 { max-width: 12ch; margin: 22px 0 16px; font-size: clamp(2.25rem, 4.1vw, 4rem); letter-spacing: -.04em; line-height: .94; overflow-wrap: anywhere; text-wrap: balance; }
+.deck-showcase-copy h3 { max-width: 14ch; margin: 22px 0 16px; font-size: clamp(2rem, 3.4vw, 3.2rem); letter-spacing: -.035em; line-height: 1; overflow-wrap: anywhere; text-wrap: balance; }
 .deck-showcase-copy > p { max-width: 46ch; margin: 0; color: #555257; line-height: 1.72; text-wrap: pretty; }
 .deck-showcase-tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0 0; padding: 0; list-style: none; }
 .deck-showcase-tags li { border: 1px solid #bab5b1; border-radius: 999px; padding: 6px 10px; font-size: .7rem; }
@@ -736,7 +634,7 @@ a { color: inherit; }
   .deck-index-header, .deck-index-hero, .deck-index-footer { width: min(var(--deck-index-content), calc(100% - 32px)); }
   .deck-index-header nav { gap: 16px; }
   .deck-index-all-link { display: none; }
-  .deck-index-hero h1 { font-size: clamp(3.25rem, 16vw, 4.7rem); }
+  .deck-index-hero h1 { font-size: clamp(2.7rem, 13vw, 3.8rem); }
   .deck-index-summary dl div { grid-template-columns: 80px minmax(0, 1fr); }
   .deck-catalog { padding-right: 16px; padding-left: 16px; }
   .deck-showcase { gap: 28px; }

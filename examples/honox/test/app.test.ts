@@ -46,7 +46,7 @@ describe("HonoX example", () => {
     expect(html).toContain("HonoX + hono-decks");
     expect(html).toContain('href="/decks/honox?lang=en"');
     expect(html).toContain('src="/decks/honox/embed?lang=en"');
-    expect(html).toContain("Talks built close to the code.");
+    expect(html).toContain("Publish talks with HonoX");
   });
 
   it("localizes HonoX pages from query, cookie, and Accept-Language", async () => {
@@ -63,7 +63,7 @@ describe("HonoX example", () => {
 
     const jaHtml = await ja.text();
     expect(jaHtml).toContain('<html lang="ja">');
-    expect(jaHtml).toContain("コードのそばで、登壇資料をつくる。");
+    expect(jaHtml).toContain("HonoXで登壇資料を公開する");
     expect(jaHtml).toContain('href="/decks?lang=ja"');
     expect(jaHtml).toContain('href="/?lang=en"');
     expect(ja.headers.get("set-cookie")).toContain("language=ja");
@@ -110,5 +110,15 @@ describe("HonoX example", () => {
     expect(await render.text()).toContain("Pages and presentations,");
     expect(embed.status).toBe(200);
     expect(embed.headers.get("content-security-policy")).toBe("frame-ancestors 'self' https://hono-decks.com");
+    const embedHtml = await embed.text();
+    expect(embedHtml).not.toContain('data-hono-decks-viewer-link="true"');
+    expect(embedHtml).toContain("data-hono-decks-back-link");
+    expect(embedHtml).toContain('data-action="previous"');
+    expect(embedHtml).toContain('data-slide-position="true"');
+    expect(embedHtml).toContain('data-action="next"');
+    expect(embedHtml).toContain('data-action="fullscreen"');
+    expect(embedHtml).toContain('data-hono-decks-print="true"');
+    expect(embedHtml).not.toContain('data-hono-decks-export="pdf"');
+    expect(embedHtml).not.toContain('data-hono-decks-export="png"');
   });
 });
