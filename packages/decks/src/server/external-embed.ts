@@ -13,7 +13,6 @@ import {
   createDeckViewerEmbed,
   type DeckViewerAvailablePages,
   type DeckViewerControlsOptions,
-  type DeckViewerControlsContext,
   type DeckViewerEmbed,
   type DeckViewerEmbedOptions,
 } from "./viewer";
@@ -76,7 +75,7 @@ export async function renderDeckExternalEmbedResponse<E extends Env>(input: {
   const controls: false | DeckViewerControlsOptions =
     viewerOptions?.controls === undefined
       ? {
-          items: (_defaults: unknown, context: DeckViewerControlsContext) => [
+          items: (_defaults, context) => [
             {
               type: "link" as const,
               key: "open-viewer",
