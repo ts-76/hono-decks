@@ -14,19 +14,19 @@
     "check": "bun run typecheck && bun run test && bun run build"
   },
   "dependencies": {
-    "hono": "^4.12.30",
+    "hono": "^4.12.31",
     "hono-decks": "0.1.0"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20260716.1",
+    "@cloudflare/workers-types": "^5.20260719.1",
     "@resvg/resvg-js": "^2.6.2",
     "@types/node": "^26.1.1",
     "satori": "^0.28.0",
     "typescript": "^7.0.2",
     "vite": "npm:@voidzero-dev/vite-plus-core@0.2.4",
-    "vite-plus": "0.2.4",
+    "vite-plus": "0.2.5",
     "vitest": "4.1.10",
-    "wrangler": "^4.111.0"
+    "wrangler": "^4.112.0"
   },
   "packageManager": "bun@1.3.13"
 }
