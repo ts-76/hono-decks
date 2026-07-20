@@ -82,13 +82,13 @@
   },
   "devDependencies": {
     "@tanstack/intent": "^0.3.6",
-    "hono": "^4.12.30",
+    "hono": "^4.12.31",
     "vite": "catalog:",
     "vite-plus": "catalog:",
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "hono": "^4.12.30",
+    "hono": "^4.12.31",
     "vite": "^6.0.0 || ^7.0.0 || ^8.0.0"
   },
   "peerDependenciesMeta": {

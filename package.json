@@ -33,22 +33,22 @@
     "check": "vp check && bun run typecheck && bun run test && bun run build:ogp && bun run build:docs"
   },
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "^0.18.5",
-    "@cloudflare/workers-types": "^5.20260716.1",
+    "@cloudflare/vitest-pool-workers": "^0.18.6",
+    "@cloudflare/workers-types": "^5.20260719.1",
     "@semantic-release/commit-analyzer": "^13.0.1",
     "@semantic-release/github": "^12.0.6",
     "@semantic-release/npm": "^13.1.5",
     "@semantic-release/release-notes-generator": "^14.1.0",
     "@types/node": "^26.1.1",
     "conventional-changelog-conventionalcommits": "^10.2.1",
-    "semantic-release": "^25.0.3",
-    "tsdown": "^0.22.7",
+    "semantic-release": "^25.0.8",
+    "tsdown": "^0.22.12",
     "typescript-parser": "npm:typescript@6.0.3",
     "typescript": "^7.0.2",
     "vite": "catalog:",
     "vite-plus": "catalog:",
     "vitest": "catalog:",
-    "wrangler": "^4.111.0"
+    "wrangler": "^4.112.0"
   },
   "overrides": {
     "vite": "catalog:",
