@@ -1,9 +1,34 @@
 import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
+import { analyzeCommits } from "@semantic-release/commit-analyzer";
+import semver from "semver";
 import { describe, expect, it } from "vite-plus/test";
+
+type ReleaseConfig = {
+  plugins: Array<string | [string, { preset: string; releaseRules: Array<Record<string, string | boolean>> }]>;
+};
 
 const packageRoot = join(import.meta.dirname, "..");
 const distRoot = join(packageRoot, "dist");
+const releaseConfig = (await import(new URL("../../../release.config.mjs", import.meta.url).href))
+  .default as ReleaseConfig;
+const commitAnalyzerPlugin = releaseConfig.plugins.find(
+  (plugin): plugin is [string, { preset: string; releaseRules: Array<Record<string, string | boolean>> }] =>
+    Array.isArray(plugin) && plugin[0] === "@semantic-release/commit-analyzer",
+);
+
+if (!commitAnalyzerPlugin) {
+  throw new Error("The semantic-release commit analyzer is not configured");
+}
+
+const commitAnalyzerConfig = commitAnalyzerPlugin[1];
+
+async function analyzeReleaseType(message: string): Promise<string | null> {
+  return analyzeCommits(commitAnalyzerConfig, {
+    commits: [{ message }],
+    logger: { log() {} },
+  });
+}
 
 async function readGeneratedModuleGraph(entry: string): Promise<string> {
   const pending = [join(distRoot, entry)];
@@ -167,5 +192,24 @@ describe("package build metadata", () => {
     expect(japaneseReadme).toContain("同じdocumentへ複数配置");
     expect(japaneseReadme).toContain("iframe navigationにCORSは不要");
     expect(japaneseReadme).not.toContain("root `README.md` を参照");
+  });
+
+  it("reserves breaking changes for the Ver1 major release", async () => {
+    const packageJson = JSON.parse(await readFile(join(packageRoot, "package.json"), "utf8")) as { version: string };
+
+    for (const [message, releaseType] of [
+      ["feat!: public API", "major"],
+      ["feat: new capability", "minor"],
+      ["fix: bug", "patch"],
+      ["perf: speed", "patch"],
+      ["fix(ci): pipeline", null],
+      ["chore: docs", null],
+      ["feat: body\n\nBREAKING CHANGE: API changed", "major"],
+    ] as const) {
+      expect(await analyzeReleaseType(message), message).toBe(releaseType);
+    }
+
+    expect(packageJson.version).toBe("0.5.0");
+    expect(semver.inc(packageJson.version, "major")).toBe("1.0.0");
   });
 });

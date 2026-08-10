@@ -9,7 +9,7 @@ export default {
       {
         preset: "conventionalcommits",
         releaseRules: [
-          { breaking: true, release: "minor" },
+          { breaking: true, release: "major" },
           { type: "feat", release: "minor" },
           { type: "fix", scope: "ci", release: false },
           { type: "fix", scope: "!(ci)", release: "patch" },

@@ -271,7 +271,7 @@ Copy-ready Worker examples use JSONC Wrangler configs, a current compatibility d
 
 ## Maintainer release flow
 
-GitHub Actions publishes `hono-decks` to npm from Conventional Commits merged into `main`. The package metadata in `packages/decks/package.json` is kept at the latest published version, and the matching Git tag is the semantic-release baseline. During the 0.x series, `feat` and breaking changes produce minor releases, while `fix` and `perf` produce patch releases. CI runs `bun run check` for pull requests. On `main`, the release workflow runs the same checks and `bun run smoke:package` before semantic-release.
+GitHub Actions publishes `hono-decks` to npm from Conventional Commits merged into `main`. The package metadata in `packages/decks/package.json` is kept at the latest published version, and the matching Git tag is the semantic-release baseline. During the 0.x series, `feat` produces a minor release, while `fix` and `perf` produce patch releases. A `BREAKING CHANGE` is reserved for the Ver1 boundary and produces the first major release, `1.0.0`. CI runs `bun run check` for pull requests. On `main`, the release workflow runs the same checks and `bun run smoke:package` before semantic-release.
 
 The current published baseline is `hono-decks@0.5.0` at `v0.5.0`. `scripts/verify-release-baseline.mjs` checks that the tag corresponding to `packages/decks/package.json` exists in the checked-out history before publication. When the baseline is missing, the workflow performs validation and safely skips publication.
 
