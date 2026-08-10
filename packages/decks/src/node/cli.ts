@@ -13,6 +13,7 @@ export interface RunHonoDecksCliInput {
   signal?: AbortSignal;
   /** Test/tooling hook for filesystem watching. */
   watchFileSystem?(
+    this: void,
     path: string,
     options: { recursive: boolean },
     listener: (eventType: "rename" | "change", filename: string | null) => void,

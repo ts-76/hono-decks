@@ -71,10 +71,10 @@ export function renderPresentationScript(nonce?: string): string {
     const entries = slideFires(slide).map((fire) => {
       const rawAt = fire.getAttribute("data-fire-at");
       let position;
-      if (rawAt !== null && /^\d+$/.test(rawAt)) {
+      if (rawAt !== null && /^[0-9]+$/.test(rawAt)) {
         position = Number(rawAt);
       } else {
-        const offset = rawAt !== null && /^[+-]\d+$/.test(rawAt) ? Number(rawAt) : 1;
+        const offset = rawAt !== null && /^[+-][0-9]+$/.test(rawAt) ? Number(rawAt) : 1;
         cursor += offset;
         position = cursor;
       }

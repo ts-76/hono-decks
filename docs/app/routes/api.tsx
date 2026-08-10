@@ -6,7 +6,7 @@ import { CodeBlock, DocsLayout, type PageSection } from "../site";
 interface ApiDefinition {
   id: string;
   symbol: string;
-  entry: "hono-decks" | "hono-decks/advanced" | "hono-decks/node" | "hono-decks/client";
+  entry: "hono-decks" | "hono-decks/advanced" | "hono-decks/node" | "hono-decks/client" | "hono-decks/vite";
   signature: string;
   description: { ja: string; en: string };
   when: { ja: string; en: string };
@@ -43,11 +43,12 @@ const nodeDefinitions: ApiDefinition[] = [
   { id: "compile-decks", symbol: "compileDecks", entry: "hono-decks/node", signature: "compileDecks(input: CompileDecksInput): Promise<DeckManifest>", description: { ja: "ファイルシステム上のデッキをコンパイルし、マニフェストとモジュールを出力します。", en: "Compiles filesystem decks and emits the manifest and generated modules." }, when: { ja: "独自のビルドスクリプトやプラグインからコンパイラーを呼ぶとき。通常はCLIのhono-decks compileを使います。", en: "Calling the compiler from a custom build script or plugin. Most projects use the hono-decks compile CLI." }, guide: "/docs/getting-started", source: "node/compile-decks.ts" },
   { id: "create-local-deck-io", symbol: "createLocalDeckIO", entry: "hono-decks/node", signature: "createLocalDeckIO(input: CreateLocalDeckIOInput): LocalDeckIO", description: { ja: "開発時に使う未変換デッキの読み書きを、実行時のDeckSourceから分離します。", en: "Keeps dev-only raw deck I/O separate from the runtime DeckSource." }, when: { ja: "デッキ編集・プレビュー機能を持つ独自の開発ツールを作るとき。通常の配信コードでは使いません。", en: "Building custom deck editing or preview tooling. It does not belong in ordinary runtime code." }, guide: "/docs/getting-started", source: "node/local-deck-io.ts" },
   { id: "hydrate-slide-islands", symbol: "hydrateSlideIslands", entry: "hono-decks/client", signature: "hydrateSlideIslands(input: HydrateSlideIslandsInput): void", description: { ja: "生成されたクライアントエントリーから、操作を伴うIslandを有効にします。", en: "Hydrates interactive islands from the generated client entry." }, when: { ja: "クライアントコードの配信処理を独自に構築するとき。通常は生成されたエントリーが自動で呼び出します。", en: "Building a custom client delivery pipeline. The generated client entry normally calls it for you." }, guide: "/docs/authoring", source: "client/islands.ts" },
+  { id: "hono-decks-vite", symbol: "honoDecks", entry: "hono-decks/vite", signature: "honoDecks(options?: HonoDecksViteOptions): Plugin", description: { ja: "Viteの起動前にデッキをコンパイルし、編集時の変更を監視します。", en: "Compiles decks before Vite starts and watches authoring changes." }, when: { ja: "HonoまたはHonoXの既存Vite構成に、別プロセスなしでデッキのcompileとreloadを組み込むとき。", en: "Adding deck compilation and reloads to an existing Hono or HonoX Vite setup without a separate watcher." }, guide: "/docs/getting-started", source: "vite.ts" },
 ];
 
 const sectionsByLocale: Record<Locale, PageSection[]> = {
-  ja: [{ id: "start", label: "最初に読む" }, { id: "runtime", label: "実行時API" }, { id: "rendering", label: "レンダリングと拡張" }, { id: "policy-types", label: "設定とモデルの型" }, { id: "build-client", label: "Node.js / クライアント" }],
-  en: [{ id: "start", label: "Start here" }, { id: "runtime", label: "Runtime entry" }, { id: "rendering", label: "Rendering" }, { id: "policy-types", label: "Policy and model types" }, { id: "build-client", label: "Node and client entries" }],
+  ja: [{ id: "start", label: "最初に読む" }, { id: "runtime", label: "実行時API" }, { id: "rendering", label: "レンダリングと拡張" }, { id: "policy-types", label: "設定とモデルの型" }, { id: "build-client", label: "Node.js・クライアント・Vite" }],
+  en: [{ id: "start", label: "Start here" }, { id: "runtime", label: "Runtime entry" }, { id: "rendering", label: "Rendering" }, { id: "policy-types", label: "Policy and model types" }, { id: "build-client", label: "Node, client, and Vite" }],
 };
 
 const sourceBase = "https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/";
@@ -79,7 +80,7 @@ export default createRoute((c) => {
   const description = isJa ? "用途に合うパッケージのエントリーを選び、必要な関数や型を確認できます。" : "Choose the correct package entry first, then find the function or type for the task at hand.";
   return c.render(
     <DocsLayout activePath="/api" title={title} description={description} sections={sectionsByLocale[locale]} locale={locale}>
-      <aside class="version-note"><strong>hono-decks 0.1.0</strong><span>{isJa ? "package.jsonのexportsと実装に基づき、アプリから直接使う主なAPIを掲載しています。" : "This page covers the main APIs that applications use directly, based on the package exports and source."}</span></aside>
+      <aside class="version-note"><strong>hono-decks API</strong><span>{isJa ? "package.jsonのexportsと実装に基づき、アプリから直接使う主なAPIを掲載しています。" : "This page covers the main APIs that applications use directly, based on the package exports and source."}</span></aside>
       <section id="start">
         <h2>{isJa ? "まずcreateDecks(config)から始める" : "Most applications start with the generated createDecks(config)"}</h2>
         <p>{isJa ? <>導入手順で作る<code>src/decks.ts</code>が、生成物と公開APIの境界になります。デッキを表示するだけなら、このページの低レベルAPIを直接組み合わせる必要はありません。</> : <>The <code>src/decks.ts</code> facade created in the getting-started guide is the boundary between generated modules and public APIs. You do not need to compose low-level APIs just to render a deck.</>}</p>
@@ -88,13 +89,14 @@ export default createRoute((c) => {
           <div><dt><code>hono-decks/advanced</code></dt><dd>{isJa ? "データ取得、ルーター、レンダラーを独自に組み立てるための低レベルAPIです。" : "Low-level APIs for custom sources, routers, and renderers."}</dd></div>
           <div><dt><code>hono-decks/node</code></dt><dd>{isJa ? "ファイル読み込みとコンパイルに使います。ビルド処理だけで読み込み、Workerには含めません。" : "Filesystem and compiler APIs for builds only. Never import this entry in Worker runtime code."}</dd></div>
           <div><dt><code>hono-decks/client</code></dt><dd>{isJa ? "Islandを有効にするためのエントリーです。通常は生成されたクライアントコードが使用します。" : "Island hydration. Generated client code normally uses it for you."}</dd></div>
+          <div><dt><code>hono-decks/vite</code></dt><dd>{isJa ? "Viteの起動前compileと、デッキ変更時の再compileを行います。" : "Compiles before Vite starts and recompiles when decks change."}</dd></div>
         </dl>
         <p><a class="text-link" href={localizedHref("/docs/getting-started", locale)}>{isJa ? "導入手順から始める" : "Start with the getting-started guide"} →</a></p>
       </section>
       <ApiSection id="runtime" title={isJa ? "実行時API" : "Runtime entry"} intro={isJa ? "HonoアプリやWorkerでは、hono-decksから読み込みます。まず生成されたcreateDecks(config)を使い、必要な機能が足りない場合に限って個別のAPIを利用してください。" : "Import these APIs from hono-decks in Hono and Worker code. Start with the generated facade, and use a direct API only when the facade does not cover your use case."}><ApiDefinitionList definitions={runtimeDefinitions} locale={locale} /></ApiSection>
       <ApiSection id="rendering" title={isJa ? "レンダリングと拡張" : "Rendering and extension"} intro={isJa ? "標準UIの一部を使う、独自UIへ差し替える、アセットの取得元を変える場合に使います。" : "Decompose and extend the default UI or replace its asset source."}><ApiDefinitionList definitions={renderingDefinitions} locale={locale} /></ApiSection>
       <ApiSection id="policy-types" title={isJa ? "設定とモデルの型" : "Configuration and model types"} intro={isJa ? "公開画面、HTMLの共通設定、独自のDeckSourceを型付きで定義するときに使います。" : "Types for public surfaces, shared HTML policy, and custom DeckSource implementations."}><ApiDefinitionList definitions={typeDefinitions} locale={locale} /></ApiSection>
-      <ApiSection id="build-client" title={isJa ? "Node.jsとクライアント向けエントリー" : "Node and client entries"} intro={isJa ? "ファイル操作とコンパイルはNode.js向けエントリーから、Islandの有効化はクライアント向けエントリーから読み込みます。" : "Filesystem/compiler APIs live in the Node entry; hydration lives in the client entry."}><ApiDefinitionList definitions={nodeDefinitions} locale={locale} /></ApiSection>
+      <ApiSection id="build-client" title={isJa ? "Node.js・クライアント・Vite向けエントリー" : "Node, client, and Vite entries"} intro={isJa ? "ファイル操作とコンパイルはNode.js向け、Islandの有効化はクライアント向け、既存のVite構成への統合はVite向けエントリーから読み込みます。" : "Filesystem/compiler APIs live in the Node entry, hydration in the client entry, and existing Vite setups use the Vite entry."}><ApiDefinitionList definitions={nodeDefinitions} locale={locale} /></ApiSection>
     </DocsLayout>,
     { title, description, activePath: "/api" },
   );

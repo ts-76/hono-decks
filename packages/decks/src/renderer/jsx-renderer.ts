@@ -280,15 +280,17 @@ export function createMdxComponents(
   input: {
     assets?: Array<{ sourcePath: string; publicPath: string; type: string }>;
   } = {},
-): Record<string, (props: Record<string, unknown>) => DeckRenderable> {
-  const components: Record<string, (props: Record<string, unknown>) => DeckRenderable> = {
-    img: (props: Record<string, unknown>) => jsx("img", rewriteAssetProps(props, input.assets)),
-    a: (props: Record<string, unknown>) => jsx("a", rewriteAssetProps(props, input.assets)),
+): Record<string, (props?: Record<string, unknown>) => DeckRenderable> {
+  const components: Record<string, (props?: Record<string, unknown>) => DeckRenderable> = {
+    img: (props) => jsx("img", rewriteAssetProps(props ?? {}, input.assets)),
+    a: (props) => jsx("a", rewriteAssetProps(props ?? {}, input.assets)),
   };
 
   for (const [name, definition] of Object.entries(registry)) {
-    components[name] = (props: Record<string, unknown> = {}) =>
-      renderRegisteredComponent(name, definition, props, props.children as DeckRenderable, input.assets);
+    components[name] = (props) => {
+      const resolvedProps = props ?? {};
+      return renderRegisteredComponent(name, definition, resolvedProps, resolvedProps.children as DeckRenderable, input.assets);
+    };
   }
 
   return components;
@@ -350,7 +352,11 @@ function codeBlockText(value: unknown): string {
   if (value === null || value === undefined || typeof value === "boolean") return "";
   if (typeof value === "string" || typeof value === "number") return String(value);
   if (isJsxValue(value)) return codeBlockText((value as { props?: { children?: unknown } }).props?.children);
-  return String(value);
+  try {
+    return JSON.stringify(value) ?? "";
+  } catch {
+    return "";
+  }
 }
 
 export function renderSlideNodes(
@@ -360,6 +366,8 @@ export function renderSlideNodes(
     assets?: Array<{ sourcePath: string; publicPath: string; type: string }>;
   } = {},
 ): string {
+  // Hono's HtmlEscapedString implements a synchronous string conversion used by this legacy renderer.
+  // oxlint-disable-next-line typescript/no-base-to-string -- preserve the renderer's existing sync contract
   return normalizeVoidElementSpacing(nodes.map((node) => String(renderSlideNode(node, input))).join(""));
 }
 

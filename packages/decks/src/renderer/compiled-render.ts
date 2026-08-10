@@ -10,7 +10,6 @@ import {
   renderSlideNodesAsync,
 } from "./jsx-renderer";
 import type { SlideComponentInput, SlideComponentRegistry } from "./jsx-renderer";
-import type { DeckRenderable, MaybePromise } from "./jsx-renderer";
 
 export { defineSlideComponents };
 export { createMdxComponents };

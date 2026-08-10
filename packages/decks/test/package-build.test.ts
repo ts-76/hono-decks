@@ -160,8 +160,10 @@ describe("package build metadata", () => {
     expect(readme).toContain("Iframe navigation does not require CORS");
     expect(readme).toContain("defineDecksConfig<AppEnv>");
     expect(readme).toContain("createDecks(config)");
+    expect(readme).toContain("hono-decks/vite");
     expect(readme).toContain("viewer.render");
     expect(japaneseReadme).toContain("createDeckViewerEmbed()");
+    expect(japaneseReadme).toContain("hono-decks/vite");
     expect(japaneseReadme).toContain("同じdocumentへ複数配置");
     expect(japaneseReadme).toContain("iframe navigationにCORSは不要");
     expect(japaneseReadme).not.toContain("root `README.md` を参照");

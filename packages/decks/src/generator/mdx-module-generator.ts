@@ -10,7 +10,7 @@ import {
   toSlideFrontmatter,
 } from "../deck/frontmatter";
 import { combineSpeakerNotes, extractMdxCommentSpeakerNotes } from "../deck/speaker-notes";
-import type { AssetRef, CompiledDeck, DeckKind } from "../deck/model";
+import type { AssetRef, CompiledDeck } from "../deck/model";
 import { parseDeckWithWarnings, type ParserWarning } from "../parser/parser";
 import type { ResolvedDeckFile } from "../routing/file-routing";
 import {
@@ -39,7 +39,7 @@ export interface CompileMdxModuleDecksInput {
   componentModulePaths?: Record<string, string>;
   clientComponentIds?: Record<string, Record<string, string>>;
   themeStyles?: Record<string, DeckThemeStyleEntry>;
-  resolveOgp?(url: string): Promise<LinkCardOgpMetadata | undefined>;
+  resolveOgp?(this: void, url: string): Promise<LinkCardOgpMetadata | undefined>;
   readText(path: string): Promise<string>;
   readBinary?(path: string): Promise<Uint8Array>;
 }

@@ -118,7 +118,7 @@ function zennEmbedNode(
   if (node.type !== "paragraph" || !Array.isArray(node.children) || node.children.length !== 2) return undefined;
 
   const [prefix, link] = node.children;
-  if (prefix?.type !== "text" || String(prefix.value ?? "").trim() !== "@") return undefined;
+  if (prefix?.type !== "text" || typeof prefix.value !== "string" || prefix.value.trim() !== "@") return undefined;
   if (link?.type !== "link" || typeof link.url !== "string") return undefined;
 
   const name = collectMarkdownText(link).trim().toLowerCase();

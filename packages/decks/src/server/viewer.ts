@@ -343,7 +343,7 @@ export async function renderDeckViewerPage<E extends Env = any>(input: {
   ${document.head}
 </head>
 <body>
-  ${await renderJsxValue(await content)}
+  ${await renderJsxValue(content)}
   ${renderViewerScript(document.nonce)}
 </body>
 </html>`;

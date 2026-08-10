@@ -259,6 +259,7 @@ Image generation is intentionally not part of the core package. The <code>exampl
 - <code>hono-decks/advanced</code>: <code>defineDecks()</code>, <code>decksRouter()</code>, <code>deckContext()</code>, raw renderers, and other low-level pipeline APIs
 - <code>hono-decks/client</code>: browser hydration
 - <code>hono-decks/node</code>: the compiler and Node filesystem adapter
+- <code>hono-decks/vite</code>: Vite integration that compiles and watches decks during development
 - <code>hono-decks/cli</code>: the programmatic CLI runner
 
 The generated workflow normally imports only the root entry. Use <code>hono-decks/advanced</code> only when assembling a custom <code>DeckSource</code> or router from the lower-level primitives.

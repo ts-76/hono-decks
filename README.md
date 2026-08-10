@@ -241,6 +241,7 @@ router: {
 - `hono-decks/advanced`: low-level APIs for assembling raw routers, sources, and renderers
 - `hono-decks/client`: client-island hydration
 - `hono-decks/node`: compiler and local-filesystem adapters
+- `hono-decks/vite`: Vite integration for compiling and watching decks during development
 - `hono-decks/cli`: programmatic CLI
 
 Most applications should use the root entry and the generated `createDecks(config)` function.

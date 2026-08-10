@@ -220,7 +220,10 @@ describe("HonoX documentation site", () => {
     expect(html).toContain('id="configured-decks"');
     expect(html).toContain('id="deck-document-options"');
     expect(html).toContain('id="compile-decks"');
+    expect(html).toContain('id="hono-decks-vite"');
     expect(html).toContain("import type { ConfiguredDecks }");
+    expect(html).toContain("hono-decks/vite");
+    expect(html).toContain("honoDecks");
     expect(html).toContain("interface ConfiguredDecks");
     expect(html).toContain("packages/decks/src/server/define-decks.ts");
     expect(html).toContain("使う場面");
