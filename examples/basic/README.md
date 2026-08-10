@@ -42,6 +42,17 @@ bunx wrangler secret put DECK_EMBED_ALLOWED_ORIGINS
 
 The production config is an example deployment configuration. Replace its account, domain, and resource names with values owned by your Cloudflare account before deploying. Add the `DECK_ASSETS` R2 binding to the production config when the deployed sample should exercise R2 rather than embedded assets.
 
+## Local smoke checks
+
+The example includes browser-level checks for the surfaces that unit tests cannot fully cover:
+
+```bash
+bun run --cwd examples/basic smoke:viewport
+bun run --cwd examples/basic smoke:pdf
+```
+
+The viewport check covers desktop and mobile layouts, keyboard and touch navigation, motion steps, assets, and the external embed. The PDF check validates generated page counts and rendered previews. Both require the `agent-browser` Chromium binary; PDF preview validation also needs Poppler or macOS Quick Look.
+
 ## What to inspect
 
 - `hono-decks.config.ts` — one config shared by compilation and runtime routing

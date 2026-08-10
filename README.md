@@ -271,24 +271,21 @@ Copy-ready Worker examples use JSONC Wrangler configs, a current compatibility d
 
 ## Maintainer release flow
 
-GitHub Actions publishes `hono-decks` to npm from Conventional Commits merged into `main`. During the 0.x series, `feat` and breaking changes produce minor releases, while `fix` and `perf` produce patch releases. CI runs `bun run check` for pull requests. On `main`, the release workflow runs the same checks before semantic-release.
+GitHub Actions publishes `hono-decks` to npm from Conventional Commits merged into `main`. The package metadata in `packages/decks/package.json` is kept at the latest published version, and the matching Git tag is the semantic-release baseline. During the 0.x series, `feat` and breaking changes produce minor releases, while `fix` and `perf` produce patch releases. CI runs `bun run check` for pull requests. On `main`, the release workflow runs the same checks and `bun run smoke:package` before semantic-release.
 
-The first `0.1.0` release must be published manually because no npm package or baseline release tag exists yet. Until a baseline tag exists, the release workflow performs validation and safely skips publication.
+The current published baseline is `hono-decks@0.5.0` at `v0.5.0`. `scripts/verify-release-baseline.mjs` checks that the tag corresponding to `packages/decks/package.json` exists in the checked-out history before publication. When the baseline is missing, the workflow performs validation and safely skips publication.
 
 ```bash
 bun install --frozen-lockfile
 bun run check
-cd packages/decks
-npm publish --access public
-cd ../..
-git tag -a v0.1.0 -m "hono-decks v0.1.0"
-git push origin v0.1.0
+bun run smoke:package
+bun run release
 ```
 
-`npm publish` requires an npm account login and 2FA. After publishing, configure GitHub Actions as a Trusted Publisher in the npm settings for the `hono-decks` package:
+For a new baseline, first publish the exact version in `packages/decks/package.json` and create the matching annotated tag before enabling publication. `npm publish` requires an npm account login and 2FA. Configure GitHub Actions as a Trusted Publisher in the npm settings for the `hono-decks` package:
 
 - Organization or user: `ts-76`
 - Repository: `hono-decks`
 - Workflow filename: `release.yml`
 
-Subsequent releases use GitHub OIDC and provenance, so do not store an npm token in GitHub Secrets. Attach the tag to the exact commit used to publish `0.1.0`.
+Releases use GitHub OIDC and provenance, so do not store an npm token in GitHub Secrets. Keep the package version, published npm version, and matching Git tag on the same release baseline.

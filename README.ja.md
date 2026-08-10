@@ -270,24 +270,21 @@ copy 可能な Worker example は JSONC の Wrangler config、current compatibil
 
 ## Maintainer release flow
 
-`main` へ入った Conventional Commits をもとに、GitHub Actions が `hono-decks` を npm へ公開します。0.x の間は `feat` と破壊的変更を minor release、`fix` と `perf` を patch release として扱います。CI は pull request で `bun run check`、Release workflow は `main` で同じ確認を通した後に semantic-release を実行します。
+`main` へ入った Conventional Commits をもとに、GitHub Actions が `hono-decks` を npm へ公開します。`packages/decks/package.json` には最新の公開versionを記載し、同じversionのGit tagをsemantic-releaseの基準にします。0.x の間は `feat` と破壊的変更を minor release、`fix` と `perf` を patch release として扱います。CI は pull request で `bun run check`、Release workflow は `main` で同じ確認と `bun run smoke:package` を通した後に semantic-release を実行します。
 
-初回だけは npm package と release tag の基準がないため、`0.1.0` を手動で登録します。基準 tag がない間、Release workflow は検証だけを行い、公開を安全にスキップします。
+現在の公開基準は `hono-decks@0.5.0` と `v0.5.0` です。`scripts/verify-release-baseline.mjs` が、package.jsonのversionに対応するtagがcheckout済みの履歴にあることを確認します。基準tagがない間、Release workflowは検証だけを行い、公開を安全にスキップします。
 
 ```bash
 bun install --frozen-lockfile
 bun run check
-cd packages/decks
-npm publish --access public
-cd ../..
-git tag -a v0.1.0 -m "hono-decks v0.1.0"
-git push origin v0.1.0
+bun run smoke:package
+bun run release
 ```
 
-`npm publish` には npm account の login と 2FA が必要です。公開後、npm の `hono-decks` package settings で GitHub Actions の Trusted Publisher を次の内容で登録します。
+新しい基準を作る場合は、`packages/decks/package.json` のversionを先に公開し、同じcommitへ対応するannotated tagを付けます。`npm publish` には npm account のloginと2FAが必要です。npmの `hono-decks` package settingsでは、GitHub ActionsのTrusted Publisherを次の内容で登録します。
 
 - Organization or user: `ts-76`
 - Repository: `hono-decks`
 - Workflow filename: `release.yml`
 
-以後は npm token を GitHub Secrets に置かず、GitHub OIDC と provenance で公開します。tag は必ず実際に `0.1.0` を公開した commit に付けてください。
+以後は npm token を GitHub Secrets に置かず、GitHub OIDC と provenance で公開します。package version、npmの公開version、対応するGit tagは同じ基準に揃えてください。

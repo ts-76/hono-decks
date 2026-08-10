@@ -19,10 +19,13 @@ describe("minimal example", () => {
       scripts: Record<string, string>;
       dependencies: Record<string, string>;
     };
+    const publishedPackage = JSON.parse(
+      await readFile(new URL("../../../packages/decks/package.json", import.meta.url), "utf8"),
+    ) as { version: string };
 
     expect(generated).toContain('from "hono-decks"');
     expect(generated).not.toContain("hono-decks/runtime");
-    expect(packageJson.dependencies["hono-decks"]).toBe("0.1.0");
+    expect(packageJson.dependencies["hono-decks"]).toBe(publishedPackage.version);
     expect(packageJson.scripts.dev).toBe("wrangler dev --live-reload");
     expect(packageJson.scripts.deploy).toBe("wrangler deploy");
     expect(packageJson.scripts["deploy:production"]).toContain("wrangler.production.jsonc");

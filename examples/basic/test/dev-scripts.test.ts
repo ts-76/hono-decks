@@ -7,8 +7,11 @@ describe("development scripts", () => {
       scripts: Record<string, string>;
       dependencies: Record<string, string>;
     };
+    const publishedPackage = JSON.parse(
+      await readFile(new URL("../../../packages/decks/package.json", import.meta.url), "utf8"),
+    ) as { version: string };
 
-    expect(packageJson.dependencies["hono-decks"]).toBe("0.1.0");
+    expect(packageJson.dependencies["hono-decks"]).toBe(publishedPackage.version);
     expect(packageJson.scripts["decks:compile"]).toBe("hono-decks compile");
     expect(packageJson.scripts["decks:compile:hook"]).toBe("hono-decks compile");
     expect(packageJson.scripts["decks:watch"]).toBeUndefined();
@@ -51,6 +54,10 @@ describe("development scripts", () => {
     expect(source).toContain('CI: "1"');
     expect(source).toContain("XDG_CONFIG_HOME: wranglerConfigHome");
     expect(source).toContain('NO_COLOR: "1"');
+    expect(source).toContain('data-hono-decks-mobile-navigation="next"');
+    expect(source).toContain('querySelector(".slide:not([hidden])")');
+    expect(source).toContain('touchEvent("touchstart"');
+    expect(source).not.toContain("data-viewer-navigation");
   });
 
   it("starts PDF smoke wrangler with non-interactive workspace-local configuration", async () => {

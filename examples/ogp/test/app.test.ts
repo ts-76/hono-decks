@@ -9,10 +9,13 @@ describe("OGP example", () => {
       scripts: Record<string, string>;
       dependencies: Record<string, string>;
     };
+    const publishedPackage = JSON.parse(
+      await readFile(new URL("../../../packages/decks/package.json", import.meta.url), "utf8"),
+    ) as { version: string };
     const wranglerConfig = await readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8");
     const productionConfig = await readFile(new URL("../wrangler.production.jsonc", import.meta.url), "utf8");
 
-    expect(packageJson.dependencies["hono-decks"]).toBe("0.1.0");
+    expect(packageJson.dependencies["hono-decks"]).toBe(publishedPackage.version);
     expect(Object.values(packageJson.scripts).join(" ")).not.toContain("../../packages/decks");
     expect(wranglerConfig).not.toContain('"alias"');
     expect(wranglerConfig).not.toContain("account_id");

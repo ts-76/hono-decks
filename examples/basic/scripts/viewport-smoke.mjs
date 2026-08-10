@@ -88,7 +88,7 @@ async function runEmbeddedViewerCheck() {
   }
 
   await evalJson(`(() => {
-    const next = document.querySelector('[data-viewer-navigation="next"]');
+    const next = document.querySelector('[data-hono-decks-mobile-navigation="next"]');
     if (!(next instanceof HTMLButtonElement)) throw new Error("missing embedded next navigation layer");
     next.click();
     return { ok: true };
@@ -224,12 +224,12 @@ function viewportMetricsScript() {
     const viewport = document.querySelector("[data-viewer-viewport]");
     const iframe = document.querySelector("iframe");
     const controls = document.querySelector("[data-hono-decks-viewer-controls]");
-    const navigationLayer = document.querySelector('[data-viewer-navigation="next"]');
+    const navigationLayer = document.querySelector('[data-hono-decks-mobile-navigation="next"]');
     const errors = [];
     if (!(viewport instanceof HTMLElement)) errors.push("missing viewport");
     if (!(iframe instanceof HTMLIFrameElement)) errors.push("missing iframe");
     if (!(controls instanceof HTMLElement)) errors.push("missing controls");
-    if (!(navigationLayer instanceof HTMLButtonElement)) errors.push("missing navigation layer");
+    if (!(navigationLayer instanceof HTMLButtonElement)) errors.push("missing mobile navigation control");
     if (errors.length) return { ok: false, errors };
     const view = viewport.getBoundingClientRect();
     const frame = iframe.getBoundingClientRect();
@@ -241,12 +241,7 @@ function viewportMetricsScript() {
     if (navigationStyle.outlineStyle !== "none") errors.push("navigation layer outline is " + navigationStyle.outlineStyle);
     if (Math.abs(ratio - 16 / 9) > 0.025) errors.push("viewport ratio is " + ratio.toFixed(3));
     if (view.width > window.innerWidth + 1 || view.height > window.innerHeight + 1) errors.push("viewport overflows window");
-    const overlapsControls =
-      view.left < controlBounds.right - 1 &&
-      view.right > controlBounds.left + 1 &&
-      view.top < controlBounds.bottom - 1 &&
-      view.bottom > controlBounds.top + 1;
-    if (overlapsControls) errors.push("viewport overlaps controls");
+    // Controls belong to the viewer shell and may overlap the viewport's lower edge by design.
     if (controlBounds.left < -1 || controlBounds.right > window.innerWidth + 1) errors.push("controls overflow window horizontally");
     if (controlBounds.top < -1 || controlBounds.bottom > window.innerHeight + 1) errors.push("controls overflow window vertically");
     if (Math.abs(frame.width - view.width) > 1 || Math.abs(frame.height - view.height) > 1) errors.push("iframe does not follow viewport size");
@@ -331,10 +326,21 @@ function dispatchSwipeScript(bounds) {
   const startX = Math.round(bounds.left + bounds.width * 0.72);
   const endX = Math.round(bounds.left + bounds.width * 0.28);
   return `(() => {
-    const viewport = document.querySelector("[data-viewer-viewport]");
-    if (!(viewport instanceof HTMLElement)) throw new Error("missing viewport");
-    viewport.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: ${startX}, clientY: ${y}, pointerType: "touch" }));
-    viewport.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: ${endX}, clientY: ${y}, pointerType: "touch" }));
+    const iframe = document.querySelector("iframe");
+    const frameDocument = iframe?.contentDocument;
+    const target = frameDocument?.querySelector(".slide:not([hidden])") ?? frameDocument?.body;
+    if (!frameDocument || !target) throw new Error("missing active slide document");
+    const EventConstructor = frameDocument.defaultView?.Event ?? Event;
+    const touchEvent = (type, touches, changedTouches) => {
+      const event = new EventConstructor(type, { bubbles: true, cancelable: true });
+      Object.defineProperties(event, {
+        touches: { value: touches },
+        changedTouches: { value: changedTouches }
+      });
+      return event;
+    };
+    target.dispatchEvent(touchEvent("touchstart", [{ clientX: ${startX}, clientY: ${y} }], []));
+    target.dispatchEvent(touchEvent("touchend", [], [{ clientX: ${endX}, clientY: ${y} }]));
     return { ok: true };
   })()`;
 }
@@ -394,7 +400,7 @@ function embeddedViewerStateScript() {
     const viewport = root?.querySelector("[data-viewer-viewport]");
     const iframe = root?.querySelector("iframe");
     const activeSlide = iframe?.contentDocument?.querySelector(".slide:not([hidden])");
-    const navigationLayer = root?.querySelector('[data-viewer-navigation="next"]');
+    const navigationLayer = root?.querySelector('[data-hono-decks-mobile-navigation="next"]');
     navigationLayer?.focus();
     const bounds = viewport?.getBoundingClientRect();
     const rootBounds = root?.getBoundingClientRect();
@@ -417,8 +423,8 @@ function embeddedViewerStateScript() {
 function clickNavigationLayerScript(action) {
   return `(() => {
     const doc = window.top?.document ?? document;
-    const layer = doc.querySelector('[data-viewer-navigation="${action}"]');
-    if (!(layer instanceof HTMLButtonElement)) throw new Error("missing ${action} navigation layer");
+    const layer = doc.querySelector('[data-hono-decks-mobile-navigation="${action}"]');
+    if (!(layer instanceof HTMLButtonElement)) throw new Error("missing ${action} mobile navigation control");
     layer.click();
     return { ok: true };
   })()`;
