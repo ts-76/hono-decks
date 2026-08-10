@@ -270,16 +270,25 @@ copy 可能な Worker example は JSONC の Wrangler config、current compatibil
 
 ## Maintainer release flow
 
-`main` へ入った Conventional Commits をもとに、GitHub Actions が `hono-decks` を npm へ公開します。`packages/decks/package.json` には最新の公開versionを記載し、同じversionのGit tagをsemantic-releaseの基準にします。0.x の間は `feat` をminor release、`fix` と `perf` をpatch releaseとして扱います。`BREAKING CHANGE`はVer1の境界を示すために予約し、最初のmajor releaseである`1.0.0`へ進めます。CIはpull requestで`bun run check`、Release workflowは`main`で同じ確認と`bun run smoke:package`を通した後にsemantic-releaseを実行します。
+`main` へ入った Conventional Commits をもとに、GitHub Actions が `hono-decks` を npm へ公開します。`packages/decks/package.json` には最新の公開versionを記載し、同じversionのGit tagをsemantic-releaseの基準にします。0.x の間は `feat` をminor release、`fix` と `perf` をpatch releaseとして扱います。`BREAKING CHANGE`はVer1の境界を示すために予約し、最初のmajor releaseである`1.0.0`へ進めます。CIはpull requestで`bun run check`、Release workflowは`main`で同じ確認と`bun run smoke:package:compat`を通した後にsemantic-releaseを実行します。
 
 Ver1のreleaseを開始するときは、`main`上でsemantic-releaseが解析するcommit messageに、Conventional Commitsの`feat!:`（scope付きは`feat(scope)!:`）または`BREAKING CHANGE:` footerを残します。squash mergeではPR本文だけに依存せず、merge画面で最終的なsquash commit messageにmarkerが残っていることを確認してください。
 
-現在の公開基準は `hono-decks@0.5.0` と `v0.5.0` です。`scripts/verify-release-baseline.mjs` が、package.jsonのversionに対応するtagがcheckout済みの履歴にあることを確認します。基準tagがない間、Release workflowは検証だけを行い、公開を安全にスキップします。
+現在の公開基準は `hono-decks@0.5.0` と `v0.5.0` です。`scripts/verify-release-baseline.mjs` が、package.jsonのversionに対応するtagがcheckout済みの履歴にあることを確認します。基準tagがない間、Release workflowは検証だけを行い、公開を安全にスキップします。Release workflowでは、宣言したVite 6・7・8のpeer rangeに対して`bun run smoke:package:compat`も実行します。
+
+Ver1のrelease commitを`main`へmergeする前に、次のbrowserとPDFの手動チェックを実行してください。merge後にGitHub Actionsが自動実行するのは`bun run check`と`bun run smoke:package:compat`で、これらのbrowser/PDFチェックは現時点では自動実行しません。両コマンドには`agent-browser`のChromium binaryが必要で、PDF previewの検証にはPopplerまたはmacOS Quick Lookも必要です。準備方法は[basic exampleのlocal smoke checks](examples/basic/README.md#local-smoke-checks)を参照してください。
+
+```bash
+bun run smoke:viewport
+bun run smoke:pdf
+```
+
+次のコマンドブロックはmerge後にGitHub Actionsが実行する確認とrelease commandを示したものです。`bun run release`はmerge前のbrowser/PDF手動gateには含めません。
 
 ```bash
 bun install --frozen-lockfile
 bun run check
-bun run smoke:package
+bun run smoke:package:compat
 bun run release
 ```
 

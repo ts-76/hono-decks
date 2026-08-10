@@ -159,6 +159,8 @@ describe("package build metadata", () => {
       "DeckViewerDefaultControlItem",
       "DeckViewerLinkControlItem",
       "DeckViewerRenderControlItem",
+      "DeckViewerOpenGraphInput",
+      "DeckViewerOpenGraphOptions",
       "SlideFrontmatter",
     ]) {
       expect(runtimeTypes, name).toContain(name);
@@ -202,12 +204,53 @@ describe("package build metadata", () => {
     ]);
 
     for (const [documentation, markers] of [
-      [readme, ["feat!:", "BREAKING CHANGE:", "squash", "final squash commit message"]],
-      [japaneseReadme, ["feat!:", "BREAKING CHANGE:", "squash", "最終的なsquash commit message"]],
+      [readme, ["feat!:", "BREAKING CHANGE:", "squash", "final squash commit message", "smoke:package:compat"]],
+      [
+        japaneseReadme,
+        ["feat!:", "BREAKING CHANGE:", "squash", "最終的なsquash commit message", "smoke:package:compat"],
+      ],
     ] as const) {
       for (const marker of markers) {
         expect(documentation, marker).toContain(marker);
       }
+    }
+  });
+
+  it("documents the manual browser and PDF release gate before the merge", async () => {
+    const [readme, japaneseReadme] = await Promise.all([
+      readFile(join(repositoryRoot, "README.md"), "utf8"),
+      readFile(join(repositoryRoot, "README.ja.md"), "utf8"),
+    ]);
+
+    for (const [documentation, markers] of [
+      [
+        readme,
+        [
+          "Before merging a Ver1 release commit",
+          "bun run smoke:viewport",
+          "bun run smoke:pdf",
+          "does not currently run these browser/PDF checks",
+        ],
+      ],
+      [
+        japaneseReadme,
+        [
+          "`main`へmergeする前に",
+          "bun run smoke:viewport",
+          "bun run smoke:pdf",
+          "browser/PDFチェックは現時点では自動実行しません",
+        ],
+      ],
+    ] as const) {
+      const releaseFlowStart = documentation.indexOf("## Maintainer release flow");
+      expect(releaseFlowStart).toBeGreaterThanOrEqual(0);
+      const releaseFlow = documentation.slice(releaseFlowStart);
+
+      for (const marker of markers) {
+        expect(releaseFlow, marker).toContain(marker);
+      }
+
+      expect(releaseFlow.indexOf("bun run smoke:viewport")).toBeLessThan(releaseFlow.indexOf("bun run smoke:pdf"));
     }
   });
 

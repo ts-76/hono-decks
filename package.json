@@ -23,6 +23,7 @@
     "deploy:ogp": "bun run --cwd examples/ogp deploy:production",
     "decks:compile": "bun run --cwd packages/decks decks:compile",
     "smoke:package": "bun run build && node scripts/smoke-package.mjs",
+    "smoke:package:compat": "bun run build && node scripts/smoke-package-matrix.mjs",
     "smoke:pdf": "bun run --cwd examples/basic smoke:pdf",
     "smoke:viewport": "bun run --cwd examples/basic smoke:viewport",
     "release": "node scripts/verify-release-baseline.mjs && semantic-release",

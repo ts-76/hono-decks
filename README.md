@@ -271,16 +271,25 @@ Copy-ready Worker examples use JSONC Wrangler configs, a current compatibility d
 
 ## Maintainer release flow
 
-GitHub Actions publishes `hono-decks` to npm from Conventional Commits merged into `main`. The package metadata in `packages/decks/package.json` is kept at the latest published version, and the matching Git tag is the semantic-release baseline. During the 0.x series, `feat` produces a minor release, while `fix` and `perf` produce patch releases. A `BREAKING CHANGE` is reserved for the Ver1 boundary and produces the first major release, `1.0.0`. CI runs `bun run check` for pull requests. On `main`, the release workflow runs the same checks and `bun run smoke:package` before semantic-release.
+GitHub Actions publishes `hono-decks` to npm from Conventional Commits merged into `main`. The package metadata in `packages/decks/package.json` is kept at the latest published version, and the matching Git tag is the semantic-release baseline. During the 0.x series, `feat` produces a minor release, while `fix` and `perf` produce patch releases. A `BREAKING CHANGE` is reserved for the Ver1 boundary and produces the first major release, `1.0.0`. CI runs `bun run check` for pull requests. On `main`, the release workflow runs the same checks and `bun run smoke:package:compat` before semantic-release.
 
 To start the Ver1 release, the commit message analyzed on `main` must retain a Conventional Commits marker such as `feat!:` (or `feat(scope)!:`) or a `BREAKING CHANGE:` footer. When squash-merging, do not rely on the PR body alone: confirm the final squash commit message in the merge dialog contains the marker.
 
-The current published baseline is `hono-decks@0.5.0` at `v0.5.0`. `scripts/verify-release-baseline.mjs` checks that the tag corresponding to `packages/decks/package.json` exists in the checked-out history before publication. When the baseline is missing, the workflow performs validation and safely skips publication.
+The current published baseline is `hono-decks@0.5.0` at `v0.5.0`. `scripts/verify-release-baseline.mjs` checks that the tag corresponding to `packages/decks/package.json` exists in the checked-out history before publication. When the baseline is missing, the workflow performs validation and safely skips publication. The release workflow also runs `bun run smoke:package:compat` against the declared Vite 6, 7, and 8 peer range.
+
+Before merging a Ver1 release commit into `main`, run the following manual browser and PDF checks. After the merge, GitHub Actions automatically runs `bun run check` and `bun run smoke:package:compat`; it does not currently run these browser/PDF checks. Both commands require the `agent-browser` Chromium binary, and PDF preview validation also needs Poppler or macOS Quick Look. See [the basic example's local smoke checks](examples/basic/README.md#local-smoke-checks) for setup details.
+
+```bash
+bun run smoke:viewport
+bun run smoke:pdf
+```
+
+The command block below mirrors the checks and release command that GitHub Actions runs after the merge; do not treat `bun run release` as part of the pre-merge browser/PDF gate.
 
 ```bash
 bun install --frozen-lockfile
 bun run check
-bun run smoke:package
+bun run smoke:package:compat
 bun run release
 ```
 

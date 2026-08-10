@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const packageRoot = join(repoRoot, "packages", "decks");
+const viteVersion = process.env.HONO_DECKS_SMOKE_VITE_VERSION ?? "^8.0.0";
 const temporaryRoot = mkdtempSync(join(tmpdir(), "hono-decks-package-"));
 const consumerRoot = join(temporaryRoot, "consumer");
 
@@ -59,7 +60,9 @@ try {
       "--package-lock=false",
       tarballPath,
       "hono@^4.12.30",
-      "vite@^8.0.0",
+      "@types/node@^26.1.1",
+      "typescript@^7.0.2",
+      `vite@${viteVersion}`,
     ],
     { cwd: consumerRoot },
   );
@@ -87,6 +90,57 @@ for (const entrypoint of entrypoints) {
     cwd: consumerRoot,
   });
 
+  const typeSmokeScriptPath = join(consumerRoot, "type-smoke.ts");
+  writeFileSync(
+    typeSmokeScriptPath,
+    `import type {
+  DeckSource,
+  DeckViewerOpenGraphInput,
+  DeckViewerOpenGraphOptions,
+  DecksConfig,
+} from "hono-decks";
+import type { DecksRouterOptions } from "hono-decks/advanced";
+import type { HydrateSlideIslandsInput } from "hono-decks/client";
+import type { CompileDeckInput, DeckMiddlewareOptions } from "hono-decks/node";
+import type { HonoDecksViteOptions } from "hono-decks/vite";
+import type { RunHonoDecksCliInput, RunHonoDecksCliResult } from "hono-decks/cli";
+
+type PublicApiSmoke = {
+  config: DecksConfig;
+  source: DeckSource;
+  openGraphInput: DeckViewerOpenGraphInput;
+  openGraphOptions: DeckViewerOpenGraphOptions;
+  router: DecksRouterOptions;
+  client: HydrateSlideIslandsInput;
+  compile: CompileDeckInput;
+  middleware: DeckMiddlewareOptions;
+  vite: HonoDecksViteOptions;
+  cliInput: RunHonoDecksCliInput;
+  cliResult: RunHonoDecksCliResult;
+};
+
+declare const publicApiSmoke: PublicApiSmoke;
+void publicApiSmoke;
+`,
+  );
+  run(
+    join(consumerRoot, "node_modules", ".bin", "tsc"),
+    [
+      "--noEmit",
+      "--strict",
+      "--module",
+      "NodeNext",
+      "--moduleResolution",
+      "NodeNext",
+      "--target",
+      "ES2022",
+      "--lib",
+      "ESNext,DOM",
+      typeSmokeScriptPath,
+    ],
+    { cwd: consumerRoot },
+  );
+
   const installedPackage = JSON.parse(
     readFileSync(join(consumerRoot, "node_modules", "hono-decks", "package.json"), "utf8"),
   );
@@ -96,7 +150,7 @@ for (const entrypoint of entrypoints) {
     );
   }
 
-  console.log(`Verified ${packResult.filename} on Node.js ${process.version}`);
+  console.log(`Verified ${packResult.filename} on Node.js ${process.version} with Vite ${viteVersion}`);
 } finally {
   rmSync(temporaryRoot, { force: true, recursive: true });
 }
