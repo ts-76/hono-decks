@@ -10,6 +10,7 @@ type ReleaseConfig = {
 
 const packageRoot = join(import.meta.dirname, "..");
 const distRoot = join(packageRoot, "dist");
+const repositoryRoot = join(packageRoot, "..", "..");
 const releaseConfig = (await import(new URL("../../../release.config.mjs", import.meta.url).href))
   .default as ReleaseConfig;
 const commitAnalyzerPlugin = releaseConfig.plugins.find(
@@ -192,6 +193,22 @@ describe("package build metadata", () => {
     expect(japaneseReadme).toContain("同じdocumentへ複数配置");
     expect(japaneseReadme).toContain("iframe navigationにCORSは不要");
     expect(japaneseReadme).not.toContain("root `README.md` を参照");
+  });
+
+  it("documents how to preserve the Ver1 release marker through squash merges", async () => {
+    const [readme, japaneseReadme] = await Promise.all([
+      readFile(join(repositoryRoot, "README.md"), "utf8"),
+      readFile(join(repositoryRoot, "README.ja.md"), "utf8"),
+    ]);
+
+    for (const [documentation, markers] of [
+      [readme, ["feat!:", "BREAKING CHANGE:", "squash", "final squash commit message"]],
+      [japaneseReadme, ["feat!:", "BREAKING CHANGE:", "squash", "最終的なsquash commit message"]],
+    ] as const) {
+      for (const marker of markers) {
+        expect(documentation, marker).toContain(marker);
+      }
+    }
   });
 
   it("reserves breaking changes for the Ver1 major release", async () => {
