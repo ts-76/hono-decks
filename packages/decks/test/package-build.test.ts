@@ -230,6 +230,9 @@ describe("package build metadata", () => {
           "bun run smoke:viewport",
           "bun run smoke:pdf",
           "does not currently run these browser/PDF checks",
+          "does not call `/export.pdf` or Cloudflare Browser Run",
+          "smoke:browser-run",
+          "protected `browser-run-smoke` environment",
         ],
       ],
       [
@@ -239,6 +242,9 @@ describe("package build metadata", () => {
           "bun run smoke:viewport",
           "bun run smoke:pdf",
           "browser/PDFチェックは現時点では自動実行しません",
+          "`/export.pdf`やCloudflare Browser Runは呼びません",
+          "smoke:browser-run",
+          "protectedな`browser-run-smoke` environment",
         ],
       ],
     ] as const) {

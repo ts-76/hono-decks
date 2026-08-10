@@ -284,6 +284,18 @@ bun run smoke:viewport
 bun run smoke:pdf
 ```
 
+The local `smoke:pdf` check renders the `/print` surface with a developer-local browser; it does not call `/export.pdf` or Cloudflare Browser Run. The production export route uses the `BROWSER` binding. To validate that deployed or remote-bound path, set an origin and export token, then run the credentialed smoke:
+
+```bash
+export HONO_DECKS_BROWSER_RUN_ORIGIN=https://your-worker.example.com
+export HONO_DECKS_BROWSER_RUN_TOKEN=your-export-token
+bun run smoke:browser-run
+```
+
+This credentialed check requires a deployed or remote-bound Worker and is not part of generic CI or release validation until such an environment is configured.
+
+For repeatable credentialed validation, configure the protected `browser-run-smoke` environment with the `HONO_DECKS_BROWSER_RUN_ORIGIN` environment variable and `HONO_DECKS_BROWSER_RUN_TOKEN` secret, restrict it to `main`, and trigger the `Browser Run smoke` workflow manually. This workflow calls the real `/export.pdf` route and uploads the returned PDFs; it does not install or invoke a local browser.
+
 The command block below mirrors the checks and release command that GitHub Actions runs after the merge; do not treat `bun run release` as part of the pre-merge browser/PDF gate.
 
 ```bash

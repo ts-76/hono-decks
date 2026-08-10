@@ -53,6 +53,10 @@ bun run --cwd examples/basic smoke:pdf
 
 The viewport check covers desktop and mobile layouts, keyboard and touch navigation, motion steps, assets, and the external embed. The PDF check validates generated page counts and rendered previews. Both require the `agent-browser` Chromium binary; PDF preview validation also needs Poppler or macOS Quick Look.
 
+The local PDF check renders the `/print` surface and does not exercise the production `/export.pdf` route or Cloudflare Browser Run. To test the deployed export path, set `HONO_DECKS_BROWSER_RUN_ORIGIN` and `HONO_DECKS_BROWSER_RUN_TOKEN`, then run `bun run --cwd examples/basic smoke:browser-run`. This requires a deployed or remote-bound Worker.
+
+The repository's manual `Browser Run smoke` workflow reads the origin and token from the protected `browser-run-smoke` environment and stores the returned PDFs as artifacts. The basic Worker wires this route to the `BROWSER` binding; the smoke validates the deployed `/export.pdf` behavior rather than identifying the internal binding.
+
 ## What to inspect
 
 - `hono-decks.config.ts` — one config shared by compilation and runtime routing

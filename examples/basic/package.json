@@ -8,6 +8,7 @@
     "dev": "CI=1 XDG_CONFIG_HOME=.wrangler-config wrangler dev --live-reload",
     "deploy": "wrangler deploy",
     "deploy:production": "wrangler deploy --config wrangler.production.jsonc",
+    "smoke:browser-run": "node scripts/browser-run-smoke.mjs",
     "smoke:pdf": "node scripts/pdf-smoke.mjs",
     "smoke:r2-cache": "node scripts/deployed-r2-cache-smoke.mjs",
     "smoke:viewport": "node scripts/viewport-smoke.mjs",
@@ -22,6 +23,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260716.1",
     "@types/node": "^26.1.1",
+    "pdf-lib": "1.17.1",
     "typescript": "^7.0.2",
     "vite": "npm:@voidzero-dev/vite-plus-core@0.2.4",
     "vitest": "4.1.10",
