@@ -88,7 +88,7 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "hono": "^4.13.5",
+    "hono": "^4.12.30",
     "vite": "^6.0.0 || ^7.0.0 || ^8.0.0"
   },
   "peerDependenciesMeta": {
