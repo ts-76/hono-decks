@@ -1,6 +1,6 @@
 {
   "name": "hono-decks",
-  "version": "0.1.0",
+  "version": "0.5.0",
   "description": "Slide decks for Hono and Cloudflare Workers",
   "keywords": [
     "cloudflare-workers",

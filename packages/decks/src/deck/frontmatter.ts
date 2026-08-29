@@ -260,7 +260,7 @@ function takeKnownStringWithWarning<const T extends string>(
   if (typeof value === "string" && values.includes(value as T)) return value as T;
   warnings.push({
     code,
-    message: `Unknown ${key} value "${String(value)}"; using ${fallback}.`,
+    message: `Unknown ${key} value "${formatFrontmatterValue(value)}"; using ${fallback}.`,
     ...(slideIndex !== undefined ? { slideIndex } : {}),
   });
   return fallback;
@@ -277,7 +277,7 @@ function takeTransitionDuration(
   if (typeof value === "string" && isValidTransitionDuration(value)) return value;
   warnings.push({
     code: "invalid-transition-duration",
-    message: `Invalid transitionDuration value "${String(value)}"; ignoring it.`,
+    message: `Invalid transitionDuration value "${formatFrontmatterValue(value)}"; ignoring it.`,
     ...(slideIndex !== undefined ? { slideIndex } : {}),
   });
   return undefined;
@@ -294,10 +294,21 @@ function takeTransitionEasing(
   if (typeof value === "string" && isValidTransitionEasing(value)) return value;
   warnings.push({
     code: "invalid-transition-easing",
-    message: `Invalid transitionEasing value "${String(value)}"; ignoring it.`,
+    message: `Invalid transitionEasing value "${formatFrontmatterValue(value)}"; ignoring it.`,
     ...(slideIndex !== undefined ? { slideIndex } : {}),
   });
   return undefined;
+}
+
+function formatFrontmatterValue(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") return value.toString();
+  if (value === null) return "null";
+  try {
+    return JSON.stringify(value) ?? "";
+  } catch {
+    return "[unserializable value]";
+  }
 }
 
 function isValidTransitionDuration(value: string): boolean {

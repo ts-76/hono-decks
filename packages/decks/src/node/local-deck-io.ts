@@ -8,8 +8,9 @@ import { normalizeDeckRoot, normalizePath, normalizeRelativePath } from "./path-
 export interface CreateLocalDeckIOInput {
   cwd: string;
   root: string;
-  pathExists?(path: string): boolean;
+  pathExists?(this: void, path: string): boolean;
   watchFileSystem?(
+    this: void,
     path: string,
     options: { recursive: boolean },
     listener: (eventType: "rename" | "change", filename: string | null) => void,

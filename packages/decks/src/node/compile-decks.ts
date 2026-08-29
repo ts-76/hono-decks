@@ -40,7 +40,7 @@ export interface CompileDecksInput extends BuildDeckManifestFromFileSystemInput 
   out: string;
   ogpCacheFile?: string;
   refreshOgp?: boolean;
-  resolveOgp?(url: string): Promise<LinkCardOgpMetadata | undefined>;
+  resolveOgp?(this: void, url: string): Promise<LinkCardOgpMetadata | undefined>;
 }
 
 export async function compileDecks(input: CompileDecksInput): Promise<DeckManifest> {
@@ -101,8 +101,8 @@ async function createOgpCacheResolver(input: {
   cwd: string;
   cacheFile: string | undefined;
   refresh: boolean | undefined;
-  resolveOgp: (url: string) => Promise<LinkCardOgpMetadata | undefined>;
-}): Promise<{ resolveOgp?: (url: string) => Promise<LinkCardOgpMetadata | undefined>; write(): Promise<void> }> {
+  resolveOgp: (this: void, url: string) => Promise<LinkCardOgpMetadata | undefined>;
+}): Promise<{ resolveOgp?: (this: void, url: string) => Promise<LinkCardOgpMetadata | undefined>; write(): Promise<void> }> {
   if (!input.cacheFile) {
     return {
       resolveOgp: input.resolveOgp,

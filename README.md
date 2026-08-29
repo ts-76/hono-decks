@@ -241,6 +241,7 @@ router: {
 - `hono-decks/advanced`: low-level APIs for assembling raw routers, sources, and renderers
 - `hono-decks/client`: client-island hydration
 - `hono-decks/node`: compiler and local-filesystem adapters
+- `hono-decks/vite`: Vite integration for compiling and watching decks during development
 - `hono-decks/cli`: programmatic CLI
 
 Most applications should use the root entry and the generated `createDecks(config)` function.
@@ -270,24 +271,44 @@ Copy-ready Worker examples use JSONC Wrangler configs, a current compatibility d
 
 ## Maintainer release flow
 
-GitHub Actions publishes `hono-decks` to npm from Conventional Commits merged into `main`. During the 0.x series, `feat` and breaking changes produce minor releases, while `fix` and `perf` produce patch releases. CI runs `bun run check` for pull requests. On `main`, the release workflow runs the same checks before semantic-release.
+GitHub Actions publishes `hono-decks` to npm from Conventional Commits merged into `main`. The package metadata in `packages/decks/package.json` is kept at the latest published version, and the matching Git tag is the semantic-release baseline. During the 0.x series, `feat` produces a minor release, while `fix` and `perf` produce patch releases. A `BREAKING CHANGE` is reserved for the Ver1 boundary and produces the first major release, `1.0.0`. CI runs `bun run check` for pull requests. On `main`, the release workflow runs the same checks and `bun run smoke:package:compat` before semantic-release.
 
-The first `0.1.0` release must be published manually because no npm package or baseline release tag exists yet. Until a baseline tag exists, the release workflow performs validation and safely skips publication.
+To start the Ver1 release, the commit message analyzed on `main` must retain a Conventional Commits marker such as `feat!:` (or `feat(scope)!:`) or a `BREAKING CHANGE:` footer. When squash-merging, do not rely on the PR body alone: confirm the final squash commit message in the merge dialog contains the marker.
+
+The current published baseline is `hono-decks@0.5.0` at `v0.5.0`. `scripts/verify-release-baseline.mjs` checks that the tag corresponding to `packages/decks/package.json` exists in the checked-out history before publication. When the baseline is missing, the workflow performs validation and safely skips publication. The release workflow also runs `bun run smoke:package:compat` against the declared Vite 6, 7, and 8 peer range.
+
+Before merging a Ver1 release commit into `main`, run the following manual browser and PDF checks. After the merge, GitHub Actions automatically runs `bun run check` and `bun run smoke:package:compat`; it does not currently run these browser/PDF checks. Both commands require the `agent-browser` Chromium binary, and PDF preview validation also needs Poppler or macOS Quick Look. See [the basic example's local smoke checks](examples/basic/README.md#local-smoke-checks) for setup details.
+
+```bash
+bun run smoke:viewport
+bun run smoke:pdf
+```
+
+The local `smoke:pdf` check renders the `/print` surface with a developer-local browser; it does not call `/export.pdf` or Cloudflare Browser Run. The production export route uses the `BROWSER` binding. To validate that deployed or remote-bound path, set an origin and export token, then run the credentialed smoke:
+
+```bash
+export HONO_DECKS_BROWSER_RUN_ORIGIN=https://your-worker.example.com
+export HONO_DECKS_BROWSER_RUN_TOKEN=your-export-token
+bun run smoke:browser-run
+```
+
+This credentialed check requires a deployed or remote-bound Worker and is not part of generic CI or release validation until such an environment is configured.
+
+For repeatable credentialed validation, configure the protected `browser-run-smoke` environment with the `HONO_DECKS_BROWSER_RUN_ORIGIN` environment variable and `HONO_DECKS_BROWSER_RUN_TOKEN` secret, restrict it to `main`, and trigger the `Browser Run smoke` workflow manually. This workflow calls the real `/export.pdf` route and uploads the returned PDFs; it does not install or invoke a local browser.
+
+The command block below mirrors the checks and release command that GitHub Actions runs after the merge; do not treat `bun run release` as part of the pre-merge browser/PDF gate.
 
 ```bash
 bun install --frozen-lockfile
 bun run check
-cd packages/decks
-npm publish --access public
-cd ../..
-git tag -a v0.1.0 -m "hono-decks v0.1.0"
-git push origin v0.1.0
+bun run smoke:package:compat
+bun run release
 ```
 
-`npm publish` requires an npm account login and 2FA. After publishing, configure GitHub Actions as a Trusted Publisher in the npm settings for the `hono-decks` package:
+For a new baseline, first publish the exact version in `packages/decks/package.json` and create the matching annotated tag before enabling publication. `npm publish` requires an npm account login and 2FA. Configure GitHub Actions as a Trusted Publisher in the npm settings for the `hono-decks` package:
 
 - Organization or user: `ts-76`
 - Repository: `hono-decks`
 - Workflow filename: `release.yml`
 
-Subsequent releases use GitHub OIDC and provenance, so do not store an npm token in GitHub Secrets. Attach the tag to the exact commit used to publish `0.1.0`.
+Releases use GitHub OIDC and provenance, so do not store an npm token in GitHub Secrets. Keep the package version, published npm version, and matching Git tag on the same release baseline.

@@ -6,7 +6,7 @@
       "name": "@hono-decks/example-minimal",
       "dependencies": {
         "hono": "^4.12.30",
-        "hono-decks": "0.1.0",
+        "hono-decks": "0.5.0",
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^5.20260714.1",
@@ -482,7 +482,7 @@
 
     "hono": ["hono@4.12.30", "", {}, "sha512-emn+JoJjrN9YTpRDS5it/UI2SO9BAE37T6I3d963RxcZ81G9A4pr2SZTEiiaiKbzx+NKRg5BZ89fCL7gCJCUog=="],
 
-    "hono-decks": ["hono-decks@0.1.0", "", { "dependencies": { "@mdx-js/mdx": "^3.1.1", "esbuild": "^0.28.1", "remark-directive": "^4.0.0", "remark-gfm": "^4.0.0", "remark-mdx": "^3.1.1", "remark-parse": "^11.0.0", "shiki": "^4.2.0", "unified": "^11.0.5" }, "peerDependencies": { "hono": "^4.12.30", "vite": "^6.0.0 || ^7.0.0 || ^8.0.0" }, "optionalPeers": ["vite"], "bin": { "hono-decks": "dist/bin.js" } }, "sha512-/wAWY3EDPZmXLqyQyYj9RVpBLSSX360rWQo/AvrvCub3PeRGc/qBSNWfYOXkJ4dsLMK1WTIa1cZ4AUsvfUWxog=="],
+    "hono-decks": ["hono-decks@0.5.0", "", { "dependencies": { "@mdx-js/mdx": "^3.1.1", "esbuild": "^0.28.1", "remark-directive": "^4.0.0", "remark-gfm": "^4.0.0", "remark-mdx": "^3.1.1", "remark-parse": "^11.0.0", "shiki": "^4.3.1", "unified": "^11.0.5" }, "peerDependencies": { "hono": "^4.12.30", "vite": "^6.0.0 || ^7.0.0 || ^8.0.0" }, "optionalPeers": ["vite"], "bin": { "hono-decks": "dist/bin.js" } }, "sha512-Fk5tzfVqmkpK9l63TVLJM9l7KJnOzT21EfilOSOCSgWUtWRo/9DSIncYhfQpFKsxHJG7NZtdT3/0+rYprW1g8Q=="],
 
     "html-void-elements": ["html-void-elements@3.0.0", "", {}, "sha512-bEqo66MRXsUGxWHV5IP0PUiAWwoEjba4VCzg0LjFJBpchPaTfyfCKTG6bc5F8ucKec3q5y6qOdGyYTSBEvhCrg=="],
 

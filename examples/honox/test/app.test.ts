@@ -20,13 +20,16 @@ describe("HonoX example", () => {
       scripts: Record<string, string>;
       dependencies: Record<string, string>;
     };
+    const publishedPackage = JSON.parse(
+      await readFile(new URL("../../../packages/decks/package.json", import.meta.url), "utf8"),
+    ) as { version: string };
 
     expect(generated).toContain('from "hono-decks"');
     expect(generated).not.toContain("hono-decks/runtime");
     expect(viteConfig).not.toContain("alias");
     expect(viteConfig).toContain('from "hono-decks/vite"');
     expect(viteConfig).toContain("honoDecks()");
-    expect(packageJson.dependencies["hono-decks"]).toBe("0.1.0");
+    expect(packageJson.dependencies["hono-decks"]).toBe(publishedPackage.version);
     expect(packageJson.scripts["decks:compile"]).toBe("hono-decks compile");
     expect(packageJson.scripts.dev).toBe("node ../../scripts/run-with-typescript-parser.cjs vp dev");
     expect(packageJson.scripts.build).toBe("node ../../scripts/run-with-typescript-parser.cjs vp build");

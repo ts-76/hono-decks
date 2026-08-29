@@ -18,7 +18,7 @@ export interface CreateLocalDevSlidesAppInput {
 export interface LocalDevSlidesApp {
   app: Hono;
   localDeckIO: LocalDeckIO;
-  stop(): void;
+  stop: () => void;
 }
 
 export async function createLocalDevSlidesApp(input: CreateLocalDevSlidesAppInput): Promise<LocalDevSlidesApp> {

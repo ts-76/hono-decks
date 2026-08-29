@@ -33,7 +33,7 @@ export function honoDecks(options: HonoDecksViteOptions = {}): Plugin {
     if (!server) return;
     const next = new Set([deckRoot, configPath]);
     const removed = [...watchedPaths].filter((path) => !next.has(path));
-    if (removed.length > 0) await server.watcher.unwatch(removed);
+    if (removed.length > 0) server.watcher.unwatch(removed);
     server.watcher.add([...next]);
     watchedPaths = next;
   };

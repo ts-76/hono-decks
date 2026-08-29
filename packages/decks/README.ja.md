@@ -253,6 +253,7 @@ export default defineDecksConfig({
 - `hono-decks/advanced`: `defineDecks()`、`decksRouter()`、`deckContext()`、raw renderer など独自 pipeline 用
 - `hono-decks/client`: browser hydration
 - `hono-decks/node`: compiler と Node filesystem adapter
+- `hono-decks/vite`: 開発中のcompileとwatchをViteへ組み込むintegration
 - `hono-decks/cli`: programmatic CLI runner
 
 通常の generated workflow では root entry だけを import します。`hono-decks/advanced` は custom `DeckSource` や router をゼロから組み立てる場合に限定してください。

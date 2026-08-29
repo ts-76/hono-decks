@@ -1,9 +1,35 @@
 import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
+import { analyzeCommits } from "@semantic-release/commit-analyzer";
+import semver from "semver";
 import { describe, expect, it } from "vite-plus/test";
+
+type ReleaseConfig = {
+  plugins: Array<string | [string, { preset: string; releaseRules: Array<Record<string, string | boolean>> }]>;
+};
 
 const packageRoot = join(import.meta.dirname, "..");
 const distRoot = join(packageRoot, "dist");
+const repositoryRoot = join(packageRoot, "..", "..");
+const releaseConfig = (await import(new URL("../../../release.config.mjs", import.meta.url).href))
+  .default as ReleaseConfig;
+const commitAnalyzerPlugin = releaseConfig.plugins.find(
+  (plugin): plugin is [string, { preset: string; releaseRules: Array<Record<string, string | boolean>> }] =>
+    Array.isArray(plugin) && plugin[0] === "@semantic-release/commit-analyzer",
+);
+
+if (!commitAnalyzerPlugin) {
+  throw new Error("The semantic-release commit analyzer is not configured");
+}
+
+const commitAnalyzerConfig = commitAnalyzerPlugin[1];
+
+async function analyzeReleaseType(message: string): Promise<string | null> {
+  return analyzeCommits(commitAnalyzerConfig, {
+    commits: [{ message }],
+    logger: { log() {} },
+  });
+}
 
 async function readGeneratedModuleGraph(entry: string): Promise<string> {
   const pending = [join(distRoot, entry)];
@@ -133,6 +159,8 @@ describe("package build metadata", () => {
       "DeckViewerDefaultControlItem",
       "DeckViewerLinkControlItem",
       "DeckViewerRenderControlItem",
+      "DeckViewerOpenGraphInput",
+      "DeckViewerOpenGraphOptions",
       "SlideFrontmatter",
     ]) {
       expect(runtimeTypes, name).toContain(name);
@@ -160,10 +188,94 @@ describe("package build metadata", () => {
     expect(readme).toContain("Iframe navigation does not require CORS");
     expect(readme).toContain("defineDecksConfig<AppEnv>");
     expect(readme).toContain("createDecks(config)");
+    expect(readme).toContain("hono-decks/vite");
     expect(readme).toContain("viewer.render");
     expect(japaneseReadme).toContain("createDeckViewerEmbed()");
+    expect(japaneseReadme).toContain("hono-decks/vite");
     expect(japaneseReadme).toContain("同じdocumentへ複数配置");
     expect(japaneseReadme).toContain("iframe navigationにCORSは不要");
     expect(japaneseReadme).not.toContain("root `README.md` を参照");
+  });
+
+  it("documents how to preserve the Ver1 release marker through squash merges", async () => {
+    const [readme, japaneseReadme] = await Promise.all([
+      readFile(join(repositoryRoot, "README.md"), "utf8"),
+      readFile(join(repositoryRoot, "README.ja.md"), "utf8"),
+    ]);
+
+    for (const [documentation, markers] of [
+      [readme, ["feat!:", "BREAKING CHANGE:", "squash", "final squash commit message", "smoke:package:compat"]],
+      [
+        japaneseReadme,
+        ["feat!:", "BREAKING CHANGE:", "squash", "最終的なsquash commit message", "smoke:package:compat"],
+      ],
+    ] as const) {
+      for (const marker of markers) {
+        expect(documentation, marker).toContain(marker);
+      }
+    }
+  });
+
+  it("documents the manual browser and PDF release gate before the merge", async () => {
+    const [readme, japaneseReadme] = await Promise.all([
+      readFile(join(repositoryRoot, "README.md"), "utf8"),
+      readFile(join(repositoryRoot, "README.ja.md"), "utf8"),
+    ]);
+
+    for (const [documentation, markers] of [
+      [
+        readme,
+        [
+          "Before merging a Ver1 release commit",
+          "bun run smoke:viewport",
+          "bun run smoke:pdf",
+          "does not currently run these browser/PDF checks",
+          "does not call `/export.pdf` or Cloudflare Browser Run",
+          "smoke:browser-run",
+          "protected `browser-run-smoke` environment",
+        ],
+      ],
+      [
+        japaneseReadme,
+        [
+          "`main`へmergeする前に",
+          "bun run smoke:viewport",
+          "bun run smoke:pdf",
+          "browser/PDFチェックは現時点では自動実行しません",
+          "`/export.pdf`やCloudflare Browser Runは呼びません",
+          "smoke:browser-run",
+          "protectedな`browser-run-smoke` environment",
+        ],
+      ],
+    ] as const) {
+      const releaseFlowStart = documentation.indexOf("## Maintainer release flow");
+      expect(releaseFlowStart).toBeGreaterThanOrEqual(0);
+      const releaseFlow = documentation.slice(releaseFlowStart);
+
+      for (const marker of markers) {
+        expect(releaseFlow, marker).toContain(marker);
+      }
+
+      expect(releaseFlow.indexOf("bun run smoke:viewport")).toBeLessThan(releaseFlow.indexOf("bun run smoke:pdf"));
+    }
+  });
+
+  it("reserves breaking changes for the Ver1 major release", async () => {
+    const packageJson = JSON.parse(await readFile(join(packageRoot, "package.json"), "utf8")) as { version: string };
+
+    for (const [message, releaseType] of [
+      ["feat!: public API", "major"],
+      ["feat: new capability", "minor"],
+      ["fix: bug", "patch"],
+      ["perf: speed", "patch"],
+      ["fix(ci): pipeline", null],
+      ["chore: docs", null],
+      ["feat: body\n\nBREAKING CHANGE: API changed", "major"],
+    ] as const) {
+      expect(await analyzeReleaseType(message), message).toBe(releaseType);
+    }
+
+    expect(packageJson.version).toBe("0.5.0");
+    expect(semver.inc(packageJson.version, "major")).toBe("1.0.0");
   });
 });

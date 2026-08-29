@@ -7,8 +7,11 @@ describe("development scripts", () => {
       scripts: Record<string, string>;
       dependencies: Record<string, string>;
     };
+    const publishedPackage = JSON.parse(
+      await readFile(new URL("../../../packages/decks/package.json", import.meta.url), "utf8"),
+    ) as { version: string };
 
-    expect(packageJson.dependencies["hono-decks"]).toBe("0.1.0");
+    expect(packageJson.dependencies["hono-decks"]).toBe(publishedPackage.version);
     expect(packageJson.scripts["decks:compile"]).toBe("hono-decks compile");
     expect(packageJson.scripts["decks:compile:hook"]).toBe("hono-decks compile");
     expect(packageJson.scripts["decks:watch"]).toBeUndefined();
@@ -51,6 +54,10 @@ describe("development scripts", () => {
     expect(source).toContain('CI: "1"');
     expect(source).toContain("XDG_CONFIG_HOME: wranglerConfigHome");
     expect(source).toContain('NO_COLOR: "1"');
+    expect(source).toContain('data-hono-decks-mobile-navigation="next"');
+    expect(source).toContain('querySelector(".slide:not([hidden])")');
+    expect(source).toContain('touchEvent("touchstart"');
+    expect(source).not.toContain("data-viewer-navigation");
   });
 
   it("starts PDF smoke wrangler with non-interactive workspace-local configuration", async () => {
@@ -60,5 +67,38 @@ describe("development scripts", () => {
     expect(source).toContain('CI: "1"');
     expect(source).toContain("XDG_CONFIG_HOME: wranglerConfigHome");
     expect(source).toContain('NO_COLOR: "1"');
+  });
+
+  it("keeps Browser Run smoke on the deployed export route", async () => {
+    const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8")) as {
+      scripts: Record<string, string>;
+    };
+    const source = await readFile(new URL("../scripts/browser-run-smoke.mjs", import.meta.url), "utf8");
+
+    expect(packageJson.scripts["smoke:browser-run"]).toBe("node scripts/browser-run-smoke.mjs");
+    expect(source).toContain("/export.pdf");
+    expect(source).toContain("HONO_DECKS_BROWSER_RUN_ORIGIN");
+    expect(source).toContain("HONO_DECKS_BROWSER_RUN_TOKEN");
+    expect(source).not.toContain("agent-browser");
+    expect(source).not.toContain("wrangler dev");
+  });
+
+  it("keeps Browser Run workflow credentialed and manually triggered", async () => {
+    const workflow = await readFile(
+      new URL("../../../.github/workflows/browser-run-smoke.yml", import.meta.url),
+      "utf8",
+    );
+
+    expect(workflow).toContain("workflow_dispatch:");
+    expect(workflow).toContain("environment:");
+    expect(workflow).toContain("name: browser-run-smoke");
+    expect(workflow).toContain("vars.HONO_DECKS_BROWSER_RUN_ORIGIN");
+    expect(workflow).toContain("HONO_DECKS_BROWSER_RUN_TOKEN");
+    expect(workflow).toContain("github.ref != 'refs/heads/main'");
+    expect(workflow).toContain("bun run smoke:browser-run");
+    expect(workflow).toContain("actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a");
+    expect(workflow).not.toContain("agent-browser");
+    expect(workflow).not.toContain("smoke:pdf");
+    expect(workflow).not.toContain("inputs.origin");
   });
 });

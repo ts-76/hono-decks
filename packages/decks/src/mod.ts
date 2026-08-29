@@ -1,10 +1,5 @@
 export { defineDecksConfig } from "./server/define-decks";
-export type {
-  ConfiguredDecks,
-  DecksBuildConfig,
-  DecksConfig,
-  DecksRouterConfig,
-} from "./server/define-decks";
+export type { ConfiguredDecks, DecksBuildConfig, DecksConfig, DecksRouterConfig } from "./server/define-decks";
 export { createDeckPaths } from "./server/paths";
 export type { DeckPaths } from "./server/paths";
 export { createDeckViewerEmbed } from "./server/router";
@@ -53,6 +48,8 @@ export type {
   DeckViewerExportPaths,
   DeckViewerLinkControlItem,
   DeckViewerOptions,
+  DeckViewerOpenGraphInput,
+  DeckViewerOpenGraphOptions,
   DeckViewerPart,
   DeckViewerParts,
   DeckViewerRenderControlItem,
