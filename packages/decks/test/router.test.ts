@@ -53,7 +53,7 @@ describe("decksRouter", () => {
     expect(html).toContain('title="Deck One"');
     expect(html).toContain(".hono-decks-viewport{width:min(100%,calc((100vh - 58px) * 16 / 9));aspect-ratio:16/9");
     expect(html).toContain(".hono-decks-viewport:focus-visible");
-    expect(html).toContain("*:focus-visible{outline:none}");
+    expect(html).toContain("*:focus-visible{outline:2px solid currentColor;outline-offset:2px}");
     expect(html).toContain(".hono-decks-frame-stage{width:100%;height:100%");
     expect(html).toContain(".hono-decks-frame-stage iframe{width:100%;height:100%");
     expect(html).not.toContain(
@@ -749,7 +749,7 @@ describe("decksRouter", () => {
     expect(first.embedHtml).toMatch(
       /\[data-hono-decks-viewer\]\[data-hono-decks-embed\] \.hono-decks-viewer-controls\{[^}]*z-index:4/,
     );
-    expect(html).toContain("[data-hono-decks-viewer][data-hono-decks-embed] *:focus-visible{outline:none}");
+    expect(html).toContain("[data-hono-decks-viewer][data-hono-decks-embed] *:focus-visible{outline:2px solid currentColor;outline-offset:2px}");
     expect(html).toContain("data-hono-decks-viewer-runtime");
     expect(html).toContain('root.querySelectorAll("[data-hono-decks-viewer-link]")');
     expect(html).toContain('link.setAttribute("href", viewerUrl.href)');

@@ -203,7 +203,7 @@ decks/product/
       index.tsx
 ~~~
 
-<code>components/index.tsx</code> contains server-side JSX components. <code>components/client/index.tsx</code> contains components hydrated in the browser. <code>theme.css</code> applies only to that deck. Local images are detected during compilation and rewritten to public URLs based on the mount path and deck slug.
+<code>components/index.tsx</code> contains server-side JSX components. <code>components/client/index.tsx</code> contains components hydrated in the browser. <code>theme.css</code> applies only to that deck. Without a theme, slides use a white background and dark text. Customize `--hono-decks-background` and `--hono-decks-color` together in `theme.css`. Use `px` or `rem` within the fixed 1920 × 1080 canvas; viewport units change the composition when browser zoom changes. Local images are detected during compilation and rewritten to public URLs based on the mount path and deck slug.
 
 ## Embedding
 

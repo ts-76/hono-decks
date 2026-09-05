@@ -16,6 +16,7 @@ const artifactDir = process.env.HONO_DECKS_SMOKE_ARTIFACTS ?? path.join(tmpdir()
 
 const checks = [
   { name: "desktop", width: 1280, height: 800 },
+  { name: "large-canvas", width: 2560, height: 1440 },
   { name: "mobile-portrait", width: 390, height: 844 },
   { name: "mobile-landscape", width: 844, height: 390 },
 ];
@@ -78,7 +79,7 @@ async function runEmbeddedViewerCheck() {
     !initial.hasRuntime ||
     !initial.externalDocument ||
     initial.hasSampleChrome ||
-    !initial.navigationOutlineSuppressed ||
+    !initial.navigationFocusVisible ||
     !initial.fillsViewport ||
     initial.overflowsDocument ||
     initial.ratio < 1.75 ||
@@ -202,10 +203,7 @@ async function verifyMotionFireSteps(label) {
   await evalJson(clickNavigationLayerScript("next"));
   const secondReveal = await waitForMotionState(
     (state) =>
-      state.position === "2 / 3" &&
-      state.stepIndex === "1" &&
-      state.visibleFires >= 1 &&
-      state.activeTransitions === 0,
+      state.position === "2 / 3" && state.stepIndex === "1" && state.visibleFires >= 1 && state.activeTransitions === 0,
     `${label} motion second fire reveal`,
   );
   assertSlideOnlyPosition(secondReveal.position, `${label} motion second reveal position`);
@@ -234,11 +232,21 @@ function viewportMetricsScript() {
     const view = viewport.getBoundingClientRect();
     const frame = iframe.getBoundingClientRect();
     const controlBounds = controls.getBoundingClientRect();
+    const canvas = iframe.contentDocument?.querySelector("[data-hono-decks-deck]");
+    if (!canvas) errors.push("missing inner slide canvas");
+    else {
+      const canvasBounds = canvas.getBoundingClientRect();
+      const innerWidth = iframe.contentWindow.innerWidth;
+      const innerHeight = iframe.contentWindow.innerHeight;
+      if (Math.abs(canvasBounds.left + canvasBounds.width / 2 - innerWidth / 2) > 1 ||
+          Math.abs(canvasBounds.top + canvasBounds.height / 2 - innerHeight / 2) > 1) errors.push("inner slide canvas is not centered");
+      if (canvasBounds.left < -1 || canvasBounds.top < -1 || canvasBounds.right > innerWidth + 1 || canvasBounds.bottom > innerHeight + 1) errors.push("inner slide canvas is clipped");
+    }
     const ratio = view.width / view.height;
     const style = getComputedStyle(viewport);
     navigationLayer.focus();
     const navigationStyle = getComputedStyle(navigationLayer);
-    if (navigationStyle.outlineStyle !== "none") errors.push("navigation layer outline is " + navigationStyle.outlineStyle);
+    if (navigationLayer.matches(":focus-visible") && navigationStyle.outlineStyle === "none") errors.push("navigation layer has no keyboard focus outline");
     if (Math.abs(ratio - 16 / 9) > 0.025) errors.push("viewport ratio is " + ratio.toFixed(3));
     if (view.width > window.innerWidth + 1 || view.height > window.innerHeight + 1) errors.push("viewport overflows window");
     // Controls belong to the viewer shell and may overlap the viewport's lower edge by design.
@@ -410,7 +418,7 @@ function embeddedViewerStateScript() {
       hasRuntime: Boolean(document.querySelector("[data-hono-decks-viewer-runtime]")),
       externalDocument: document.documentElement.hasAttribute("data-hono-decks-external-embed-document"),
       hasSampleChrome: Boolean(document.querySelector(".sample-page-header, [data-sample-layout]")),
-      navigationOutlineSuppressed: navigationLayer instanceof HTMLButtonElement && getComputedStyle(navigationLayer).outlineStyle === "none",
+      navigationFocusVisible: navigationLayer instanceof HTMLButtonElement && getComputedStyle(navigationLayer).outlineStyle !== "none",
       fillsViewport: Boolean(rootBounds && Math.abs(rootBounds.width - innerWidth) <= 1 && Math.abs(rootBounds.height - innerHeight) <= 1),
       overflowsDocument: document.documentElement.scrollWidth > innerWidth + 1 || document.documentElement.scrollHeight > innerHeight + 1,
       ratio: bounds && bounds.height ? bounds.width / bounds.height : 0,
