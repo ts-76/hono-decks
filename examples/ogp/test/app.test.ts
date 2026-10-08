@@ -41,8 +41,10 @@ describe("OGP example", () => {
   it("generates a 1200 by 630 PNG", async () => {
     const png = await readFile(new URL("../public/decks/welcome/og.png", import.meta.url));
 
+    const header = new DataView(png.buffer, png.byteOffset, png.byteLength);
+
     expect(png.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
-    expect(png.readUInt32BE(16)).toBe(OGP_WIDTH);
-    expect(png.readUInt32BE(20)).toBe(OGP_HEIGHT);
+    expect(header.getUint32(16)).toBe(OGP_WIDTH);
+    expect(header.getUint32(20)).toBe(OGP_HEIGHT);
   });
 });
