@@ -1,31 +1,10 @@
-import type { Child } from "hono/jsx";
-import { createHighlighterCoreSync } from "shiki/core";
-import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
-import bash from "shiki/langs/bash.mjs";
-import css from "shiki/langs/css.mjs";
-import jsonc from "shiki/langs/jsonc.mjs";
-import mdx from "shiki/langs/mdx.mjs";
-import tsx from "shiki/langs/tsx.mjs";
-import typescript from "shiki/langs/typescript.mjs";
-import githubDarkHighContrast from "shiki/themes/github-dark-high-contrast.mjs";
+/** @jsxImportSource hono/jsx */
+import type { LocaleLink } from "honoxpress";
+import CopyCode from "./islands/copy-code";
+import { ThemeSwitch } from "./components/theme-switch";
+import docsSite from "./docs.config";
 import { deployToCloudflareUrl } from "./deploy";
-import { localizedHref, t, type Locale, type MessageKey } from "./i18n";
-
-const navigationItems = [
-  { href: "/docs/getting-started", label: "navGettingStarted", detail: "navGettingStartedDetail" },
-  { href: "/docs/examples", label: "navExamples", detail: "navExamplesDetail" },
-  { href: "/docs/authoring", label: "navAuthoring", detail: "navAuthoringDetail" },
-  { href: "/docs/configuration", label: "navConfiguration", detail: "navConfigurationDetail" },
-  { href: "/docs/recipes", label: "navRecipes", detail: "navRecipesDetail" },
-  { href: "/docs/routing", label: "navRouting", detail: "navRoutingDetail" },
-  { href: "/docs/security", label: "navSecurity", detail: "navSecurityDetail" },
-  { href: "/api", label: "navApi", detail: "navApiDetail" },
-] as const satisfies ReadonlyArray<{ href: string; label: MessageKey; detail: MessageKey }>;
-
-export interface PageSection {
-  id: string;
-  label: string;
-}
+import { localizedHref, locales, t, type Locale } from "./i18n";
 
 function DisclosureButton({
   controls,
@@ -55,243 +34,106 @@ function DisclosureButton({
   );
 }
 
-function navigation(locale: Locale) {
-  const text = t(locale);
-  return navigationItems.map((item) => ({
-    href: item.href,
-    label: text[item.label],
-    detail: text[item.detail],
-  }));
-}
-
-export function SiteHeader({ activePath = "", locale }: { activePath?: string; locale: Locale }) {
+export function SiteHeader({
+  activePath = "",
+  locale,
+  navigation = [],
+  translations,
+}: {
+  activePath?: string;
+  locale: Locale;
+  navigation?: readonly { href: string; title: string }[];
+  translations?: readonly LocaleLink[];
+}) {
   const text = t(locale);
   return (
     <header class="site-header">
-      <a class="brand" href={localizedHref("/", locale)} aria-label="hono decks documentation home">
-        <img class="brand-mark" src="/icon-192.png" width="32" height="32" alt="" aria-hidden="true" />
-        <span>
-          hono<span class="brand-slash">-</span>decks
-        </span>
-      </a>
-      <nav class="top-nav" aria-label={text.primaryNavigation}>
+      <div class="header-inner">
         <a
-          href={localizedHref("/docs/getting-started", locale)}
-          aria-current={activePath.startsWith("/docs") ? "page" : undefined}
+          class="brand"
+          href={localizedHref(docsSite.homeHref ?? "/", locale)}
+          aria-label="hono decks documentation home"
         >
-          {text.guides}
+          <img class="brand-mark" src="/icon-192.png" width="32" height="32" alt="" aria-hidden="true" />
+          <span>{docsSite.name}</span>
         </a>
-        <a href={localizedHref("/api", locale)} aria-current={activePath === "/api" ? "page" : undefined}>
-          {text.api}
-        </a>
-        <LanguageSwitcher locale={locale} path={activePath || "/"} />
-        <a href="https://github.com/ts-76/hono-decks">GitHub ↗</a>
-      </nav>
-      <div class="mobile-menu" data-disclosure>
-        <DisclosureButton
-          className="mobile-menu-trigger"
-          controls="mobile-menu-panel"
-          label={text.menu}
-          openLabel={text.close}
-        />
-        <nav
-          id="mobile-menu-panel"
-          class="mobile-menu-panel"
-          aria-label={text.mobileNavigation}
-          data-disclosure-panel
-          hidden
-        >
-          {navigation(locale).map((item) => (
-            <a
-              href={localizedHref(item.href, locale)}
-              aria-current={
-                activePath === item.href || (item.href.startsWith("/docs") && activePath === item.href)
-                  ? "page"
-                  : undefined
-              }
-            >
-              {item.label}
-            </a>
-          ))}
-          <div class="mobile-language">
-            <LanguageSwitcher locale={locale} path={activePath || "/"} />
-          </div>
-          <a href="https://github.com/ts-76/hono-decks">GitHub ↗</a>
+        <nav class="top-nav" aria-label={text.primaryNavigation}>
+          <a
+            href={localizedHref(docsSite.docsHref ?? "/docs/getting-started", locale)}
+            aria-current={activePath.startsWith("/docs") ? "page" : undefined}
+          >
+            {text.guides}
+          </a>
+          <a href={localizedHref("/api", locale)} aria-current={activePath === "/api" ? "page" : undefined}>
+            {text.api}
+          </a>
+          <LanguageSwitcher locale={locale} path={activePath || "/"} translations={translations} />
+          {docsSite.themeSwitch !== false && <ThemeSwitch locale={locale} />}
+          <a href={docsSite.repositoryHref}>GitHub ↗</a>
         </nav>
+        <div class="mobile-menu" data-disclosure>
+          <DisclosureButton
+            className="mobile-menu-trigger"
+            controls="mobile-menu-panel"
+            label={text.menu}
+            openLabel={text.close}
+          />
+          <nav
+            id="mobile-menu-panel"
+            class="mobile-menu-panel"
+            aria-label={text.mobileNavigation}
+            data-disclosure-panel
+            hidden
+          >
+            {navigation.map((item) => (
+              <a href={item.href} aria-current={activePath === item.href.split("?")[0] ? "page" : undefined}>
+                {item.title}
+              </a>
+            ))}
+            <div class="mobile-language">
+              {docsSite.themeSwitch !== false && <ThemeSwitch locale={locale} />}
+              <LanguageSwitcher locale={locale} path={activePath || "/"} translations={translations} />
+            </div>
+            <a href={docsSite.repositoryHref}>GitHub ↗</a>
+          </nav>
+        </div>
       </div>
     </header>
   );
 }
 
-function LanguageSwitcher({ locale, path }: { locale: Locale; path: string }) {
+function LanguageSwitcher({
+  locale,
+  path,
+  translations,
+}: {
+  locale: Locale;
+  path: string;
+  translations?: readonly LocaleLink[];
+}) {
   const text = t(locale);
   return (
     <span class="language-switcher" aria-label={text.language} role="group">
-      <a href={localizedHref(path, "ja")} lang="ja" aria-current={locale === "ja" ? "true" : undefined}>
-        JA
-      </a>
-      <span aria-hidden="true">/</span>
-      <a href={localizedHref(path, "en")} lang="en" aria-current={locale === "en" ? "true" : undefined}>
-        EN
-      </a>
+      {locales.map((language, index) => {
+        const href = translations
+          ? translations.find((link) => link.locale === language)?.href
+          : localizedHref(path, language);
+        return (
+          <>
+            {index > 0 && <span aria-hidden="true">/</span>}
+            {href ? (
+              <a href={href} lang={language} aria-current={locale === language ? "true" : undefined}>
+                {language.toUpperCase()}
+              </a>
+            ) : (
+              <span lang={language} aria-disabled="true">
+                {language.toUpperCase()}
+              </span>
+            )}
+          </>
+        );
+      })}
     </span>
-  );
-}
-
-export function DocsLayout({
-  activePath,
-  title,
-  description,
-  sections,
-  locale,
-  children,
-}: {
-  activePath: string;
-  title: string;
-  description: string;
-  sections: PageSection[];
-  locale: Locale;
-  children: Child;
-}) {
-  const text = t(locale);
-  const links = navigation(locale);
-  return (
-    <main class="docs-layout">
-      <aside class="docs-sidebar" aria-label={text.documentationSections}>
-        <p class="sidebar-label">{text.documentation}</p>
-        <nav class="docs-navigation">
-          {links.map((item) => (
-            <a href={localizedHref(item.href, locale)} aria-current={activePath === item.href ? "page" : undefined}>
-              <span>{item.label}</span>
-              <small>{item.detail}</small>
-            </a>
-          ))}
-        </nav>
-      </aside>
-      <article class="docs-article">
-        <header class="docs-heading">
-          <p class="path-label">{activePath}</p>
-          <h1>{title}</h1>
-          <p>{description}</p>
-        </header>
-        <div class="mobile-page-nav" data-disclosure>
-          <DisclosureButton
-            className="mobile-page-nav-trigger"
-            controls="mobile-page-nav-panel"
-            label={text.onThisPage}
-          />
-          <nav id="mobile-page-nav-panel" data-disclosure-panel hidden>
-            {sections.map((section) => (
-              <a href={`#${section.id}`}>{section.label}</a>
-            ))}
-          </nav>
-        </div>
-        <div class="prose">{children}</div>
-      </article>
-      <aside class="docs-rail" aria-label={text.onThisPage}>
-        <p>{text.onThisPage}</p>
-        {sections.map((section) => (
-          <a href={`#${section.id}`}>{section.label}</a>
-        ))}
-      </aside>
-    </main>
-  );
-}
-
-function codeId(code: string) {
-  let hash = 0;
-  for (const character of code) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
-  return `code-${hash.toString(36)}`;
-}
-
-type DocsCodeLanguage = "bash" | "css" | "jsonc" | "mdx" | "text" | "tsx" | "typescript";
-
-const codeTheme = "github-dark-high-contrast";
-const codeHighlighter = createHighlighterCoreSync({
-  themes: [githubDarkHighContrast],
-  langs: [bash, css, jsonc, mdx, tsx, typescript],
-  engine: createJavaScriptRegexEngine(),
-});
-
-function codeLanguage(label: string, lang?: DocsCodeLanguage): DocsCodeLanguage {
-  if (lang) return lang;
-  const normalized = label.toLowerCase();
-  if (normalized === "terminal") return "bash";
-  if (normalized === "mdx" || normalized.endsWith(".mdx")) return "mdx";
-  if (normalized.endsWith(".tsx")) return "tsx";
-  if (normalized.endsWith(".css")) return "css";
-  if (normalized.endsWith(".json") || normalized.endsWith(".jsonc")) return "jsonc";
-  if (normalized === "generated files") return "text";
-  return "typescript";
-}
-
-function tokenStyle(color: string | undefined, fontStyle: number | undefined): string {
-  const styles = color ? [`color:${color}`] : [];
-  if ((fontStyle ?? 0) & 1) styles.push("font-style:italic");
-  if ((fontStyle ?? 0) & 2) styles.push("font-weight:700");
-  if ((fontStyle ?? 0) & 4) styles.push("text-decoration:underline");
-  return styles.join(";");
-}
-
-export function CodeBlock({
-  code,
-  label = "TypeScript",
-  lang,
-  locale = "ja",
-  copy = true,
-}: {
-  code: string;
-  label?: string;
-  lang?: DocsCodeLanguage;
-  locale?: Locale;
-  copy?: boolean;
-}) {
-  const text = t(locale);
-  const id = codeId(code);
-  const language = codeLanguage(label, lang);
-  const highlighted = codeHighlighter.codeToTokens(code, { lang: language, theme: codeTheme });
-  return (
-    <figure class="code-block">
-      <figcaption>
-        <span>{label}</span>
-        {copy ? (
-          <button class="copy-button" type="button" data-copy={id} aria-label={`${text.copy}: ${label}`}>
-            <span aria-hidden="true">⧉</span>
-            <span
-              data-copy-status
-              data-idle={text.copy}
-              data-success={text.copied}
-              data-error={text.copyFailed}
-              aria-live="polite"
-            >
-              {text.copy}
-            </span>
-          </button>
-        ) : null}
-      </figcaption>
-      <pre>
-        <code id={id} class={`language-${language}`} data-language={language} data-source={code}>
-          {highlighted.tokens.map((line, lineIndex) => (
-            <>
-              {line.map((token) => {
-                const style = tokenStyle(token.color, token.fontStyle);
-                return <span style={style || undefined}>{token.content}</span>;
-              })}
-              {lineIndex < highlighted.tokens.length - 1 ? "\n" : null}
-            </>
-          ))}
-        </code>
-      </pre>
-    </figure>
-  );
-}
-
-export function Callout({ title, children }: { title: string; children: Child }) {
-  return (
-    <aside class="callout">
-      <strong>{title}</strong>
-      <div>{children}</div>
-    </aside>
   );
 }
 
@@ -344,5 +186,36 @@ export function DeployToCloudflare({ locale }: { locale: Locale }) {
         </span>
       )}
     </aside>
+  );
+}
+
+/** Homepage adapter; guide code is highlighted at MDX compile time. */
+export function CodeBlock({ code, label = "Terminal", locale }: { code: string; label?: string; locale: Locale }) {
+  const text = t(locale);
+  return (
+    <CopyCode
+      code={code}
+      filename={label}
+      language="bash"
+      copyLabel={text.copy}
+      copiedLabel={text.copied}
+      errorLabel={text.copyFailed}
+    />
+  );
+}
+
+export function SiteFooter({ locale }: { locale: Locale }) {
+  const text = t(locale);
+  return (
+    <footer class="site-footer">
+      <p>
+        <strong>{docsSite.name}</strong> — {text.footerLine}
+      </p>
+      <nav aria-label={text.footerNavigation}>
+        <a href={localizedHref(docsSite.docsHref ?? "/docs/getting-started", locale)}>{text.documentation}</a>
+        <a href={localizedHref("/api", locale)}>API</a>
+        <a href={docsSite.repositoryHref}>GitHub</a>
+      </nav>
+    </footer>
   );
 }

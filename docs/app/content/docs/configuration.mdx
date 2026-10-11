@@ -1,0 +1,84 @@
+---
+title: "Configuration"
+description: "Manage compilation and runtime behavior in one shared hono-decks.config.ts file."
+order: 3
+---
+
+# Configuration
+
+Manage compilation and runtime behavior in one shared hono-decks.config.ts file.
+
+<section id={"files"}>
+
+## Know which file owns each setting
+
+`hono-decks init` creates the required `hono-decks.config.ts` and `src/decks.ts`. Build input, public paths, and runtime policy live in this one config.
+
+<DefinitionList items={[{term: <><code>{"package.json"}</code></>, description: <>{"Runs the existing Vite or Wrangler development command."}</>},
+{term: <><code>{"hono-decks.config.ts"}</code></>, description: <>{"Required configuration shared by the CLI and runtime."}</>},
+{term: <><code>{"decks.ts"}</code></>, description: <>{"A stable facade that combines the generated source, config, and call-site overrides."}</>},
+{term: <><code>{"generated/"}</code></>, description: <>{"Compiler-owned manifest and slide modules."}</>}]} />
+
+<Callout title={"One config file"}>
+
+The CLI reads `build`; runtime reads `mountPath` and `router` from the same config.
+
+</Callout>
+
+</section>
+
+<section id={"compile"}>
+
+## Connect the compiler to the dev lifecycle
+
+Add `honoDecks()` to Vite, or register `hono-decks compile` as a Wrangler custom build. The shared config supplies `build.root`, `build.outDir`, and `mountPath`.
+
+<CodeBlock filename={"vite.config.ts"} language={"typescript"} code={"import { honoDecks } from \"hono-decks/vite\"\nimport { defineConfig } from \"vite\"\n\nexport default defineConfig({\n  plugins: [honoDecks()],\n})"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+<CodeBlock filename={"package.json"} language={"jsonc"} code={"{\n  \"scripts\": {\n    \"decks:compile\": \"hono-decks compile\",\n    \"dev\": \"vite\",\n    \"build\": \"vite build\"\n  }\n}"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+Set LinkCard cache at `build.ogpCacheFile`. Use `--refresh-ogp` only for an intentional refresh.
+
+[Open the OGP and file-export recipes →](/docs/recipes?lang=en)
+
+</section>
+
+<section id={"runtime"}>
+
+## Configure values that change per request
+
+Use `defineDecksConfig()` to type-check Hono Bindings and Variables as part of the config. When `dev` is omitted, hono-decks reads the `NODE_ENV` set by Vite and Wrangler. With their standard settings, `vite` and `wrangler dev` use development mode, while production builds and `wrangler deploy` use production mode. An explicit boolean or resolver takes precedence. If the environment cannot be detected, hono-decks defaults safely to production mode.
+
+<CodeBlock filename={"TypeScript"} language={"typescript"} code={"// hono-decks.config.ts\nimport { defineDecksConfig } from \"hono-decks\"\n\ntype AppEnv = {\n  Bindings: {\n    PRESENTER_ENABLED?: string\n  }\n  Variables: {\n    language: string\n  }\n}\n\nexport default defineDecksConfig<AppEnv>({\n  mountPath: \"/decks\",\n  build: { root: \"decks\", outDir: \"src/generated\" },\n  router: {\n    document: {\n      lang: ({ c }) => c.get(\"language\"),\n    },\n    presenter: {\n      enabled: ({ c, dev }) => dev || c.env.PRESENTER_ENABLED === \"true\",\n    },\n  },\n})"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+The `c.get("language")` example assumes Hono's `languageDetector()` is registered first; see [document policy and security](/docs/security?lang=en#language). For a single-language app, use a fixed value such as `lang: "en"`.
+
+</section>
+
+<section id={"facade"}>
+
+## Make precedence explicit in the facade
+
+Generated defaults, app config, and `decks.router(overrides)` are applied in order; the configured kit merges nested options.
+
+<CodeBlock filename={"TypeScript"} language={"typescript"} code={"// src/decks.ts\nimport config from \"../hono-decks.config\"\nimport { createDecks } from \"./generated/decks\"\n\nexport const decks = createDecks(config)"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+<Callout title={"One mount path"}>
+
+Write `mountPath` once in config and use `decks.mountPath` at runtime.
+
+</Callout>
+
+</section>
+
+<section id={"reference"}>
+
+## Choose the right configuration boundary
+
+<DefinitionList items={[{term: <><code>{"mountPath"}</code></>, description: <>{"The public path shared by the facade and app."}</>},
+{term: <><code>{"source(source)"}</code></>, description: <>{"Wraps the generated source with R2, caching, or custom asset loading."}</>},
+{term: <><code>{"router"}</code></>, description: <>{"Runtime options for document, pages, viewer, presenter, embed, export, and more."}</>}]} />
+
+[Open the defineDecksConfig API →](/api?lang=en#define-decks-config)
+
+</section>

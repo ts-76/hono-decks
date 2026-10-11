@@ -1,0 +1,126 @@
+---
+title: "導入"
+description: "パッケージを追加し、最初のデッキをHonoアプリで表示するまでの手順です。"
+order: 0
+---
+
+# 導入
+
+パッケージを追加し、最初のデッキをHonoアプリで表示するまでの手順です。
+
+<section id={"prerequisites"}>
+
+## Honoアプリを用意する
+
+npm、pnpm、Yarn、Bunのいずれかと、起動できるHonoアプリが必要です。この手順が終わると、2枚のスライドを`/decks/welcome`で表示できます。
+
+<Callout title={"コンパイルと配信は分かれています"}>
+
+MDXの変換はローカルの開発・ビルド環境で行います。Honoアプリは生成済みモジュールを読み込むため、Cloudflare Workers上でファイルシステムへアクセスする必要はありません。
+
+</Callout>
+
+</section>
+
+<section id={"install"}>
+
+## パッケージを追加し、設定ファイルを作る
+
+以下の例ではnpmを使います。`init`を実行すると、CLIと実行時の共通設定`hono-decks.config.ts`と、生成コードをアプリにつなぐ`src/decks.ts`が作られます。既存のファイルは上書きされません。
+
+<CodeBlock filename={"Terminal"} language={"bash"} code={"npm install hono-decks\nnpx hono-decks init"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+| パッケージマネージャー | インストール | CLIの実行 |
+| --- | --- | --- |
+| npm | `npm install hono-decks` | `npx hono-decks <command>` |
+| pnpm | `pnpm add hono-decks` | `pnpm exec hono-decks <command>` |
+| Yarn | `yarn add hono-decks` | `yarn hono-decks <command>` |
+| Bun | `bun add hono-decks` | `bunx hono-decks <command>` |
+
+`<command>`には`init`や`compile`を指定します。以降の例も、利用中のパッケージマネージャーに合わせて読み替えてください。
+
+</section>
+
+<section id={"deck"}>
+
+## 最初のデッキを作ってコンパイルする
+
+`decks/welcome/deck.mdx`を作成します。先頭のフロントマターはデッキ全体の情報、その次の`---`からが1枚目のスライドです。
+
+<CodeBlock filename={"decks/welcome/deck.mdx"} language={"mdx"} code={"---\ntitle: Welcome\ndescription: My first hono-decks presentation\n---\n\n---\nlayout: cover\n---\n\n# Welcome\n\nThis deck is served from my Hono app.\n\n---\n\n## Next slide\n\n- Write slides in MDX\n- Serve them with Hono"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+MDXをHono JSXモジュールへ変換します。成功すると`src/generated/`が作成されます。
+
+<CodeBlock filename={"Terminal"} language={"bash"} code={"npx hono-decks compile"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+<CodeBlock filename={"Generated files"} language={"text"} code={"hono-decks.config.ts   # CLIと実行時の共通設定\ndecks/\n└── welcome/\n    └── deck.mdx\nsrc/\n├── decks.ts              # アプリ側で編集\n└── generated/\n    └── decks.ts          # 自動生成。編集しない"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+`src/decks.ts`と`deck.mdx`は編集してかまいません。一方、`src/generated/`はコンパイルのたびに上書きされるため、直接編集しないでください。
+
+</section>
+
+<section id={"mount"}>
+
+## 生成したルーターをHonoに登録する
+
+生成したルーターを、既存のHonoアプリの`/decks`配下に登録します。
+
+<CodeBlock filename={"TypeScript"} language={"typescript"} code={"// src/index.ts\nimport { Hono } from \"hono\"\nimport { decks } from \"./decks\"\n\nconst app = new Hono()\napp.route(decks.mountPath, decks.router())\n\nexport default app"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+`decks.mountPath`は設定ファイルの値から生成されるため、コンパイル時と実行時で公開パスがずれません。
+
+</section>
+
+<section id={"scripts"}>
+
+## 普段の開発コマンドにコンパイルを組み込む
+
+HonoXやViteでは、既存のVite設定へプラグインを追加します。Viteの起動前に初回コンパイルを行い、MDXの変更を検知して再生成した後、ブラウザを更新します。
+
+<CodeBlock filename={"vite.config.ts"} language={"typescript"} code={"import { honoDecks } from \"hono-decks/vite\"\nimport { defineConfig } from \"vite\"\n\nexport default defineConfig({\n  plugins: [honoDecks()],\n})"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+<CodeBlock filename={"package.json"} language={"jsonc"} code={"{\n  \"scripts\": {\n    \"decks:compile\": \"hono-decks compile\",\n    \"dev\": \"vite\",\n    \"build\": \"vite build\"\n  }\n}"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+Wranglerを直接使うCloudflare Workerでは、`wrangler.jsonc`のカスタムビルドへ登録します。`--live-reload`を付けると、普段の開発コマンドだけでデッキの変更監視とブラウザ更新まで行えます。
+
+<CodeBlock filename={"wrangler.jsonc"} language={"jsonc"} code={"{\n  \"build\": {\n    \"command\": \"hono-decks compile\",\n    \"watch_dir\": [\"decks\"]\n  }\n}"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+<CodeBlock filename={"package.json"} language={"jsonc"} code={"{\n  \"scripts\": {\n    \"dev\": \"wrangler dev --live-reload\"\n  }\n}"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+</section>
+
+<section id={"verify"}>
+
+## ブラウザで表示を確認する
+
+<CodeBlock filename={"Terminal"} language={"bash"} code={"npm run dev"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+開発サーバーが表示したURLの`/decks/welcome`を開きます。Welcomeスライドが表示され、左右の操作または矢印キーで2枚目へ移動できれば導入は完了です。
+
+<Callout title={"URLの例"}>
+
+`http://localhost:3000/decks/welcome`。別のポートが表示された場合は、開発サーバーのURLを使ってください。
+
+</Callout>
+
+</section>
+
+<section id={"troubleshooting"}>
+
+## うまくいかないとき
+
+<DefinitionList items={[{term: <><code>{"src/generated/decks.ts"}</code>{"がない"}</>, description: <><code>{"npx hono-decks compile"}</code>{"を再実行し、設定ファイルの"}<code>{"build.root"}</code>{"と"}<code>{"build.outDir"}</code>{"を確認します。"}</>},
+{term: <><code>{"/decks"}</code>{"が404になる"}</>, description: <><code>{"app.route(decks.mountPath, decks.router())"}</code>{"になっているか確認します。"}</>},
+{term: <>{"WorkerのビルドにNode.js用モジュールが含まれる"}</>, description: <>{"実行時APIは"}<code>{"hono-decks"}</code>{"から読み込みます。"}<code>{"hono-decks/node"}</code>{"はコンパイル用スクリプトだけで使用してください。"}</>}]} />
+
+</section>
+
+<section id={"next"}>
+
+## 次に読む
+
+次は[スライドの書き方](/docs/authoring?lang=ja)へ進みます。環境変数を使うときは[設定](/docs/configuration?lang=ja)、公開する画面を変えるときは[ルートと画面](/docs/routing?lang=ja)を参照してください。
+
+<DeployToCloudflare locale={"ja"} />
+
+</section>

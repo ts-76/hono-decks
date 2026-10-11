@@ -1,0 +1,84 @@
+---
+title: "設定ファイル"
+description: "コンパイルと実行時の設定は、共通のhono-decks.config.tsで管理します。"
+order: 3
+---
+
+# 設定ファイル
+
+コンパイルと実行時の設定は、共通のhono-decks.config.tsで管理します。
+
+<section id={"files"}>
+
+## 4つのファイルの役割を把握する
+
+`hono-decks init`は、必須の`hono-decks.config.ts`と`src/decks.ts`を作ります。ビルド対象、公開パス、実行時の挙動は、この設定ファイルでまとめて管理します。
+
+<DefinitionList items={[{term: <><code>{"package.json"}</code></>, description: <>{"ViteまたはWranglerを使う、普段の開発コマンドを定義します。"}</>},
+{term: <><code>{"hono-decks.config.ts"}</code></>, description: <>{"CLIと実行時で共有する必須の設定ファイルです。"}</>},
+{term: <><code>{"decks.ts"}</code></>, description: <>{"生成物とアプリの設定を読み込み、ルーターを作成します。"}</>},
+{term: <><code>{"generated/"}</code></>, description: <>{"コンパイラーが生成するマニフェストとスライドのモジュールです。"}</>}]} />
+
+<Callout title={"設定は1か所にまとめます"}>
+
+CLIは`build`を、実行時は`mountPath`と`router`を同じ設定ファイルから読み込みます。
+
+</Callout>
+
+</section>
+
+<section id={"compile"}>
+
+## コンパイラーを開発フローに組み込む
+
+Viteでは`honoDecks()`を追加し、Wranglerではカスタムビルドに`hono-decks compile`を登録します。`build.root`、`build.outDir`、`mountPath`は共通の設定ファイルから読み込みます。
+
+<CodeBlock filename={"vite.config.ts"} language={"typescript"} code={"import { honoDecks } from \"hono-decks/vite\"\nimport { defineConfig } from \"vite\"\n\nexport default defineConfig({\n  plugins: [honoDecks()],\n})"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+<CodeBlock filename={"package.json"} language={"jsonc"} code={"{\n  \"scripts\": {\n    \"decks:compile\": \"hono-decks compile\",\n    \"dev\": \"vite\",\n    \"build\": \"vite build\"\n  }\n}"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+リンクカードのキャッシュ先は`build.ogpCacheFile`で指定します。保存済みデータを更新するときだけ`--refresh-ogp`を使います。
+
+[OGP画像とPDF・PNG出力のレシピを見る →](/docs/recipes?lang=ja)
+
+</section>
+
+<section id={"runtime"}>
+
+## リクエストごとに変わる値を設定する
+
+`defineDecksConfig()`を使うと、HonoのBindingsとVariablesも型検査の対象にできます。`dev`を省略した場合は、ViteとWranglerが設定する`NODE_ENV`から環境を判定します。標準設定では、`vite`と`wrangler dev`は開発モード、プロダクションビルドと`wrangler deploy`は本番モードとして動作します。boolean値または関数を明示すると自動判定より優先されます。環境を判定できない場合は、安全側に倒して本番モードになります。
+
+<CodeBlock filename={"TypeScript"} language={"typescript"} code={"// hono-decks.config.ts\nimport { defineDecksConfig } from \"hono-decks\"\n\ntype AppEnv = {\n  Bindings: {\n    PRESENTER_ENABLED?: string\n  }\n  Variables: {\n    language: string\n  }\n}\n\nexport default defineDecksConfig<AppEnv>({\n  mountPath: \"/decks\",\n  build: { root: \"decks\", outDir: \"src/generated\" },\n  router: {\n    document: {\n      lang: ({ c }) => c.get(\"language\"),\n    },\n    presenter: {\n      enabled: ({ c, dev }) => dev || c.env.PRESENTER_ENABLED === \"true\",\n    },\n  },\n})"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+`c.get("language")`を使う例では、Honoの`languageDetector()`を先に登録します。手順は[HTMLとセキュリティ](/docs/security?lang=ja#language)で確認できます。多言語対応が不要なら`lang: "ja"`のように固定値を指定します。
+
+</section>
+
+<section id={"facade"}>
+
+## 設定が上書きされる順序を確認する
+
+設定は、生成時の既定値、アプリの設定、`decks.router(overrides)`の順に適用されます。入れ子になった設定も`createDecks(config)`が結合します。
+
+<CodeBlock filename={"TypeScript"} language={"typescript"} code={"// src/decks.ts\nimport config from \"../hono-decks.config\"\nimport { createDecks } from \"./generated/decks\"\n\nexport const decks = createDecks(config)"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+<Callout title={"公開パスは1か所で指定します"}>
+
+`mountPath`は設定ファイルに一度だけ書き、実行時は`decks.mountPath`を使います。
+
+</Callout>
+
+</section>
+
+<section id={"reference"}>
+
+## 主な設定項目
+
+<DefinitionList items={[{term: <><code>{"mountPath"}</code></>, description: <>{"デッキを公開するパスです。アプリのapp.route()にも同じ値を指定します。"}</>},
+{term: <><code>{"source(source)"}</code></>, description: <>{"生成済みデータの取得方法を差し替えます。R2配信、キャッシュ、独自の画像取得などに使います。"}</>},
+{term: <><code>{"router"}</code></>, description: <>{"HTMLの共通設定、各画面、埋め込み、出力機能など、ルーターの動作を設定します。"}</>}]} />
+
+[defineDecksConfigのAPIを見る →](/api?lang=ja#define-decks-config)
+
+</section>

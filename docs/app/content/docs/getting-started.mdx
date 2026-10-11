@@ -1,0 +1,126 @@
+---
+title: "Get started"
+description: "Compile an MDX deck, mount the generated router in an existing Hono application, and verify it in your browser."
+order: 0
+---
+
+# Get started
+
+Compile an MDX deck, mount the generated router in an existing Hono application, and verify it in your browser.
+
+<section id={"prerequisites"}>
+
+## Start with a working Hono app
+
+You need npm, pnpm, Yarn, or Bun and a Hono app that already runs. By the end of this guide, it will serve a two-slide deck at `/decks/welcome`.
+
+<Callout title={"Compilation and delivery are separate"}>
+
+Compile MDX in your local development or build environment. The Hono app imports generated modules, so the deployed Worker does not need filesystem access.
+
+</Callout>
+
+</section>
+
+<section id={"install"}>
+
+## Install the package and create the config
+
+The example uses npm. `init` creates the shared `hono-decks.config.ts` and the app-owned `src/decks.ts` facade. It refuses to overwrite existing files.
+
+<CodeBlock filename={"Terminal"} language={"bash"} code={"npm install hono-decks\nnpx hono-decks init"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+| Package manager | Install | Run the CLI |
+| --- | --- | --- |
+| npm | `npm install hono-decks` | `npx hono-decks <command>` |
+| pnpm | `pnpm add hono-decks` | `pnpm exec hono-decks <command>` |
+| Yarn | `yarn add hono-decks` | `yarn hono-decks <command>` |
+| Bun | `bun add hono-decks` | `bunx hono-decks <command>` |
+
+Replace `<command>` with `init` or `compile`, and use the same package manager for the remaining examples.
+
+</section>
+
+<section id={"deck"}>
+
+## Create and compile the first deck
+
+Create `decks/welcome/deck.mdx`. The first frontmatter block describes the whole deck; the next `---` starts slide one.
+
+<CodeBlock filename={"decks/welcome/deck.mdx"} language={"mdx"} code={"---\ntitle: Welcome\ndescription: My first hono-decks presentation\n---\n\n---\nlayout: cover\n---\n\n# Welcome\n\nThis deck is served from my Hono app.\n\n---\n\n## Next slide\n\n- Write slides in MDX\n- Serve them with Hono"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+Compile the MDX into Hono JSX modules. A successful run creates `src/generated/`.
+
+<CodeBlock filename={"Terminal"} language={"bash"} code={"npx hono-decks compile"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+<CodeBlock filename={"Generated files"} language={"text"} code={"hono-decks.config.ts   # shared CLI/runtime config\ndecks/\n└── welcome/\n    └── deck.mdx\nsrc/\n├── decks.ts              # app-owned facade\n└── generated/\n    └── decks.ts          # generated; do not edit"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+Edit `src/decks.ts` and `deck.mdx` as needed. Never edit `src/generated/`; each compile replaces it.
+
+</section>
+
+<section id={"mount"}>
+
+## Mount the generated router in Hono
+
+Add the generated router to the existing Hono app.
+
+<CodeBlock filename={"TypeScript"} language={"typescript"} code={"// src/index.ts\nimport { Hono } from \"hono\"\nimport { decks } from \"./decks\"\n\nconst app = new Hono()\napp.route(decks.mountPath, decks.router())\n\nexport default app"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+`decks.mountPath` comes from the shared config, keeping compile-time assets and runtime routes on the same public path.
+
+</section>
+
+<section id={"scripts"}>
+
+## Integrate compilation with the existing dev command
+
+For HonoX or Vite, add the plugin to the existing Vite config. It compiles before Vite starts, regenerates modules when MDX changes, and reloads the browser after a successful compile.
+
+<CodeBlock filename={"vite.config.ts"} language={"typescript"} code={"import { honoDecks } from \"hono-decks/vite\"\nimport { defineConfig } from \"vite\"\n\nexport default defineConfig({\n  plugins: [honoDecks()],\n})"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+<CodeBlock filename={"package.json"} language={"jsonc"} code={"{\n  \"scripts\": {\n    \"decks:compile\": \"hono-decks compile\",\n    \"dev\": \"vite\",\n    \"build\": \"vite build\"\n  }\n}"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+For a Cloudflare Worker that runs Wrangler directly, register the compiler as a custom build. The `--live-reload` flag lets the ordinary dev command watch the deck root and refresh the browser.
+
+<CodeBlock filename={"wrangler.jsonc"} language={"jsonc"} code={"{\n  \"build\": {\n    \"command\": \"hono-decks compile\",\n    \"watch_dir\": [\"decks\"]\n  }\n}"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+<CodeBlock filename={"package.json"} language={"jsonc"} code={"{\n  \"scripts\": {\n    \"dev\": \"wrangler dev --live-reload\"\n  }\n}"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+</section>
+
+<section id={"verify"}>
+
+## Verify it in the browser
+
+<CodeBlock filename={"Terminal"} language={"bash"} code={"npm run dev"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+Open `/decks/welcome` on the local URL printed by the dev server. The setup works when the Welcome slide appears and the controls or arrow keys move to slide two.
+
+<Callout title={"Expected URL"}>
+
+`http://localhost:3000/decks/welcome`. If your dev server selects another port, use the printed URL.
+
+</Callout>
+
+</section>
+
+<section id={"troubleshooting"}>
+
+## Troubleshooting
+
+<DefinitionList items={[{term: <>{"Missing "}<code>{"src/generated/decks.ts"}</code></>, description: <>{"Run "}<code>{"npx hono-decks compile"}</code>{" again and check "}<code>{"build.root"}</code>{" and "}<code>{"build.outDir"}</code>{" in the config."}</>},
+{term: <><code>{"/decks"}</code>{" returns 404"}</>, description: <>{"Mount "}<code>{"decks.router()"}</code>{" at "}<code>{"decks.mountPath"}</code>{"."}</>},
+{term: <>{"Node modules enter the Worker bundle"}</>, description: <>{"Import runtime APIs from "}<code>{"hono-decks"}</code>{". Keep "}<code>{"hono-decks/node"}</code>{" in build scripts only."}</>}]} />
+
+</section>
+
+<section id={"next"}>
+
+## Choose the next step
+
+Continue with [authoring slides](/docs/authoring?lang=en). Open [configuration](/docs/configuration?lang=en) or [routes and UI](/docs/routing?lang=en) only when you need environment bindings or different public surfaces.
+
+<DeployToCloudflare locale={"en"} />
+
+</section>
