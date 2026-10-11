@@ -1,0 +1,78 @@
+---
+title: "Examples"
+description: "Explore polished live decks and a HonoX portfolio that keeps talks inside the application that introduces them."
+order: 1
+---
+
+# Examples
+
+Explore polished live decks and a HonoX portfolio that keeps talks inside the application that introduces them.
+
+<section id={"live"}>
+
+## Open each deck on a live Worker
+
+Every example uses the same hono-decks package, with density, color, and composition tuned to its purpose.
+
+<Cards>
+
+<Card title={"Basic"} href={"https://basic.hono-decks.com/decks/sample"}>
+
+The full example for code, assets, embeds, Fire reveals, and hydrated islands.
+
+[Source ↗](https://github.com/ts-76/hono-decks/tree/main/examples/basic)
+
+</Card>
+
+<Card title={"Minimal"} href={"https://minimal.hono-decks.com/decks/welcome"}>
+
+The smallest Worker: one deck, one facade, and one mounted router.
+
+[Source ↗](https://github.com/ts-76/hono-decks/tree/main/examples/minimal)
+
+</Card>
+
+<Card title={"HonoX portfolio"} href={"https://honox.hono-decks.com/"}>
+
+A portfolio that publishes ordinary pages and talks from the same HonoX app.
+
+[Source ↗](https://github.com/ts-76/hono-decks/tree/main/examples/honox)
+
+</Card>
+
+<Card title={"Build-time OGP"} href={"https://ogp.hono-decks.com/decks/welcome"}>
+
+Generate deterministic 1200×630 share images from deck metadata with Satori and resvg.
+
+[Source ↗](https://github.com/ts-76/hono-decks/tree/main/examples/ogp)
+
+</Card>
+
+</Cards>
+
+</section>
+
+<section id={"portfolio"}>
+
+## Make the talk part of the portfolio
+
+`examples/honox` embeds the deck inside its portfolio page and links to viewer and presentation surfaces. HonoX owns SEO and navigation; hono-decks owns presentation routes.
+
+<DemoFrame src={"https://honox.hono-decks.com/decks/honox/embed"} href={"https://honox.hono-decks.com/decks/honox"} title={"Talk embedded in the HonoX portfolio"} linkLabel={"Open live deck"} aspectRatio={16 / 9} allowFullscreen openInNewTab />
+
+**Surfaces in the same deployment**`/``/decks/honox``/decks/honox/presentation``/decks/honox/print`[Open the full portfolio →](https://honox.hono-decks.com/)
+
+</section>
+
+<section id={"choose"}>
+
+## Start from the closest architecture
+
+<DefinitionList items={[{term: <>{"Minimal"}</>, description: <>{"Adding the smallest deck surface to an existing Hono Worker."}</>},
+{term: <>{"HonoX"}</>, description: <>{"Publishing talks beside a blog, profile, or work index."}</>},
+{term: <>{"Basic"}</>, description: <>{"Evaluating R2, embeds, motion, and export in one project."}</>},
+{term: <>{"OGP"}</>, description: <>{"Generating social share images during the build."}</>}]} />
+
+[Continue to installation →](/docs/getting-started?lang=en)
+
+</section>

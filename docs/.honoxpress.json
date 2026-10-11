@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "groups": [
+    "accordion",
+    "api-reference",
+    "callout",
+    "cards",
+    "code-block",
+    "code-group",
+    "definition-list",
+    "demo-frame",
+    "figure",
+    "file-tree",
+    "layout",
+    "steps",
+    "tabs",
+    "theme-switch",
+    "type-table"
+  ],
+  "files": {
+    "app/components/docs-content.tsx": "34fea39c17bbe3abcf6637ae832550cd09bfc8456743a2b4aea7f77fd336715e",
+    "app/islands/tabs.tsx": "818523cf2f30ee44e06df890ee02f57607f0a7495e53960570001281ed89b181",
+    "app/islands/copy-code.tsx": "b5dfe9f6346f128d123df0a57e9a813a9631261d1a544a7a8ee8106a1bb9a5aa",
+    "app/components/demo-frame.tsx": "41dbccf97ba1eb92537c9a7efa3f1cb0b29828eb442317095581b5f193403031",
+    "app/components/file-tree.tsx": "efa39da08062edb71dda77c13f24384c1cf17114533013c836d154496d3d4810",
+    "app/components/type-table.tsx": "caec9056c7b6fd9d46110cc0b4026fbc32dc19045c45657a001f2545e056a2f8",
+    "app/islands/code-group.tsx": "e73809b436c49610693eb7a867455616ccfd34e9e0ce5392f98a58cdaaf85e63",
+    "app/components/figure.tsx": "c18fb474b7faf99cee52b0613d4ccf7f77c07b444dadb07ff4cd8ffb87408d2d",
+    "app/components/theme-switch.tsx": "acf826864398e4f778f3c018d4c1ae6c4660907678f40d7b49e87d089e793fcd",
+    "app/components/definition-list.tsx": "30eaa5015cedfecc48c01754f6f7f37d3eb416e3b9fc59e6bac792c74d5ee097",
+    "app/components/api-reference.tsx": "e906ea3a0956ebc828963dda174f86ab72e0376cbdc687f01dc027ff1574df48",
+    "app/components/docs-ui.tsx": "da3dc528554e4f1f5286b0cf5c759c77e0567da0d3596f93d277a070b4cb56dc",
+    "app/components/docs-layout.tsx": "09365a79cf3dc815c38cfe8e1880f52b7ad89ef3efec70b2c8422d0e8c42390f",
+    "app/docs.config.ts": "6a4fc499782a35f7f5a5d001c74c28368e7f86432850adbc29aa5d390c4f5a8f",
+    "app/client.ts": "b0ea2928f01ff769aa460bdb2277c4dab974494edc658f6a29e03ea9a77d65d1",
+    "app/docs-virtual.d.ts": "225ac5675950af98bee33bf7c5a8541127a2bfa81a933fac1d431e1f76465b3b",
+    "public/components.css": "c493a7946b7afa72097f2d6ffc61b4731b4df6bfbc35f7459956a7ab8800dfd0",
+    "public/tokens.css": "258be9277cf905bcf7f0582bec17239075a41c02bb7aa0558f678bc80c4101b9",
+    "public/style.css": "ee8b8cb3ea9c06e44f74b473f068216385a7d0d33627df82a044672c6977e3ba",
+    "app/mdx-components.ts": "89f58bb97a1d704061412a851d997855ea2fa95535e037398bc9a5f2c22be9cb"
+  }
+}

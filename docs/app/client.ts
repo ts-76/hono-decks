@@ -1,6 +1,21 @@
 import { createClient } from "honox/client";
 
-void createClient();
+// Keep discovery in app source: a prebundled honox/client can cache an old file map.
+const islandFiles = Object.fromEntries(
+  Object.entries({
+    ...import.meta.glob("/app/islands/**/*.tsx"),
+    ...import.meta.glob("/app/**/*.island.tsx"),
+    ...import.meta.glob("/app/**/$*.tsx"),
+  }).filter(([file]) =>
+    [/\/[a-zA-Z0-9-]+\.tsx$/, /\/_[a-zA-Z0-9-]+\.island\.tsx$/, /\/\$[a-zA-Z0-9-]+\.tsx$/].some((pattern) =>
+      pattern.test(file),
+    ),
+  ),
+);
+
+void createClient({ ISLAND_FILES: islandFiles }).then(() => {
+  document.documentElement.dataset.islandsReady = "true";
+});
 
 function setDisclosure(trigger: HTMLButtonElement, open: boolean) {
   const panelId = trigger.getAttribute("aria-controls");
@@ -18,7 +33,7 @@ function closeDisclosures(except?: HTMLButtonElement) {
   });
 }
 
-document.addEventListener("click", async (event) => {
+document.addEventListener("click", (event) => {
   const target = event.target as Element | null;
   const disclosureTrigger = target?.closest<HTMLButtonElement>("[data-disclosure-trigger]");
   if (disclosureTrigger) {
@@ -36,40 +51,6 @@ document.addEventListener("click", async (event) => {
   } else if (!target?.closest("[data-disclosure]")) {
     closeDisclosures();
   }
-
-  const button = target?.closest<HTMLButtonElement>("[data-copy]");
-  if (!button) return;
-
-  const targetId = button.dataset.copy;
-  const copyTarget = targetId ? document.getElementById(targetId) : null;
-  const status = button.querySelector<HTMLElement>("[data-copy-status]");
-  if (!copyTarget || !status) return;
-
-  const idleLabel = status.dataset.idle ?? status.textContent ?? "Copy";
-  try {
-    const value = copyTarget.dataset.source ?? copyTarget.textContent ?? "";
-    try {
-      await navigator.clipboard.writeText(value);
-    } catch {
-      const fallback = document.createElement("textarea");
-      fallback.value = value;
-      fallback.setAttribute("readonly", "");
-      fallback.style.position = "fixed";
-      fallback.style.opacity = "0";
-      document.body.appendChild(fallback);
-      fallback.select();
-      const copied = document.execCommand("copy");
-      fallback.remove();
-      if (!copied) throw new Error("Copy command was rejected");
-    }
-    status.textContent = status.dataset.success ?? "Copied";
-  } catch {
-    status.textContent = status.dataset.error ?? "Copy failed";
-  }
-
-  window.setTimeout(() => {
-    status.textContent = idleLabel;
-  }, 1800);
 });
 
 document.addEventListener("keydown", (event) => {

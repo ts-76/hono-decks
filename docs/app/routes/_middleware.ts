@@ -1,5 +1,6 @@
 import { languageDetector } from "hono/language";
 import { createRoute } from "honox/factory";
+import docsSite from "../docs.config";
 
 export default createRoute(
   languageDetector({
@@ -13,7 +14,7 @@ export default createRoute(
       httpOnly: true,
       maxAge: 60 * 60 * 24 * 365,
     },
-    supportedLanguages: ["ja", "en"],
-    fallbackLanguage: "en",
+    supportedLanguages: Object.keys(docsSite.localeLabels),
+    fallbackLanguage: docsSite.defaultLocale,
   }),
 );

@@ -1,0 +1,78 @@
+---
+title: "実例"
+description: "デザイン済みの公開デッキと、登壇資料をポートフォリオへ組み込むHonoX構成を確認できます。"
+order: 1
+---
+
+# 実例
+
+デザイン済みの公開デッキと、登壇資料をポートフォリオへ組み込むHonoX構成を確認できます。
+
+<section id={"live"}>
+
+## 実際のWorkerでデッキを開く
+
+すべての例は同じhono-decksパッケージを使いながら、目的に合わせて情報量、色、レイアウトを変えています。
+
+<Cards>
+
+<Card title={"Basic"} href={"https://basic.hono-decks.com/decks/sample"}>
+
+コード、画像、埋め込み、Fire、Islandを1つずつ確認できる総合例。
+
+[ソース ↗](https://github.com/ts-76/hono-decks/tree/main/examples/basic)
+
+</Card>
+
+<Card title={"Minimal"} href={"https://minimal.hono-decks.com/decks/welcome"}>
+
+1デッキ、1つのfacade、1回のmountだけで動く最小Worker。
+
+[ソース ↗](https://github.com/ts-76/hono-decks/tree/main/examples/minimal)
+
+</Card>
+
+<Card title={"HonoX portfolio"} href={"https://honox.hono-decks.com/"}>
+
+通常ページと登壇資料を同じHonoXアプリから公開するポートフォリオ例。
+
+[ソース ↗](https://github.com/ts-76/hono-decks/tree/main/examples/honox)
+
+</Card>
+
+<Card title={"Build-time OGP"} href={"https://ogp.hono-decks.com/decks/welcome"}>
+
+Satoriとresvgで、デッキ情報から1200×630の共有画像を生成。
+
+[ソース ↗](https://github.com/ts-76/hono-decks/tree/main/examples/ogp)
+
+</Card>
+
+</Cards>
+
+</section>
+
+<section id={"portfolio"}>
+
+## 登壇資料をポートフォリオの一部にする
+
+`examples/honox`は、作品紹介ページの中に同一オリジンのembedを置き、viewerとpresentationへつなぎます。HonoXがSEOとナビゲーション、hono-decksが発表用の各画面を担当します。
+
+<DemoFrame src={"https://honox.hono-decks.com/decks/honox/embed"} href={"https://honox.hono-decks.com/decks/honox"} title={"HonoXポートフォリオの登壇資料"} linkLabel={"公開例を開く"} aspectRatio={16 / 9} allowFullscreen openInNewTab />
+
+**同じデプロイに含まれる画面**`/``/decks/honox``/decks/honox/presentation``/decks/honox/print`[ポートフォリオ全体を見る →](https://honox.hono-decks.com/)
+
+</section>
+
+<section id={"choose"}>
+
+## 目的に近い構成から始める
+
+<DefinitionList items={[{term: <>{"Minimal"}</>, description: <>{"既存のHono Workerへ、最小のデッキ配信を追加するとき。"}</>},
+{term: <>{"HonoX"}</>, description: <>{"ブログ、プロフィール、作品一覧と登壇資料を同じサイトで公開するとき。"}</>},
+{term: <>{"Basic"}</>, description: <>{"R2、埋め込み、アニメーション、出力まで含めて検証するとき。"}</>},
+{term: <>{"OGP"}</>, description: <>{"SNSで共有する画像をbuild時に自動生成するとき。"}</>}]} />
+
+[導入手順へ進む →](/docs/getting-started?lang=ja)
+
+</section>

@@ -1,10 +1,12 @@
 import type { Context } from "hono";
+import docsSite from "./docs.config";
 
-export const locales = ["ja", "en"] as const;
-export type Locale = (typeof locales)[number];
+export type Locale = keyof typeof messages;
+export const locales = Object.keys(docsSite.localeLabels) as Locale[];
 
 export function getLocale(c: Context): Locale {
-  return c.get("language") === "ja" ? "ja" : "en";
+  const language = c.get("language");
+  return locales.includes(language as Locale) ? (language as Locale) : (docsSite.defaultLocale as Locale);
 }
 
 export function localizedHref(path: string, locale: Locale): string {
@@ -99,7 +101,7 @@ const ja = {
   deployComingSoon: "サンプル準備中",
 } satisfies MessageCatalog;
 
-export const messages = { en, ja } satisfies Record<Locale, MessageCatalog>;
+export const messages = { en, ja };
 
 export function t(locale: Locale) {
   return messages[locale];

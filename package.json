@@ -54,6 +54,7 @@
     "wrangler": "^4.111.0"
   },
   "overrides": {
+    "hono": "4.13.12",
     "vite": "catalog:",
     "vitest": "catalog:"
   },

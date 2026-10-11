@@ -3,6 +3,11 @@ import { describe, expect, it } from "vite-plus/test";
 import app from "../app/server";
 import { locales, messages } from "../app/i18n";
 import { clientEntrySource } from "../app/routes/_renderer";
+import { docsCatalog, getDocument, publicDocsHref } from "../app/docs-catalog";
+import docsSite from "../app/docs.config";
+
+// Compare code/content independently of build-time syntax token boundaries.
+const withoutSyntaxSpans = (html: string) => html.replace(/<\/?span\b[^>]*>/g, "");
 
 describe("HonoX documentation site", () => {
   it("keeps every locale catalog aligned with the English source keys", () => {
@@ -21,7 +26,7 @@ describe("HonoX documentation site", () => {
   });
 
   it("keeps the home hero within narrow viewports", async () => {
-    const css = await readFile(new URL("../app/style.css", import.meta.url), "utf8");
+    const css = await readFile(new URL("../app/home.css", import.meta.url), "utf8");
 
     expect(css).toContain("grid-template-columns: minmax(0, 1fr)");
     expect(css).toContain("max-width: 100%");
@@ -198,7 +203,7 @@ describe("HonoX documentation site", () => {
     const html = await (await app.request("/docs/getting-started?lang=ja")).text();
 
     expect(html).toContain('id="prerequisites"');
-    expect(html).toContain("インストールから最初の表示まで");
+    expect(html).toContain("最初のデッキを作ってコンパイルする");
     expect(html).toContain('id="install"');
     expect(html).toContain('id="deck"');
     expect(html).toContain("decks/welcome/deck.mdx");
@@ -229,7 +234,7 @@ describe("HonoX documentation site", () => {
     expect(html).toContain("使う場面");
     expect(html).toContain("生成コードを使わず、デッキの取得からルーティングまでを独自に組み立てるとき");
     expect(html).toContain("まずcreateDecks(config)から始める");
-    expect(html).toContain('class="copy-button"');
+    expect(html).toContain('class="code-copy-label"');
     expect(html).not.toContain("<table>");
   });
 
@@ -255,8 +260,8 @@ describe("HonoX documentation site", () => {
   });
 
   it("documents the supported authoring syntax and its default boundaries", async () => {
-    const ja = await (await app.request("/docs/authoring?lang=ja")).text();
-    const en = await (await app.request("/docs/authoring?lang=en")).text();
+    const ja = withoutSyntaxSpans(await (await app.request("/docs/authoring?lang=ja")).text());
+    const en = withoutSyntaxSpans(await (await app.request("/docs/authoring?lang=en")).text());
 
     expect(ja).toContain('id="syntax"');
     expect(ja).toContain('id="notes"');
@@ -304,13 +309,14 @@ describe("HonoX documentation site", () => {
     expect(gettingStarted).toContain('class="language-jsonc"');
     expect(authoring).toContain('class="language-mdx"');
     expect(authoring).toContain('class="language-tsx"');
-    expect(authoring).toMatch(/<span style="color:#[A-Fa-f0-9]{6}/);
-    expect(authoring).toContain('class="copy-button"');
+    expect(authoring).toContain('class="hx-syntax-keyword"');
+    expect(authoring).toContain('class="hx-syntax-string"');
+    expect(authoring).toContain('class="code-copy-label"');
   });
 
   it("links the Deploy to Cloudflare button to the isolated minimal example", async () => {
     const html = await (await app.request("/")).text();
-    const css = await readFile(new URL("../app/style.css", import.meta.url), "utf8");
+    const css = await readFile(new URL("../app/home.css", import.meta.url), "utf8");
 
     expect(html).toContain("https://deploy.workers.cloudflare.com/button");
     expect(html).toContain(
@@ -332,7 +338,7 @@ describe("HonoX documentation site", () => {
     const html = await (await app.request("/docs/getting-started")).text();
 
     expect(html).toContain('src="/app/client.ts"');
-    expect(html).toContain('data-copy-status="true"');
+    expect(html).toContain('role="status" aria-live="polite"');
     expect(html).toContain('class="disclosure-trigger mobile-menu-trigger"');
     expect(html).toContain('aria-controls="mobile-menu-panel"');
     expect(html).not.toContain('aria-controls="docs-switcher-panel"');
@@ -351,5 +357,32 @@ describe("HonoX documentation site", () => {
     expect(docs.status).toBe(302);
     expect(docs.headers.get("location")).toBe("/docs/getting-started?lang=en");
     expect(missing.status).toBe(404);
+  });
+
+  it("discovers both languages from MDX and keeps the established public URLs", () => {
+    expect(docsCatalog.pages).toHaveLength(16);
+    for (const locale of locales) {
+      expect(docsCatalog.navigation(locale)).toHaveLength(8);
+      for (const page of docsCatalog.navigation(locale)) {
+        expect(getDocument(page.slug, locale)?.page).toBe(page);
+        expect(page.headings[0]?.depth).toBe(1);
+        expect(page.headings.some((heading) => heading.depth === 2)).toBe(true);
+        const path = page.slug === "api" ? "/api" : `/docs/${page.slug}`;
+        expect(publicDocsHref(page.href, locale)).toBe(`${path}?lang=${locale}`);
+        expect(docsCatalog.translations(page.href).every((link) => link.href)).toBe(true);
+      }
+    }
+  });
+
+  it.each(locales)("renders every MDX document and valid TOC anchors in %s", async (locale) => {
+    for (const page of docsCatalog.navigation(locale)) {
+      const response = await app.request(publicDocsHref(page.href, locale));
+      const html = await response.text();
+      expect(response.status).toBe(200);
+      expect(html).toContain(`<html lang="${locale}">`);
+      expect(html).toContain(`${page.title} — ${docsSite.name}`);
+      for (const heading of page.headings) expect(html).toContain(`id="${heading.id}"`);
+      expect(html).toContain('data-hx-theme-switch="true"');
+    }
   });
 });
