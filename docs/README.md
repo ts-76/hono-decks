@@ -77,3 +77,11 @@ bun run honoxpress add <group>
 ```
 
 Customize shared styling through semantic tokens in `public/tokens.css`. Documentation layout, typography, and component styling come from honoxpress in `public/style.css` and `public/components.css`. `app/style.css` contains application integration rules, while `app/site.css` owns the shared header, mobile menu, footer, and deployment button. Homepage composition in `app/home.css` is scoped under `.home`, so it cannot change documentation gutters, tables, or responsive breakpoints. Both surfaces use the same light/dark token palette.
+
+## Upgrade honoxpress
+
+The documentation uses the published `honoxpress@0.2.1` package. Updating the dependency does not update the copied application files, and `init` / `add` are not upgrade commands. Follow the [upstream migration guide](https://github.com/ts-76/honoxpress/blob/v0.2.1/docs/upgrading-owned-templates.md) and compare the installed package's templates with `public/style.css`, `public/components.css`, and `app/components/theme-switch.tsx` before merging changes.
+
+This site already includes the 0.2.1 fixes for theme-selector spacing, stable navigation wrapping, long code filenames, and adjacent API separators. Keep the custom shell, header, mobile disclosures, query-based language URLs, Markdown table scroll containers, and footer behavior when updating. Keep the theme selector's JSX and CSS together.
+
+After an upgrade, run `bun run --cwd docs check` and inspect every English and Japanese guide plus `/api` at desktop and mobile widths in light and dark themes. Check theme persistence, mobile menu and TOC controls, code copying, navigation wrapping, and page-wide overflow. Wide tables and code should scroll within their own containers.
