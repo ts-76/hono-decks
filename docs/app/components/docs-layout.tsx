@@ -3,7 +3,7 @@ import type { DocsPage, LocaleLink, DocsSiteConfig } from "honoxpress";
 import { Link } from "honox/server";
 import { SiteHeader, SiteFooter, DisclosureButton } from "../site";
 import { ThemeScript } from "./theme-switch";
-import { DocsNavigation, LanguageLinks, TableOfContents } from "./docs-ui";
+import { DocsNavigation, TableOfContents } from "./docs-ui";
 import type { Locale } from "../i18n";
 
 /** Consumer-owned honoxpress shell, integrated with the application's existing header and URLs. */
@@ -67,10 +67,7 @@ export function DocsLayout({
               </nav>
             </div>
             <article class="prose">{children}</article>
-            <footer class="page-footer">
-              <LanguageLinks links={translations} locale={locale} labels={config.localeLabels} />
-              {config.footer && <p>{config.footer}</p>}
-            </footer>
+            <footer class="page-footer">{config.footer && <p>{config.footer}</p>}</footer>
           </main>
           <aside class="toc-rail">
             <TableOfContents headings={current.headings} label={tocLabel} />
