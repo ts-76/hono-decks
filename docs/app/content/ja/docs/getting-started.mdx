@@ -53,9 +53,24 @@ MDXをHono JSXモジュールへ変換します。成功すると`src/generated/
 
 <CodeBlock filename={"Terminal"} language={"bash"} code={"npx hono-decks compile"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
-<CodeBlock filename={"Generated files"} language={"text"} code={"hono-decks.config.ts   # CLIと実行時の共通設定\ndecks/\n└── welcome/\n    └── deck.mdx\nsrc/\n├── decks.ts              # アプリ側で編集\n└── generated/\n    └── decks.ts          # 自動生成。編集しない"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+**生成されるファイル**
 
-`src/decks.ts`と`deck.mdx`は編集してかまいません。一方、`src/generated/`はコンパイルのたびに上書きされるため、直接編集しないでください。
+<FileTree label={"生成されるファイル"}>
+  <File name={"hono-decks.config.ts"} />
+  <Folder name={"decks"}>
+    <Folder name={"welcome"}>
+      <File name={"deck.mdx"} />
+    </Folder>
+  </Folder>
+  <Folder name={"src"}>
+    <File name={"decks.ts"} />
+    <Folder name={"generated"}>
+      <File name={"decks.ts"} highlighted />
+    </Folder>
+  </Folder>
+</FileTree>
+
+`hono-decks.config.ts`はCLIと実行時の共通設定です。アプリ側で管理する`src/decks.ts`と`deck.mdx`は編集してかまいません。一方、`src/generated/`はコンパイルのたびに上書きされるため、直接編集しないでください。
 
 </section>
 

@@ -200,10 +200,10 @@
     padding-block: var(--docs-space-sm);
     border-bottom: 1px solid var(--docs-line);
     text-decoration: none;
+    font-weight: var(--docs-weight-ui);
   }
   .mobile-menu-panel > a[aria-current="page"] {
     color: var(--docs-accent);
-    font-weight: var(--docs-weight-heading);
   }
   .mobile-language {
     display: flex;
