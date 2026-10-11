@@ -68,7 +68,15 @@ export function ThemeSwitch({ locale = "en" }: { locale?: string }) {
           {labels.system}
         </option>
       </select>
-      <svg class="hx-theme-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <svg
+        class="hx-theme-chevron"
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+        aria-hidden="true"
+        focusable="false"
+      >
         <path
           d="m4 6 4 4 4-4"
           stroke="currentColor"
