@@ -316,7 +316,7 @@ describe("HonoX documentation site", () => {
 
   it("links the Deploy to Cloudflare button to the isolated minimal example", async () => {
     const html = await (await app.request("/")).text();
-    const css = await readFile(new URL("../app/home.css", import.meta.url), "utf8");
+    const css = await readFile(new URL("../app/site.css", import.meta.url), "utf8");
 
     expect(html).toContain("https://deploy.workers.cloudflare.com/button");
     expect(html).toContain(
@@ -345,8 +345,14 @@ describe("HonoX documentation site", () => {
     expect(html).not.toContain("Choose a guide");
     expect(html).toContain('aria-controls="mobile-page-nav-panel"');
     expect(html).toContain('data-disclosure-panel="true"');
-    expect(html).not.toContain("<details");
-    expect(html).not.toContain("<summary");
+    const header = html.match(/<header class="site-header">[\s\S]*?<\/header>/)?.[0];
+    const pageNavigation = html.match(/<div class="mobile-page-nav"[\s\S]*?<\/div>/)?.[0];
+    expect(header).toBeDefined();
+    expect(pageNavigation).toBeDefined();
+    for (const navigation of [header, pageNavigation]) {
+      expect(navigation).not.toContain("<details");
+      expect(navigation).not.toContain("<summary");
+    }
     expect(html).toContain('aria-current="page"');
   });
 

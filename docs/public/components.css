@@ -508,9 +508,17 @@
 }
 
 /* Native controls and structured reference content use the same reading roles. */
+.hx-theme-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
 .hx-theme-switch select {
   min-height: 44px;
+  min-width: 7.5rem;
   padding: var(--docs-space-2) var(--docs-space-3);
+  padding-inline-end: calc(var(--docs-space-3) * 2 + 16px);
+  appearance: none;
   border: 1px solid var(--docs-line);
   border-radius: var(--docs-control-radius);
   background: var(--docs-panel);
@@ -518,6 +526,12 @@
   font: inherit;
   font-size: var(--docs-ui-size);
   cursor: pointer;
+}
+.hx-theme-chevron {
+  position: absolute;
+  inset-inline-end: var(--docs-space-3);
+  color: var(--docs-muted);
+  pointer-events: none;
 }
 .hx-theme-switch select:hover {
   border-color: var(--docs-accent);
@@ -567,6 +581,9 @@
   padding: var(--docs-space-4) 0;
   border-top: 1px solid var(--docs-line);
   border-bottom: 1px solid var(--docs-line);
+}
+.hx-api-reference + .hx-api-reference {
+  border-top: 0;
 }
 .hx-api-heading {
   display: flex;

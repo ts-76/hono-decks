@@ -53,9 +53,24 @@ Compile the MDX into Hono JSX modules. A successful run creates `src/generated/`
 
 <CodeBlock filename={"Terminal"} language={"bash"} code={"npx hono-decks compile"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
 
-<CodeBlock filename={"Generated files"} language={"text"} code={"hono-decks.config.ts   # shared CLI/runtime config\ndecks/\n└── welcome/\n    └── deck.mdx\nsrc/\n├── decks.ts              # app-owned facade\n└── generated/\n    └── decks.ts          # generated; do not edit"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+**Generated files**
 
-Edit `src/decks.ts` and `deck.mdx` as needed. Never edit `src/generated/`; each compile replaces it.
+<FileTree label={"Generated files"}>
+  <File name={"hono-decks.config.ts"} />
+  <Folder name={"decks"}>
+    <Folder name={"welcome"}>
+      <File name={"deck.mdx"} />
+    </Folder>
+  </Folder>
+  <Folder name={"src"}>
+    <File name={"decks.ts"} />
+    <Folder name={"generated"}>
+      <File name={"decks.ts"} highlighted />
+    </Folder>
+  </Folder>
+</FileTree>
+
+`hono-decks.config.ts` is shared by the CLI and runtime. Edit the app-owned `src/decks.ts` facade and `deck.mdx` as needed. Never edit `src/generated/`; each compile replaces it.
 
 </section>
 

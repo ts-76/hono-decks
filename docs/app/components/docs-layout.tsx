@@ -1,7 +1,7 @@
 import type { Child } from "hono/jsx";
 import type { DocsPage, LocaleLink, DocsSiteConfig } from "honoxpress";
 import { Link } from "honox/server";
-import { SiteHeader, SiteFooter } from "../site";
+import { SiteHeader, SiteFooter, DisclosureButton } from "../site";
 import { ThemeScript } from "./theme-switch";
 import { DocsNavigation, LanguageLinks, TableOfContents } from "./docs-ui";
 import type { Locale } from "../i18n";
@@ -61,15 +61,7 @@ export function DocsLayout({
               <span>{current.title}</span>
             </nav>
             <div class="mobile-page-nav" data-disclosure>
-              <button
-                class="disclosure-trigger mobile-page-nav-trigger"
-                type="button"
-                aria-expanded="false"
-                aria-controls="mobile-page-nav-panel"
-                data-disclosure-trigger
-              >
-                {tocLabel}
-              </button>
+              <DisclosureButton className="mobile-page-nav-trigger" controls="mobile-page-nav-panel" label={tocLabel} />
               <nav id="mobile-page-nav-panel" data-disclosure-panel hidden>
                 <TableOfContents headings={current.headings} label={tocLabel} />
               </nav>
