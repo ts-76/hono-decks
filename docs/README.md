@@ -33,7 +33,8 @@ bun run deploy:docs       # Build and deploy the documentation Worker
 | Interactive code blocks, tabs, and code groups | `app/islands/` |
 | Color, type, spacing, radius, and state tokens | `public/tokens.css` |
 | Shared documentation/component styles | `public/style.css`, `public/components.css` |
-| Application overrides and homepage styles | `app/style.css`, `app/home.css` |
+| Application chrome (header, mobile menu, footer, deployment button) | `app/site.css` |
+| Application integration and homepage composition | `app/style.css`, `app/home.css` |
 
 Paths in this table are relative to `docs/`. The slide examples remain in `decks/`; documentation MDX belongs in `app/content/`.
 
@@ -75,4 +76,4 @@ The component files are owned by this application. They were installed by the ho
 bun run honoxpress add <group>
 ```
 
-Customize shared styling through semantic tokens in `public/tokens.css` and application overrides in `app/style.css`. The homepage has its own lower-priority CSS layer; documentation and the homepage share the same light/dark token palette.
+Customize shared styling through semantic tokens in `public/tokens.css`. Documentation layout, typography, and component styling come from honoxpress in `public/style.css` and `public/components.css`. `app/style.css` contains application integration rules, while `app/site.css` owns the shared header, mobile menu, footer, and deployment button. Homepage composition in `app/home.css` is scoped under `.home`, so it cannot change documentation gutters, tables, or responsive breakpoints. Both surfaces use the same light/dark token palette.

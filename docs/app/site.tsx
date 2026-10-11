@@ -6,7 +6,7 @@ import docsSite from "./docs.config";
 import { deployToCloudflareUrl } from "./deploy";
 import { localizedHref, locales, t, type Locale } from "./i18n";
 
-function DisclosureButton({
+export function DisclosureButton({
   controls,
   label,
   openLabel,
@@ -140,7 +140,7 @@ function LanguageSwitcher({
 export function RouteTable({ rows, locale = "ja" }: { rows: Array<[string, string]>; locale?: Locale }) {
   const text = t(locale);
   return (
-    <div class="table-wrap">
+    <div class="hx-markdown-table" tabIndex={0} role="region" aria-label={`${text.route} / ${text.role}`}>
       <table>
         <thead>
           <tr>

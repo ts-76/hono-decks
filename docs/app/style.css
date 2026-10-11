@@ -1,58 +1,22 @@
-@layer home, documentation, application;
-@import "./home.css" layer(home);
+@layer documentation, application;
 @import "../public/style.css" layer(documentation);
+@import "./site.css" layer(application);
+@import "./home.css" layer(application);
 
 @layer application {
-  :root {
-    --ink: var(--docs-text);
-    --ink-soft: var(--docs-text);
-    --muted: var(--docs-muted);
-    --line: var(--docs-line);
-    --surface: var(--docs-bg);
-    --surface-subtle: var(--docs-surface);
-    --accent: var(--docs-accent);
-    --accent-dark: var(--docs-accent);
-    --accent-soft: var(--docs-tint);
+  [hidden] {
+    display: none !important;
   }
-  .site-header {
-    padding: 0;
+  .breadcrumbs {
+    flex-wrap: wrap;
   }
-  .site-header .brand-mark {
-    border: 0;
-    width: 32px;
-    height: 32px;
-  }
-  .top-nav {
-    margin-left: auto;
-  }
-  .site-header .language-switcher {
-    margin-inline: 0;
-  }
-  .site-header .mobile-menu {
-    margin-left: auto;
-  }
-  .header-inner {
-    width: 100%;
-  }
-  .mobile-menu-panel a[aria-current="page"] {
-    color: var(--docs-accent);
-  }
-  .docs-sidebar,
-  .toc-rail {
-    top: calc(var(--docs-header-height) + var(--docs-space-lg));
-  }
-  .docs-main {
-    min-width: 0;
-  }
-  .prose section {
-    scroll-margin-top: calc(var(--docs-header-height) + var(--docs-space-xl));
+  .prose section,
+  .prose .hx-api-reference {
+    scroll-margin-top: calc(var(--docs-header-height) + var(--docs-space-8));
   }
   .prose > h1 + p {
     color: var(--docs-muted);
     font-size: var(--docs-text-md);
-  }
-  .prose .hx-api-reference h3 {
-    scroll-margin-top: calc(var(--docs-header-height) + var(--docs-space-xl));
   }
   .hx-markdown-table {
     overflow-x: auto;
@@ -80,13 +44,11 @@
     border-bottom: 0;
   }
   .hx-markdown-table code {
+    font-family: var(--docs-code-font);
     white-space: nowrap;
   }
   .mobile-page-nav {
     display: none;
-  }
-  .site-footer {
-    font-size: var(--docs-ui-size);
   }
   .home .hero-demo,
   .home .demo-toolbar,
@@ -102,26 +64,30 @@
   .home h2 {
     font-size: clamp(1.5rem, 3vw, 2rem);
   }
-  @media (max-width: 900px) {
+  /* Match honoxpress's breakpoint for hiding the right-hand TOC. */
+  @media (max-width: 1180px) {
     .mobile-page-nav {
       display: block;
-      margin-block: var(--docs-space-lg);
+      margin-bottom: var(--docs-space-lg);
+      border-block: 1px solid var(--docs-line);
+    }
+    .mobile-page-nav-trigger {
+      width: 100%;
+      font-size: var(--docs-ui-size);
+      font-weight: var(--docs-weight-ui);
     }
     .mobile-page-nav nav {
-      padding-top: var(--docs-space-sm);
+      padding-block: var(--docs-space-sm);
+    }
+    .mobile-page-nav .nav-caption {
+      display: none;
     }
     .mobile-page-nav nav a {
-      display: block;
-      padding-block: var(--docs-space-xs);
-      text-decoration: none;
-    }
-    .mobile-menu-panel {
-      background: var(--docs-panel);
-    }
-    .mobile-language {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      min-height: 44px;
+      padding-block: var(--docs-space-xs);
+      text-decoration: none;
     }
   }
 }

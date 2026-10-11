@@ -316,7 +316,7 @@ describe("HonoX documentation site", () => {
 
   it("links the Deploy to Cloudflare button to the isolated minimal example", async () => {
     const html = await (await app.request("/")).text();
-    const css = await readFile(new URL("../app/home.css", import.meta.url), "utf8");
+    const css = await readFile(new URL("../app/site.css", import.meta.url), "utf8");
 
     expect(html).toContain("https://deploy.workers.cloudflare.com/button");
     expect(html).toContain(
