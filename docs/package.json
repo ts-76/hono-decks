@@ -16,7 +16,7 @@
     "hono": "^4.13.12",
     "hono-decks": "workspace:*",
     "honox": "0.1.59",
-    "honoxpress": "https://github.com/ts-76/honoxpress/releases/download/v0.2.0/honoxpress-0.2.0.tgz"
+    "honoxpress": "0.2.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260716.1",

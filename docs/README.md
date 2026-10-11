@@ -2,8 +2,6 @@
 
 The public documentation runs on HonoX and honoxpress. Guides and the API reference are compiled from MDX to Hono JSX during development and builds. The Cloudflare Worker serves those compiled modules; it does not run an MDX compiler or read source files at request time.
 
-The dependency is currently pinned to the `v0.2.0` GitHub Release tarball, with its integrity recorded in `bun.lock`. This is the exact CI-accepted package awaiting npm owner approval; switch to the registry version `0.2.0` after publication.
-
 ## Local development
 
 From the repository root:
