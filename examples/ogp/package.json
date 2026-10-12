@@ -14,14 +14,14 @@
     "check": "bun run typecheck && bun run test && bun run build"
   },
   "dependencies": {
-    "hono": "^4.12.30",
+    "hono": "^4.13.13",
     "hono-decks": "0.5.0"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20260716.1",
+    "@cloudflare/workers-types": "^5.20261008.1",
     "@resvg/resvg-js": "^2.6.2",
-    "@types/node": "^26.1.1",
-    "satori": "^0.28.0",
+    "@types/node": "^26.6.4",
+    "satori": "^0.44.0",
     "typescript": "^7.0.2",
     "vite": "npm:@voidzero-dev/vite-plus-core@0.2.4",
     "vite-plus": "0.2.4",
