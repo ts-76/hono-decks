@@ -1,14 +1,28 @@
 import type { DocsPage, Heading, LocaleLink } from "honoxpress";
+import type { Child, FC } from "hono/jsx";
+
+export interface DocsLinkProps {
+  href: string;
+  children?: Child;
+  class?: string;
+  lang?: string;
+  hrefLang?: string;
+  "aria-current"?: "page";
+}
+export type DocsLinkComponent = FC<DocsLinkProps>;
+export const NativeDocsLink: DocsLinkComponent = (props) => <a {...props} />;
 
 // Copy into app/components; the consumer owns and can edit these Hono JSX views.
 export function DocsNavigation({
   pages,
   pathname,
   label = "Documentation",
+  link: Link = NativeDocsLink,
 }: {
   pages: readonly DocsPage[];
   pathname: string;
   label?: string;
+  link?: DocsLinkComponent;
 }) {
   return (
     <nav class="docs-nav" aria-label={label}>
@@ -16,9 +30,9 @@ export function DocsNavigation({
       <ul>
         {pages.map((page) => (
           <li>
-            <a href={page.href} aria-current={page.href === pathname ? "page" : undefined}>
+            <Link href={page.href} aria-current={page.href === pathname ? "page" : undefined}>
               {page.title}
-            </a>
+            </Link>
           </li>
         ))}
       </ul>
@@ -52,24 +66,26 @@ export function LanguageLinks({
   locale,
   labels,
   label = "Languages",
+  link: Link = NativeDocsLink,
 }: {
   links: readonly LocaleLink[];
   locale: string;
   labels: Readonly<Record<string, string>>;
   label?: string;
+  link?: DocsLinkComponent;
 }) {
   return (
     <nav class="language-links" aria-label={label}>
       {links.map((link) =>
         link.href ? (
-          <a
+          <Link
             href={link.href}
             lang={link.locale}
             hrefLang={link.locale}
             aria-current={link.locale === locale ? "page" : undefined}
           >
             {labels[link.locale] ?? link.locale}
-          </a>
+          </Link>
         ) : (
           <span lang={link.locale} aria-disabled="true" title="Translation unavailable">
             {labels[link.locale] ?? link.locale}

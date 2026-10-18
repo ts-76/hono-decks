@@ -30,7 +30,7 @@
         "hono": "^4.13.12",
         "hono-decks": "workspace:*",
         "honox": "0.1.59",
-        "honoxpress": "0.2.0",
+        "honoxpress": "0.4.0",
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^5.20260716.1",
@@ -1131,7 +1131,7 @@
 
     "honox": ["honox@0.1.59", "", { "dependencies": { "@babel/generator": "7.29.1", "@babel/parser": "7.29.3", "@babel/traverse": "7.29.0", "@babel/types": "7.29.0", "@hono/vite-dev-server": "^0.25.1", "jsonc-parser": "3.3.1", "precinct": "12.2.0" }, "optionalDependencies": { "@rollup/rollup-linux-x64-gnu": "^4.9.6" }, "peerDependencies": { "hono": ">=4.*" } }, "sha512-/Glbw0/CG/J3yTCrCkyS0+Xnq3H8LgnNgpGgdH3xLZpEDN4c4P4IM/Mjjx7LsKTFrUwbg3s59d/v4uD+YBFuew=="],
 
-    "honoxpress": ["honoxpress@0.2.0", "", { "dependencies": { "shiki": "4.5.0" }, "peerDependencies": { "hono": "^4.13.12", "vite-plus": "^1.0.0" }, "optionalPeers": ["vite-plus"], "bin": { "honoxpress": "bin/honoxpress.mjs" } }, "sha512-UxZeRE4B4IQsNhAI6PUiW0aU9RzbHrTGduiACs7Jbp3R2nWHvZ8EsOAkCvfdcQYC9ktgONqep/wT40RyiOTRjA=="],
+    "honoxpress": ["honoxpress@0.4.0", "", { "dependencies": { "shiki": "4.5.0" }, "peerDependencies": { "hono": "^4.13.12", "vite-plus": "^1.0.0" }, "optionalPeers": ["vite-plus"], "bin": { "honoxpress": "bin/honoxpress.mjs" } }, "sha512-2nNttenS0io+lqjYuWQoXKsQSXpurr6oThIze8yuqTurIVXcjx294CDdsiuoW8LW39DpnjdmvDLMQq7Ukzjocw=="],
 
     "hook-std": ["hook-std@4.0.0", "", {}, "sha512-IHI4bEVOt3vRUDJ+bFA9VUJlo7SzvFARPNLw75pqSmAOP2HmTWfFJtPvLBrDrlgjEYXY9zs7SFdHPQaJShkSCQ=="],
 

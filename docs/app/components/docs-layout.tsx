@@ -1,4 +1,5 @@
 import type { Child } from "hono/jsx";
+import { Style } from "hono/css";
 import type { DocsPage, LocaleLink, DocsSiteConfig } from "honoxpress";
 import { Link } from "honox/server";
 import { SiteHeader, SiteFooter, DisclosureButton } from "../site";
@@ -14,6 +15,7 @@ export function DocsLayout({
   translations,
   locale,
   clientSrc,
+  nonce,
   config,
 }: {
   children: Child;
@@ -22,6 +24,7 @@ export function DocsLayout({
   translations: readonly LocaleLink[];
   locale: Locale;
   clientSrc?: string;
+  nonce?: string;
   config: DocsSiteConfig;
 }) {
   const labels = config.labels?.[locale];
@@ -41,7 +44,8 @@ export function DocsLayout({
         <link href="/favicon-32.png" rel="icon" type="image/png" sizes="32x32" />
         <link href="/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180" />
         <link href="/site.webmanifest" rel="manifest" />
-        {config.themeSwitch !== false && <ThemeScript />}
+        {config.themeSwitch !== false && <ThemeScript nonce={nonce} />}
+        <Style nonce={nonce} />
         <Link rel="stylesheet" href={config.stylesheetHref ?? "/app/style.css"} />
         {clientSrc && <script type="module" src={clientSrc} />}
       </head>

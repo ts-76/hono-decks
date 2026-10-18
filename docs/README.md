@@ -29,10 +29,10 @@ bun run deploy:docs       # Build and deploy the documentation Worker
 | Navigation, translations, and public URL adaptation | `app/docs-catalog.ts` |
 | Shared documentation shell | `app/components/docs-layout.tsx` |
 | Components available inside MDX | `app/mdx-components.ts` |
-| Installed documentation components | `app/components/` |
+| Installed documentation components and their static default styles | `app/components/` |
 | Interactive code blocks, tabs, and code groups | `app/islands/` |
 | Color, type, spacing, radius, and state tokens | `public/tokens.css` |
-| Shared documentation/component styles | `public/style.css`, `public/components.css` |
+| Shared shell, Markdown, interactive-component, and theme styles | `public/style.css`, `public/components.css` |
 | Application chrome (header, mobile menu, footer, deployment button) | `app/site.css` |
 | Application integration and homepage composition | `app/style.css`, `app/home.css` |
 
@@ -76,4 +76,18 @@ The component files are owned by this application. They were installed by the ho
 bun run honoxpress add <group>
 ```
 
-Customize shared styling through semantic tokens in `public/tokens.css`. Documentation layout, typography, and component styling come from honoxpress in `public/style.css` and `public/components.css`. `app/style.css` contains application integration rules, while `app/site.css` owns the shared header, mobile menu, footer, and deployment button. Homepage composition in `app/home.css` is scoped under `.home`, so it cannot change documentation gutters, tables, or responsive breakpoints. Both surfaces use the same light/dark token palette.
+Customize shared styling through semantic tokens in `public/tokens.css`. Static component defaults live beside their markup in `app/components/*.tsx`, using `hono/css`. The custom documentation and homepage shells each render one `<Style />` in the head, before the application stylesheet, so only the static component families rendered by that request emit CSS. Keep class values as `componentClass` results; stringifying them loses the SSR callbacks.
+
+The shared sheets `public/style.css` and `public/components.css` retain shell/Markdown typography, tabs, code groups, code controls, syntax highlighting, and theme controls. This site declares `documentation` before `application` in `app/style.css`. Copied component CSS deliberately wraps its defaults in `@layer documentation` too: placing these defaults outside all layers would override the existing layered application styles regardless of source order. Preserve this wrapper during future template merges.
+
+`app/style.css` contains application integration rules, while `app/site.css` owns the shared header, mobile menu, footer, and deployment button. Homepage composition in `app/home.css` is scoped under `.home`, so it cannot change documentation gutters, tables, or responsive breakpoints. Both surfaces use the same light/dark token palette.
+
+## Upgrade honoxpress
+
+The documentation uses the published `honoxpress@0.4.0` package. Updating the dependency does not update the copied application files, and `init` / `add` are not upgrade commands. Follow the [owned-template upgrade guide](https://github.com/ts-76/honoxpress/blob/v0.4.0/docs/upgrading-owned-templates.md) and [static-style migration guide](https://github.com/ts-76/honoxpress/blob/v0.4.0/docs/migrating-static-component-styles.md), comparing the installed package's templates with the copied components and shared sheets before merging changes.
+
+The 0.4.0 upgrade preserves the 0.2.1 fixes for theme-selector spacing, stable navigation wrapping, long code filenames, and adjacent API separators. It moves the seven static component template families into `hono/css`, removes their duplicate shared defaults, and adopts the idempotent theme initializer and `syncThemeSwitches()` after HonoX hydration. Keep the custom shell, header, mobile disclosures, query-based language URLs, Markdown table scroll containers, and footer behavior when updating. Keep the theme selector's JSX and CSS together. The custom `DocsLayout` forwards an optional CSP nonce to both `ThemeScript` and `Style`.
+
+Existing guides remain MDX compiled to Hono JSX at build time. The new parser-neutral `honoxpress/markdown` adapter and framework-owned `DocsFrame` are optional integration APIs; adopting them is not required for this HonoX site's routes or custom shell. The installation manifest retains the CLI's original file fingerprints; manually merged files are application-owned, not pristine upstream copies.
+
+After an upgrade, run `bun run --cwd docs check` and inspect every English and Japanese guide plus `/api` at desktop and mobile widths in light and dark themes. Check theme persistence, mobile menu and TOC controls, code copying, navigation wrapping, and page-wide overflow. Wide tables and code should scroll within their own containers.

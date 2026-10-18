@@ -1,10 +1,15 @@
 import { readFile } from "node:fs/promises";
+import { Hono } from "hono";
+import { html as renderHtml } from "hono/html";
+import { jsx } from "hono/jsx/jsx-runtime";
 import { describe, expect, it } from "vite-plus/test";
 import app from "../app/server";
 import { locales, messages } from "../app/i18n";
 import { clientEntrySource } from "../app/routes/_renderer";
 import { docsCatalog, getDocument, publicDocsHref } from "../app/docs-catalog";
 import docsSite from "../app/docs.config";
+import { DocsLayout } from "../app/components/docs-layout";
+import { Callout } from "../app/components/docs-content";
 
 // Compare code/content independently of build-time syntax token boundaries.
 const withoutSyntaxSpans = (html: string) => html.replace(/<\/?span\b[^>]*>/g, "");
@@ -40,6 +45,52 @@ describe("HonoX documentation site", () => {
 
     expect(clientEntrySource(false)).toBe("/app/client.ts");
     expect(html).toContain('<script type="module" src="/app/client.ts"></script>');
+  });
+
+  it("emits static CSS once per request in the existing documentation layer", async () => {
+    const gettingStarted = await (await app.request("/docs/getting-started?lang=ja")).text();
+    const api = await (await app.request("/api?lang=en")).text();
+    const repeatedRequest = await (await app.request("/docs/getting-started?lang=en")).text();
+    const cssOf = (html: string) => html.match(/<style id="hono-css">([\s\S]*?)<\/style>/)?.[1] ?? "";
+
+    for (const html of [gettingStarted, repeatedRequest]) {
+      const css = cssOf(html);
+      expect(html.match(/<style id="hono-css">/g)).toHaveLength(1);
+      expect(css).toContain("@layer documentation{");
+      expect(css).toContain(".hx-file-tree{");
+      expect(css.match(/\.hx-callout\{--hx-callout-accent:/g)).toHaveLength(1);
+      expect(css).not.toContain(".hx-api-reference{");
+      expect(css).not.toContain(".hx-card{");
+      expect(html).not.toContain("document.querySelector('#hono-css').textContent");
+      expect(html.indexOf('<style id="hono-css">')).toBeLessThan(html.indexOf('rel="stylesheet"'));
+    }
+    expect(cssOf(api)).toContain(".hx-api-reference{");
+    expect(cssOf(api)).toMatch(/\.hx-api-reference\s*\+\s*\.hx-api-reference\{border-top:0\}/);
+    expect(cssOf(api)).not.toContain(".hx-file-tree{");
+    const home = await (await app.request("/")).text();
+    expect(home.match(/<style id="hono-css">/g)).toHaveLength(1);
+  });
+
+  it("forwards a custom shell nonce to the early theme script and SSR styles", async () => {
+    const current = docsCatalog.navigation("ja")[0]!;
+    const fixture = new Hono().get("/", (c) =>
+      c.html(
+        renderHtml`${jsx(DocsLayout, {
+          config: docsSite,
+          current,
+          pages: [current],
+          translations: [],
+          locale: "ja",
+          nonce: "consumer-csp-nonce",
+          children: jsx(Callout, { title: "Nonce fixture", children: "Rendered static component" }),
+        })}`,
+      ),
+    );
+    const html = await (await fixture.request("/")).text();
+    expect(html).toContain('<script nonce="consumer-csp-nonce">');
+    expect(html).toContain('<style id="hono-css" nonce="consumer-csp-nonce">');
+    expect(html).toContain(".hx-callout{");
+    expect(html).not.toContain("document.querySelector('#hono-css').textContent");
   });
 
   it("publishes the Hono Decks icon metadata and header mark", async () => {

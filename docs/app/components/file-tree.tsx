@@ -1,5 +1,112 @@
 /** @jsxImportSource hono/jsx */
 import type { PropsWithChildren } from "hono/jsx";
+import { css } from "hono/css";
+import { componentClass as html } from "honoxpress";
+
+// Keep defaults below application-layer overrides in this consumer-owned shell.
+
+// Stable selectors keep application overrides at their existing specificity.
+const fileTreeStyles = css`
+  :-hono-global {
+    @layer documentation {
+      .hx-file-tree {
+        margin-block: var(--docs-block-gap);
+        border: 1px solid var(--docs-line);
+        border-radius: var(--docs-radius);
+        background: var(--docs-panel);
+        color: var(--docs-text);
+        font-size: var(--docs-ui-size);
+      }
+      .hx-file-tree {
+        padding: var(--docs-space-3);
+      }
+      .hx-file-tree .hx-file-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .hx-folder > .hx-file-list {
+        margin-inline-start: var(--docs-space-5);
+        padding-inline-start: var(--docs-space-2);
+        border-inline-start: 1px solid var(--docs-line);
+      }
+      .hx-file-tree .hx-file-item {
+        margin: 0;
+        padding: 0;
+      }
+      .hx-file-row,
+      .hx-folder-summary {
+        display: flex;
+        align-items: center;
+        gap: var(--docs-space-2);
+        min-height: 36px;
+        padding: var(--docs-space-1) var(--docs-space-2);
+        border-radius: var(--docs-control-radius);
+        color: inherit;
+        line-height: var(--docs-leading-ui);
+        overflow-wrap: anywhere;
+      }
+      .hx-file-row {
+        padding-inline-start: var(--docs-space-8);
+      }
+      .hx-file-row > span,
+      .hx-folder-summary > span {
+        min-width: 0;
+      }
+      .hx-file-icon,
+      .hx-folder-chevron {
+        flex: 0 0 auto;
+        color: var(--docs-muted);
+      }
+      .hx-folder-summary {
+        cursor: pointer;
+        list-style: none;
+        font-weight: var(--docs-weight-ui);
+      }
+      .hx-folder-summary::-webkit-details-marker {
+        display: none;
+      }
+      .hx-folder[open] > .hx-folder-summary .hx-folder-chevron {
+        transform: rotate(90deg);
+      }
+      .hx-file-tree .hx-file-highlighted {
+        background: var(--docs-tint);
+        color: var(--docs-accent);
+        font-weight: var(--docs-weight-ui);
+      }
+      .hx-file-highlighted .hx-file-icon {
+        color: inherit;
+      }
+      .hx-folder-summary:focus-visible,
+      .hx-file-row:focus-visible {
+        outline: var(--docs-focus-width) solid var(--docs-accent);
+        outline-offset: -2px;
+      }
+      @media (hover: hover) {
+        .hx-folder-summary:hover,
+        .hx-file-tree a.hx-file-row:hover {
+          background: var(--docs-surface);
+          color: var(--docs-accent);
+        }
+      }
+      .hx-folder-summary:active,
+      .hx-file-tree a.hx-file-row:active {
+        background: var(--docs-tint);
+        color: var(--docs-accent);
+      }
+      @media (forced-colors: active) {
+        .hx-file-highlighted {
+          outline: 1px solid Highlight;
+          outline-offset: -1px;
+        }
+        .hx-folder-summary:focus-visible,
+        .hx-file-row:focus-visible {
+          outline-color: Highlight;
+        }
+      }
+    }
+  }
+`;
 
 function FileIcon({ folder = false }: { folder?: boolean }) {
   return (
@@ -20,7 +127,7 @@ function FileIcon({ folder = false }: { folder?: boolean }) {
 /** Nested lists and native disclosures remain usable without JavaScript. */
 export function FileTree({ label = "Project files", children }: PropsWithChildren<{ label?: string }>) {
   return (
-    <div class="hx-file-tree" role="group" aria-label={label}>
+    <div class={html`${fileTreeStyles}hx-file-tree`} role="group" aria-label={label}>
       <ul class="hx-file-list">{children}</ul>
     </div>
   );

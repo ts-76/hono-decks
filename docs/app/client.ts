@@ -1,4 +1,5 @@
 import { createClient } from "honox/client";
+import { syncThemeSwitches } from "./components/theme-switch";
 
 // Keep discovery in app source: a prebundled honox/client can cache an old file map.
 const islandFiles = Object.fromEntries(
@@ -14,6 +15,7 @@ const islandFiles = Object.fromEntries(
 );
 
 void createClient({ ISLAND_FILES: islandFiles }).then(() => {
+  syncThemeSwitches();
   document.documentElement.dataset.islandsReady = "true";
 });
 
