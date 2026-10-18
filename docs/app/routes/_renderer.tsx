@@ -1,4 +1,5 @@
 import { jsxRenderer } from "hono/jsx-renderer";
+import { Style } from "hono/css";
 import { Link } from "honox/server";
 import { getLocale, t } from "../i18n";
 import { SiteHeader, SiteFooter } from "../site";
@@ -34,12 +35,10 @@ export default jsxRenderer(({ children, title, description, activePath }, c) => 
   const document = slug ? getDocument(slug, locale) : undefined;
   if (document) {
     const current = { ...document.page, href: publicDocsHref(document.page.href, locale) };
-    const translations = docsCatalog
-      .translations(document.page.href)
-      .map((link) => ({
-        ...link,
-        href: link.href ? publicDocsHref(link.href, link.locale as typeof locale) : undefined,
-      }));
+    const translations = docsCatalog.translations(document.page.href).map((link) => ({
+      ...link,
+      href: link.href ? publicDocsHref(link.href, link.locale as typeof locale) : undefined,
+    }));
     return (
       <DocsLayout
         config={docsSite}
@@ -74,6 +73,7 @@ export default jsxRenderer(({ children, title, description, activePath }, c) => 
         <link href="/site.webmanifest" rel="manifest" />
         <title>{title ? `${title} — ${docsSite.name}` : `${docsSite.name} — slides in your Hono app`}</title>
         {docsSite.themeSwitch !== false && <ThemeScript />}
+        <Style />
         <Link href={docsSite.stylesheetHref ?? "/app/style.css"} rel="stylesheet" />
         {clientSrc ? <script type="module" src={clientSrc}></script> : null}
       </head>

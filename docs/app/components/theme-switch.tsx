@@ -1,7 +1,13 @@
 /** @jsxImportSource hono/jsx */
 // Literal browser source keeps build-time function-name helpers out of the inline
 // script. This must run independently of the module graph before CSS is loaded.
-const themeInitializer = String.raw`(() => {
+export const themeInitializer = String.raw`(() => {
+  const controllerKey = Symbol.for("honoxpress.theme");
+  const previous = window[controllerKey];
+  if (previous) {
+    previous.sync();
+    return;
+  }
   const key = "honoxpress-theme";
   const media = window.matchMedia("(prefers-color-scheme: dark)");
   const valid = (value) =>
@@ -22,6 +28,7 @@ const themeInitializer = String.raw`(() => {
       select.disabled = false;
     });
   };
+  window[controllerKey] = { sync: apply };
   apply();
   document.addEventListener("DOMContentLoaded", apply, { once: true });
   document.addEventListener("change", (event) => {
@@ -46,6 +53,15 @@ const themeInitializer = String.raw`(() => {
     apply();
   });
 })();`;
+
+/** Call after a framework mounts or replaces controls. Safe to repeat or SSR. */
+export function syncThemeSwitches() {
+  if (typeof window === "undefined") return;
+  const controller = (window as unknown as Record<symbol, { sync(): void } | undefined>)[
+    Symbol.for("honoxpress.theme")
+  ];
+  controller?.sync();
+}
 
 /** Render in head, before the stylesheet, to avoid flashing the wrong palette. */
 export function ThemeScript({ nonce }: { nonce?: string }) {
