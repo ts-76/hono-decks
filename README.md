@@ -332,8 +332,7 @@ export default defineDecksConfig({
 ```
 
 The Hono Markdown bridge uses `@ts-76/hono-markdown/compiler` and its browser
-runtime. The common package has no Void or Vite dependency. Its first release is
-pending; the current implementation is validated using local tarballs. Existing
+runtime. The common package has no Void or Vite dependency. Install its optional compiler peers when selecting this adapter. Existing
 Void configurations continue to work with the adapter's public compiler API,
 including compatible earlier adapter versions. `init --framework void
 --install` retains the one-command setup and unchanged dev/build scripts.
