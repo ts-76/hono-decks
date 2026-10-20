@@ -1,0 +1,73 @@
+---
+title: "HTMLの共通設定とセキュリティ"
+description: "認証やCSPはHonoアプリ側で管理し、言語、nonce、外部iframeの設定を各画面に反映します。"
+order: 6
+---
+
+# HTMLの共通設定とセキュリティ
+
+認証やCSPはHonoアプリ側で管理し、言語、nonce、外部iframeの設定を各画面に反映します。
+
+<section id={"defaults"}>
+
+## 標準で作成されるルートを確認する
+
+標準では、一覧、ビューアー、スライド本体、発表画面、発表者画面、印刷画面が作成されます。これらのルートにhono-decks独自の認証は付きません。外部iframe用の`/:slug/embed`だけは、`embed`を指定するまで作成されません。不要な画面は`router.pages`で無効にしてください。
+
+認証、認可、CSPヘッダーはHonoアプリが担当します。hono-decksは、アプリから渡された言語やnonceを生成するHTMLへ反映します。
+
+</section>
+
+<section id={"language"}>
+
+## Honoで言語を判定し、すべての画面へ渡す
+
+Honoの`languageDetector()`は、既定でクエリ、Cookie、`Accept-Language`の順に言語を判定し、`c.get("language")`から取得できるようにします。
+
+<CodeBlock filename={"TypeScript"} language={"typescript"} code={"import { languageDetector } from \"hono/language\"\n\napp.use(languageDetector({\n  supportedLanguages: [\"ja\", \"en\"],\n  fallbackLanguage: \"en\",\n}))"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+`document.lang`にその値を渡すと、一覧、ビューアー、スライド、印刷、発表画面、発表者画面の`<html lang>`が揃います。
+
+</section>
+
+<section id={"csp"}>
+
+## 同じnonceをCSPヘッダーとHTMLへ渡す
+
+nonceはリクエストごとに作り、HonoのVariablesへ保存します。CSPヘッダーに含めた値と、`document.nonce`が返す値は必ず同じにします。
+
+<CodeBlock filename={"アプリ側のミドルウェア"} language={"typescript"} code={"import { Hono } from \"hono\"\n\ntype AppEnv = {\n  Variables: {\n    cspNonce: string\n    language: string\n  }\n}\n\nconst app = new Hono<AppEnv>()\n\napp.use(\"*\", async (c, next) => {\n  const nonce = crypto.randomUUID()\n  c.set(\"cspNonce\", nonce)\n  c.header(\"Content-Security-Policy\", [\n    \"default-src 'self'\",\n    \"object-src 'none'\",\n    \"base-uri 'self'\",\n    `script-src 'self' 'nonce-${nonce}'`,\n    `style-src 'self' 'nonce-${nonce}'`,\n    \"img-src 'self' data: https:\",\n    \"frame-src 'self' https://www.youtube.com\",\n  ].join(\"; \"))\n  await next()\n})"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+<CodeBlock filename={"hono-decksの設定"} language={"typescript"} code={"decks.router({\n  document: {\n    lang: ({ c }) => c.get(\"language\"),\n    nonce: ({ c }) => c.get(\"cspNonce\"),\n    head: ({ surface }) => (\n      <meta name=\"hono-decks-surface\" content={surface} />\n    ),\n  },\n})"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+hono-decksは指定されたnonceを、パッケージが生成する`<style>`と`<script>`へ付けます。YouTube、外部画像、Islandなどを使う場合は、アプリ側のCSPにも必要な配信元を追加してください。
+
+</section>
+
+<section id={"embed"}>
+
+## 埋め込みを許可するオリジンを指定する
+
+外部サイトにiframeで表示するときだけ`embed`を有効にし、親ページのオリジンを列挙します。
+
+<CodeBlock filename={"TypeScript"} language={"typescript"} code={"decks.router({\n  embed: {\n    frameAncestors: [\"https://blog.example.com\"],\n    document: { nonce: ({ c }) => c.get(\"cspNonce\") },\n    viewer: { controls: false },\n  },\n})"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+<Callout title={"許可先を省略した場合"}>
+
+`frame-ancestors 'self'`が適用され、別オリジンからは埋め込めません。埋め込み用ページでは、設定したCSPに合わせて`X-Frame-Options`が取り除かれます。
+
+</Callout>
+
+</section>
+
+<section id={"check"}>
+
+## 公開前に実際のレスポンスを確認する
+
+<DefinitionList items={[{term: <>{"下書きや発表者画面"}</>, description: <>{"本番で不要なルートが404になることを確認します。"}</>},
+{term: <>{"CSP"}</>, description: <>{"ブラウザの開発者ツールでCSP違反がなく、nonceがヘッダーとHTMLで一致することを確認します。"}</>},
+{term: <>{"外部埋め込み"}</>, description: <>{"許可した親サイトでは表示でき、許可していないオリジンでは拒否されることを確認します。"}</>}]} />
+
+[HTMLと埋め込みのAPIを見る →](/api?lang=ja#deck-document-options)
+
+</section>

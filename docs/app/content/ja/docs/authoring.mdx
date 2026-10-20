@@ -1,0 +1,135 @@
+---
+title: "MDXでスライドを書く"
+description: "利用できるMarkdown、MDX、hono-decks独自の記法をまとめています。"
+order: 2
+---
+
+# MDXでスライドを書く
+
+利用できるMarkdown、MDX、hono-decks独自の記法をまとめています。
+
+<section id={"structure"}>
+
+## デッキごとにディレクトリを分ける
+
+`decks/<slug>/deck.mdx`が基本形です。ディレクトリ名がURLの`:slug`になります。たとえば`decks/launch/deck.mdx`は`/decks/launch`で表示されます。
+
+ファイル先頭の`---`ブロックはデッキ情報、その後の区切り線は新しいスライドの開始を表します。スライド内の水平線として単独の`---`は使えません。
+
+<CodeBlock filename={"decks/launch/deck.mdx"} language={"mdx"} code={"---\ntitle: Hono at the edge\ntransition: fade\n---\n\n# Hono at the edge\n\n---\ntitle: Runtime boundary\nlayout: statement\n---\n\nNode for I/O. Hono for routes."} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+</section>
+
+<section id={"syntax"}>
+
+## 本文はGFMとMDXで書く
+
+CommonMarkとGFM（テーブル、タスクリスト、打ち消し線、自動リンク）を使えます。MDXではJSX要素や式も記述できます。
+
+<CodeBlock filename={"MDX"} language={"mdx"} code={"# Runtime boundary\n\nUse **bold**, *emphasis*, `inline code`, and [links](https://hono.dev/).\n\n- Node for build-time I/O\n- Hono for runtime routes\n\n- [x] Compile the deck\n- [ ] Deploy the Worker\n\n| Layer | Responsibility |\n| :-- | :-- |\n| Node | Build-time I/O |\n| Hono | Runtime routes |\n\n~~Filesystem access at runtime~~\n\n> Keep the Worker bundle filesystem-free.\n\n```ts\nconst runtime = \"Hono\"\n```"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+<DefinitionList items={[{term: <>{"コードフェンス"}</>, description: <>{"開始行に"}<code>{"ts"}</code>{"、"}<code>{"tsx"}</code>{"、"}<code>{"css"}</code>{"などの言語名を付けると、スライド内でシンタックスハイライトされます。"}</>},
+{term: <>{"MDX"}</>, description: <>{"JSXコンポーネント、props、式を使えます。"}<code>{"import"}</code>{"と"}<code>{"export"}</code>{"はファイル先頭にまとめます。"}</>}]} />
+
+</section>
+
+<section id={"metadata"}>
+
+## デッキ全体と各スライドの設定を分ける
+
+ファイル先頭のフロントマターはデッキ全体に適用されます。区切り線の直後に置いたフロントマターは、そのスライドだけに適用されます。未定義のキーはmetaに残り、コンパイル時に警告が表示されます。
+
+<DefinitionList items={[{term: <>{"デッキ"}</>, description: <><code>{"title"}</code>{", "}<code>{"description"}</code>{", "}<code>{"author"}</code>{", "}<code>{"tags"}</code>{", "}<code>{"date"}</code>{", "}<code>{"theme"}</code>{", "}<code>{"transition"}</code>{", "}<code>{"transitionDuration"}</code>{", "}<code>{"transitionEasing"}</code>{", "}<code>{"draft"}</code>{", "}<code>{"assets"}</code>{", "}<code>{"presenter"}</code></>},
+{term: <>{"スライド"}</>, description: <><code>{"title"}</code>{", "}<code>{"layout"}</code>{", "}<code>{"class"}</code>{", "}<code>{"notes"}</code>{", "}<code>{"background"}</code>{", "}<code>{"transition"}</code>{", "}<code>{"transitionDuration"}</code>{", "}<code>{"transitionEasing"}</code></>},
+{term: <>{"トランジション"}</>, description: <><code>{"none"}</code>{", "}<code>{"fade"}</code>{", "}<code>{"fade-out"}</code>{", "}<code>{"slide-left"}</code>{", "}<code>{"slide-right"}</code>{", "}<code>{"slide-up"}</code>{", "}<code>{"slide-down"}</code>{", "}<code>{"view-transition"}</code></>},
+{term: <>{"レイアウト"}</>, description: <><code>{"default"}</code>{"、中央配置の"}<code>{"cover"}</code>{"と"}<code>{"statement"}</code>{"が標準です。独自名は"}<code>{"layout-<name>"}</code>{"クラスとして"}<code>{"theme.css"}</code>{"から指定できます。"}</>}]} />
+
+<Callout title={"最初はtitleだけで十分です"}>
+
+本文を書いてから、必要なスライドにだけ`layout`や`transition`を追加すると、設定が増えすぎません。
+
+</Callout>
+
+</section>
+
+<section id={"fire"}>
+
+## fireで内容を1つずつ表示する
+
+コンポーネントに`fire`を付けると、送り操作に合わせて記述順に表示されます。Markdownには`:::fire`、リストには`:::fire{each="item"}`を使います。複数のJSX要素を同時に表示するときは、まとめて`<Fire>`で囲みます。`fire`はコンパイル時に取り除かれ、コンポーネントのpropsには渡りません。
+
+<CodeBlock filename={"MDX"} language={"mdx"} code={"<Card fire />\n\n<Chart fire=\"scale\" at=\"2\" />\n\n:::fire{at=\"+2\"}\nMarkdown block\n:::\n\n:::fire{each=\"item\" depth=\"2\" every=\"2\"}\n- Parent one\n  - Child one\n- Parent two\n  - Child two\n:::\n\n<Fire effect=\"fade-up\">\n  <Heading />\n  <Description />\n</Fire>"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+段階表示の考え方と`at`、`depth`、`every`の仕組みは、[Slidevの`v-click`と`v-clicks`](https://sli.dev/guide/animations)を一部参考にしています。ただし、記法と実装はhono-decks独自であり、Slidevとの互換性は保証しません。`at="2"`は絶対位置、`at="+2"`は現在位置から2段先を指定します。リストでは、`depth`で対象の階層、`every`で1回に表示する項目数を指定します。どちらも既定値は`1`です。
+
+### 表示効果を選ぶ
+
+コンポーネントでは`fire="scale"`、`:::fire`では`effect="scale"`と指定します。標準の効果は`none`、`fade`、`fade-up`、`scale`です。独自の効果は`theme.css`で定義します。
+
+<CodeBlock filename={"MDX"} language={"mdx"} code={"<Chart fire=\"blur-in\" />\n\n:::fire{effect=\"blur-in\"}\nMarkdown block\n:::"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+<CodeBlock filename={"theme.css"} language={"css"} code={"[data-fire-effect=\"blur-in\"] {\n  --fire-transform: scale(.98);\n  --fire-filter: blur(12px);\n  --fire-duration: .32s;\n  --fire-easing: ease-out;\n}"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+</section>
+
+<section id={"notes"}>
+
+## 発表者ノートを書く
+
+`notes: |`に書いた複数行テキストとMDXコメントは、発表者ノートにまとめられ、スライド本文には表示されません。MDXコメントは、コードの補足として書いた場合もノートとして扱われます。
+
+<CodeBlock filename={"MDX"} language={"mdx"} code={"---\nnotes: |\n  Explain why generation runs before deployment.\n---\n\n# Build once, serve anywhere\n\n{/* Mention the generated module boundary. */}"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+</section>
+
+<section id={"components"}>
+
+## まずサーバーコンポーネントを使う
+
+`components/index.tsx`の名前付きエクスポートは、同じデッキのMDXからタグとして使えます。デッキごとに登録されるため、別のデッキと同じ名前でも衝突しません。
+
+<CodeBlock filename={"TypeScript"} language={"tsx"} code={"// decks/welcome/components/index.tsx\nexport function Metric(props: { value: string; label: string }) {\n  return <figure>\n    <strong>{props.value}</strong>\n    <figcaption>{props.label}</figcaption>\n  </figure>\n}"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+<CodeBlock filename={"MDX"} language={"mdx"} code={"<Metric value=\"18 ms\" label=\"Response time\" />"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+### ブラウザ操作が必要な部品だけをIslandにする
+
+`components/client/index.tsx`はクリックや状態管理が必要な部品だけに使います。クライアント用コードは自動生成されるため、通常は配信用ルートを追加する必要はありません。
+
+<CodeBlock filename={"TypeScript"} language={"tsx"} code={"// decks/welcome/components/client/index.tsx\nimport { useState } from \"hono/jsx/dom\"\n\nexport function Counter() {\n  const [count, setCount] = useState(0)\n  return <button onClick={() => setCount(count + 1)}>\n    Count: {count}\n  </button>\n}"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+</section>
+
+<section id={"assets"}>
+
+## 画像を置き、外部コンテンツを埋め込む
+
+`decks/launch/assets/`に置いた画像は、`deck.mdx`からの相対パスで指定します。`youtube`、`x`、`card`、`embed`、`iframe`は専用記法を使います。
+
+<CodeBlock filename={"MDX"} language={"mdx"} code={"![Architecture](./assets/runtime-boundary.svg)\n\n@[youtube](https://www.youtube.com/watch?v=VIDEO_ID)\n@[x](https://x.com/honojs/status/POST_ID)\n@[card](https://hono.dev/docs/)\n@[embed](https://example.com/demo)\n@[iframe](https://example.com/demo)"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+URLだけの行は通常のリンクになります。外部iframeを公開する前に[CSPと許可オリジン](/docs/security?lang=ja)を設定してください。R2配信へ変える場合は、MDXを変えずに`withR2Assets()`で取得元を差し替えます。
+
+</section>
+
+<section id={"theme"}>
+
+## デッキ単位でテーマを追加する
+
+`deck.mdx`と同じディレクトリに`theme.css`を置くと、そのデッキだけに適用されます。まずCSS変数で色を調整し、必要な部分だけ通常のセレクターを追加します。
+
+<CodeBlock filename={"decks/welcome/theme.css"} language={"css"} code={"/* decks/welcome/theme.css */\n:root {\n  --hono-decks-accent-color: #ff5b1a;\n}\n\n.slide h1 {\n  text-wrap: balance;\n}"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+</section>
+
+<section id={"verify"}>
+
+## devコマンドで変更を自動反映する
+
+<CodeBlock filename={"Terminal"} language={"bash"} code={"npm run dev"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+ViteまたはWranglerの`dev`実行中は、保存したMDXが自動で再コンパイルされ、成功後にブラウザへ反映されます。`npm run decks:compile`は、CIやコンパイラーだけを単独で確認するときに使います。コンパイルエラーには対象ファイルとスライド番号が表示されます。
+
+表示を確認したら、公開画面を変える場合は[ルートと画面](/docs/routing?lang=ja)、環境変数やR2を使う場合は[設定](/docs/configuration?lang=ja)へ進みます。
+
+</section>

@@ -1,0 +1,71 @@
+---
+title: "OGP images and file export"
+description: "Add build-time OGP image generation with Satori and PDF or PNG export with Cloudflare Browser Run."
+order: 4
+---
+
+# OGP images and file export
+
+Add build-time OGP image generation with Satori and PDF or PNG export with Cloudflare Browser Run.
+
+<section id={"ogp"}>
+
+## Save OGP images at build time with Satori
+
+Generate an SVG with Satori and a 1200×630 PNG with resvg from the manifest returned by `compileDecks()`, without Browser Rendering. Keep image generation in a Node build script so neither the Worker runtime nor hono-decks core gains these dependencies.
+
+<CodeBlock filename={"hono-decks.config.ts"} language={"typescript"} code={"export default defineDecksConfig({\n  mountPath: \"/decks\",\n  router: {\n    viewer: { openGraph: true },\n  },\n})"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+Enabling `viewer.openGraph` emits absolute Open Graph and Twitter Card tags from `decks.paths(slug).ogImage`, which defaults to `/decks/:slug/og.png`. Save the PNG under Wrangler Static Assets.
+
+<Callout title={"Keep fonts in the build input"}>
+
+Satori accepts TTF, OTF, and WOFF, but not WOFF2. Bundle a font that covers every rendered language and add its directory to `build.watch_dir` in `wrangler.jsonc`.
+
+</Callout>
+
+[Open the complete Satori + resvg recipe →](https://github.com/ts-76/hono-decks/tree/main/examples/ogp)
+
+`build.ogpCacheFile` caches LinkCard metadata inside slides; it is unrelated to this viewer share image.
+
+</section>
+
+<section id={"browser-export"}>
+
+## Export PDF and PNG with Browser Run
+
+Use Cloudflare Browser Run Quick Actions through a browser binding to return the deck's `print` page as PDF or PNG. `hono-decks` calls `quickAction("pdf")` or `quickAction("screenshot")`, so this flow needs neither Puppeteer, Playwright, nor a Browser Run API token.
+
+<CodeBlock filename={"wrangler.jsonc"} language={"jsonc"} code={"{\n  \"compatibility_date\": \"2026-07-15\",\n  \"browser\": {\n    \"binding\": \"BROWSER\",\n    \"remote\": true\n  }\n}"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+<Callout title={"Use a remote binding during local development"}>
+
+`quickAction()` requires a compatibility date of `2026-03-24` or later. Local mode does not support it yet, so set `remote: true` on the binding or start with `wrangler dev --remote`.
+
+</Callout>
+
+The next example assumes an earlier session or Cloudflare Access validation middleware has set `deckExportAllowed`.
+
+<CodeBlock filename={"hono-decks.config.ts"} language={"typescript"} code={"// hono-decks.config.ts\nimport {\n  defineDecksConfig,\n  type DeckBrowserRunBinding,\n} from \"hono-decks\"\n\ntype AppEnv = {\n  Bindings: {\n    BROWSER: DeckBrowserRunBinding\n  }\n  Variables: {\n    deckExportAllowed: boolean\n  }\n}\n\nexport default defineDecksConfig<AppEnv>({\n  mountPath: \"/decks\",\n  router: {\n    export: {\n      browser: ({ c }) => c.env.BROWSER,\n      authorize: ({ c }) => c.get(\"deckExportAllowed\") === true,\n      pdf: true,\n      png: true,\n    },\n  },\n})"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+| Route / API | Purpose |
+| --- | --- |
+| `/:slug/print` | All-slide document used as Browser Run input |
+| `/:slug/export.pdf` | Download the print document as PDF |
+| `/:slug/export.png` | Download a full-page PNG of the print document |
+
+After `authorize` succeeds, the export request sends the public `print` URL to the binding and returns its file as an attachment. Viewer export controls are shown only on requests that pass the same authorization.
+
+<Callout title={"authorize only controls PDF and PNG export"}>
+
+`authorize` applies to `/:slug/export.pdf`, `/:slug/export.png`, and their viewer controls. It does not protect the viewer, presentation, presenter, or `print` routes. `authorize: () => true` lets anyone export a file. Omitting it has the same public behavior, so an explicit setting is recommended. To restrict exports, return the result of existing session or Access validation.
+
+</Callout>
+
+Store bearer tokens as Wrangler secrets rather than plain `vars` values.
+
+[Read the Cloudflare Browser Run Quick Actions docs →](https://developers.cloudflare.com/browser-run/quick-actions/)
+
+[Open the example with Browser Run configured →](https://github.com/ts-76/hono-decks/tree/main/examples/basic)
+
+</section>
