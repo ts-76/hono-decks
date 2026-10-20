@@ -50,7 +50,7 @@ export async function emitClientEntryModule(input: {
 
   const markdownEntry = markdown.length
     ? `import { hydrateMarkdownIslands } from "void-plugin-hono-jsx/markdown/client";
-hydrateMarkdownIslands({ ${markdown.map((entry) => `${JSON.stringify(entry.id)}: () => import(${JSON.stringify(entry.modulePath)})`).join(",")} });`
+hydrateMarkdownIslands({ ${markdown.map((entry) => `${javascriptString(entry.id)}: () => import(${javascriptString(entry.modulePath)})`).join(",")} });`
     : "";
   const entryContents = `${markdownEntry}
 import { hydrateSlideIslands } from "hono-decks/client";
@@ -149,4 +149,8 @@ function hashString(value: string): string {
 
 function safeIdentifier(value: string): string {
   return value.replace(/[^A-Za-z0-9_$]+/g, "_").replace(/^[^A-Za-z_$]+/, "_") || "_";
+}
+
+function javascriptString(value: string): string {
+  return JSON.stringify(value).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
 }

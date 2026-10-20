@@ -46,7 +46,7 @@ function presentation() {
     addEventListener() {},
   };
   window.parent = window;
-  runInNewContext(renderPresentationScript().replace(/^<script>\s*|\s*<\/script>$/g, ""), {
+  runInNewContext(renderPresentationScript().replace(/^<script>\s*|\s*<\/script>$/gi, ""), {
     window,
     URL,
     URLSearchParams,
