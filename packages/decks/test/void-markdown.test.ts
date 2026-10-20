@@ -57,6 +57,15 @@ describe("Void Markdown decks", () => {
         `export function readStaticMarkdown(content) { return { frontmatter: {}, content, script: "" }; }
 export async function compileStaticMarkdown() { return { code: "export default function Slide() { return 'legacy'; }", headings: [], clientCode: "" }; }`,
       );
+      // Installing an independent compiler must not silently switch an older
+      // provider's context when a legacy configuration is still in use.
+      const common = join(cwd, "node_modules/@ts-76/hono-markdown");
+      await mkdir(common, { recursive: true });
+      await writeFile(
+        join(common, "package.json"),
+        JSON.stringify({ type: "module", exports: { "./compiler": "./index.js" } }),
+      );
+      await writeFile(join(common, "index.js"), 'throw new Error("Unexpected provider switch");');
       const output = await compileVoidMarkdownDecks({
         cwd,
         root: "decks",

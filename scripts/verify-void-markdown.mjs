@@ -28,7 +28,7 @@ for (const name of ["markdown-exit", "yaml", "markdown-it-container", "@shikijs/
   delete initialPackage.dependencies[name];
 await writeFile(join(app, "package.json"), JSON.stringify(initialPackage, null, 2) + "\n");
 try {
-  run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", join(root, packed[0].filename)]);
+  run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", ...(process.env.HONO_MARKDOWN_PACKAGE ? [resolve(process.env.HONO_MARKDOWN_PACKAGE)] : []), join(root, packed[0].filename)]);
 } catch (error) {
   console.error(error.stdout, error.stderr);
   throw error;

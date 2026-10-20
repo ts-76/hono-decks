@@ -65,6 +65,7 @@ export interface GeneratedSlideModule {
 
 export interface GeneratedMdxModuleDecks {
   clientCode?: string;
+  clientModules?: string[];
   markdownIslands?: { id: string; modulePath: string; hydrate: string }[];
   decks: GeneratedModuleDeck[];
   routerModule: string;

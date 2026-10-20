@@ -7,6 +7,7 @@ const entries = {
   client: "src/client.ts",
   node: "src/node.ts",
   vite: "src/vite.ts",
+  "adapters/hono-markdown": "src/adapters/hono-markdown.ts",
   honox: "src/honox.ts",
   bin: "src/bin.ts",
 };

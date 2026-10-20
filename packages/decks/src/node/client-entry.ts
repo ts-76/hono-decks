@@ -25,7 +25,7 @@ export async function discoverClientComponentIds(input: {
 export async function emitClientEntryModule(input: {
   extraCode?: string;
   onCss?(this: void, css: string): void;
-  markdownIslands?: { id: string; modulePath: string; hydrate: string }[];
+  clientModules?: string[];
   cwd: string;
   clientEntries: ClientEntryModule[];
   clientComponentIds: Record<string, Record<string, string>>;
@@ -44,15 +44,11 @@ export async function emitClientEntryModule(input: {
     }
   }
 
-  const markdown = input.markdownIslands ?? [];
-  if (registrations.length === 0 && markdown.length === 0)
+  const clientModules = input.clientModules ?? [];
+  if (registrations.length === 0 && clientModules.length === 0)
     return `export const decksClientEntry = ${JSON.stringify(input.extraCode ?? "")};\n`;
 
-  const markdownEntry = markdown.length
-    ? `import { hydrateMarkdownIslands } from "void-plugin-hono-jsx/markdown/client";
-hydrateMarkdownIslands({ ${markdown.map((entry) => `${javascriptString(entry.id)}: () => import(${javascriptString(entry.modulePath)})`).join(",")} });`
-    : "";
-  const entryContents = `${markdownEntry}
+  const entryContents = `${clientModules.join("\n")}
 import { hydrateSlideIslands } from "hono-decks/client";
 ${imports.join("\n")}
 
@@ -149,8 +145,4 @@ function hashString(value: string): string {
 
 function safeIdentifier(value: string): string {
   return value.replace(/[^A-Za-z0-9_$]+/g, "_").replace(/^[^A-Za-z_$]+/, "_") || "_";
-}
-
-function javascriptString(value: string): string {
-  return JSON.stringify(value).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
 }

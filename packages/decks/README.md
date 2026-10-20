@@ -68,7 +68,7 @@ npm run dev
 npm run build
 ~~~
 
-This integration requires `void-plugin-hono-jsx@^0.4.0` or a compatible adapter
+This integration requires `void-plugin-hono-jsx@^0.5.0` or a compatible adapter
 with the `/markdown/compiler` and `/markdown/client` exports. `--install` selects
 the supported adapter range. Without `--install`, also install the optional Markdown peers:
 `markdown-exit@^1.3.0 yaml@^2.9.1 markdown-it-container@^4.0.0 shiki@^4.5.0 @shikijs/transformers@^4.5.0`.
@@ -465,7 +465,7 @@ At this level, the application owns the mount path, source policy, and option me
 ## Void Hono Markdown
 
 Set `build.markdown: "void"` in `hono-decks.config.ts` to opt into `.md` decks
-alongside MDX. This requires `void-plugin-hono-jsx@^0.4.0` with its standalone compiler and client exports.
+alongside MDX. This requires `void-plugin-hono-jsx@^0.5.0` with its standalone compiler and client exports.
 See the [Void consumer fixture](https://github.com/ts-76/hono-decks/tree/main/fixtures/void-markdown)
 for package verification, Void middleware hosting, supported syntax and limitations.
 
@@ -490,3 +490,48 @@ files (including cache files) on a publication error. Application-owned files
 are preserved. This guarantees rollback on reported build failure, not
 crash-atomic publication or coordination between concurrent compiler processes.
 If rollback itself fails, the error lists retained recovery directories.
+
+## Markdown adapters
+
+The deck compiler accepts a build-only module reference as well as the existing
+`build.markdown: "void"` preset:
+
+```ts
+export default defineDecksConfig({
+  mountPath: "/slides",
+  router: { clientEntryAssetPath: "/_assets/client" },
+  build: {
+    root: "decks",
+    markdown: { adapter: "hono-decks/adapters/hono-markdown" },
+  },
+});
+```
+
+The Hono Markdown bridge uses `@ts-76/hono-markdown/compiler` and its browser
+runtime. The common package has no Void or Vite dependency. Its first release is
+pending; the current implementation is validated using local tarballs. Existing
+Void configurations continue to work with the adapter's public compiler API,
+including compatible earlier adapter versions. `init --framework void
+--install` retains the one-command setup and unchanged dev/build scripts.
+
+Keep the adapter reference in config as a string: config is also imported by the
+server runtime. The compiler loads adapters only during builds. Hono+Vite and
+HonoX continue to default to MDX without installing Void or Markdown peers.
+For Markdown in these hosts, install the common package and its compiler peers
+and select the bridge above. Vite uses virtual modules; `hono-decks compile`
+continues to emit files.
+
+Custom build adapters export `createMarkdownAdapter({ cwd, options })`, returning
+`read(source)`, asynchronous `compile(source, { sourcePath })`, and
+`client(islands)`. Types are exported from `hono-decks/adapters/hono-markdown`.
+The deck host owns splitting, metadata, assets, routing and the visible-slide
+hydration gate; Markdown compilation and island scheduling belong to the adapter.
+Document adapters such as honoxpress can use the same Markdown package in a Void
+app without importing deck internals or changing their route ownership.
+
+Hono+Vite/HonoX init selects the extensionless `/_assets/client` route because
+`@hono/vite-dev-server` excludes `.js` requests by default. The client still goes
+through the application's middleware and authorization. Existing standalone CLI
+configurations retain their default `/_assets/client.js` route. For local
+Markdown checks without Void, set `HONO_MARKDOWN_PACKAGE` to the common tarball
+and run `node scripts/verify-vite-init.mjs`.

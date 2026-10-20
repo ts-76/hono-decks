@@ -34,8 +34,8 @@ export interface DefinedDecks<E extends Env = any> {
 
 /** File-system settings consumed by the CLI. */
 export interface DecksBuildConfig {
-  /** Opt into .md decks compiled by void-plugin-hono-jsx/markdown/compiler. */
-  markdown?: "void";
+  /** Build-only Markdown adapter reference. "void" retains the compatible preset. */
+  markdown?: "void" | { adapter: string; options?: Record<string, unknown> };
   /** Deck source directory. @default "decks" */
   root?: string;
   /** CLI output directory. Vite keeps modules in memory. @default "src/generated" */
