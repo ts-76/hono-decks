@@ -4,7 +4,9 @@ import type { CompiledDeck, CompiledSlide, DeckFileEntry, DeckManifest } from ".
 import { resolveDeckFiles } from "../routing/file-routing";
 import { buildDeckManifest, emitDeckManifestModule } from "../generator/manifest-generator";
 import { emitModuleDecksRouter } from "../generator/mdx/emit";
-import { compileVoidMarkdownDecks } from "./void-markdown";
+import { compileMarkdownDecks } from "./markdown-decks";
+import { loadMarkdownAdapter } from "./markdown-adapter";
+import type { DecksBuildConfig } from "../server/define-decks";
 import { compileMdxModuleDecks } from "../generator/mdx-module-generator";
 import type { DeckThemeStyleEntry, LinkCardOgpMetadata } from "../generator/mdx-module-generator";
 import { emitDeckComponentRegistryModule } from "../generator/component-registry";
@@ -40,7 +42,7 @@ export interface WriteDecksRouterModuleInput {
 }
 
 export interface CompileDecksInput extends BuildDeckManifestFromFileSystemInput {
-  markdown?: "void";
+  markdown?: DecksBuildConfig["markdown"];
   out: string;
   ogpCacheFile?: string;
   refreshOgp?: boolean;
@@ -76,7 +78,7 @@ export async function compileDeckModules(input: CompileDecksInput): Promise<Deck
   const out = normalizeRelativePath(input.out, "Output directory");
   const root = normalizeDeckRoot(input.root);
   const paths = await listFiles(input.cwd, join(input.cwd, root));
-  const resolved = resolveDeckFiles(paths, root, { markdown: input.markdown === "void" });
+  const resolved = resolveDeckFiles(paths, root, { markdown: Boolean(input.markdown) });
   const componentModulePaths = Object.fromEntries(
     resolved.flatMap((deck) => {
       const path = deck.kind === "directory" ? findComponentModule(paths, root, deck.slug) : undefined;
@@ -98,7 +100,13 @@ export async function compileDeckModules(input: CompileDecksInput): Promise<Deck
     refresh: input.refreshOgp,
     resolveOgp: input.resolveOgp ?? resolveOgpMetadata,
   });
-  const compileModules = input.markdown === "void" ? compileVoidMarkdownDecks : compileMdxModuleDecks;
+  const adapter =
+    input.markdown && resolved.some((entry) => entry.sourcePath.endsWith(".md"))
+      ? await loadMarkdownAdapter(input.markdown, input.cwd)
+      : undefined;
+  const compileModules = adapter
+    ? (value: Parameters<typeof compileMdxModuleDecks>[0]) => compileMarkdownDecks(value, adapter)
+    : compileMdxModuleDecks;
   const generated = await compileModules({
     cwd: input.cwd,
     root,
@@ -120,7 +128,7 @@ export async function compileDeckModules(input: CompileDecksInput): Promise<Deck
     clientEntries: clientEntryPaths,
     clientComponentIds,
     extraCode: generated.clientCode,
-    markdownIslands: generated.markdownIslands,
+    clientModules: generated.clientModules,
     onCss: (css) => {
       clientCss = css;
     },

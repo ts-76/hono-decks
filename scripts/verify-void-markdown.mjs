@@ -8,6 +8,8 @@ import { fileURLToPath } from "node:url";
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const adapter = process.env.VOID_HONO_PACKAGE;
+const packageManager = process.env.CONSUMER_PACKAGE_MANAGER ?? "npm";
+assert.ok(["npm", "pnpm"].includes(packageManager));
 if (!adapter) throw new Error("Set VOID_HONO_PACKAGE to the built adapter tarball with /markdown/compiler.");
 const root = await mkdtemp(join(tmpdir(), "hono-decks-void-markdown-"));
 const app = join(root, "app");
@@ -26,9 +28,27 @@ console.log(`Consumer: ${app}`);
 const initialPackage = JSON.parse(await readFile(join(app, "package.json"), "utf8"));
 for (const name of ["markdown-exit", "yaml", "markdown-it-container", "@shikijs/transformers"])
   delete initialPackage.dependencies[name];
+if (packageManager === "pnpm" && process.env.HONO_MARKDOWN_PACKAGE) {
+  await writeFile(
+    join(app, "pnpm-workspace.yaml"),
+    `overrides:\n  '@ts-76/hono-markdown': ${JSON.stringify(`file:${resolve(process.env.HONO_MARKDOWN_PACKAGE)}`)}\n`,
+  );
+}
 await writeFile(join(app, "package.json"), JSON.stringify(initialPackage, null, 2) + "\n");
 try {
-  run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", join(root, packed[0].filename)]);
+  run(
+    packageManager,
+    packageManager === "pnpm"
+      ? ["add", "--ignore-scripts", join(root, packed[0].filename)]
+      : [
+          "install",
+          "--ignore-scripts",
+          "--no-audit",
+          "--no-fund",
+          ...(process.env.HONO_MARKDOWN_PACKAGE ? [resolve(process.env.HONO_MARKDOWN_PACKAGE)] : []),
+          join(root, packed[0].filename),
+        ],
+  );
 } catch (error) {
   console.error(error.stdout, error.stderr);
   throw error;
@@ -41,6 +61,11 @@ assert.equal(await readFile(join(app, "node_modules/markdown-exit/package.json")
 console.log(run(process.execPath, [cli, "init", "--framework", "void", "--install", "--adapter", resolve(adapter)]));
 const installedPackage = JSON.parse(await readFile(join(app, "package.json"), "utf8"));
 assert.ok(installedPackage.dependencies["void-plugin-hono-jsx"]);
+if (packageManager === "pnpm") {
+  // The app declares only the host adapter; its isolated dependency is private.
+  assert.equal(installedPackage.dependencies["@ts-76/hono-markdown"], undefined);
+  assert.throws(() => require.resolve("@ts-76/hono-markdown"));
+}
 assert.ok(require.resolve("markdown-exit"));
 const settingsPath = join(app, "deck-settings.ts");
 await writeFile(settingsPath, 'export const mountPath = "/slides";\n');
@@ -53,8 +78,8 @@ await writeFile(
 assert.deepEqual(installedPackage.scripts, JSON.parse(originalPackage).scripts);
 assert.equal(await readFile(join(app, "src/generated/decks.ts"), "utf8").catch(() => null), null);
 // Cold build uses virtual Markdown and MDX modules without a preceding compile.
-console.log(run("npm", ["run", "typecheck"]));
-console.log(run("npm", ["run", "build"]));
+console.log(run(packageManager, ["run", "typecheck"]));
+console.log(run(packageManager, ["run", "build"]));
 const compile = () => run(process.execPath, [cli, "compile"]);
 const sourcePath = join(app, "decks/demo/deck.md");
 const source = await readFile(sourcePath, "utf8");
@@ -98,8 +123,8 @@ assert.match(generated, /Legacy MDX/);
 assert.match(generated, /発表者だけ/);
 assert.match(await readFile(join(app, "src/generated/decks/demo/slide-0.ts"), "utf8"), /MarkdownContext.Provider/);
 try {
-  console.log(run("npm", ["run", "build"]));
-  console.log(run("npm", ["run", "typecheck"]));
+  console.log(run(packageManager, ["run", "build"]));
+  console.log(run(packageManager, ["run", "typecheck"]));
 } catch (error) {
   console.error(error.stdout, error.stderr);
   throw error;
@@ -128,6 +153,8 @@ const { chromium } = require("playwright");
 const browser = await chromium.launch({ headless: true });
 const evidence = {
   node: process.version,
+  packageManager,
+  commonDependencyIsolated: packageManager === "pnpm",
   root,
   failedBuildPreserved: true,
   compilerExcludedFromRuntime: true,
@@ -144,11 +171,15 @@ const evidence = {
 };
 async function check(mode, port) {
   if (mode === "dev") await rm(join(app, "src/generated"), { recursive: true, force: true });
-  const server = spawn("npm", ["run", mode, "--", "--port", String(port), "--strictPort"], {
-    cwd: app,
-    stdio: ["ignore", "pipe", "pipe"],
-    detached: true,
-  });
+  const server = spawn(
+    packageManager,
+    ["run", mode, ...(packageManager === "npm" ? ["--"] : []), "--port", String(port), "--strictPort"],
+    {
+      cwd: app,
+      stdio: ["ignore", "pipe", "pipe"],
+      detached: true,
+    },
+  );
   let log = "";
   server.stdout.on("data", (chunk) => {
     log += chunk;

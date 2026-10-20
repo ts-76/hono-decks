@@ -63,6 +63,10 @@
     },
     "./vite-env": {
       "types": "./vite-env.d.ts"
+    },
+    "./adapters/hono-markdown": {
+      "types": "./dist/adapters/hono-markdown.d.ts",
+      "import": "./dist/adapters/hono-markdown.js"
     }
   },
   "publishConfig": {

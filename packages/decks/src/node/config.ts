@@ -52,8 +52,15 @@ export async function loadDecksConfig<E extends Env = any>(input: {
   if (!config || typeof config !== "object") throw new Error(`Config must have a default export: ${path}`);
   if (typeof config.mountPath !== "string") throw new Error(`Config mountPath must be a string: ${path}`);
 
-  if (config.build?.markdown !== undefined && config.build.markdown !== "void")
-    throw new Error('Config build.markdown must be "void".');
+  if (
+    config.build?.markdown !== undefined &&
+    config.build.markdown !== "void" &&
+    (typeof config.build.markdown !== "object" ||
+      !config.build.markdown ||
+      typeof config.build.markdown.adapter !== "string" ||
+      !config.build.markdown.adapter.trim())
+  )
+    throw new Error('Config build.markdown must be "void" or an adapter reference.');
 
   return {
     path,

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawn } from "node:child_process";
-import { cp, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -76,6 +76,49 @@ for (const [framework, devPort, productionPort] of [
     assert.ok(entryAfter.endsWith(honoEntry.slice(honoEntry.indexOf("export default"))));
   }
   assert.equal(await readFile(join(app, "src/generated/decks.ts"), "utf8").catch(() => null), null);
+  const neutralMarkdown = Boolean(process.env.HONO_MARKDOWN_PACKAGE);
+  if (neutralMarkdown) {
+    run(
+      "npm",
+      [
+        "install",
+        "--ignore-scripts",
+        "--no-audit",
+        "--no-fund",
+        resolve(process.env.HONO_MARKDOWN_PACKAGE),
+        "markdown-exit@1.3.0",
+        "yaml@2.9.1",
+        "markdown-it-container@4.0.0",
+        "shiki@4.5.0",
+        "@shikijs/transformers@4.5.0",
+      ],
+      app,
+    );
+    assert.throws(() => require.resolve("void"));
+    assert.throws(() => require.resolve("void-plugin-hono-jsx/markdown/compiler"));
+    await writeFile(
+      configPath,
+      (await readFile(configPath, "utf8")).replace(
+        'root: "decks"',
+        'root: "decks", markdown: { adapter: "hono-decks/adapters/hono-markdown" }',
+      ),
+    );
+    await mkdir(join(app, "decks/markdown"), { recursive: true });
+    await writeFile(
+      join(app, "decks/markdown/deck.md"),
+      '<script>import Counter from "./Counter.tsx" with { island: "load" };</script>\n---\ntitle: Independent Markdown\n---\n# Markdown without Void\n\n<Counter />',
+    );
+    await writeFile(
+      join(app, "decks/markdown/Counter.tsx"),
+      `import { useState } from "hono/jsx";
+import { useFrontmatter } from "@ts-76/hono-markdown";
+export default function Counter() {
+  const [count,setCount]=useState(0);
+  const {title}=useFrontmatter<{title:string}>();
+  return <button data-neutral-counter data-title={title} onClick={()=>setCount(count+1)}>Count: {count}</button>;
+}`,
+    );
+  }
   console.log(run("npm", ["run", "typecheck"], app));
   if (framework === "honox") {
     const catchAll = join(app, "app/routes/[...path].tsx");
@@ -226,6 +269,18 @@ for (const [framework, devPort, productionPort] of [
           assert.equal((await fetch(origin + mountPath + "/existing/print")).status, 200);
           assert.equal((await fetch(origin + mountPath + "/existing/presenter")).status, 200);
         }
+        if (neutralMarkdown) {
+          await page.goto(origin + `${mountPath}/markdown/render`);
+          const counter = page.locator('[data-hono-md-mounted="true"] [data-neutral-counter]');
+          await counter.waitFor();
+          assert.equal(await counter.getAttribute("data-title"), "Independent Markdown");
+          const client = await fetch(origin + `${mountPath}/_assets/client`);
+          assert.equal(client.status, 200);
+          assert.equal(client.headers.get("X-App-Middleware"), "preserved");
+          assert.equal((await fetch(origin + `${mountPath}/_assets/client?deny=1`)).status, 401);
+          await counter.click();
+          assert.equal(await counter.textContent(), "Count: 1");
+        }
         await page.screenshot({ path: join(root, `${framework}-${mode}-desktop.png`) });
         await page.setViewportSize({ width: 390, height: 844 });
         await page.goto(origin + `${mountPath}/existing`);
@@ -243,6 +298,7 @@ for (const [framework, devPort, productionPort] of [
           appMiddleware: true,
           authorizationPreserved: true,
           existingMdx: true,
+          neutralMarkdown,
           components: true,
           assets: true,
           sample: true,
@@ -283,6 +339,7 @@ for (const [framework, devPort, productionPort] of [
     sharedHonoXHelper: framework === "honox",
     appSettingsPreserved: true,
     noVoidDependency: true,
+    neutralMarkdown,
     virtualModules: true,
     noGeneratedFiles: true,
     coldBuildWithoutCompile: true,

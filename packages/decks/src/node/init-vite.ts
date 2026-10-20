@@ -7,6 +7,8 @@ import { publishGeneratedFiles } from "./file-transaction";
 
 import { installVoidDependencies, type VoidInstallOptions } from "./install-void";
 
+import { vitePresets } from "../adapters/vite-presets";
+
 export type InitFramework = "void" | "hono" | "honox";
 
 /** Configure an existing Vite app without changing its package scripts. */
@@ -28,20 +30,7 @@ export async function initializeVite(
     throw new Error("--config must be a JS/TS file inside the current working directory.");
   }
   const require = createRequire(join(cwd, "package.json"));
-  const dependencies =
-    framework === "void"
-      ? [
-          "void",
-          "vite",
-          "hono",
-          "void-plugin-hono-jsx/markdown/compiler",
-          "markdown-exit",
-          "yaml",
-          "markdown-it-container",
-          "shiki",
-          "@shikijs/transformers",
-        ]
-      : ["vite", "hono", ...(framework === "honox" ? ["honox"] : [])];
+  const dependencies = vitePresets[framework].dependencies;
   for (const dependency of installation ? [] : dependencies) {
     try {
       require.resolve(dependency);
@@ -74,7 +63,7 @@ export async function initializeVite(
 
 export default defineDecksConfig({
   mountPath: "/slides",
-  build: { root: "decks"${framework === "void" ? ', markdown: "void"' : ""} },
+  build: { root: "decks"${framework === "void" ? ', markdown: "void"' : ""} },${vitePresets[framework].clientEntryAssetPath ? `\n  router: { clientEntryAssetPath: ${JSON.stringify(vitePresets[framework].clientEntryAssetPath)} },` : ""}
 });
 `,
     },

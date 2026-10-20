@@ -75,6 +75,10 @@ describe("package build metadata", () => {
     expect(packageJson.name).toBe("hono-decks");
     expect(packageJson.private).toBeUndefined();
     expect(packageJson.exports).toEqual({
+      "./adapters/hono-markdown": {
+        types: "./dist/adapters/hono-markdown.d.ts",
+        import: "./dist/adapters/hono-markdown.js",
+      },
       ".": {
         types: "./dist/mod.d.ts",
         import: "./dist/mod.js",

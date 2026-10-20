@@ -69,7 +69,7 @@ npm run dev
 npm run build
 ```
 
-この連携には `void-plugin-hono-jsx@^0.4.0` の standalone compiler／client export
+この連携には `void-plugin-hono-jsx@^0.5.0` の standalone compiler／client export
 が必要です。`--install` は対応範囲のアダプターを選びます。
 `--install` を省略する場合は、Markdown 用の任意 peer も必要です：
 `markdown-exit@^1.3.0 yaml@^2.9.1 markdown-it-container@^4.0.0 shiki@^4.5.0 @shikijs/transformers@^4.5.0`。
@@ -474,3 +474,37 @@ app.route("/internal-slides", decksRouter({ source, dev: true }));
 反映します。反映中に失敗した場合は、直前の内容へ戻します。OS やプロセスの停止時の
 一括反映、複数プロセスの同時実行は保証しません。復元自体に失敗した場合は、
 復旧用ファイルを残し、その場所をエラーに表示します。
+
+## Markdownアダプター
+
+従来の `build.markdown: "void"` に加えて、ビルド時に読み込むアダプターを指定できます。
+
+```ts
+export default defineDecksConfig({
+  mountPath: "/slides",
+  router: { clientEntryAssetPath: "/_assets/client" },
+  build: {
+    root: "decks",
+    markdown: { adapter: "hono-decks/adapters/hono-markdown" },
+  },
+});
+```
+
+このブリッジは共通の `@ts-76/hono-markdown` を利用します。共通パッケージはVoid・Viteに依存しません。このアダプターを選ぶ場合はコンパイラー用peer dependenciesも導入します。
+既存の `markdown: "void"` は、既に導入したVoidアダプターの公開コンパイラーAPIでも引き続き動作します。
+`init --framework void --install` の導入手順、既存のdev／buildコマンドは変わりません。
+
+設定はサーバー実行時にも読み込むため、アダプターは文字列で指定し、Node用のfactoryを設定ファイルへimportしません。
+Hono＋Vite・HonoXは引き続きMDXが標準で、VoidやMarkdown用パーサーの追加は不要です。
+これらでMarkdownを使う場合は、共通パッケージとコンパイラー用peer dependenciesを導入し、上記ブリッジを選択します。
+Viteは仮想モジュールを利用し、既存の `hono-decks compile` はファイル出力を維持します。
+
+独自アダプターは `createMarkdownAdapter({ cwd, options })` をexportし、`read(source)`、非同期の
+`compile(source, { sourcePath })`、`client(islands)` を返します。型は `hono-decks/adapters/hono-markdown` からimportできます。
+スライド分割・メタデータ・アセット・ルーティング・表示中スライドの判定はhono-decksが担当し、Markdownの変換とislandのスケジュールはアダプターが担当します。
+同じVoidアプリにhonoxpressを組み込んでも、ドキュメントとスライドが互いの内部実装に依存する必要はありません。
+
+Hono＋Vite・HonoXのinitは、dev serverが標準で`.js`を除外するため、拡張子なしの
+`/_assets/client`を設定します。配信は既存アプリのミドルウェア・認可を通ります。
+既存CLI構成の標準パス`/_assets/client.js`は維持します。VoidなしのMarkdown実アプリ検証は、
+`HONO_MARKDOWN_PACKAGE`に共通パッケージのtarballを指定し、`node scripts/verify-vite-init.mjs`で実行できます。

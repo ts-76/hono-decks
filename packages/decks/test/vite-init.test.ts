@@ -23,6 +23,7 @@ describe("Hono and HonoX init", () => {
       expect(source).toContain(original.replace("export default app;", ""));
       const config = await readFile(join(cwd, "hono-decks.config.ts"), "utf8");
       expect(config).not.toContain('markdown: "void"');
+      expect(config).toContain('clientEntryAssetPath: "/_assets/client"');
       expect(await readFile(join(cwd, "decks/welcome/deck.mdx"), "utf8")).toContain("# Welcome");
     } finally {
       await rm(cwd, { recursive: true, force: true });
