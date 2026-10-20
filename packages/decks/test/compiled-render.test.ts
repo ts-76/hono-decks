@@ -3,6 +3,8 @@ import { jsx } from "hono/jsx/jsx-runtime";
 import {
   defineSlideComponents,
   renderCompiledDeck,
+  renderCompiledSlide,
+  renderCompiledSlideAsync,
   renderCompiledDeckPage,
   renderCompiledDeckPageAsync,
 } from "../src/renderer/compiled-render";
@@ -34,6 +36,41 @@ const deck = {
 } satisfies CompiledDeck;
 
 describe("compiled deck rendering", () => {
+  it("renders function bodies consistently in sync and async APIs", async () => {
+    const slide = { ...deck.slides[0], render: () => jsx("h1", { children: "Function body" }) };
+    expect(renderCompiledSlide(slide)).toBe(await renderCompiledSlideAsync(slide));
+    expect(renderCompiledSlide(slide)).toContain("<h1>Function body</h1>");
+  });
+
+  it("rejects async function bodies in the sync API with an actionable error", async () => {
+    const slide = { ...deck.slides[0], render: async () => jsx("p", { children: "Async body" }) };
+    expect(() => renderCompiledSlide(slide)).toThrow("requires renderCompiledSlideAsync()");
+    expect(await renderCompiledSlideAsync(slide)).toContain("<p>Async body</p>");
+    const nestedAsync = {
+      ...deck.slides[0],
+      render: () => jsx(async () => jsx("p", { children: "Nested async" }), {}),
+    };
+    expect(() => renderCompiledSlide(nestedAsync)).toThrow("Use the async rendering API");
+    expect(await renderCompiledSlideAsync(nestedAsync)).toContain("Nested async");
+    expect(() =>
+      renderCompiledSlide({
+        ...slide,
+        render: async () => {
+          throw new Error("Rejected render");
+        },
+      }),
+    ).toThrow("requires renderCompiledSlideAsync()");
+    await Promise.resolve();
+  });
+
+  it("fails explicitly for a build summary mistakenly passed as a runtime slide", async () => {
+    const summary = { index: 0, meta: { meta: {} }, modulePath: "generated/slide-0.ts" };
+    expect(() => renderCompiledSlide(summary as never)).toThrow("compileDecks() returns build information only");
+    await expect(renderCompiledSlideAsync(summary as never)).rejects.toThrow(
+      "compileDecks() returns build information only",
+    );
+  });
+
   it("exposes Fire without a built-in Fragment authoring component", () => {
     expect(builtInSlideComponents.Fire).toBeDefined();
     expect("Fragment" in builtInSlideComponents).toBe(false);
@@ -261,7 +298,7 @@ describe("compiled deck rendering", () => {
       style: ".router-escape-hatch{color:magenta}",
     } as Parameters<typeof renderCompiledDeckPage>[0]);
 
-    const baseIndex = html.indexOf(":root{color-scheme:dark");
+    const baseIndex = html.indexOf(":root{color-scheme:light");
     const deckThemeIndex = html.indexOf(".deck-local-theme{color:cyan}");
     const routerStyleIndex = html.indexOf(".router-escape-hatch{color:magenta}");
 
@@ -424,12 +461,25 @@ describe("compiled deck rendering", () => {
     expect(html).not.toContain("background:linear-gradient(145deg");
     expect(html).not.toContain("border-radius:24px");
     expect(html).toContain("transform-origin:left top");
+    expect(html).toContain("grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);place-items:center");
+    expect(html).toContain("box-sizing:border-box;transform-origin:center");
     expect(html).toContain("function fitDeck()");
     expect(html).toContain("Math.min(bounds.width / DESIGN_WIDTH, bounds.height / DESIGN_HEIGHT)");
     expect(html).toContain('deck.style.transform = "scale(" + scale + ")"');
     expect(html).toContain('window.addEventListener("resize", fitDeck)');
+    expect(html).toContain("new ResizeObserver(fitDeck).observe(stage)");
     expect(html).toContain("@media (prefers-reduced-motion: reduce)");
     expect(html).not.toContain("html,body{margin:0;width:var(--hono-decks-width);height:var(--hono-decks-height)");
+  });
+
+  it("provides an opaque light default canvas without viewport-dependent content sizing", () => {
+    const html = renderCompiledDeckPage({ deck: { ...deck, themeStyle: undefined }, mountPath: "/decks" });
+    expect(html).toContain(":root{color-scheme:light");
+    expect(html).toContain("--hono-decks-background:#fff");
+    expect(html).toContain("--hono-decks-color:#172033");
+    expect(html).toContain("background:var(--hono-decks-background);color:var(--hono-decks-color);padding:1.8rem");
+    expect(html).not.toMatch(/(?:padding|font-size|gap|max-height):[^;}]*[0-9](?:vw|vh)/);
+    expect(html).not.toContain("@media (max-width: 640px)");
   });
 
   it("prints slides as an A4 portrait handout with all fires visible", () => {
@@ -457,7 +507,7 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("body:not([data-overview-mode]) .slide{position:relative}");
     expect(html).toContain(".slide.layout-cover,.slide.layout-statement{display:block}");
     expect(html).toContain(
-      ".hono-decks-slide-content{position:absolute;inset:0 auto auto 0;width:var(--hono-decks-width);height:var(--hono-decks-height);box-sizing:border-box;padding:clamp(1.2rem,3vw,3rem);zoom:var(--hono-decks-print-scale);overflow:hidden}",
+      ".hono-decks-slide-content{position:absolute;inset:0 auto auto 0;width:var(--hono-decks-width);height:var(--hono-decks-height);box-sizing:border-box;padding:1.8rem;zoom:var(--hono-decks-print-scale);overflow:hidden}",
     );
     expect(html).toContain(".slide:nth-of-type(3n):not(:last-child){page-break-after:always;break-after:page}");
     expect(html).toContain("body:not([data-overview-mode]) .slide[hidden]{display:block!important}");
@@ -623,8 +673,8 @@ describe("compiled deck rendering", () => {
       mountPath: "/slides",
     });
 
-    expect(html).toContain("--hono-decks-card-background:rgba(15,23,42,.78)");
-    expect(html).toContain("--hono-decks-border-color:rgba(148,163,184,.24)");
+    expect(html).toContain("--hono-decks-card-background:#f1f5f9");
+    expect(html).toContain("--hono-decks-border-color:#cbd5e1");
     expect(html).toContain(
       ".hono-decks-link-card-anchor{display:grid;grid-template-columns:minmax(9rem,32%) minmax(0,1fr);gap:.75rem;align-items:stretch;border:1px solid var(--hono-decks-border-color);border-radius:8px;background:var(--hono-decks-card-background);padding:1rem;color:inherit;text-decoration:none}",
     );
@@ -868,8 +918,8 @@ describe("compiled deck rendering", () => {
     expect(html).toContain('alt="Hono Docs"');
     expect(html).toContain("grid-template-columns:minmax(9rem,32%) minmax(0,1fr)");
     expect(html).toContain("aspect-ratio:16/9");
-    expect(html).toContain("@media (max-width: 640px)");
-    expect(html).toContain(".hono-decks-link-card-anchor{grid-template-columns:1fr}");
+    expect(html).not.toContain("@media (max-width: 640px)");
+    expect(html).not.toContain(".hono-decks-link-card-anchor{grid-template-columns:1fr}");
     expect(html).toContain('class="hono-decks-link-card-site"');
     expect(html).toContain("Hono");
     expect(html).toContain("Open Hono docs");

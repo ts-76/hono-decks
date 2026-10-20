@@ -8,8 +8,8 @@
     "build": "bun run --cwd ../packages/decks build && node ../scripts/run-with-typescript-parser.cjs vp build --mode client && node ../scripts/run-with-typescript-parser.cjs vp build",
     "deploy": "bun run build && wrangler deploy",
     "preview": "wrangler dev",
-    "typecheck": "bun run decks:compile && tsc --noEmit",
-    "test": "bun run decks:compile && node ../scripts/run-with-typescript-parser.cjs vp test run",
+    "typecheck": "tsc --noEmit",
+    "test": "node ../scripts/run-with-typescript-parser.cjs vp test run",
     "check": "bun run typecheck && bun run test && bun run build"
   },
   "dependencies": {

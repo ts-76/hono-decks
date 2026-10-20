@@ -25,6 +25,10 @@ export default defineConfig({
   },
   lint: {
     ignorePatterns: [
+      // Installed and checked independently by the consumer verification scripts.
+      "fixtures/void-markdown/**",
+      "fixtures/hono-vite/**",
+      "fixtures/honox-vite/**",
       ".agents/**",
       ".beads/**",
       ".claude/**",

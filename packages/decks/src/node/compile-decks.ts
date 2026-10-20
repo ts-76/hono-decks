@@ -1,8 +1,10 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { DeckFileEntry, DeckManifest } from "../deck/model";
+import type { CompiledDeck, CompiledSlide, DeckFileEntry, DeckManifest } from "../deck/model";
 import { resolveDeckFiles } from "../routing/file-routing";
 import { buildDeckManifest, emitDeckManifestModule } from "../generator/manifest-generator";
+import { emitModuleDecksRouter } from "../generator/mdx/emit";
+import { compileVoidMarkdownDecks } from "./void-markdown";
 import { compileMdxModuleDecks } from "../generator/mdx-module-generator";
 import type { DeckThemeStyleEntry, LinkCardOgpMetadata } from "../generator/mdx-module-generator";
 import { emitDeckComponentRegistryModule } from "../generator/component-registry";
@@ -11,6 +13,7 @@ import { emitDecksRouterModule } from "../generator/router-generator";
 import { discoverClientComponentIds, emitClientEntryModule } from "./client-entry";
 import type { ClientEntryModule } from "./client-entry";
 import { listFiles } from "./local-deck-io";
+import { publishGeneratedFiles, type GeneratedFile } from "./file-transaction";
 import { resolveOgpMetadata } from "./ogp";
 import { dirname, normalizeDeckRoot, normalizePath, normalizeRelativePath } from "./path-utils";
 
@@ -37,17 +40,43 @@ export interface WriteDecksRouterModuleInput {
 }
 
 export interface CompileDecksInput extends BuildDeckManifestFromFileSystemInput {
+  markdown?: "void";
   out: string;
   ogpCacheFile?: string;
   refreshOgp?: boolean;
   resolveOgp?(this: void, url: string): Promise<LinkCardOgpMetadata | undefined>;
 }
 
-export async function compileDecks(input: CompileDecksInput): Promise<DeckManifest> {
+/** Build information only; render using createDecks() from routerModulePath. */
+export interface CompileDecksResult {
+  outDir: string;
+  routerModulePath: string;
+  decks: DeckBuildSummary[];
+}
+
+export interface DeckBuildSummary extends Omit<CompiledDeck, "slides" | "componentRegistry"> {
+  slides: (Pick<CompiledSlide, "index" | "meta" | "notes"> & { modulePath: string })[];
+}
+
+/** A successful compilation snapshot, before choosing a destination. */
+export interface DeckModuleCompilation {
+  result: CompileDecksResult;
+  modules: GeneratedFile[];
+  cacheFile?: GeneratedFile;
+}
+
+export async function compileDecks(input: CompileDecksInput): Promise<CompileDecksResult> {
+  const compiled = await compileDeckModules(input);
+  await publishGeneratedFiles([...compiled.modules, ...(compiled.cacheFile ? [compiled.cacheFile] : [])]);
+  return compiled.result;
+}
+
+/** Shared by file output and Vite's in-memory module graph. Does not write files. */
+export async function compileDeckModules(input: CompileDecksInput): Promise<DeckModuleCompilation> {
   const out = normalizeRelativePath(input.out, "Output directory");
   const root = normalizeDeckRoot(input.root);
   const paths = await listFiles(input.cwd, join(input.cwd, root));
-  const resolved = resolveDeckFiles(paths, root);
+  const resolved = resolveDeckFiles(paths, root, { markdown: input.markdown === "void" });
   const componentModulePaths = Object.fromEntries(
     resolved.flatMap((deck) => {
       const path = deck.kind === "directory" ? findComponentModule(paths, root, deck.slug) : undefined;
@@ -69,7 +98,9 @@ export async function compileDecks(input: CompileDecksInput): Promise<DeckManife
     refresh: input.refreshOgp,
     resolveOgp: input.resolveOgp ?? resolveOgpMetadata,
   });
-  const generated = await compileMdxModuleDecks({
+  const compileModules = input.markdown === "void" ? compileVoidMarkdownDecks : compileMdxModuleDecks;
+  const generated = await compileModules({
+    cwd: input.cwd,
     root,
     outDir: out,
     mountPath: input.mountPath,
@@ -82,19 +113,53 @@ export async function compileDecks(input: CompileDecksInput): Promise<DeckManife
     readBinary: (path) => readFile(join(input.cwd, path)),
   });
 
-  for (const deck of generated.decks) {
-    for (const slide of deck.slideModules) {
-      await writeTextFile(join(input.cwd, slide.path), slide.code);
+  // Client bundling and cache serialization must succeed before any output is changed.
+  let clientCss = "";
+  const clientEntry = await emitClientEntryModule({
+    cwd: input.cwd,
+    clientEntries: clientEntryPaths,
+    clientComponentIds,
+    extraCode: generated.clientCode,
+    markdownIslands: generated.markdownIslands,
+    onCss: (css) => {
+      clientCss = css;
+    },
+  });
+  if (clientCss) {
+    for (const deck of generated.decks) {
+      if (deck.deck.clientEntryRequired || Object.keys(deck.clientComponentIds ?? {}).length)
+        deck.deck.themeStyle = [deck.deck.themeStyle, clientCss].filter(Boolean).join("\n");
     }
+    generated.routerModule = emitModuleDecksRouter({ decks: generated.decks });
   }
-  await writeTextFile(join(input.cwd, out, "decks.ts"), generated.routerModule);
-  await writeTextFile(
-    join(input.cwd, out, "client-entry.ts"),
-    await emitClientEntryModule({ cwd: input.cwd, clientEntries: clientEntryPaths, clientComponentIds }),
+  const files: GeneratedFile[] = generated.decks.flatMap((deck) =>
+    deck.slideModules.map((slide) => ({ path: join(input.cwd, slide.path), content: slide.code })),
   );
-  await ogpCache.write();
-
-  return { decks: generated.decks.map((deck) => deck.deck) };
+  files.push(
+    { path: join(input.cwd, out, "decks.ts"), content: generated.routerModule },
+    { path: join(input.cwd, out, "client-entry.ts"), content: clientEntry },
+  );
+  const cacheFile = ogpCache.output();
+  return {
+    modules: files,
+    cacheFile,
+    result: {
+      outDir: out,
+      routerModulePath: `${out}/decks.ts`,
+      decks: generated.decks.map(({ deck, slideModules }) => {
+        const { slides, componentRegistry: _componentRegistry, ...metadata } = deck;
+        return {
+          ...metadata,
+          slides: slides.map((slide, index) => ({
+            index: slide.index,
+            meta: slide.meta,
+            notes: slide.notes,
+            modulePath: slideModules[index].path,
+          })),
+        };
+      }),
+    },
+  };
 }
 
 async function createOgpCacheResolver(input: {
@@ -102,11 +167,14 @@ async function createOgpCacheResolver(input: {
   cacheFile: string | undefined;
   refresh: boolean | undefined;
   resolveOgp: (this: void, url: string) => Promise<LinkCardOgpMetadata | undefined>;
-}): Promise<{ resolveOgp?: (this: void, url: string) => Promise<LinkCardOgpMetadata | undefined>; write(): Promise<void> }> {
+}): Promise<{
+  resolveOgp?: (this: void, url: string) => Promise<LinkCardOgpMetadata | undefined>;
+  output(): GeneratedFile | undefined;
+}> {
   if (!input.cacheFile) {
     return {
       resolveOgp: input.resolveOgp,
-      write: async () => undefined,
+      output: () => undefined,
     };
   }
 
@@ -126,9 +194,8 @@ async function createOgpCacheResolver(input: {
       }
       return metadata;
     },
-    async write() {
-      if (!dirty) return;
-      await writeTextFile(cachePath, `${JSON.stringify(cache, null, 2)}\n`);
+    output() {
+      return dirty ? { path: cachePath, content: `${JSON.stringify(cache, null, 2)}\n` } : undefined;
     },
   };
 }
@@ -210,24 +277,33 @@ async function buildDeckManifestFromPaths(input: {
   });
 }
 
-async function writeTextFile(path: string, contents: string): Promise<void> {
-  await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, contents, "utf8");
-}
-
 function findComponentModule(paths: string[], root: string, slug: string): string | undefined {
   const base = `${normalizePath(root).replace(/\/$/, "")}/${slug}/components/index`;
   return paths.find((path) => {
     const normalized = normalizePath(path);
-    return normalized === `${base}.tsx` || normalized === `${base}.ts` || normalized === `${base}.jsx` || normalized === `${base}.js`;
+    return (
+      normalized === `${base}.tsx` ||
+      normalized === `${base}.ts` ||
+      normalized === `${base}.jsx` ||
+      normalized === `${base}.js`
+    );
   });
 }
 
-function findClientEntryModule(paths: string[], root: string, slug: string): ClientEntryModule["sourcePath"] | undefined {
+function findClientEntryModule(
+  paths: string[],
+  root: string,
+  slug: string,
+): ClientEntryModule["sourcePath"] | undefined {
   const base = `${normalizePath(root).replace(/\/$/, "")}/${slug}/components/client/index`;
   return paths.find((path) => {
     const normalized = normalizePath(path);
-    return normalized === `${base}.tsx` || normalized === `${base}.ts` || normalized === `${base}.jsx` || normalized === `${base}.js`;
+    return (
+      normalized === `${base}.tsx` ||
+      normalized === `${base}.ts` ||
+      normalized === `${base}.jsx` ||
+      normalized === `${base}.js`
+    );
   });
 }
 

@@ -6,10 +6,11 @@ import {
   createMdxComponents,
   defineSlideComponents,
   renderJsxValue,
+  renderJsxValueSync,
   renderSlideNodes,
   renderSlideNodesAsync,
 } from "./jsx-renderer";
-import type { SlideComponentInput, SlideComponentRegistry } from "./jsx-renderer";
+import type { DeckRenderable, SlideComponentInput, SlideComponentRegistry } from "./jsx-renderer";
 
 export { defineSlideComponents };
 export { createMdxComponents };
@@ -75,9 +76,7 @@ export function renderCompiledSlide(
   const notes = slide.notes ?? slide.meta.notes;
   const notesHtml =
     input.speakerNotes === false || !notes ? "" : `<aside class="speaker-notes" hidden>${escapeHtml(notes)}</aside>`;
-  const html = slide.nodes?.length
-    ? renderSlideNodes(slide.nodes, { components, assets })
-    : rewriteLocalAssetUrls(slide.html, assets);
+  const html = renderSlideBodySync(slide, assets, { ...input, components });
   const style = slideStyleAttribute(slide, assets);
   const transition = slide.meta.transition ? ` data-transition="${escapeHtml(safeClass(slide.meta.transition))}"` : "";
 
@@ -122,6 +121,47 @@ function slideStyleAttribute(slide: CompiledSlide, assets: AssetRef[]): string {
   return declarations.length ? ` style="${escapeHtml(declarations.join(";"))}"` : "";
 }
 
+function renderSlideBodySync(
+  slide: CompiledSlide,
+  assets: AssetRef[],
+  input: { components?: SlideComponentRegistry; deck?: Pick<CompiledDeck, "sourcePath"> },
+): string {
+  try {
+    if (slide.render) {
+      const value = slide.render({
+        components: createMdxComponents(input.components ?? builtInSlideComponents, { assets }),
+      });
+      if (value && typeof value === "object" && "then" in value && typeof value.then === "function") {
+        // Observe rejections even though this API cannot await the result.
+        void Promise.resolve(value).catch(() => undefined);
+        throw new RenderError(
+          "Async slide rendering requires renderCompiledSlideAsync() or renderCompiledDeckAsync().",
+          "async-slide-render",
+        );
+      }
+      return renderJsxValueSync(value as DeckRenderable);
+    }
+    if (slide.nodes?.length) return renderSlideNodes(slide.nodes, { components: input.components, assets });
+    return rewriteLocalAssetUrls(requireSlideHtml(slide), assets);
+  } catch (error) {
+    if (error instanceof RenderError) throw error;
+    throw new RenderError(
+      `Render failed in ${input.deck?.sourcePath ?? "unknown deck"} slide ${slide.index + 1}: ${formatErrorMessage(error)}. Use the async rendering API for async JSX.`,
+      "slide-render-error",
+      error,
+    );
+  }
+}
+
+function requireSlideHtml(slide: CompiledSlide): string {
+  if (typeof slide.html !== "string")
+    throw new RenderError(
+      "Slide has no renderable body. Import createDecks() from the generated module; compileDecks() returns build information only.",
+      "slide-body-missing",
+    );
+  return slide.html;
+}
+
 async function renderSlideBodyAsync(
   slide: CompiledSlide,
   assets: AssetRef[],
@@ -137,7 +177,7 @@ async function renderSlideBodyAsync(
         )
       : slide.nodes?.length
         ? await renderSlideNodesAsync(slide.nodes, { components: input.components, assets })
-        : rewriteLocalAssetUrls(slide.html, assets);
+        : rewriteLocalAssetUrls(requireSlideHtml(slide), assets);
   } catch (error) {
     if (error instanceof RenderError) throw error;
     throw new RenderError(

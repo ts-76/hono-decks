@@ -98,6 +98,7 @@ export function renderViewerScript(nonce?: string): string {
     }
 
     function handleKeydown(event) {
+      if (event.defaultPrevented) return;
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "p" && printPath) {
         event.preventDefault();
         const printUrl = new URL(printPath, window.location.href);
@@ -105,6 +106,10 @@ export function renderViewerScript(nonce?: string): string {
         window.location.assign(printUrl);
         return;
       }
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      const target = event.target;
+      if (target instanceof HTMLElement && (target.isContentEditable || target.closest("input,textarea,select,button,a[href],[role=textbox],[role=button],[role=slider]"))) return;
+      if (["ArrowRight", "ArrowLeft", " "].includes(event.key)) event.preventDefault();
       if (event.key === "ArrowRight" || event.key === " ") sendCommand("next");
       if (event.key === "ArrowLeft") sendCommand("previous");
       if (event.key === "f") void toggleViewerFullscreen();

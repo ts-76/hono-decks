@@ -34,9 +34,11 @@ export interface DefinedDecks<E extends Env = any> {
 
 /** File-system settings consumed by the CLI. */
 export interface DecksBuildConfig {
+  /** Opt into .md decks compiled by void-plugin-hono-jsx/markdown/compiler. */
+  markdown?: "void";
   /** Deck source directory. @default "decks" */
   root?: string;
-  /** Generated module directory. @default "src/generated" */
+  /** CLI output directory. Vite keeps modules in memory. @default "src/generated" */
   outDir?: string;
   /** Optional deterministic Open Graph metadata cache. */
   ogpCacheFile?: string;

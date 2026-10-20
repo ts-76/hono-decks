@@ -9,8 +9,8 @@
     "deploy": "bun run build && wrangler deploy",
     "deploy:production": "bun run build && wrangler deploy --config wrangler.production.jsonc",
     "preview": "wrangler dev",
-    "typecheck": "bun run decks:compile && tsc --noEmit",
-    "test": "bun run decks:compile && node ../../scripts/run-with-typescript-parser.cjs vp test run",
+    "typecheck": "tsc --noEmit",
+    "test": "node ../../scripts/run-with-typescript-parser.cjs vp test run",
     "check": "bun run typecheck && bun run test && bun run build"
   },
   "dependencies": {

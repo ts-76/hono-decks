@@ -85,6 +85,8 @@ export interface CompiledDeck {
   meta: DeckFrontmatter;
   themeStyle?: string;
   themeSourcePath?: string;
+  /** Omit generated client code for explicitly static compiled decks. */
+  clientEntryRequired?: boolean;
   slides: CompiledSlide[];
   assets: AssetRef[];
   componentRegistry?: Record<string, SlideComponentInput>;

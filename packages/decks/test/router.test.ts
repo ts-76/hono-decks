@@ -53,7 +53,7 @@ describe("decksRouter", () => {
     expect(html).toContain('title="Deck One"');
     expect(html).toContain(".hono-decks-viewport{width:min(100%,calc((100vh - 58px) * 16 / 9));aspect-ratio:16/9");
     expect(html).toContain(".hono-decks-viewport:focus-visible");
-    expect(html).toContain("*:focus-visible{outline:none}");
+    expect(html).toContain("*:focus-visible{outline:2px solid currentColor;outline-offset:2px}");
     expect(html).toContain(".hono-decks-frame-stage{width:100%;height:100%");
     expect(html).toContain(".hono-decks-frame-stage iframe{width:100%;height:100%");
     expect(html).not.toContain(
@@ -749,7 +749,7 @@ describe("decksRouter", () => {
     expect(first.embedHtml).toMatch(
       /\[data-hono-decks-viewer\]\[data-hono-decks-embed\] \.hono-decks-viewer-controls\{[^}]*z-index:4/,
     );
-    expect(html).toContain("[data-hono-decks-viewer][data-hono-decks-embed] *:focus-visible{outline:none}");
+    expect(html).toContain("[data-hono-decks-viewer][data-hono-decks-embed] *:focus-visible{outline:2px solid currentColor;outline-offset:2px}");
     expect(html).toContain("data-hono-decks-viewer-runtime");
     expect(html).toContain('root.querySelectorAll("[data-hono-decks-viewer-link]")');
     expect(html).toContain('link.setAttribute("href", viewerUrl.href)');
@@ -1598,6 +1598,16 @@ describe("decksRouter", () => {
     expect(printHtml).toContain(".deck-local-theme{color:cyan}");
   });
 
+  it("omits the generated client entry on explicitly static decks while preserving app overrides", async () => {
+    const source = manifestDeckSource({ decks: [{ ...deck, clientEntryRequired: false }] });
+    const app = new Hono();
+    app.route("/slides", decksRouter({ source, clientEntryAsset: "console.log('islands');" }));
+    expect(await (await app.request("/slides/deck1/render")).text()).not.toContain("/_assets/client.js");
+    const custom = new Hono();
+    custom.route("/slides", decksRouter({ source, clientEntry: "/custom.js", clientEntryAsset: "unused" }));
+    expect(await (await custom.request("/slides/deck1/render")).text()).toContain('src="/custom.js"');
+  });
+
   it("serves an embedded client entry asset from the mounted router", async () => {
     const app = new Hono();
     app.route(
@@ -1614,7 +1624,7 @@ describe("decksRouter", () => {
     expect(renderHtml).toContain('<script type="module" src="/slides/_assets/client.js"></script>');
     expect(asset.status).toBe(200);
     expect(asset.headers.get("content-type")).toContain("text/javascript");
-    expect(asset.headers.get("cache-control")).toBe("public, max-age=300");
+    expect(asset.headers.get("cache-control")).toBe("no-cache");
     expect(await asset.text()).toBe("console.log('deck client');");
   });
 

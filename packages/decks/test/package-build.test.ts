@@ -99,6 +99,8 @@ describe("package build metadata", () => {
         types: "./dist/vite.d.ts",
         import: "./dist/vite.js",
       },
+      "./honox": { types: "./dist/honox.d.ts", import: "./dist/honox.js" },
+      "./vite-env": { types: "./vite-env.d.ts" },
     });
     expect(packageJson.bin).toEqual({ "hono-decks": "dist/bin.js" });
     expect(packageJson.files).toEqual(expect.arrayContaining(["dist", "README.md", "README.ja.md"]));

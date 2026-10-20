@@ -1,4 +1,4 @@
-import { jsx } from "hono/jsx/jsx-runtime";
+import { Fragment, jsx } from "hono/jsx/jsx-runtime";
 import { HtmlEscapedCallbackPhase, resolveCallback } from "hono/utils/html";
 import type { Child } from "hono/jsx";
 import type { HtmlEscapedString } from "hono/utils/html";
@@ -447,8 +447,9 @@ export function renderJsxValueSync(value: DeckRenderable): string {
   if (typeof resolved === "string") return resolved;
   if (resolved === null || resolved === undefined || typeof resolved === "boolean") return "";
   if (typeof resolved === "number") return String(resolved);
-  const html = resolveCallback(resolved as never, HtmlEscapedCallbackPhase.Stringify, false, {});
+  const html = jsx(Fragment, { children: resolved }).toString();
   if (html instanceof Promise) {
+    void html.catch(() => undefined);
     throw new Error("Async Hono JSX callbacks are not supported in sync rendering.");
   }
   return html;

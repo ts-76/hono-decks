@@ -5,15 +5,18 @@ export function emitModuleDecksRouter(input: { decks: GeneratedModuleDeck[] }): 
   const runtimeEntry = JSON.stringify(DECKS_RUNTIME_ENTRY);
   const advancedEntry = JSON.stringify(DECKS_ADVANCED_ENTRY);
   const slideImports = input.decks
-    .flatMap((deck) =>
+    .flatMap((deck, deckIndex) =>
       deck.slideModules.map(
-        (slide, index) => `import ${slideImportName(deck.deck.slug, index)} from ${JSON.stringify(slide.importPath)};`,
+        (slide, index) => `import ${slideImportName(deckIndex, index)} from ${JSON.stringify(slide.importPath)};`,
       ),
     )
     .join("\n");
   const componentImports = input.decks
-    .filter((deck) => deck.componentModulePath)
-    .map((deck) => `import * as ${componentImportName(deck.deck.slug)} from ${JSON.stringify(deck.componentModulePath)};`)
+    .flatMap((deck, deckIndex) =>
+      deck.componentModulePath
+        ? [`import * as ${componentImportName(deckIndex)} from ${JSON.stringify(deck.componentModulePath)};`]
+        : [],
+    )
     .join("\n");
 
   return `// @ts-nocheck
@@ -42,7 +45,7 @@ function withClientComponentIds(module, clientIds) {
 const generatedDecks = defineDecks({
   clientEntryAsset: decksClientEntry,
   decks: [
-${input.decks.map(emitDeckObject).join(",\n")}
+${input.decks.map((deck, deckIndex) => emitDeckObject(deck, deckIndex)).join(",\n")}
   ]
 });
 
@@ -56,17 +59,18 @@ function definedDecksFor<E extends Env>() {
 `;
 }
 
-function emitDeckObject(deck: GeneratedModuleDeck): string {
+function emitDeckObject(deck: GeneratedModuleDeck, deckIndex: number): string {
   return `    {
       slug: ${JSON.stringify(deck.deck.slug)},
       sourcePath: ${JSON.stringify(deck.deck.sourcePath)},
       kind: ${JSON.stringify(deck.deck.kind)},
       meta: ${serializeValue(deck.deck.meta, 3)},
+${typeof deck.deck.clientEntryRequired === "boolean" ? `      clientEntryRequired: ${deck.deck.clientEntryRequired},\n` : ""}
 ${deck.deck.themeStyle ? `      "themeStyle": ${serializeValue(deck.deck.themeStyle, 3)},\n` : ""}${deck.deck.themeSourcePath ? `      "themeSourcePath": ${JSON.stringify(deck.deck.themeSourcePath)},\n` : ""}
       assets: ${serializeValue(deck.deck.assets, 3)},
       componentRegistry: ${
         deck.componentModulePath
-          ? `withClientComponentIds(${componentImportName(deck.deck.slug)}, ${serializeValue(deck.clientComponentIds ?? {}, 3)})`
+          ? `withClientComponentIds(${componentImportName(deckIndex)}, ${serializeValue(deck.clientComponentIds ?? {}, 3)})`
           : "{}"
       },
       warnings: ${serializeValue(deck.deck.warnings, 3)},
@@ -79,7 +83,7 @@ ${deck.deck.slides
           html: "",
           components: [],
           notes: ${serializeValue(slide.notes, 5)},
-          render: ${slideImportName(deck.deck.slug, slide.index)}
+          render: ${slideImportName(deckIndex, slide.index)}
         }`,
   )
   .join(",\n")}
@@ -87,16 +91,12 @@ ${deck.deck.slides
     }`;
 }
 
-function slideImportName(slug: string, index: number): string {
-  return `Slide_${safeIdentifier(slug)}_${index}`;
+function slideImportName(deckIndex: number, slideIndex: number): string {
+  return `Slide_${deckIndex}_${slideIndex}`;
 }
 
-function componentImportName(slug: string): string {
-  return `Components_${safeIdentifier(slug)}`;
-}
-
-function safeIdentifier(value: string): string {
-  return value.replace(/[^A-Za-z0-9_$]+/g, "_").replace(/^[^A-Za-z_$]+/, "_") || "_";
+function componentImportName(deckIndex: number): string {
+  return `Components_${deckIndex}`;
 }
 
 function serializeValue(value: unknown, depth: number): string {

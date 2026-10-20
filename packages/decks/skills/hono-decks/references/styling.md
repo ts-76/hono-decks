@@ -14,12 +14,22 @@ The base root font size is 32px. Treat that as body copy, not a value to shrink 
 - cover title: `3rem` to `5rem`
 - line height: about `1.15` for headings and `1.35` to `1.5` for body text
 
+## Default appearance
+
+Without a theme, slides use an opaque white background and dark text. Set `--hono-decks-background` and the foreground tokens together to customize the palette. The surrounding viewer has its own dark chrome; it does not set the slide colors.
+
+The base CSS is followed by the deck's `theme.css`, then the route's `style` option. Per-slide background metadata is applied inline. Existing `.slide { background: ... }` rules continue to override the default background.
+
+Use `px` or `rem` for content dimensions. Avoid `vw`, `vh`, and viewport media queries inside slides: those measure the browser or iframe, not the 1920 × 1080 canvas, and change the composition when the browser zooms. The same content dimensions are used for presentation and print.
+
 ## Start with deck-scoped CSS
 
 Create `decks/product/theme.css`:
 
 ```css
 :root {
+  color-scheme: dark;
+  --hono-decks-background: #080d1a;
   --hono-decks-color: #f7f8fb;
   --hono-decks-muted-color: #c3c8d4;
   --hono-decks-accent-color: #8bd3ff;

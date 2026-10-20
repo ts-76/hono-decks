@@ -597,7 +597,7 @@ describe("sample Worker app", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/javascript");
-    expect(response.headers.get("cache-control")).toBe("public, max-age=300");
+    expect(response.headers.get("cache-control")).toBe("no-cache");
     const js = await response.text();
     expect(js).toContain('querySelectorAll("[data-hono-decks-island]")');
     expect(js).toContain("function Counter");

@@ -4,7 +4,175 @@
 
 Hono と Cloudflare Workers 上で MDX のスライドを配信するためのライブラリです。ビルド時に MDX を TypeScript module へ変換し、Worker runtime ではファイルシステムや compiler を読み込みません。
 
-## Quick start
+## Hono＋Vite／HonoX：init で接続する
+
+既存のアプリに `hono-decks` をインストールし、構成に合わせて初期設定します。
+
+```sh
+npm install hono-decks
+
+# Hono＋Vite
+npx hono-decks init --framework hono
+
+# HonoX の場合はこちら
+npx hono-decks init --framework honox
+
+# 以後は既存のコマンドを使う
+npm run dev
+npm run build
+```
+
+どちらも、既存の Vite 設定を保持して自動コンパイルを登録し、
+`hono-decks.config.ts`、`src/decks.ts`、サンプルの
+`decks/welcome/deck.mdx` を作ります。生成ファイルがない状態からでも
+通常の `dev`／`build` だけで動き、手動 `compile` やビルドコマンドの変更は不要です。
+生成コードは Vite の仮想モジュールとして扱い、ファイルへ出力しません。Void 用のアダプターは必要ありません。
+
+| 構成 | アプリへの接続 |
+| --- | --- |
+| `--framework hono` | 既存の Hono エントリーにルーターを追加。既存のミドルウェアとルートを保持 |
+| `--framework honox` | `createApp()` に設定連動のルートを追加。既存のオプション、ページ、ミドルウェアを保持 |
+
+公開先は `/slides/welcome` です。同名の既存デッキがあれば、サンプルには
+空いている名前を選びます。既存の `.mdx`、コンポーネント、画像はそのまま使えます。
+
+Hono では、`src/index.ts`／`.tsx`／`.js`／`.mts`／`.mjs` または
+`src/app.ts`／`.tsx`／`.js` の候補が1つなら自動検出します。
+独自の場所にある場合や複数の候補がある場合は、
+`--entry src/server.ts` のように指定してください。
+自動接続は `const app = new Hono()` で作ったアプリを default export する形式に対応します。
+先行する catch-all／動的ルートなど、安全に接続できない構成ではファイルを変更せず、
+手動接続の案内を表示します。
+
+HonoX は標準の `app/routes` と、`app/server.ts` で `createApp()` を default export
+する構成に対応します。`init` は `src/honox-decks.ts` を作り、既存の
+`createApp()` オプションを包みます。HonoX の公開 `ROUTES` API に設定から
+ルートを追加するため、**公開パスは `mountPath` 一か所の変更で切り替わります**。
+ルート用ディレクトリを作成・改名する必要はありません。既存ルートと重なる場合はエラーにします。
+開発中の公開パス変更では、コンパイル後に Vite を自動で再起動してルートを切り替えます。
+生成する HonoX 接続ファイルには、`import.meta.glob` によるルート探索と
+`hono-decks/honox` の `withHonoXDecks()` 呼び出しだけを置きます。
+ルートの合成と衝突検査はパッケージが担当し、動的ルートや catch-all との衝突も検出します。
+この処理の修正は、アプリ側を再生成せずパッケージ更新で受け取れます。
+`createApp()` のオプション、ミドルウェア、明示的な `ROUTES` は保持します。
+`--config config/slides.ts` で設定ファイルの場所を変えることもできます。
+
+## Void：通常の dev／build で使う
+
+既存の Void アプリに hono-decks と対応する Hono Markdown アダプターを
+インストールし、初回だけ `init` を実行します。
+
+```sh
+npx hono-decks init --framework void --install
+npm run dev
+# 本番用のビルド
+npm run build
+```
+
+この連携には `void-plugin-hono-jsx@^0.4.0` の standalone compiler／client export
+が必要です。`--install` は対応範囲のアダプターを選びます。
+`--install` を省略する場合は、Markdown 用の任意 peer も必要です：
+`markdown-exit@^1.3.0 yaml@^2.9.1 markdown-it-container@^4.0.0 shiki@^4.5.0 @shikijs/transformers@^4.5.0`。
+動作確認した組み合わせは Void 1.1.11、Vite 8.3.4、Hono 4.13.13 です。
+
+`--install` は npm／pnpm／Yarn／Bun を packageManager または lockfile から判定し、
+不足する依存だけを追加します。互換性のない既存バージョンは自動更新せずエラーにします。
+Yarn は node_modules linker を対象とし、PnP は手動インストールを使ってください。
+依存を自分で管理する場合は `--install` を省略できます。ローカルでビルドしたアダプターは
+`--adapter /absolute/path/void-plugin-hono-jsx.tgz` で指定できます。
+アプリ設定の衝突はインストール前に検査し、インストール失敗時は接続ファイルを作りません。
+パッケージマネージャーによる依存・lockfileの変更は残る場合があります。
+
+`init --framework void` は、既存のルート `vite.config.*` の default export を
+`withHonoDecks()` で包み、次のファイルを作ります。
+
+- `hono-decks.config.ts`：公開パス `/slides`、入力先 `decks`、Hono Markdown の有効化
+- `src/decks.ts`：アプリ側で編集できる接続ファイル
+- `middleware/hono-decks.ts`：スライド配下のルーティング、Markdown の CSS、開発時の自動更新
+- `decks/welcome/deck.md` と `Counter.tsx`：`/slides/welcome` で開ける対話可能なサンプル
+
+既存の `welcome` デッキがある場合は、`welcome-2` などの空いている名前を選び、
+URL を表示します。既存の Markdown／MDX はそのまま保持します。
+
+サンプルを編集するか、`decks` に `.md`／`.mdx` を追加してください。
+既存の Vite の `dev`／`build` が自動でコンパイルします。生成ファイルが
+ない状態から起動する場合も、手動 `compile`、別の監視プロセス、
+`package.json` のコマンド変更は不要です。Vite が生成コードをメモリ上で扱うため、
+生成用ディレクトリや、その `.gitignore` 登録も不要です。
+既存の Void のエントリー、ルート、package scripts は保持します。
+公開パスは既存ルートと重ならないものを選び、必要に応じてアプリのアクセス制御を適用してください。
+
+書き込み前に依存パッケージと出力先の衝突を確認します。既存の接続ファイルは
+上書きせず、hono-decks の二重登録も行いません。ESM の default export で
+設定を返すオブジェクト、式、非同期関数に対応します。対応できない設定では
+ファイルを変更せず、`honoDecks()` を手動で登録する方法を表示します。
+`--config config/slides.ts` で設定ファイルの場所を変更できます。
+`--out`／`--generated` は、以下の汎用 init 向けのオプションです。
+
+## Markdown 内のクライアントコンポーネント
+
+Hono Markdown では、別の登録ファイルを作らず、本文の import から自動登録できます。
+
+```md
+<script>
+import Counter from "./Counter.tsx" with { island: "load" };
+</script>
+---
+title: Interactive slide
+---
+# デモ
+
+<Counter label="Count" initial="2" />
+```
+
+`Counter.tsx` は Hono JSX の default export です。`hono/jsx` の `useState` を使えます。
+island はサーバーで初期描画し、`load`／`visible`／`idle`／`media:(query)` の条件で
+ブラウザー上で動かします。`visible` はスライドがアクティブになってから監視します。
+CSS import はコンパイル時に回収し、SSR・印刷ページにも含めます。
+`useFrontmatter()` と `useMarkdownHeadings()` は各スライドの情報を返します。
+クライアントへ渡すメタデータに秘密情報を含めないでください。
+
+対応範囲は相対 TSX／JSX の default import と、文字列・真偽値のリテラル属性です。
+JSX 式、island タグの子要素、任意の script コードは未対応です。
+静的な部品は引き続き `with { component: "static" }` を使います。
+既存 MDX のクライアントコンポーネント登録方法は変わりません。
+
+## Vite の生成物と型チェック
+
+Hono＋Vite／HonoX／Void は、共通の `virtual:hono-decks` を入口にします。
+`init` が作る `src/decks.ts` は、この仮想モジュールへ接続します。
+
+```ts
+/// <reference types="hono-decks/vite-env" />
+import { decks } from "virtual:hono-decks";
+
+export { decks };
+```
+
+`decks` は `hono-decks.config.ts` を適用したコレクションです。
+`decks.router()`、`decks.paths()` などの API は従来どおり使えます。
+仮想モジュールには必要に応じて設定を適用する `createDecks(config)` もあります。
+型定義はパッケージに同梱しているため、初回の `dev`／`build` 前でも型チェックできます。
+
+通常は `decks/` の原稿・画像・部品と設定ファイルを編集します。
+Vite はコンパイル結果をメモリ上のモジュールとして読み込み、ビルド時にアプリへ取り込みます。
+`src/generated` の作成や直接 import、`build.outDir` の指定は不要です。
+明示的に設定した OGP メタデータキャッシュは、従来どおり保存します。
+設定から import した別ファイルも監視するため、公開パスなどを分けて管理できます。
+init の開発クライアントは Vite の `BASE_URL` を使います。ホストの開発サーバーが
+Vite の URL を処理する構成では、base に合わせた既存のアセット除外設定も保持してください。
+
+既存の Vite 接続ファイルが生成先を直接 import している場合も、プラグインが
+設定された出力先を仮想モジュールへ解決します。生成 TypeScript を参照する
+`.js` 拡張子の import も互換性を維持します。新しい接続では上記の固定の入口を推奨します。
+
+Vite 以外で使う CLI の `hono-decks compile` と `compileDecks()` は、
+従来どおり `build.outDir`／`out` へファイルを書き出します。
+コンパイル処理は両方式で共通です。実行環境にコンパイラーや Node のファイル操作は持ち込みません。
+
+## Hono／MDX の Quick start
+
+Vite を使う Hono／HonoX／Void アプリでは、以下の手動コンパイル手順ではなく、上記の init を使ってください。
 
 ```bash
 bun add hono hono-decks
@@ -197,7 +365,7 @@ decks/product/
       index.tsx
 ```
 
-`components/index.tsx` は server-side JSX component、`components/client/index.tsx` は browser で hydrate する component です。`theme.css` はその deck だけに適用されます。画像は compile 時に検出され、`mountPath` と slug を使った public URL に書き換えられます。
+`components/index.tsx` は server-side JSX component、`components/client/index.tsx` は browser で hydrate する component です。`theme.css` はその deck だけに適用されます。 テーマ未指定時は白背景と濃い文字色を使います。配色を変える場合は `theme.css` で `--hono-decks-background` と `--hono-decks-color` を合わせて指定してください。1920 × 1080 の固定キャンバス内では `px` や `rem` を使います。`vw` / `vh` はブラウザのズームに応じて内容の配置も変えてしまいます。画像は compile 時に検出され、`mountPath` と slug を使った public URL に書き換えられます。
 
 ## Embedding
 
@@ -243,7 +411,7 @@ export default defineDecksConfig({
 
 独自CDNを使う場合は `imagePath: ({ deck }) => \`https://cdn.example.com/${deck.slug}.png\`` のように resolver で上書きできます。`false` または未指定なら social metadata は出力しません。
 
-生成処理は core に含まれません。`examples/ogp` では `hono-decks/node` の `compileDecks()` が返す manifest を Satori + resvg へ渡し、1200×630 PNG を Workers Static Assets へ保存します。Satori / resvg は example だけの依存で、Browser Rendering binding は不要です。Satori は TTF / OTF / WOFF を読み込めますが WOFF2 は扱えないため、対象言語の font file を build script から明示的に渡してください。
+生成処理は core に含まれません。`examples/ogp` では `hono-decks/node` の `compileDecks()` が返すデッキのメタデータを Satori + resvg へ渡し、1200×630 PNG を Workers Static Assets へ保存します。Satori / resvg は example だけの依存で、Browser Rendering binding は不要です。Satori は TTF / OTF / WOFF を読み込めますが WOFF2 は扱えないため、対象言語の font file を build script から明示的に渡してください。
 
 `build.ogpCacheFile` は `@[card](...)` が参照する外部サイトのメタデータキャッシュです。viewer 自身の share image とは別機能です。
 
@@ -290,3 +458,19 @@ app.route("/internal-slides", decksRouter({ source, dev: true }));
 - `examples/minimal`: standalone Worker の最小構成
 - `examples/basic`: R2、Browser Rendering、custom routes、client components
 - `examples/honox`: HonoX integration
+
+## Node ビルド結果と失敗時の復旧
+
+`compileDecks()` の戻り値は `CompileDecksResult` です。出力先、生成された
+`decks.ts` のパス、各デッキのメタデータ、スライドのモジュールパスを返します。
+描画には、生成された `decks.ts` の `createDecks()` を使ってください。
+戻り値をそのまま `defineDecks()` へ渡すコードは変更が必要です。
+タイトル、警告、アセット、ノートを `result.decks` から読む処理は引き続き使えます。
+
+同期レンダラーは同期の描画関数を実行します。非同期の本文には非同期版を使うよう
+エラーで案内し、描画できないビルド結果を渡した場合も空表示にせずエラーにします。
+
+生成処理とクライアント資産のビルドが完了してから、生成ファイルと OGP キャッシュを
+反映します。反映中に失敗した場合は、直前の内容へ戻します。OS やプロセスの停止時の
+一括反映、複数プロセスの同時実行は保証しません。復元自体に失敗した場合は、
+復旧用ファイルを残し、その場所をエラーに表示します。

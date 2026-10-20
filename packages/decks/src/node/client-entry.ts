@@ -23,6 +23,9 @@ export async function discoverClientComponentIds(input: {
 }
 
 export async function emitClientEntryModule(input: {
+  extraCode?: string;
+  onCss?(this: void, css: string): void;
+  markdownIslands?: { id: string; modulePath: string; hydrate: string }[];
   cwd: string;
   clientEntries: ClientEntryModule[];
   clientComponentIds: Record<string, Record<string, string>>;
@@ -34,14 +37,23 @@ export async function emitClientEntryModule(input: {
     const ids = input.clientComponentIds[entry.slug] ?? {};
     for (const [exportName, clientId] of Object.entries(ids)) {
       const localName = clientImportName(entry.slug, exportName);
-      imports.push(`import { ${exportName} as ${localName} } from ${JSON.stringify(join(input.cwd, entry.sourcePath))};`);
+      imports.push(
+        `import { ${exportName} as ${localName} } from ${JSON.stringify(join(input.cwd, entry.sourcePath))};`,
+      );
       registrations.push(`${JSON.stringify(clientId)}: ${localName}`);
     }
   }
 
-  if (registrations.length === 0) return 'export const decksClientEntry = "";\n';
+  const markdown = input.markdownIslands ?? [];
+  if (registrations.length === 0 && markdown.length === 0)
+    return `export const decksClientEntry = ${JSON.stringify(input.extraCode ?? "")};\n`;
 
-  const entryContents = `import { hydrateSlideIslands } from "hono-decks/client";
+  const markdownEntry = markdown.length
+    ? `import { hydrateMarkdownIslands } from "void-plugin-hono-jsx/markdown/client";
+hydrateMarkdownIslands({ ${markdown.map((entry) => `${javascriptString(entry.id)}: () => import(${javascriptString(entry.modulePath)})`).join(",")} });`
+    : "";
+  const entryContents = `${markdownEntry}
+import { hydrateSlideIslands } from "hono-decks/client";
 ${imports.join("\n")}
 
 hydrateSlideIslands({
@@ -59,6 +71,15 @@ hydrateSlideIslands({
     },
     bundle: true,
     write: false,
+    outdir: join(input.cwd, ".hono-decks-client"),
+    loader: {
+      ".svg": "dataurl",
+      ".png": "dataurl",
+      ".jpg": "dataurl",
+      ".webp": "dataurl",
+      ".woff2": "dataurl",
+      ".woff": "dataurl",
+    },
     format: "esm",
     platform: "browser",
     target: "es2022",
@@ -69,10 +90,15 @@ hydrateSlideIslands({
     sourcemap: false,
     minify: false,
   });
-  const output = result.outputFiles[0];
+  const output = result.outputFiles.find((file) => file.path.endsWith(".js"));
+  const css = result.outputFiles
+    .filter((file) => file.path.endsWith(".css"))
+    .map((file) => file.text)
+    .join("\n");
+  input.onCss?.(css);
   if (!output) throw new Error("Client entry did not produce output.");
 
-  return `export const decksClientEntry = ${JSON.stringify(output.text)};\n`;
+  return `export const decksClientEntry = ${JSON.stringify(output.text + (input.extraCode ? "\n" + input.extraCode : ""))};\n`;
 }
 
 function resolveClientRuntimeEntry(): string {
@@ -123,4 +149,8 @@ function hashString(value: string): string {
 
 function safeIdentifier(value: string): string {
   return value.replace(/[^A-Za-z0-9_$]+/g, "_").replace(/^[^A-Za-z_$]+/, "_") || "_";
+}
+
+function javascriptString(value: string): string {
+  return JSON.stringify(value).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
 }

@@ -1,3 +1,4 @@
+import { PRESENTATION_DESIGN_WIDTH, PRESENTATION_DESIGN_HEIGHT } from "./presentation-style";
 import { documentNonceAttribute } from "../server/document";
 
 export function renderLiveReloadScript(eventsPath: string, nonce?: string): string {
@@ -20,8 +21,8 @@ export function renderPresentationScript(nonce?: string): string {
   const slides = Array.from(document.querySelectorAll(".slide"));
   const stage = document.querySelector("[data-hono-decks-stage]");
   const deck = document.querySelector("[data-hono-decks-deck]");
-  const DESIGN_WIDTH = 1920;
-  const DESIGN_HEIGHT = 1080;
+  const DESIGN_WIDTH = ${PRESENTATION_DESIGN_WIDTH};
+  const DESIGN_HEIGHT = ${PRESENTATION_DESIGN_HEIGHT};
   let index = 0;
   let previousIndex = 0;
   let stepIndex = 0;
@@ -406,6 +407,10 @@ export function renderPresentationScript(nonce?: string): string {
   });
 
   document.addEventListener("keydown", (event) => {
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
+    const target = event.target;
+    if (target instanceof HTMLElement && (target.isContentEditable || target.closest("input,textarea,select,button,a[href],[role=textbox],[role=button],[role=slider]"))) return;
+    if (["ArrowRight", "ArrowLeft", " "].includes(event.key)) event.preventDefault();
     if (event.key === "ArrowRight" || event.key === " ") handleCommand("next");
     if (event.key === "ArrowLeft") handleCommand("previous");
     if (event.key === "f") handleCommand("fullscreen");
@@ -425,6 +430,9 @@ export function renderPresentationScript(nonce?: string): string {
   window.__honoDecksPresentationRuntime = { command: handleCommand };
 
   window.addEventListener("resize", fitDeck);
+  if (typeof ResizeObserver !== "undefined" && stage instanceof HTMLElement) {
+    new ResizeObserver(fitDeck).observe(stage);
+  }
   fitDeck();
   const initialState = readInitialState();
   show(initialState.index, initialState.stepIndex);

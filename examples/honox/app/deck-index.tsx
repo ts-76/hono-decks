@@ -181,7 +181,7 @@ export function renderHonoXDeckIndexPage(input: {
                 ? "資料だけを別サービスへ切り離さず、プロフィール、登壇履歴、SEO、共有URLと一緒に育てられる構成です。"
                 : "Keep talks together with your profile, speaking history, SEO, and shareable URLs instead of moving them to a separate service."}
             </p>
-            <code>app/routes/decks/index.ts</code>
+            <code>hono-decks.config.ts</code>
           </div>
         </section>
       </main>

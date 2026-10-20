@@ -7,7 +7,11 @@ export interface ResolvedDeckFile {
   assetPaths: string[];
 }
 
-export function resolveDeckFiles(paths: string[], root = "decks"): ResolvedDeckFile[] {
+export function resolveDeckFiles(
+  paths: string[],
+  root = "decks",
+  options: { markdown?: boolean } = {},
+): ResolvedDeckFile[] {
   const normalizedRoot = normalizePath(root).replace(/\/$/, "");
   const decks = new Map<string, ResolvedDeckFile>();
   const assetsBySlug = new Map<string, string[]>();
@@ -18,8 +22,8 @@ export function resolveDeckFiles(paths: string[], root = "decks"): ResolvedDeckF
     const relative = inputPath.slice(normalizedRoot.length + 1);
     const segments = relative.split("/");
 
-    if (segments.length === 1 && segments[0].endsWith(".mdx")) {
-      const slug = segments[0].replace(/\.mdx$/, "");
+    if (segments.length === 1 && (segments[0].endsWith(".mdx") || (options.markdown && segments[0].endsWith(".md")))) {
+      const slug = segments[0].replace(/\.mdx?$/, "");
       addDeck(decks, {
         slug,
         sourcePath: inputPath,
@@ -29,7 +33,7 @@ export function resolveDeckFiles(paths: string[], root = "decks"): ResolvedDeckF
       continue;
     }
 
-    if (segments.length === 2 && segments[1] === "deck.mdx") {
+    if (segments.length === 2 && (segments[1] === "deck.mdx" || (options.markdown && segments[1] === "deck.md"))) {
       addDeck(decks, {
         slug: segments[0],
         sourcePath: inputPath,
@@ -50,7 +54,7 @@ export function resolveDeckFiles(paths: string[], root = "decks"): ResolvedDeckF
       continue;
     }
 
-    if (inputPath.endsWith(".mdx")) {
+    if (inputPath.endsWith(".mdx") || (options.markdown && inputPath.endsWith(".md"))) {
       throw new Error(`Nested deck slugs are not supported in this slice: ${inputPath}`);
     }
   }
@@ -80,5 +84,8 @@ function assertInsideRoot(path: string, root: string): void {
 }
 
 function normalizePath(path: string): string {
-  return path.replaceAll("\\", "/").replace(/^\.\/+/, "").replace(/\/+/g, "/");
+  return path
+    .replaceAll("\\", "/")
+    .replace(/^\.\/+/, "")
+    .replace(/\/+/g, "/");
 }

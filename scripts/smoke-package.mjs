@@ -77,6 +77,7 @@ try {
   "hono-decks/client",
   "hono-decks/node",
   "hono-decks/vite",
+  "hono-decks/honox",
 ];
 
 for (const entrypoint of entrypoints) {

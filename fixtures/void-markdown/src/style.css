@@ -1,0 +1,12 @@
+.void-md {
+  width: 100%;
+}
+.void-md .custom-block {
+  font-size: 0.75em;
+}
+.demo-callout {
+  padding: 1em;
+  border-left: 4px solid #2563eb;
+  background: #eff6ff;
+  color: #172554;
+}
