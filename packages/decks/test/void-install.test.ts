@@ -23,7 +23,7 @@ async function fixture(packageManager?: string) {
     "vite",
     "hono",
     "hono-decks",
-    "void-plugin-hono-jsx",
+    "void-plugin-hono-jsx@^0.4.0",
     "markdown-exit",
     "yaml",
     "markdown-it-container",

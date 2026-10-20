@@ -69,10 +69,8 @@ npm run dev
 npm run build
 ```
 
-**リリース前の注意：** この連携には、アダプターの新しい
-`void-plugin-hono-jsx/markdown/compiler` export が必要です。公開済みの
-アダプター 0.3.0 には含まれないため、対応版の公開までは、ビルドした
-hono-decks とアダプターの tarball をインストールしてください。
+この連携には `void-plugin-hono-jsx@^0.4.0` の standalone compiler／client export
+が必要です。`--install` は対応範囲のアダプターを選びます。
 `--install` を省略する場合は、Markdown 用の任意 peer も必要です：
 `markdown-exit@^1.3.0 yaml@^2.9.1 markdown-it-container@^4.0.0 shiki@^4.5.0 @shikijs/transformers@^4.5.0`。
 動作確認した組み合わせは Void 1.1.11、Vite 8.3.4、Hono 4.13.13 です。
@@ -80,7 +78,7 @@ hono-decks とアダプターの tarball をインストールしてください
 `--install` は npm／pnpm／Yarn／Bun を packageManager または lockfile から判定し、
 不足する依存だけを追加します。互換性のない既存バージョンは自動更新せずエラーにします。
 Yarn は node_modules linker を対象とし、PnP は手動インストールを使ってください。
-依存を自分で管理する場合は `--install` を省略できます。公開前のアダプターは
+依存を自分で管理する場合は `--install` を省略できます。ローカルでビルドしたアダプターは
 `--adapter /absolute/path/void-plugin-hono-jsx.tgz` で指定できます。
 アプリ設定の衝突はインストール前に検査し、インストール失敗時は接続ファイルを作りません。
 パッケージマネージャーによる依存・lockfileの変更は残る場合があります。

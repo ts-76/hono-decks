@@ -22,8 +22,7 @@ for manual integration and non-Vite applications.
 
 For an existing Void app, use `npx hono-decks init --framework void` after
 installing the compatible packages and Markdown peers described in the README.
-The new adapter `/markdown/compiler` export is required; published adapter 0.3.0
-does not include it. Init connects the existing Vite config, creates the routing
+Use `void-plugin-hono-jsx@^0.4.0` for its standalone compiler and client exports. Init connects the existing Vite config, creates the routing
 middleware and a sample `.md` deck at `/slides/welcome`, and uses virtual modules without generated
 files. Use the app's normal `dev` and `build` scripts without changes or a manual
 compile. Existing `.mdx` files remain supported. Unsupported configs or existing
