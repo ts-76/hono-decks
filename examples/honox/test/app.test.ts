@@ -11,8 +11,8 @@ describe("HonoX example", () => {
     expect(await robots.text()).toBe("User-agent: *\nAllow: /\n");
   });
 
-  it("uses the generated runtime entry and compiles through the Vite lifecycle", async () => {
-    const generated = await readFile(new URL("../app/generated/decks.ts", import.meta.url), "utf8");
+  it("uses virtual modules and compiles through the Vite lifecycle", async () => {
+    const facade = await readFile(new URL("../app/decks.ts", import.meta.url), "utf8");
     const viteConfig = await readFile(new URL("../vite.config.ts", import.meta.url), "utf8");
     const wranglerConfig = await readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8");
     const productionConfig = await readFile(new URL("../wrangler.production.jsonc", import.meta.url), "utf8");
@@ -24,8 +24,8 @@ describe("HonoX example", () => {
       await readFile(new URL("../../../packages/decks/package.json", import.meta.url), "utf8"),
     ) as { version: string };
 
-    expect(generated).toContain('from "hono-decks"');
-    expect(generated).not.toContain("hono-decks/runtime");
+    expect(facade).toContain('from "virtual:hono-decks"');
+    expect(facade).not.toContain("./generated/");
     expect(viteConfig).not.toContain("alias");
     expect(viteConfig).toContain('from "hono-decks/vite"');
     expect(viteConfig).toContain("honoDecks()");
@@ -89,7 +89,7 @@ describe("HonoX example", () => {
     expect(await enPrint.text()).toContain('<html lang="en"');
   });
 
-  it("mounts the generated deck router from a file route", async () => {
+  it("mounts the configured virtual deck router", async () => {
     const index = await app.request("/decks");
     const viewer = await app.request("/decks/honox");
     const render = await app.request("/decks/honox/render");

@@ -7,3 +7,7 @@ dist-dry-run/
 .DS_Store
 .superpowers/
 .impeccable/config.local.json
+
+/docs/app/generated/
+
+/examples/honox/app/generated/

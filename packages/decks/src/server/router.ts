@@ -37,10 +37,7 @@ import {
 } from "./path-utils";
 import { createDeckPaths } from "./paths";
 import { resolveDeckDocument, type DeckDocumentOptions, type ResolvedDeckDocument } from "./document";
-import {
-  renderDeckExternalEmbedResponse,
-  type DeckExternalEmbedOptions,
-} from "./external-embed";
+import { renderDeckExternalEmbedResponse, type DeckExternalEmbedOptions } from "./external-embed";
 
 export type {
   DeckBrowserRunBinding,
@@ -129,8 +126,7 @@ export interface DeckRouteSurfaceInput<E extends Env = any> {
   slug?: string;
 }
 
-export type DeckRouteEnabledResolver<E extends Env = any> =
-  (input: DeckRouteSurfaceInput<E>) => MaybePromise<boolean>;
+export type DeckRouteEnabledResolver<E extends Env = any> = (input: DeckRouteSurfaceInput<E>) => MaybePromise<boolean>;
 
 export type DeckRouteEnabled<E extends Env = any> = boolean | DeckRouteEnabledResolver<E>;
 
@@ -172,8 +168,9 @@ export interface DecksRouterPresenterOptions<E extends Env = any> {
   viewerControl?: boolean | DeckPresenterViewerControlOptions;
 }
 
-export type DeckPresenterEnabledResolver<E extends Env = any> =
-  (input: DeckPresenterEnabledInput<E>) => MaybePromise<boolean>;
+export type DeckPresenterEnabledResolver<E extends Env = any> = (
+  input: DeckPresenterEnabledInput<E>,
+) => MaybePromise<boolean>;
 
 export interface DeckPresenterEnabledInput<E extends Env = any> {
   c: Context<E>;
@@ -213,7 +210,10 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
   const router = new Hono<E>();
 
   if (options.clientEntryAsset) {
-    router.get(normalizeClientEntryAssetPath(options.clientEntryAssetPath), serveDecksClientEntry(options.clientEntryAsset));
+    router.get(
+      normalizeClientEntryAssetPath(options.clientEntryAssetPath),
+      serveDecksClientEntry(options.clientEntryAsset),
+    );
   }
 
   for (const extension of options.extensions ?? []) {
@@ -260,7 +260,9 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
     if (!(await isPageSurfaceEnabled(options, { c, surface: "render", mountPath, dev, deck, slug }))) {
       return c.json({ error: "Deck route not found", slug, surface: "render" }, 404);
     }
-    const clientEntry = options.clientEntry ?? resolveGeneratedClientEntryUrl(options, mountPath);
+    const clientEntry =
+      options.clientEntry ??
+      (deck.clientEntryRequired === false ? undefined : resolveGeneratedClientEntryUrl(options, mountPath));
     try {
       const document = await resolveRouterDocument(c, options, "render", mountPath, deck);
       return c.html(
@@ -276,7 +278,9 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
       );
     } catch (error) {
       const message =
-        error instanceof RenderError ? error.message : `Render failed in ${deck.sourcePath}: ${formatErrorMessage(error)}`;
+        error instanceof RenderError
+          ? error.message
+          : `Render failed in ${deck.sourcePath}: ${formatErrorMessage(error)}`;
       return c.text(message, 500);
     }
   });
@@ -304,7 +308,9 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
       );
     } catch (error) {
       const message =
-        error instanceof RenderError ? error.message : `Render failed in ${deck.sourcePath}: ${formatErrorMessage(error)}`;
+        error instanceof RenderError
+          ? error.message
+          : `Render failed in ${deck.sourcePath}: ${formatErrorMessage(error)}`;
       return c.text(message, 500);
     }
   });
@@ -350,7 +356,9 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
     if (!(await isPageSurfaceEnabled(options, { c, surface: "presentation", mountPath, dev, deck, slug }))) {
       return c.json({ error: "Deck route not found", slug, surface: "presentation" }, 404);
     }
-    const clientEntry = options.clientEntry ?? resolveGeneratedClientEntryUrl(options, mountPath);
+    const clientEntry =
+      options.clientEntry ??
+      (deck.clientEntryRequired === false ? undefined : resolveGeneratedClientEntryUrl(options, mountPath));
     try {
       const document = await resolveRouterDocument(c, options, "presentation", mountPath, deck);
       return c.html(
@@ -367,7 +375,9 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
       );
     } catch (error) {
       const message =
-        error instanceof RenderError ? error.message : `Render failed in ${deck.sourcePath}: ${formatErrorMessage(error)}`;
+        error instanceof RenderError
+          ? error.message
+          : `Render failed in ${deck.sourcePath}: ${formatErrorMessage(error)}`;
       return c.text(message, 500);
     }
   });
@@ -398,7 +408,9 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
       );
     } catch (error) {
       const message =
-        error instanceof RenderError ? error.message : `Render failed in ${deck.sourcePath}: ${formatErrorMessage(error)}`;
+        error instanceof RenderError
+          ? error.message
+          : `Render failed in ${deck.sourcePath}: ${formatErrorMessage(error)}`;
       return c.text(message, 500);
     }
   });
@@ -606,10 +618,7 @@ async function isPresenterEnabled<E extends Env>(
   );
 }
 
-function renderDeckIndexContent(
-  decks: Awaited<ReturnType<DeckSource["listDecks"]>>,
-  mountPath: string,
-): string {
+function renderDeckIndexContent(decks: Awaited<ReturnType<DeckSource["listDecks"]>>, mountPath: string): string {
   const basePath = mountPath.replace(/\/$/, "");
   const items = decks
     .map((deck) => {
@@ -626,11 +635,7 @@ function renderDeckIndexContent(
   </main>`;
 }
 
-function renderDeckIndex(
-  content: string,
-  title: string,
-  document: ResolvedDeckDocument,
-): string {
+function renderDeckIndex(content: string, title: string, document: ResolvedDeckDocument): string {
   return `<!doctype html>
 <html lang="${escapeHtml(document.lang)}">
 <head>
@@ -657,11 +662,12 @@ async function isPageSurfaceEnabled<E extends Env>(
   options: Pick<DecksRouterOptions<E>, "pages">,
   input: DeckRouteSurfaceInput<E>,
 ): Promise<boolean> {
-  const configured = input.surface === "index"
-    ? options.pages?.index === false
-      ? false
-      : options.pages?.index?.enabled
-    : options.pages?.[input.surface];
+  const configured =
+    input.surface === "index"
+      ? options.pages?.index === false
+        ? false
+        : options.pages?.index?.enabled
+      : options.pages?.[input.surface];
   if (typeof configured === "function") return Boolean(await configured(input));
   return configured !== false;
 }

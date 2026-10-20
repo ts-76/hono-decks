@@ -3,6 +3,8 @@ import { jsx } from "hono/jsx/jsx-runtime";
 import {
   defineSlideComponents,
   renderCompiledDeck,
+  renderCompiledSlide,
+  renderCompiledSlideAsync,
   renderCompiledDeckPage,
   renderCompiledDeckPageAsync,
 } from "../src/renderer/compiled-render";
@@ -34,6 +36,41 @@ const deck = {
 } satisfies CompiledDeck;
 
 describe("compiled deck rendering", () => {
+  it("renders function bodies consistently in sync and async APIs", async () => {
+    const slide = { ...deck.slides[0], render: () => jsx("h1", { children: "Function body" }) };
+    expect(renderCompiledSlide(slide)).toBe(await renderCompiledSlideAsync(slide));
+    expect(renderCompiledSlide(slide)).toContain("<h1>Function body</h1>");
+  });
+
+  it("rejects async function bodies in the sync API with an actionable error", async () => {
+    const slide = { ...deck.slides[0], render: async () => jsx("p", { children: "Async body" }) };
+    expect(() => renderCompiledSlide(slide)).toThrow("requires renderCompiledSlideAsync()");
+    expect(await renderCompiledSlideAsync(slide)).toContain("<p>Async body</p>");
+    const nestedAsync = {
+      ...deck.slides[0],
+      render: () => jsx(async () => jsx("p", { children: "Nested async" }), {}),
+    };
+    expect(() => renderCompiledSlide(nestedAsync)).toThrow("Use the async rendering API");
+    expect(await renderCompiledSlideAsync(nestedAsync)).toContain("Nested async");
+    expect(() =>
+      renderCompiledSlide({
+        ...slide,
+        render: async () => {
+          throw new Error("Rejected render");
+        },
+      }),
+    ).toThrow("requires renderCompiledSlideAsync()");
+    await Promise.resolve();
+  });
+
+  it("fails explicitly for a build summary mistakenly passed as a runtime slide", async () => {
+    const summary = { index: 0, meta: { meta: {} }, modulePath: "generated/slide-0.ts" };
+    expect(() => renderCompiledSlide(summary as never)).toThrow("compileDecks() returns build information only");
+    await expect(renderCompiledSlideAsync(summary as never)).rejects.toThrow(
+      "compileDecks() returns build information only",
+    );
+  });
+
   it("exposes Fire without a built-in Fragment authoring component", () => {
     expect(builtInSlideComponents.Fire).toBeDefined();
     expect("Fragment" in builtInSlideComponents).toBe(false);

@@ -12,7 +12,9 @@ declare module "node:fs/promises" {
   export function writeFile(path: string, data: Uint8Array): Promise<void>;
   export function mkdir(path: string, options: { recursive: true }): Promise<void>;
   export function mkdtemp(prefix: string): Promise<string>;
-  export function rm(path: string, options: { recursive: boolean; force: boolean }): Promise<void>;
+  export function realpath(path: string): Promise<string>;
+  export function rename(oldPath: string, newPath: string): Promise<void>;
+  export function rm(path: string, options: { recursive?: boolean; force: boolean }): Promise<void>;
 }
 
 declare module "node:fs" {
@@ -30,6 +32,7 @@ declare module "node:fs" {
 
 declare module "node:path" {
   export function join(...paths: string[]): string;
+  export function dirname(path: string): string;
   export function relative(from: string, to: string): string;
   export function resolve(...paths: string[]): string;
 }
@@ -38,13 +41,24 @@ declare module "node:os" {
   export function tmpdir(): string;
 }
 
+declare module "node:module" {
+  export function createRequire(path: string): { resolve(id: string): string };
+}
+
 declare module "node:url" {
+  export function pathToFileURL(path: string): URL;
   export function fileURLToPath(url: URL): string;
 }
 
 declare const process: {
+  execPath: string;
   cwd(): string;
   env: {
     NODE_ENV?: string;
   };
 };
+
+
+declare module "node:child_process" {
+  export function execFile(command: string, args: string[], options: { cwd: string }, callback: (error: Error | null, stdout: string, stderr: string) => void): void;
+}

@@ -11,7 +11,7 @@ describe("serveDecksClientEntry", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/javascript");
-    expect(response.headers.get("cache-control")).toBe("public, max-age=300");
+    expect(response.headers.get("cache-control")).toBe("no-cache");
     expect(await response.text()).toBe("console.log('deck');");
   });
 });

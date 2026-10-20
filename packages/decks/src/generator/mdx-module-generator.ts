@@ -32,6 +32,7 @@ import { remarkCodeHighlight, remarkDeckSyntax } from "./mdx/syntax";
 export type { LinkCardOgpMetadata } from "./mdx/ogp";
 
 export interface CompileMdxModuleDecksInput {
+  cwd?: string;
   root: string;
   outDir: string;
   mountPath?: string;
@@ -63,6 +64,8 @@ export interface GeneratedSlideModule {
 }
 
 export interface GeneratedMdxModuleDecks {
+  clientCode?: string;
+  markdownIslands?: { id: string; modulePath: string; hydrate: string }[];
   decks: GeneratedModuleDeck[];
   routerModule: string;
 }

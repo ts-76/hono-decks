@@ -13,7 +13,8 @@ export function serveDecksClientEntry(
     const headers: Record<string, string> = {
       "content-type": options.contentType ?? "text/javascript; charset=utf-8",
     };
-    const cacheControl = options.cacheControl ?? "public, max-age=300";
+    // The generated URL is stable while its content changes during editing/deploys.
+    const cacheControl = options.cacheControl ?? "no-cache";
     if (cacheControl !== false) headers["cache-control"] = cacheControl;
     return c.body(clientEntry, 200, headers);
   };

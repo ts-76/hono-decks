@@ -10,6 +10,8 @@ export const DEFAULT_DECKS_CONFIG_FILE = "hono-decks.config.ts";
 export interface LoadedDecksConfig<E extends Env = any> {
   path: string;
   config: DecksConfig<E>;
+  /** Absolute config inputs, including imported local settings. */
+  dependencies: string[];
   root: string;
   outDir: string;
   ogpCacheFile?: string;
@@ -21,7 +23,9 @@ export async function loadDecksConfig<E extends Env = any>(input: {
 }): Promise<LoadedDecksConfig<E>> {
   const path = resolve(input.cwd, input.configFile ?? DEFAULT_DECKS_CONFIG_FILE);
   if (!existsSync(path)) {
-    throw new Error(`Config file not found: ${input.configFile ?? DEFAULT_DECKS_CONFIG_FILE}. Run \`hono-decks init\` first.`);
+    throw new Error(
+      `Config file not found: ${input.configFile ?? DEFAULT_DECKS_CONFIG_FILE}. Run \`hono-decks init\` first.`,
+    );
   }
 
   const result = await build({
@@ -32,6 +36,7 @@ export async function loadDecksConfig<E extends Env = any>(input: {
     platform: "node",
     target: "node20",
     write: false,
+    metafile: true,
     logLevel: "silent",
     alias: {
       "hono-decks": resolveRuntimeEntry(),
@@ -40,16 +45,20 @@ export async function loadDecksConfig<E extends Env = any>(input: {
   const source = result.outputFiles[0]?.text;
   if (!source) throw new Error(`Could not load config file: ${path}`);
 
-  const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(source)}#${Date.now()}`) as {
+  const module = (await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(source)}#${Date.now()}`)) as {
     default?: DecksConfig<E>;
   };
   const config = module.default;
   if (!config || typeof config !== "object") throw new Error(`Config must have a default export: ${path}`);
   if (typeof config.mountPath !== "string") throw new Error(`Config mountPath must be a string: ${path}`);
 
+  if (config.build?.markdown !== undefined && config.build.markdown !== "void")
+    throw new Error('Config build.markdown must be "void".');
+
   return {
     path,
     config,
+    dependencies: Object.keys(result.metafile!.inputs).map((inputPath) => resolve(input.cwd, inputPath)),
     root: config.build?.root ?? "decks",
     outDir: config.build?.outDir ?? "src/generated",
     ogpCacheFile: config.build?.ogpCacheFile,

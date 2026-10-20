@@ -1598,6 +1598,16 @@ describe("decksRouter", () => {
     expect(printHtml).toContain(".deck-local-theme{color:cyan}");
   });
 
+  it("omits the generated client entry on explicitly static decks while preserving app overrides", async () => {
+    const source = manifestDeckSource({ decks: [{ ...deck, clientEntryRequired: false }] });
+    const app = new Hono();
+    app.route("/slides", decksRouter({ source, clientEntryAsset: "console.log('islands');" }));
+    expect(await (await app.request("/slides/deck1/render")).text()).not.toContain("/_assets/client.js");
+    const custom = new Hono();
+    custom.route("/slides", decksRouter({ source, clientEntry: "/custom.js", clientEntryAsset: "unused" }));
+    expect(await (await custom.request("/slides/deck1/render")).text()).toContain('src="/custom.js"');
+  });
+
   it("serves an embedded client entry asset from the mounted router", async () => {
     const app = new Hono();
     app.route(
@@ -1614,7 +1624,7 @@ describe("decksRouter", () => {
     expect(renderHtml).toContain('<script type="module" src="/slides/_assets/client.js"></script>');
     expect(asset.status).toBe(200);
     expect(asset.headers.get("content-type")).toContain("text/javascript");
-    expect(asset.headers.get("cache-control")).toBe("public, max-age=300");
+    expect(asset.headers.get("cache-control")).toBe("no-cache");
     expect(await asset.text()).toBe("console.log('deck client');");
   });
 

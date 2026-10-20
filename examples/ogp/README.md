@@ -12,7 +12,7 @@ The bundled Atkinson Hyperlegible OTF files are loaded from `assets/fonts/`, so 
 
 ## Flow
 
-1. `scripts/compile.ts` calls the public `compileDecks()` Node API and receives the compiled manifest.
+1. `scripts/compile.ts` calls the public `compileDecks()` Node API and receives deck metadata and generated-module paths.
 2. Title, description, author, and slug are read from each non-draft deck.
 3. `createDeckPaths(mountPath, slug).ogImage` selects the output path, such as `public/decks/welcome/og.png`.
 4. Satori and resvg create the PNG only when its bytes changed.

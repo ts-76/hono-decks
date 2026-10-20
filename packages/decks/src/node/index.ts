@@ -8,6 +8,8 @@ export {
 export type {
   BuildDeckManifestFromFileSystemInput,
   CompileDecksInput,
+  CompileDecksResult,
+  DeckBuildSummary,
   WriteDeckComponentRegistryModuleInput,
   WriteDeckManifestModuleInput,
   WriteDecksRouterModuleInput,

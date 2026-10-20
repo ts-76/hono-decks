@@ -56,6 +56,18 @@ Keep other bindings, assets, routes, and compatibility flags intact. Run `wrangl
 
 ## Existing Vite or HonoX application
 
+Prefer `hono-decks init --framework hono` for an existing Hono + Vite app or
+`hono-decks init --framework honox` for HonoX. Init connects routing and adds
+automatic compilation while preserving existing settings and scripts. Use
+normal `dev`/`build`; no separate compile command is needed. Its facade imports
+`decks` from `virtual:hono-decks` and references `hono-decks/vite-env` types.
+Vite generates code in memory and needs no output directory. HonoX's generated
+file keeps route discovery in the app; `withHonoXDecks()` from `hono-decks/honox`
+merges routes, preserves options, and detects static/dynamic/catch-all conflicts.
+Config imports are watched, and init respects Vite's `BASE_URL` for the dev client. The CLI/manual
+filesystem integration remains available. Use the manual
+integration below for unsupported app shapes or an already configured app.
+
 Add the plugin to the existing config rather than replacing other plugins:
 
 ```ts

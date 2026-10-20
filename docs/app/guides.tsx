@@ -657,7 +657,7 @@ const recipes = (locale: Locale): Guide => {
     content: <>
       <section id="ogp">
         <h2>{isJa ? "SatoriでOGP画像をビルド時に保存する" : "Save OGP images at build time with Satori"}</h2>
-        <p>{isJa ? <>Browser Renderingを使わず、<code>compileDecks()</code>が返すデッキ情報からSatoriでSVGを、resvgで1200×630のPNGを生成できます。画像生成はNode.js側のビルドスクリプトに置くため、Workerの実行時コードやhono-decks本体に依存を追加する必要はありません。</> : <>Generate an SVG with Satori and a 1200×630 PNG with resvg from the manifest returned by <code>compileDecks()</code>, without Browser Rendering. Keep image generation in a Node build script so neither the Worker runtime nor hono-decks core gains these dependencies.</>}</p>
+        <p>{isJa ? <>Browser Renderingを使わず、<code>compileDecks()</code>が返すデッキ情報からSatoriでSVGを、resvgで1200×630のPNGを生成できます。画像生成はNode.js側のビルドスクリプトに置くため、Workerの実行時コードやhono-decks本体に依存を追加する必要はありません。</> : <>Generate an SVG with Satori and a 1200×630 PNG with resvg from the deck metadata returned by <code>compileDecks()</code>, without Browser Rendering. Keep image generation in a Node build script so neither the Worker runtime nor hono-decks core gains these dependencies.</>}</p>
         <CodeBlock label="hono-decks.config.ts" locale={locale} code={`export default defineDecksConfig({
   mountPath: "/decks",
   router: {

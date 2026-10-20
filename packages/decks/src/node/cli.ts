@@ -34,6 +34,10 @@ interface InitCommandOptions {
   configFile?: string;
   out?: string;
   generated?: string;
+  framework?: "void" | "hono" | "honox";
+  entry?: string;
+  install?: boolean;
+  adapter?: string;
 }
 
 const USAGE = `Usage:
@@ -45,6 +49,10 @@ Commands:
   compile, build   Compile decks using the shared config.
 
 Options:
+  --install                Install missing dependencies for --framework void.
+  --adapter <specifier>    Compatible Hono Markdown adapter version or tarball; requires --install.
+  --framework <name>       Vite integration: hono, honox, or void.
+  --entry <path>           Hono app entry for --framework hono; otherwise auto-detect.
   --config <path>          Config file. Default: hono-decks.config.ts
   --out <path>             Facade output for init. Default: src/decks.ts
   --generated <path>       Generated module import for init. Default: ./generated/decks
@@ -88,6 +96,7 @@ export async function runHonoDecksCli(input: RunHonoDecksCliInput): Promise<RunH
       out: loaded.outDir,
       mountPath: loaded.config.mountPath,
       ogpCacheFile: loaded.ogpCacheFile,
+      markdown: loaded.config.build?.markdown,
       refreshOgp: parsed.options.refreshOgp,
     });
     stdout(`Compiled ${manifest.decks.length} decks to ${loaded.outDir}`);
@@ -106,12 +115,14 @@ export async function runHonoDecksCli(input: RunHonoDecksCliInput): Promise<RunH
   }
 }
 
-async function watchAndCompile(input: RunHonoDecksCliInput & {
-  root: string;
-  configPath: string;
-  compile(): Promise<{ root: string; configPath: string }>;
-  stderr(line: string): void;
-}): Promise<void> {
+async function watchAndCompile(
+  input: RunHonoDecksCliInput & {
+    root: string;
+    configPath: string;
+    compile(): Promise<{ root: string; configPath: string }>;
+    stderr(line: string): void;
+  },
+): Promise<void> {
   const watchFileSystem = input.watchFileSystem ?? watch;
   let watchedRoot = input.root;
   let deckWatcher: { close(): void };
@@ -174,6 +185,26 @@ async function runInitCommand(
     return { exitCode: 1 };
   }
 
+  if (parsed.options.framework) {
+    try {
+      const { initializeVite } = await import("./init-vite");
+      const sampleSlug = await initializeVite(
+        input.cwd,
+        parsed.options.framework,
+        parsed.options.configFile,
+        parsed.options.entry,
+        parsed.options.install ? { adapter: parsed.options.adapter } : undefined,
+      );
+      stdout(
+        `Initialized ${parsed.options.framework} decks at /slides/${sampleSlug}. Run your usual dev or build command; no manual compile is needed.`,
+      );
+      return { exitCode: 0 };
+    } catch (error) {
+      stderr(error instanceof Error ? error.message : String(error));
+      return { exitCode: 1 };
+    }
+  }
+
   const configFile = normalizeOutputFile(parsed.options.configFile ?? DEFAULT_DECKS_CONFIG_FILE);
   const out = normalizeOutputFile(parsed.options.out ?? "src/decks.ts");
   try {
@@ -221,16 +252,45 @@ function parseInitArgs(args: string[]): { options: InitCommandOptions; error?: s
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     if (arg === "--help" || arg === "-h") return { options, help: true };
-    if (arg === "--config" || arg === "--out" || arg === "--generated") {
+    if (arg === "--install") {
+      options.install = true;
+      continue;
+    }
+    if (
+      arg === "--adapter" ||
+      arg === "--config" ||
+      arg === "--out" ||
+      arg === "--generated" ||
+      arg === "--framework" ||
+      arg === "--entry"
+    ) {
       const value = args[index + 1];
       if (!value || value.startsWith("--")) return { options, error: `Missing value for ${arg}` };
+      if (arg === "--framework") {
+        if (value !== "void" && value !== "hono" && value !== "honox")
+          return { options, error: `Unsupported framework: ${value}. Expected hono, honox, or void.` };
+        options.framework = value;
+      }
+      if (arg === "--adapter") options.adapter = value;
       if (arg === "--config") options.configFile = value;
+      if (arg === "--entry") options.entry = value;
       if (arg === "--out") options.out = value;
       if (arg === "--generated") options.generated = value;
       index += 1;
       continue;
     }
     return { options, error: `Unknown option: ${arg}` };
+  }
+  if ((options.install && options.framework !== "void") || (options.adapter && !options.install))
+    return { options, error: "--install requires --framework void; --adapter also requires --install." };
+  if (options.entry && options.framework !== "hono") {
+    return { options, error: "--entry requires --framework hono." };
+  }
+  if (options.framework && (options.out || options.generated)) {
+    return {
+      options,
+      error: "Framework init uses virtual modules; --out and --generated are only supported by generic init.",
+    };
   }
   return { options };
 }
@@ -289,7 +349,10 @@ function normalizeOutputFile(path: string): string {
 }
 
 function normalizePath(path: string): string {
-  return path.replaceAll("\\", "/").replace(/^\.\/+/, "").replace(/\/+/g, "/");
+  return path
+    .replaceAll("\\", "/")
+    .replace(/^\.\/+/, "")
+    .replace(/\/+/g, "/");
 }
 
 function dirname(path: string): string {

@@ -280,7 +280,7 @@ export function Counter() {
       expect(output).toContain('"publicPath": "/slides/deck1/assets/my%20image%231.svg"');
       expect(output).toContain('"publicPath": "/slides/deck1/assets/plain.svg"');
       expect(output).toContain('"body": new Uint8Array([1, 2, 3])');
-      expect(output).toContain("withClientComponentIds(Components_deck1");
+      expect(output).toContain("withClientComponentIds(Components_0");
       expect(output).toMatch(/"Counter": "Counter__deck1_[a-z0-9]+"/);
 
       const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.ts"), "utf8");

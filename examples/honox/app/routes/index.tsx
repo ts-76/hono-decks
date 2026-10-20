@@ -85,13 +85,13 @@ export default createRoute((c) => {
         <p>
           {isJa ? (
             <>
-              HonoXがページ、ナビゲーション、SEOを担当し、<code>app/routes/decks/index.ts</code>が生成済みのdeck
+              HonoXがページ、ナビゲーション、SEOを担当し、<code>hono-decks.config.ts</code>の公開パス設定から deck
               routerをマウントします。
             </>
           ) : (
             <>
-              HonoX owns pages, navigation, and SEO while <code>app/routes/decks/index.ts</code> mounts the generated
-              deck router.
+              HonoX owns pages, navigation, and SEO while <code>hono-decks.config.ts</code> determines where the
+              generated deck router is mounted.
             </>
           )}
         </p>
