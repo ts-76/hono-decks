@@ -29,13 +29,26 @@ const initialPackage = JSON.parse(await readFile(join(app, "package.json"), "utf
 for (const name of ["markdown-exit", "yaml", "markdown-it-container", "@shikijs/transformers"])
   delete initialPackage.dependencies[name];
 if (packageManager === "pnpm" && process.env.HONO_MARKDOWN_PACKAGE) {
-  await writeFile(join(app, "pnpm-workspace.yaml"), `overrides:\n  '@ts-76/hono-markdown': ${JSON.stringify(`file:${resolve(process.env.HONO_MARKDOWN_PACKAGE)}`)}\n`);
+  await writeFile(
+    join(app, "pnpm-workspace.yaml"),
+    `overrides:\n  '@ts-76/hono-markdown': ${JSON.stringify(`file:${resolve(process.env.HONO_MARKDOWN_PACKAGE)}`)}\n`,
+  );
 }
 await writeFile(join(app, "package.json"), JSON.stringify(initialPackage, null, 2) + "\n");
 try {
-  run(packageManager, packageManager === "pnpm"
-    ? ["add", "--ignore-scripts", join(root, packed[0].filename)]
-    : ["install", "--ignore-scripts", "--no-audit", "--no-fund", ...(process.env.HONO_MARKDOWN_PACKAGE ? [resolve(process.env.HONO_MARKDOWN_PACKAGE)] : []), join(root, packed[0].filename)]);
+  run(
+    packageManager,
+    packageManager === "pnpm"
+      ? ["add", "--ignore-scripts", join(root, packed[0].filename)]
+      : [
+          "install",
+          "--ignore-scripts",
+          "--no-audit",
+          "--no-fund",
+          ...(process.env.HONO_MARKDOWN_PACKAGE ? [resolve(process.env.HONO_MARKDOWN_PACKAGE)] : []),
+          join(root, packed[0].filename),
+        ],
+  );
 } catch (error) {
   console.error(error.stdout, error.stderr);
   throw error;
@@ -140,6 +153,8 @@ const { chromium } = require("playwright");
 const browser = await chromium.launch({ headless: true });
 const evidence = {
   node: process.version,
+  packageManager,
+  commonDependencyIsolated: packageManager === "pnpm",
   root,
   failedBuildPreserved: true,
   compilerExcludedFromRuntime: true,
@@ -156,11 +171,15 @@ const evidence = {
 };
 async function check(mode, port) {
   if (mode === "dev") await rm(join(app, "src/generated"), { recursive: true, force: true });
-  const server = spawn(packageManager, ["run", mode, ...(packageManager === "npm" ? ["--"] : []), "--port", String(port), "--strictPort"], {
-    cwd: app,
-    stdio: ["ignore", "pipe", "pipe"],
-    detached: true,
-  });
+  const server = spawn(
+    packageManager,
+    ["run", mode, ...(packageManager === "npm" ? ["--"] : []), "--port", String(port), "--strictPort"],
+    {
+      cwd: app,
+      stdio: ["ignore", "pipe", "pipe"],
+      detached: true,
+    },
+  );
   let log = "";
   server.stdout.on("data", (chunk) => {
     log += chunk;
