@@ -1,10 +1,10 @@
 # Void Hono Markdown consumer
 
 This standalone fixture uses real package tarballs. It is not a workspace member.
-It requires Node 24.21.0, the changed `hono-decks` package, and an adapter package
-with the new public `void-plugin-hono-jsx/markdown/compiler` export. The currently
-published adapter 0.3.0 does not include that export; build and pack the adapter
-checkout for this fixture. No registry publication is performed by verification.
+It requires Node 24.21.0 and `void-plugin-hono-jsx@^0.4.0` with its standalone
+compiler and client exports. Pack the selected adapter checkout (or download the
+published package archive) for this fixture. No registry publication is performed
+by verification.
 
 From the hono-decks repository, after building both packages:
 
