@@ -23,7 +23,7 @@ async function fixture(packageManager?: string) {
     "vite",
     "hono",
     "hono-decks",
-    "void-plugin-hono-jsx@^0.4.0",
+    "void-plugin-hono-jsx",
     "markdown-exit",
     "yaml",
     "markdown-it-container",
@@ -80,6 +80,21 @@ describe("Void dependency installation", () => {
       }
     });
   }
+
+  it("selects the published adapter range when it is missing", async () => {
+    const cwd = await fixture("npm@11.0.0");
+    try {
+      await rm(join(cwd, "node_modules/void-plugin-hono-jsx"), { recursive: true, force: true });
+      await installVoidDependencies(cwd, {
+        run: async (_command, args) => {
+          expect(args).toContain("void-plugin-hono-jsx@^0.4.0");
+          await stub(cwd, "void-plugin-hono-jsx");
+        },
+      });
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
 
   it("detects lockfiles and rejects ambiguous or unsupported managers before installing", async () => {
     const cwd = await fixture();
