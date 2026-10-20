@@ -359,7 +359,9 @@ async function assertRuntimeGraph(dir) {
       const map = JSON.parse(await readFile(path, "utf8"));
       assert.ok(
         !map.sources.some((source) =>
-          /(?:@mdx-js|remark-|shiki\/|@babel\/parser|init-vite|compile-decks)/.test(source),
+          /(?:@mdx-js|remark-|shiki\/|@babel\/parser|init-vite|compile-decks)/.test(
+            source.split("/node_modules/").at(-1),
+          ),
         ),
         path,
       );

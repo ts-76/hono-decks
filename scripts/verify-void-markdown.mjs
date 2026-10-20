@@ -139,7 +139,7 @@ async function assertBuildGraph(dir) {
       assert.ok(
         !map.sources.some((source) =>
           /(?:@mdx-js|remark-|markdown-exit|@shikijs|shiki\/|hono-pages\/src\/plugins|void-plugin-hono-jsx\/dist\/plugins)/.test(
-            source,
+            source.split("/node_modules/").at(-1),
           ),
         ),
         `Compiler in runtime graph: ${path}`,
