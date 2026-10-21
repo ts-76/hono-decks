@@ -270,13 +270,13 @@ copy 可能な Worker example は JSONC の Wrangler config、current compatibil
 
 ## Maintainer release flow
 
-`main` へ入った Conventional Commits をもとに、GitHub Actions が `hono-decks` を npm へ公開します。`packages/decks/package.json` には最新の公開versionを記載し、同じversionのGit tagをsemantic-releaseの基準にします。0.x の間は `feat` をminor release、`fix` と `perf` をpatch releaseとして扱います。`BREAKING CHANGE`はVer1の境界を示すために予約し、最初のmajor releaseである`1.0.0`へ進めます。CIはpull requestで`bun run check`、Release workflowは`main`で同じ確認と`bun run smoke:package:compat`を通した後にsemantic-releaseを実行します。
+`main`に入ったConventional Commitsをもとに、GitHub Actionsが`hono-decks`をnpmへ公開します。semantic-releaseは最新のリリースタグと、それ以降のコミットから次のバージョンを決めます。`feat`はマイナー、`fix`と`perf`はパッチ、破壊的変更はメジャーリリースになります。`fix(ci)`はリリースの対象外です。PRでは`bun run check`を実行し、`main`のRelease workflowでは同じ確認と`bun run smoke:package:compat`を通した後に公開します。
 
-Ver1のreleaseを開始するときは、`main`上でsemantic-releaseが解析するcommit messageに、Conventional Commitsの`feat!:`（scope付きは`feat(scope)!:`）または`BREAKING CHANGE:` footerを残します。squash mergeではPR本文だけに依存せず、merge画面で最終的なsquash commit messageにmarkerが残っていることを確認してください。
+破壊的変更を公開するときは、最終コミットのメッセージに`feat!:`（scope付きは`feat(scope)!:`）または`BREAKING CHANGE:` footerを残してください。squash mergeではPR本文だけでなく、最終的なコミットメッセージにこの指定があることを確認します。
 
-現在の公開基準は `hono-decks@0.5.0` と `v0.5.0` です。`scripts/verify-release-baseline.mjs` が、package.jsonのversionに対応するtagがcheckout済みの履歴にあることを確認します。基準tagがない間、Release workflowは検証だけを行い、公開を安全にスキップします。Release workflowでは、宣言したVite 6・7・8のpeer rangeに対して`bun run smoke:package:compat`も実行します。
+リポジトリ内の`packages/decks/package.json`には、過去の公開バージョンが残る場合があります。semantic-releaseは公開用の作業環境でこの値を更新します。`scripts/verify-release-baseline.mjs`は、ソースに記載されたバージョンと同じタグが履歴にあることを確認します。タグがない場合、Release workflowは検証だけを行い、公開をスキップします。現在の公開版は[npm](https://www.npmjs.com/package/hono-decks)または[GitHub Releases](https://github.com/ts-76/hono-decks/releases)で確認してください。Release workflowでは、Vite 6・7・8との互換性を`bun run smoke:package:compat`で検証します。
 
-Ver1のrelease commitを`main`へmergeする前に、次のbrowserとPDFの手動チェックを実行してください。merge後にGitHub Actionsが自動実行するのは`bun run check`と`bun run smoke:package:compat`で、これらのbrowser/PDFチェックは現時点では自動実行しません。両コマンドには`agent-browser`のChromium binaryが必要で、PDF previewの検証にはPopplerまたはmacOS Quick Lookも必要です。準備方法は[basic exampleのlocal smoke checks](examples/basic/README.md#local-smoke-checks)を参照してください。
+ブラウザーとPDF出力の手動確認には、次のコマンドを使います。Release workflowでは`bun run check`と`bun run smoke:package:compat`を実行しますが、これらのブラウザー・PDFチェックは自動実行しません。両コマンドには`agent-browser`のChromium binaryが必要で、PDF previewの検証にはPopplerまたはmacOS Quick Lookも必要です。準備方法は[basic exampleのlocal smoke checks](examples/basic/README.md#local-smoke-checks)を参照してください。
 
 ```bash
 bun run smoke:viewport
