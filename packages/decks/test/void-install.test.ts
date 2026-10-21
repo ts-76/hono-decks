@@ -87,7 +87,7 @@ describe("Void dependency installation", () => {
       await rm(join(cwd, "node_modules/void-plugin-hono-jsx"), { recursive: true, force: true });
       await installVoidDependencies(cwd, {
         run: async (_command, args) => {
-          expect(args).toContain("void-plugin-hono-jsx@^0.5.0");
+          expect(args).toContain("void-plugin-hono-jsx@^0.6.0");
           await stub(cwd, "void-plugin-hono-jsx");
         },
       });

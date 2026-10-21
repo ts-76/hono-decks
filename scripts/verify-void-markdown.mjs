@@ -10,7 +10,7 @@ const repo = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const adapter = process.env.VOID_HONO_PACKAGE;
 const packageManager = process.env.CONSUMER_PACKAGE_MANAGER ?? "npm";
 assert.ok(["npm", "pnpm"].includes(packageManager));
-if (!adapter) throw new Error("Set VOID_HONO_PACKAGE to the built adapter tarball with /markdown/compiler.");
+// Omit VOID_HONO_PACKAGE to verify the default public adapter selected by init.
 const root = await mkdtemp(join(tmpdir(), "hono-decks-void-markdown-"));
 const app = join(root, "app");
 await cp(join(repo, "fixtures/void-markdown"), app, { recursive: true });
@@ -58,9 +58,23 @@ const deckPackage = JSON.parse(await readFile(join(app, "node_modules/hono-decks
 const cli = join(app, "node_modules/hono-decks", deckPackage.bin["hono-decks"]);
 const originalPackage = await readFile(join(app, "package.json"), "utf8");
 assert.equal(await readFile(join(app, "node_modules/markdown-exit/package.json"), "utf8").catch(() => null), null);
-console.log(run(process.execPath, [cli, "init", "--framework", "void", "--install", "--adapter", resolve(adapter)]));
+console.log(
+  run(process.execPath, [
+    cli,
+    "init",
+    "--framework",
+    "void",
+    "--install",
+    ...(adapter ? ["--adapter", resolve(adapter)] : []),
+  ]),
+);
 const installedPackage = JSON.parse(await readFile(join(app, "package.json"), "utf8"));
 assert.ok(installedPackage.dependencies["void-plugin-hono-jsx"]);
+if (!adapter) {
+  assert.equal(installedPackage.dependencies["void-plugin-hono-jsx"], "^0.6.0");
+  const installed = JSON.parse(await readFile(join(app, "node_modules/void-plugin-hono-jsx/package.json"), "utf8"));
+  assert.match(installed.version, /^0\.6\./);
+}
 if (packageManager === "pnpm") {
   // The app declares only the host adapter; its isolated dependency is private.
   assert.equal(installedPackage.dependencies["@ts-76/hono-markdown"], undefined);

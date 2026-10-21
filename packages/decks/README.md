@@ -68,9 +68,9 @@ npm run dev
 npm run build
 ~~~
 
-This integration requires `void-plugin-hono-jsx@^0.5.0` or a compatible adapter
-with the `/markdown/compiler` and `/markdown/client` exports. `--install` selects
-the supported adapter range. Without `--install`, also install the optional Markdown peers:
+This integration requires an adapter with the `/markdown/compiler` and
+`/markdown/client` exports. New installations default to `void-plugin-hono-jsx@^0.6.0`;
+`--install` preserves an already installed compatible adapter. Without `--install`, also install the optional Markdown peers:
 `markdown-exit@^1.3.0 yaml@^2.9.1 markdown-it-container@^4.0.0 shiki@^4.5.0 @shikijs/transformers@^4.5.0`.
 The verified host versions are Void 1.1.11, Vite 8.3.4, and Hono 4.13.13.
 
@@ -465,7 +465,7 @@ At this level, the application owns the mount path, source policy, and option me
 ## Void Hono Markdown
 
 Set `build.markdown: "void"` in `hono-decks.config.ts` to opt into `.md` decks
-alongside MDX. This requires `void-plugin-hono-jsx@^0.5.0` with its standalone compiler and client exports.
+alongside MDX. This requires `void-plugin-hono-jsx@^0.6.0` with its standalone compiler and client exports.
 See the [Void consumer fixture](https://github.com/ts-76/hono-decks/tree/main/fixtures/void-markdown)
 for package verification, Void middleware hosting, supported syntax and limitations.
 

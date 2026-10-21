@@ -69,8 +69,9 @@ npm run dev
 npm run build
 ```
 
-この連携には `void-plugin-hono-jsx@^0.5.0` の standalone compiler／client export
-が必要です。`--install` は対応範囲のアダプターを選びます。
+この連携には standalone compiler／client export を持つアダプターが必要です。
+新規インストールの既定値は `void-plugin-hono-jsx@^0.6.0` です。
+`--install` は、インストール済みの互換アダプターを維持します。
 `--install` を省略する場合は、Markdown 用の任意 peer も必要です：
 `markdown-exit@^1.3.0 yaml@^2.9.1 markdown-it-container@^4.0.0 shiki@^4.5.0 @shikijs/transformers@^4.5.0`。
 動作確認した組み合わせは Void 1.1.11、Vite 8.3.4、Hono 4.13.13 です。
