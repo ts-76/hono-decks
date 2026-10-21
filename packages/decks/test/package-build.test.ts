@@ -203,7 +203,7 @@ describe("package build metadata", () => {
     expect(japaneseReadme).not.toContain("root `README.md` を参照");
   });
 
-  it("documents how to preserve the Ver1 release marker through squash merges", async () => {
+  it("documents how to preserve breaking-release markers through squash merges", async () => {
     const [readme, japaneseReadme] = await Promise.all([
       readFile(join(repositoryRoot, "README.md"), "utf8"),
       readFile(join(repositoryRoot, "README.ja.md"), "utf8"),
@@ -211,10 +211,7 @@ describe("package build metadata", () => {
 
     for (const [documentation, markers] of [
       [readme, ["feat!:", "BREAKING CHANGE:", "squash", "final squash commit message", "smoke:package:compat"]],
-      [
-        japaneseReadme,
-        ["feat!:", "BREAKING CHANGE:", "squash", "最終的なsquash commit message", "smoke:package:compat"],
-      ],
+      [japaneseReadme, ["feat!:", "BREAKING CHANGE:", "squash", "最終的なコミットメッセージ", "smoke:package:compat"]],
     ] as const) {
       for (const marker of markers) {
         expect(documentation, marker).toContain(marker);
@@ -222,7 +219,7 @@ describe("package build metadata", () => {
     }
   });
 
-  it("documents the manual browser and PDF release gate before the merge", async () => {
+  it("documents manual browser and PDF verification separately from CI publication", async () => {
     const [readme, japaneseReadme] = await Promise.all([
       readFile(join(repositoryRoot, "README.md"), "utf8"),
       readFile(join(repositoryRoot, "README.ja.md"), "utf8"),
@@ -232,10 +229,10 @@ describe("package build metadata", () => {
       [
         readme,
         [
-          "Before merging a Ver1 release commit",
+          "For manual browser and PDF verification",
           "bun run smoke:viewport",
           "bun run smoke:pdf",
-          "does not currently run these browser/PDF checks",
+          "these browser/PDF checks are not currently automated",
           "does not call `/export.pdf` or Cloudflare Browser Run",
           "smoke:browser-run",
           "protected `browser-run-smoke` environment",
@@ -244,10 +241,10 @@ describe("package build metadata", () => {
       [
         japaneseReadme,
         [
-          "`main`へmergeする前に",
+          "ブラウザーとPDF出力の手動確認",
           "bun run smoke:viewport",
           "bun run smoke:pdf",
-          "browser/PDFチェックは現時点では自動実行しません",
+          "ブラウザー・PDFチェックは自動実行しません",
           "`/export.pdf`やCloudflare Browser Runは呼びません",
           "smoke:browser-run",
           "protectedな`browser-run-smoke` environment",
