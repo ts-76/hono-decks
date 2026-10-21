@@ -1,19 +1,19 @@
 # Void Hono Markdown consumer
 
 This standalone fixture uses real package tarballs. It is not a workspace member.
-It requires Node 24.21.0 and `void-plugin-hono-jsx@^0.4.0` with its standalone
-compiler and client exports. Pack the selected adapter checkout (or download the
-published package archive) for this fixture. No registry publication is performed
-by verification.
+It requires Node 24.21.0 and `void-plugin-hono-jsx@^0.6.0` with its standalone
+compiler and client exports. By default, verification lets init install the
+published adapter. No registry publication is performed by verification.
 
-From the hono-decks repository, after building both packages:
+From the hono-decks repository, after building hono-decks:
 
 ```sh
-VOID_HONO_PACKAGE=/absolute/path/to/void-plugin-hono-jsx.tgz node scripts/verify-void-markdown.mjs
+node scripts/verify-void-markdown.mjs
 ```
 
-The verifier installs both tarballs and the fixture's pinned dependencies into a
-temporary directory, runs `init --framework void --install --adapter <tarball>`, then cold `npm run build`
+The verifier installs the hono-decks tarball and the fixture's pinned dependencies into a
+temporary directory, runs `init --framework void --install`, verifies the generated
+`^0.6.0` adapter dependency, then cold `npm run build`
 and cold `npm run dev` without a preceding compile, and checks dev/preview in Chromium.
 It starts with missing Markdown dependencies, verifies automatic installation, and tests all four island policies, independent state, context, CSS, and component edits. It also runs separate CLI failure/rollback checks. A non-root Vite asset base
 checks development-client loading and reloads. Changing an imported mount-path
@@ -21,6 +21,10 @@ settings file during dev switches Markdown and MDX routes and their asset URLs,
 then restores the mount before preview.
 It retains that consumer and its evidence.json for inspection. Install Chromium
 with Playwright if it is not already available. This does not deploy to Cloudflare.
+
+To test a local adapter instead, set
+`VOID_HONO_PACKAGE=/absolute/path/to/void-plugin-hono-jsx.tgz`; the verifier then
+passes `--adapter <tarball>` explicitly.
 
 For manual authoring, copy this fixture to an empty directory and install the
 local package tarballs with `npm install /path/decks.tgz /path/adapter.tgz`.

@@ -85,7 +85,7 @@ export async function installVoidDependencies(cwd: string, options: VoidInstallO
     specs.push(`hono-decks@${requested}`);
   }
   if (options.adapter || missing("void-plugin-hono-jsx/markdown/compiler")) {
-    let adapter = options.adapter ?? "void-plugin-hono-jsx@^0.5.0";
+    let adapter = options.adapter ?? "void-plugin-hono-jsx@^0.6.0";
     if (/^\d+\./.test(adapter)) adapter = "void-plugin-hono-jsx@" + adapter;
     else if (modernYarn && (adapter.endsWith(".tgz") || adapter.startsWith("file:")))
       adapter = "void-plugin-hono-jsx@file:" + resolve(cwd, adapter.replace(/^file:/, ""));
