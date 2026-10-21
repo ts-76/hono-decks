@@ -9,7 +9,7 @@ Hono と Cloudflare Workers 上で MDX のスライドを配信するための�
 既存のアプリに `hono-decks` をインストールし、構成に合わせて初期設定します。
 
 ```sh
-npm install hono-decks
+npm install hono-decks@latest
 
 # Hono＋Vite
 npx hono-decks init --framework hono
@@ -21,6 +21,8 @@ npx hono-decks init --framework honox
 npm run dev
 npm run build
 ```
+
+新規導入では`@latest`で現在の公開版を選びます。同じ環境を再現する場合は、動作確認したバージョンを明示してください。
 
 どちらも、既存の Vite 設定を保持して自動コンパイルを登録し、
 `hono-decks.config.ts`、`src/decks.ts`、サンプルの

@@ -9,7 +9,7 @@ hono-decks serves MDX slide decks from Hono applications and Cloudflare Workers.
 Install hono-decks in an existing app and choose its integration:
 
 ~~~sh
-npm install hono-decks
+npm install hono-decks@latest
 
 # Hono + Vite
 npx hono-decks init --framework hono
@@ -21,6 +21,8 @@ npx hono-decks init --framework honox
 npm run dev
 npm run build
 ~~~
+
+For a new app, `@latest` selects the current published release. To reproduce a setup, replace it with the exact version you have verified.
 
 Both modes preserve the existing Vite config while adding automatic compilation,
 create `hono-decks.config.ts`, `src/decks.ts`, and a sample
