@@ -87,6 +87,42 @@ describe("Void dependency installation", () => {
       await rm(join(cwd, "node_modules/void-plugin-hono-jsx"), { recursive: true, force: true });
       await installVoidDependencies(cwd, {
         run: async (_command, args) => {
+          expect(args).toContain("void-plugin-hono-jsx@^0.7.0");
+          await stub(cwd, "void-plugin-hono-jsx");
+        },
+      });
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
+  for (const version of ["1.1.11", "1.2.1"]) {
+    it(`preserves the installed Void ${version} host and app scripts`, async () => {
+      const cwd = await fixture();
+      try {
+        const file = join(cwd, "node_modules/void/package.json");
+        await writeFile(file, JSON.stringify({ ...JSON.parse(await readFile(file, "utf8")), version }));
+        const before = await readFile(join(cwd, "package.json"), "utf8");
+        await installVoidDependencies(cwd, {
+          run: async () => {
+            throw new Error("must not reinstall");
+          },
+        });
+        expect(await readFile(join(cwd, "package.json"), "utf8")).toBe(before);
+      } finally {
+        await rm(cwd, { recursive: true, force: true });
+      }
+    });
+  }
+
+  it("selects the legacy adapter when an existing Void 1.1 host has no adapter", async () => {
+    const cwd = await fixture();
+    try {
+      const file = join(cwd, "node_modules/void/package.json");
+      await writeFile(file, JSON.stringify({ ...JSON.parse(await readFile(file, "utf8")), version: "1.1.11" }));
+      await rm(join(cwd, "node_modules/void-plugin-hono-jsx"), { recursive: true, force: true });
+      await installVoidDependencies(cwd, {
+        run: async (_command, args) => {
           expect(args).toContain("void-plugin-hono-jsx@^0.6.0");
           await stub(cwd, "void-plugin-hono-jsx");
         },
@@ -95,6 +131,27 @@ describe("Void dependency installation", () => {
       await rm(cwd, { recursive: true, force: true });
     }
   });
+
+  for (const version of ["1.1.10", "1.2.0", "1.3.0", "2.0.0", "1.2.1-beta.1"]) {
+    it(`rejects unverified Void ${version} before package changes`, async () => {
+      const cwd = await fixture();
+      try {
+        const file = join(cwd, "node_modules/void/package.json");
+        await writeFile(file, JSON.stringify({ ...JSON.parse(await readFile(file, "utf8")), version }));
+        const before = await readFile(join(cwd, "package.json"), "utf8");
+        await expect(
+          installVoidDependencies(cwd, {
+            run: async () => {
+              throw new Error("must not install");
+            },
+          }),
+        ).rejects.toThrow("incompatible");
+        expect(await readFile(join(cwd, "package.json"), "utf8")).toBe(before);
+      } finally {
+        await rm(cwd, { recursive: true, force: true });
+      }
+    });
+  }
 
   it("detects lockfiles and rejects ambiguous or unsupported managers before installing", async () => {
     const cwd = await fixture();

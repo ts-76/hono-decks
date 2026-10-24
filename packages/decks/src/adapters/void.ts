@@ -1,6 +1,6 @@
 /** Dependency policy of the Void preset, outside the deck compiler. */
 export const voidDependencies = [
-  ["void", "void@>=1.1.11 <1.2.0"],
+  ["void", "void@>=1.2.1 <1.3.0"],
   ["vite", "vite@^8.0.16"],
   ["hono", "hono@^4.13.13"],
   ["markdown-exit", "markdown-exit@^1.3.0"],
