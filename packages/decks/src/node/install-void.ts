@@ -46,6 +46,7 @@ export async function installVoidDependencies(cwd: string, options: VoidInstallO
     }
   };
   const required = voidDependencies;
+  let legacyVoid = false;
   for (const [id, spec] of required) {
     if (missing(id!)) continue;
     const version = await installedVersion(require.resolve(id!), id!);
@@ -54,11 +55,18 @@ export async function installVoidDependencies(cwd: string, options: VoidInstallO
       const value = version.match(/^(\d+)\.(\d+)\.(\d+)$/);
       const min = minimum.slice(1).map(Number);
       const current = value?.slice(1).map(Number);
-      if (!current || current[0] !== min[0] || (id === "void" && current[1] !== 1) || compare(current, min) < 0) {
+      if (
+        !current ||
+        current[0] !== min[0] ||
+        (id === "void"
+          ? !((current[1] === 1 && current[2]! >= 11) || (current[1] === 2 && current[2]! >= 1))
+          : compare(current, min) < 0)
+      ) {
         throw new Error(
           `Installed ${id}@${version} is incompatible with ${spec}. Update it explicitly before --install.`,
         );
       }
+      if (id === "void") legacyVoid = current[1] === 1;
     }
   }
   const specs = required.filter(([id]) => missing(id!)).map(([, spec]) => spec!);
@@ -85,7 +93,7 @@ export async function installVoidDependencies(cwd: string, options: VoidInstallO
     specs.push(`hono-decks@${requested}`);
   }
   if (options.adapter || missing("void-plugin-hono-jsx/markdown/compiler")) {
-    let adapter = options.adapter ?? "void-plugin-hono-jsx@^0.6.0";
+    let adapter = options.adapter ?? `void-plugin-hono-jsx@${legacyVoid ? "^0.6.0" : "^0.7.0"}`;
     if (/^\d+\./.test(adapter)) adapter = "void-plugin-hono-jsx@" + adapter;
     else if (modernYarn && (adapter.endsWith(".tgz") || adapter.startsWith("file:")))
       adapter = "void-plugin-hono-jsx@file:" + resolve(cwd, adapter.replace(/^file:/, ""));
