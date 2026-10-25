@@ -71,10 +71,12 @@ npm run build
 ~~~
 
 This integration requires an adapter with the `/markdown/compiler` and
-`/markdown/client` exports. New installations default to `void-plugin-hono-jsx@^0.7.0`;
+`/markdown/client` exports. New installations default to `void-plugin-hono-jsx@^0.9.1`;
 `--install` preserves an already installed compatible adapter. Without `--install`, also install the optional Markdown peers:
-`markdown-exit@^1.3.0 yaml@^2.9.1 markdown-it-container@^4.0.0 shiki@^4.5.0 @shikijs/transformers@^4.5.0`.
-The verified host versions are Void 1.2.1, Vite 8.3.4, and Hono 4.13.13 on Node >=24.22.1 <25. Existing Void 1.1.11 apps keep their compatible 0.6 adapter; if it is missing, init selects 0.6 rather than forcing a host upgrade. Adapter 0.7 retains the documented [Void/Cloudflare dependency risks](https://github.com/ts-76/void-plugin-hono-jsx/blob/v0.7.0/docs/dependency-security.md).
+`yaml@^2.9.1 shiki@^4.5.0 @shikijs/transformers@^4.5.0`.
+
+With `@ts-76/hono-markdown` 0.2.1 or newer, parser dependencies are installed automatically. Do not add `markdown-exit` or `markdown-it-container` to new apps. Existing Void 1.1 apps using adapter 0.6 retain automatic installation of its legacy parser peers.
+The verified host versions are Void 1.2.1, Vite 8.3.4, and Hono 4.13.13 on Node >=24.22.1 <25. Existing Void 1.1.11 apps keep their compatible 0.6 adapter; if it is missing, init selects 0.6 rather than forcing a host upgrade. Adapter 0.9 retains the documented [Void/Cloudflare dependency risks](https://github.com/ts-76/void-plugin-hono-jsx/blob/v0.9.0/docs/dependency-security.md).
 
 `--install` selects npm/pnpm/Yarn/Bun from packageManager or lockfiles and installs
 missing dependencies. Incompatible installed versions require an explicit update;
@@ -467,7 +469,7 @@ At this level, the application owns the mount path, source policy, and option me
 ## Void Hono Markdown
 
 Set `build.markdown: "void"` in `hono-decks.config.ts` to opt into `.md` decks
-alongside MDX. This requires `void-plugin-hono-jsx@^0.7.0` with its standalone compiler and client exports.
+alongside MDX. This requires `void-plugin-hono-jsx@^0.9.1` with its standalone compiler and client exports.
 See the [Void consumer fixture](https://github.com/ts-76/hono-decks/tree/main/fixtures/void-markdown)
 for package verification, Void middleware hosting, supported syntax and limitations.
 

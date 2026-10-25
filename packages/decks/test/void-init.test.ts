@@ -152,9 +152,7 @@ async function fixture(): Promise<string> {
     "vite",
     "hono",
     "void-plugin-hono-jsx",
-    "markdown-exit",
     "yaml",
-    "markdown-it-container",
     "shiki",
     "@shikijs/transformers",
   ]) {

@@ -72,11 +72,13 @@ npm run build
 ```
 
 この連携には standalone compiler／client export を持つアダプターが必要です。
-新規インストールの既定値は `void-plugin-hono-jsx@^0.7.0` です。
+新規インストールの既定値は `void-plugin-hono-jsx@^0.9.1` です。
 `--install` は、インストール済みの互換アダプターを維持します。
 `--install` を省略する場合は、Markdown 用の任意 peer も必要です：
-`markdown-exit@^1.3.0 yaml@^2.9.1 markdown-it-container@^4.0.0 shiki@^4.5.0 @shikijs/transformers@^4.5.0`。
-動作確認した組み合わせは Node >=24.22.1 <25、Void 1.2.1、Vite 8.3.4、Hono 4.13.13 です。既存のVoid 1.1.11アプリでは互換性のある0.6アダプターを維持し、未導入の場合も0.6を選択します。0.7では[Void／Cloudflare依存の既知リスク](https://github.com/ts-76/void-plugin-hono-jsx/blob/v0.7.0/docs/dependency-security.md)が残ります。
+`yaml@^2.9.1 shiki@^4.5.0 @shikijs/transformers@^4.5.0`。
+
+新しい導入では `@ts-76/hono-markdown` 0.2.1以降がパーサー2パッケージを自動導入します。利用者側で `markdown-exit`・`markdown-it-container` を追加する必要はありません。既存Void 1.1用の0.6アダプターでは従来のpeer依存をinitが補完します。
+動作確認した組み合わせは Node >=24.22.1 <25、Void 1.2.1、Vite 8.3.4、Hono 4.13.13 です。既存のVoid 1.1.11アプリでは互換性のある0.6アダプターを維持し、未導入の場合も0.6を選択します。0.9では[Void／Cloudflare依存の既知リスク](https://github.com/ts-76/void-plugin-hono-jsx/blob/v0.9.0/docs/dependency-security.md)が残ります。
 
 `--install` は npm／pnpm／Yarn／Bun を packageManager または lockfile から判定し、
 不足する依存だけを追加します。互換性のない既存バージョンは自動更新せずエラーにします。

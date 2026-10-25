@@ -1,4 +1,4 @@
-import { voidDependencies } from "../adapters/void";
+import { legacyMarkdownDependencies, voidDependencies } from "../adapters/void";
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
@@ -45,8 +45,9 @@ export async function installVoidDependencies(cwd: string, options: VoidInstallO
       return true;
     }
   };
-  const required = voidDependencies;
-  let legacyVoid = false;
+  const hostVersion = missing("void") ? undefined : await installedVersion(require.resolve("void"), "void");
+  let legacyVoid = /^1\.1\./.test(hostVersion ?? "");
+  const required = [...voidDependencies, ...(legacyVoid ? legacyMarkdownDependencies : [])];
   for (const [id, spec] of required) {
     if (missing(id!)) continue;
     const version = await installedVersion(require.resolve(id!), id!);
@@ -93,7 +94,7 @@ export async function installVoidDependencies(cwd: string, options: VoidInstallO
     specs.push(`hono-decks@${requested}`);
   }
   if (options.adapter || missing("void-plugin-hono-jsx/markdown/compiler")) {
-    let adapter = options.adapter ?? `void-plugin-hono-jsx@${legacyVoid ? "^0.6.0" : "^0.7.0"}`;
+    let adapter = options.adapter ?? `void-plugin-hono-jsx@${legacyVoid ? "^0.6.0" : "^0.9.1"}`;
     if (/^\d+\./.test(adapter)) adapter = "void-plugin-hono-jsx@" + adapter;
     else if (modernYarn && (adapter.endsWith(".tgz") || adapter.startsWith("file:")))
       adapter = "void-plugin-hono-jsx@file:" + resolve(cwd, adapter.replace(/^file:/, ""));
