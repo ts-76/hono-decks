@@ -30,7 +30,7 @@ jobs:
           fetch-depth: 0
       - uses: voidzero-dev/setup-vp@250f29ce396baf5e8f24498e17c0dfdebabc26eb # v1.15.0
         with:
-          node-version: "24"
+          node-version: "24.22.1"
           cache: true
           run-install: false
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
@@ -38,7 +38,7 @@ jobs:
           bun-version: 1.3.13
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24
+          node-version: "24.22.1"
           registry-url: https://registry.npmjs.org
       - name: Detect release baseline
         id: baseline
@@ -57,9 +57,16 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run check
       - run: bun run smoke:package:compat
-      - name: Upgrade npm for trusted publishing
+      - name: Install the fixed publisher and lock the tested package contents
         if: steps.baseline.outputs.ready == 'true'
-        run: npm install --global npm@latest
+        run: |
+          node scripts/release/install-publisher.mjs
+      - name: Verify and enable the isolated publisher
+        if: steps.baseline.outputs.ready == 'true'
+        run: |
+          node --test scripts/release/*.test.mjs
+          node scripts/release/check-publisher.mjs
+          node scripts/release/enable-publisher.mjs
       - name: Disable npm workspace detection for release
         if: steps.baseline.outputs.ready == 'true'
         run: bun run scripts/disable-npm-workspaces-for-release.mjs
@@ -69,3 +76,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
+      - name: Preserve the exact published archive
+        if: always() && steps.baseline.outputs.ready == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: published-hono-decks-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: artifacts/release/
+          if-no-files-found: warn
