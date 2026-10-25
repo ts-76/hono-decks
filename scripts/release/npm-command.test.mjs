@@ -6,7 +6,7 @@ import path from "node:path";
 import { assertTestedContents, publishRequest, withoutUserConfig } from "./npm-command.mjs";
 import { publisherEnvironment } from "./publisher.mjs";
 
-test("only the tested package, registry and latest tag may be published", () => {
+await test("only the tested package, registry and latest tag may be published", () => {
   const root = mkdtempSync(path.join(tmpdir(), "publisher-options-"));
   try {
     const args = [
@@ -45,7 +45,7 @@ test("only the tested package, registry and latest tag may be published", () => 
   }
 });
 
-test("semantic-release may change only the package version after quality checks", () => {
+await test("semantic-release may change only the package version after quality checks", () => {
   const tested = {
     "package/package.json": { name: "hono-decks", version: "0.5.0", files: ["dist"] },
     "package/dist/bin.js": "same",
@@ -73,7 +73,7 @@ test("semantic-release may change only the package version after quality checks"
   }
 });
 
-test("publication subprocess inherits only fresh OIDC context and isolated configuration", () => {
+await test("publication subprocess inherits only fresh OIDC context and isolated configuration", () => {
   const env = publisherEnvironment(
     {
       PATH: "/bin",
