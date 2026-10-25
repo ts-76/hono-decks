@@ -86,14 +86,15 @@ for (const [framework, devPort, productionPort] of [
         "--no-audit",
         "--no-fund",
         resolve(process.env.HONO_MARKDOWN_PACKAGE),
-        "markdown-exit@1.3.0",
         "yaml@2.9.1",
-        "markdown-it-container@4.0.0",
         "shiki@4.5.0",
         "@shikijs/transformers@4.5.0",
       ],
       app,
     );
+    const manifest = JSON.parse(await readFile(join(app, "package.json"), "utf8"));
+    for (const name of ["markdown-exit", "markdown-it-container"])
+      assert.equal(manifest.dependencies?.[name] ?? manifest.devDependencies?.[name], undefined);
     assert.throws(() => require.resolve("void"));
     assert.throws(() => require.resolve("void-plugin-hono-jsx/markdown/compiler"));
     await writeFile(

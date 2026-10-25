@@ -24,9 +24,7 @@ async function fixture(packageManager?: string) {
     "hono",
     "hono-decks",
     "void-plugin-hono-jsx",
-    "markdown-exit",
     "yaml",
-    "markdown-it-container",
     "shiki",
     "@shikijs/transformers",
   ])
@@ -57,16 +55,16 @@ describe("Void dependency installation", () => {
     it(`installs only missing peers with ${declaration}`, async () => {
       const cwd = await fixture(declaration);
       try {
-        await rm(join(cwd, "node_modules/markdown-exit"), { recursive: true, force: true });
+        await rm(join(cwd, "node_modules/yaml"), { recursive: true, force: true });
         const calls: unknown[] = [];
         await installVoidDependencies(cwd, {
           run: async (command, args, path) => {
             calls.push([command, args, path]);
             expect(command).toBe(manager);
             expect(args).toContain(flag);
-            expect(args.at(-1)).toBe("markdown-exit@^1.3.0");
+            expect(args.at(-1)).toBe("yaml@^2.9.1");
             expect(args).not.toContain("hono@^4.13.13");
-            await stub(cwd, "markdown-exit");
+            await stub(cwd, "yaml");
           },
         });
         expect(calls).toHaveLength(1);
@@ -87,7 +85,7 @@ describe("Void dependency installation", () => {
       await rm(join(cwd, "node_modules/void-plugin-hono-jsx"), { recursive: true, force: true });
       await installVoidDependencies(cwd, {
         run: async (_command, args) => {
-          expect(args).toContain("void-plugin-hono-jsx@^0.7.0");
+          expect(args).toContain("void-plugin-hono-jsx@^0.9.1");
           await stub(cwd, "void-plugin-hono-jsx");
         },
       });
@@ -102,6 +100,10 @@ describe("Void dependency installation", () => {
       try {
         const file = join(cwd, "node_modules/void/package.json");
         await writeFile(file, JSON.stringify({ ...JSON.parse(await readFile(file, "utf8")), version }));
+        if (version === "1.1.11") {
+          await stub(cwd, "markdown-exit");
+          await stub(cwd, "markdown-it-container");
+        }
         const before = await readFile(join(cwd, "package.json"), "utf8");
         await installVoidDependencies(cwd, {
           run: async () => {
@@ -124,6 +126,10 @@ describe("Void dependency installation", () => {
       await installVoidDependencies(cwd, {
         run: async (_command, args) => {
           expect(args).toContain("void-plugin-hono-jsx@^0.6.0");
+          expect(args).toContain("markdown-exit@^1.3.0");
+          expect(args).toContain("markdown-it-container@^4.0.0");
+          await stub(cwd, "markdown-exit");
+          await stub(cwd, "markdown-it-container");
           await stub(cwd, "void-plugin-hono-jsx");
         },
       });

@@ -327,7 +327,11 @@ export default defineDecksConfig({
 });
 ```
 
-このブリッジは共通の `@ts-76/hono-markdown` を利用します。共通パッケージはVoid・Viteに依存しません。このアダプターを選ぶ場合はコンパイラー用peer dependenciesも導入します。
+このブリッジは共通の `@ts-76/hono-markdown` を利用します。共通パッケージはVoid・Viteに依存しません。
+
+新しい導入では `@ts-76/hono-markdown` 0.2.1以降がパーサー2パッケージを自動導入します。利用者側で `markdown-exit`・`markdown-it-container` を追加する必要はありません。既存Void 1.1用の0.6アダプターでは従来のpeer依存をinitが補完します。
+
+このアダプターを選ぶ場合はコンパイラー用peer dependenciesも導入します。
 既存の `markdown: "void"` は、既に導入したVoidアダプターの公開コンパイラーAPIでも引き続き動作します。
 `init --framework void --install` の導入手順、既存のdev／buildコマンドは変わりません。
 

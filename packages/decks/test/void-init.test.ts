@@ -147,17 +147,7 @@ async function fixture(): Promise<string> {
     join(cwd, "vite.config.ts"),
     'import { voidPlugin } from "void";\nexport default { plugins: [voidPlugin()], base: "/" };\n',
   );
-  for (const name of [
-    "void",
-    "vite",
-    "hono",
-    "void-plugin-hono-jsx",
-    "markdown-exit",
-    "yaml",
-    "markdown-it-container",
-    "shiki",
-    "@shikijs/transformers",
-  ]) {
+  for (const name of ["void", "vite", "hono", "void-plugin-hono-jsx", "yaml", "shiki", "@shikijs/transformers"]) {
     const dir = join(cwd, "node_modules", name);
     await mkdir(dir, { recursive: true });
     await writeFile(

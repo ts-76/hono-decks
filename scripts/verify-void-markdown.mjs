@@ -26,6 +26,7 @@ const packed = JSON.parse(
 );
 console.log(`Consumer: ${app}`);
 const initialPackage = JSON.parse(await readFile(join(app, "package.json"), "utf8"));
+if (adapter) initialPackage.dependencies.void = "1.2.1";
 for (const name of ["markdown-exit", "yaml", "markdown-it-container", "@shikijs/transformers"])
   delete initialPackage.dependencies[name];
 if (packageManager === "pnpm" && process.env.HONO_MARKDOWN_PACKAGE) {
@@ -57,7 +58,8 @@ const require = createRequire(join(app, "package.json"));
 const deckPackage = JSON.parse(await readFile(join(app, "node_modules/hono-decks/package.json"), "utf8"));
 const cli = join(app, "node_modules/hono-decks", deckPackage.bin["hono-decks"]);
 const originalPackage = await readFile(join(app, "package.json"), "utf8");
-assert.equal(await readFile(join(app, "node_modules/markdown-exit/package.json"), "utf8").catch(() => null), null);
+if (!process.env.HONO_MARKDOWN_PACKAGE)
+  assert.equal(await readFile(join(app, "node_modules/markdown-exit/package.json"), "utf8").catch(() => null), null);
 console.log(
   run(process.execPath, [
     cli,
@@ -80,7 +82,14 @@ if (packageManager === "pnpm") {
   assert.equal(installedPackage.dependencies["@ts-76/hono-markdown"], undefined);
   assert.throws(() => require.resolve("@ts-76/hono-markdown"));
 }
-assert.ok(require.resolve("markdown-exit"));
+if (adapter) {
+  for (const name of ["markdown-exit", "markdown-it-container"])
+    assert.equal(installedPackage.dependencies?.[name] ?? installedPackage.devDependencies?.[name], undefined);
+  const adapterRequire = createRequire(require.resolve("void-plugin-hono-jsx/markdown/compiler"));
+  const commonRequire = createRequire(adapterRequire.resolve("@ts-76/hono-markdown/compiler"));
+  assert.ok(commonRequire.resolve("markdown-exit"));
+  assert.ok(commonRequire.resolve("markdown-it-container"));
+} else assert.ok(require.resolve("markdown-exit"));
 const settingsPath = join(app, "deck-settings.ts");
 await writeFile(settingsPath, 'export const mountPath = "/slides";\n');
 const configPath = join(app, "hono-decks.config.ts");
