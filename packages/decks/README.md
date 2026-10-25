@@ -76,7 +76,7 @@ This integration requires an adapter with the `/markdown/compiler` and
 `yaml@^2.9.1 shiki@^4.5.0 @shikijs/transformers@^4.5.0`.
 
 With `@ts-76/hono-markdown` 0.2.1 or newer, parser dependencies are installed automatically. Do not add `markdown-exit` or `markdown-it-container` to new apps. Existing Void 1.1 apps using adapter 0.6 retain automatic installation of its legacy parser peers.
-The verified host versions are Void 1.2.1, Vite 8.3.4, and Hono 4.13.13 on Node >=24.22.1 <25. Existing Void 1.1.11 apps keep their compatible 0.6 adapter; if it is missing, init selects 0.6 rather than forcing a host upgrade. Adapter 0.9 retains the documented [Void/Cloudflare dependency risks](https://github.com/ts-76/void-plugin-hono-jsx/blob/v0.9.0/docs/dependency-security.md).
+The verified host versions are Void 1.2.1, Vite 8.3.4, and Hono 4.13.13 on Node >=24.22.1 <25. Existing Void 1.1.11 apps keep their compatible 0.6 adapter; if it is missing, init selects 0.6 rather than forcing a host upgrade. Adapter 0.9.1 retains the documented [Void/Cloudflare dependency risks](https://github.com/ts-76/void-plugin-hono-jsx/blob/v0.9.1/docs/dependency-security.md).
 
 `--install` selects npm/pnpm/Yarn/Bun from packageManager or lockfiles and installs
 missing dependencies. Incompatible installed versions require an explicit update;
