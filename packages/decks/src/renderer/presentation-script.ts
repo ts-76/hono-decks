@@ -5,9 +5,16 @@ export function renderLiveReloadScript(eventsPath: string, nonce?: string): stri
   return `<script${documentNonceAttribute(nonce)}>
 (() => {
   const events = new EventSource(${JSON.stringify(eventsPath)});
+  const scriptNonce = document.currentScript?.nonce;
   let running = false;
   let pending = false;
   const selector = "[data-hono-decks-island],[data-hono-md-island]";
+  const islandUpdaters = new WeakMap();
+  const hydrators = new Set();
+  window.__honoDecksLive = {
+    register: (element, update, dispose) => islandUpdaters.set(element, { update, dispose }),
+    registerHydrator: (hydrate) => hydrators.add(hydrate),
+  };
   const clientSelector = "script[data-hono-decks-client-entry]";
   const clientText = async (url) => {
     if (!url) return "";
@@ -20,12 +27,12 @@ export function renderLiveReloadScript(eventsPath: string, nonce?: string): stri
     : Promise.resolve();
   let clientSnapshot = domReady.then(() => clientText(document.querySelector(clientSelector)?.src)).catch(() => null);
 
-  function signature(element) {
+  function signature(element, includeContext = true, includeProps = true) {
     const attributes = element.hasAttribute("data-hono-md-island")
       ? ["data-hono-md-island", "data-hono-md-hydrate", "data-hono-md-props"]
       : ["data-hono-decks-island", "data-hono-decks-props"];
-    return JSON.stringify([attributes.map((name) => element.getAttribute(name)),
-      element.closest("[data-hono-md-context]")?.getAttribute("data-hono-md-context") ?? null]);
+    return JSON.stringify([attributes.map((name) => !includeProps && name.endsWith("-props") ? null : element.getAttribute(name)),
+      includeContext ? element.closest("[data-hono-md-context]")?.getAttribute("data-hono-md-context") ?? null : null]);
   }
 
   async function update() {
@@ -43,34 +50,142 @@ export function renderLiveReloadScript(eventsPath: string, nonce?: string): stri
     if (!newSlides.length) throw new Error("Empty deck");
     // Scripts parsed from fetched HTML are inert; reload so their behavior is not lost.
     if (currentDeck.querySelector("script") || nextDeck.querySelector("script")) throw new Error("Deck contains scripts");
-    const oldIslands = oldSlides.flatMap((slide) => Array.from(slide.querySelectorAll(selector)));
+    const collect = (slides) => slides.flatMap((slide, slideIndex) =>
+      Array.from(slide.querySelectorAll(selector)).map((element, position) => ({ element, slideIndex, position })));
+    const oldItems = collect(oldSlides);
+    const newItems = collect(newSlides);
     const nextScript = next.querySelector(clientSelector);
-    const nextClient = await clientText(nextScript?.getAttribute("src"));
+    const fetchedClient = await clientText(nextScript?.getAttribute("src"));
     const previousClient = await clientSnapshot;
     if (previousClient === null) throw new Error("Initial client entry fetch failed");
-    // Changed client code cannot safely replace a running component while retaining its state.
-    if (oldIslands.length && previousClient !== nextClient) throw new Error("Client code changed");
+    // Keep the loaded registry when the last island disappears; it can dispose
+    // that island and initialize it again if it is reintroduced later.
+    const nextClient = !nextScript && !newItems.length ? previousClient : fetchedClient;
+    // A changed client bundle could contain new implementations for running islands.
+    if (oldItems.length && previousClient !== nextClient) throw new Error("Client code changed");
+    const needsEntry = !document.querySelector(clientSelector) && Boolean(nextScript);
+    if (newItems.length && !nextScript) throw new Error("New islands require a client entry");
+    if (!needsEntry && previousClient !== nextClient) throw new Error("Client code changed");
+
+    const duplicateKeys = new Set([...oldItems, ...newItems].map((item) => signature(item.element, false)));
+    for (const key of duplicateKeys) {
+      const before = oldItems.filter((item) => signature(item.element, false) === key);
+      const after = newItems.filter((item) => signature(item.element, false) === key);
+      if (before.length <= 1 && after.length <= 1) continue;
+      if (before.length !== after.length || before.some((item, index) =>
+        item.slideIndex !== after[index].slideIndex || item.position !== after[index].position))
+        throw new Error("Ambiguous duplicate islands");
+    }
     const pairs = [];
-    if (oldIslands.length && oldSlides.length !== newSlides.length) throw new Error("Slide structure changed");
-    for (let i = 0; i < oldSlides.length && i < newSlides.length; i++) {
-      const before = Array.from(oldSlides[i].querySelectorAll(selector));
-      const after = Array.from(newSlides[i].querySelectorAll(selector));
-      if (before.length !== after.length) throw new Error("Island structure changed");
-      for (let j = 0; j < before.length; j++) {
-        if (signature(before[j]) !== signature(after[j])) throw new Error("Island properties changed");
-        // Deferred Markdown islands observe their original slide. Reload rather than strand the observer.
-        if (before[j].hasAttribute("data-hono-md-island") && !before[j].hasAttribute("data-hono-md-mounted"))
-          throw new Error("Island is pending hydration");
-        pairs.push([before[j], after[j]]);
+    const remainingOld = new Set(oldItems);
+    const remainingNew = new Set(newItems);
+    function pair(oldItem, newItem) {
+      remainingOld.delete(oldItem);
+      remainingNew.delete(newItem);
+      pairs.push([oldItem, newItem]);
+    }
+    // Exact matches can move between slides. Match only unique instances so
+    // duplicate islands cannot accidentally inherit each other's state.
+    for (const oldItem of oldItems) {
+      const key = signature(oldItem.element, false);
+      const oldMatches = Array.from(remainingOld).filter((item) => signature(item.element, false) === key);
+      const newMatches = Array.from(remainingNew).filter((item) => signature(item.element, false) === key);
+      if (oldMatches.length === 1 && newMatches.length === 1) pair(oldItem, newMatches[0]);
+    }
+    // Changed props can be reconciled if there is only one island of that type.
+    for (const oldItem of Array.from(remainingOld)) {
+      const key = signature(oldItem.element, false, false);
+      const oldMatches = Array.from(remainingOld).filter((item) => signature(item.element, false, false) === key);
+      const newMatches = Array.from(remainingNew).filter((item) => signature(item.element, false, false) === key);
+      if (oldMatches.length === 1 && newMatches.length === 1 &&
+          oldItem.slideIndex === newMatches[0].slideIndex && oldItem.position === newMatches[0].position)
+        pair(oldItem, newMatches[0]);
+    }
+    // Existing duplicate instances remain safe only when their positions and
+    // identity attributes are unchanged; ambiguous structural edits reload.
+    for (const oldItem of Array.from(remainingOld)) {
+      const newItem = Array.from(remainingNew).find((item) => item.slideIndex === oldItem.slideIndex && item.position === oldItem.position);
+      if (newItem && signature(oldItem.element, false) === signature(newItem.element, false)) pair(oldItem, newItem);
+    }
+    for (const oldItem of remainingOld) {
+      const key = signature(oldItem.element, false, false);
+      if (Array.from(remainingNew).some((item) => signature(item.element, false, false) === key))
+        throw new Error("Ambiguous island identity");
+    }
+    const removals = [];
+    for (const oldItem of remainingOld) {
+      const entry = islandUpdaters.get(oldItem.element);
+      if (!entry?.dispose) throw new Error("Cannot safely dispose island");
+      removals.push(entry.dispose);
+    }
+    const updates = [];
+    let preserveSlides = false;
+    for (const [oldItem, newItem] of pairs) {
+      const before = oldItem.element;
+      const after = newItem.element;
+      const pendingMarkdown = before.hasAttribute("data-hono-md-island") && !before.hasAttribute("data-hono-md-mounted");
+      if (pendingMarkdown) {
+        if (oldSlides.length !== newSlides.length || oldItem.slideIndex !== newItem.slideIndex)
+          throw new Error("Pending island moved between slides");
+        preserveSlides = true;
+      }
+      if (signature(before, !pendingMarkdown) !== signature(after, !pendingMarkdown)) {
+        const entry = islandUpdaters.get(before);
+        if (!entry?.update || signature(before, false, false) !== signature(after, false, false))
+          throw new Error("Island properties changed");
+        const markdown = before.hasAttribute("data-hono-md-island");
+        const propsAttribute = markdown ? "data-hono-md-props" : "data-hono-decks-props";
+        const rawProps = after.getAttribute(propsAttribute) || "{}";
+        const props = JSON.parse(rawProps);
+        const context = markdown ? JSON.parse(after.closest("[data-hono-md-context]")?.getAttribute("data-hono-md-context") || "{}") : undefined;
+        updates.push([before, entry.update, propsAttribute, rawProps, markdown ? { props, context } : props]);
       }
     }
-    if (!oldIslands.length && nextDeck.querySelector(selector)) throw new Error("New islands require initialization");
-    for (const [oldIsland, newIsland] of pairs) newIsland.replaceWith(oldIsland);
+    for (const dispose of removals) dispose();
+    for (const [oldItem, newItem] of pairs) newItem.element.replaceWith(oldItem.element);
+    if (preserveSlides) {
+      for (let i = 0; i < oldSlides.length; i++) {
+        const oldSlide = oldSlides[i];
+        const newSlide = newSlides[i];
+        for (const attribute of Array.from(oldSlide.attributes)) oldSlide.removeAttribute(attribute.name);
+        for (const attribute of Array.from(newSlide.attributes)) oldSlide.setAttribute(attribute.name, attribute.value);
+        oldSlide.replaceChildren(...newSlide.childNodes);
+        newSlide.replaceWith(oldSlide);
+      }
+    }
     currentDeck.replaceChildren(...nextDeck.childNodes);
+    for (const [island, update, propsAttribute, rawProps, value] of updates) {
+      island.setAttribute(propsAttribute, rawProps);
+      update(value);
+    }
     style.textContent = nextStyle.textContent;
     document.title = next.title;
     clientSnapshot = Promise.resolve(nextClient);
     runtime.refresh();
+    if (remainingNew.size) {
+      if (needsEntry) {
+        const url = new URL(nextScript.getAttribute("src"), location.href);
+        if (url.origin !== location.origin) throw new Error("Cross-origin client entry");
+        url.searchParams.set("hono-decks-update", String(Date.now()));
+        const script = document.createElement("script");
+        script.type = "module";
+        script.setAttribute("data-hono-decks-client-entry", "");
+        if (scriptNonce) script.nonce = scriptNonce;
+        script.src = url.href;
+        await new Promise((resolve, reject) => {
+          script.onload = resolve;
+          script.onerror = () => reject(new Error("Client entry failed"));
+          document.body.appendChild(script);
+        });
+      } else {
+        for (const hydrate of hydrators) hydrate();
+      }
+      for (const item of remainingNew) {
+        const element = item.element;
+        if (!element.hasAttribute("data-hono-decks-live-mounted") && !element.hasAttribute("data-hono-md-scheduled"))
+          throw new Error("New island did not initialize");
+      }
+    }
   }
 
   async function onUpdate() {
@@ -474,12 +589,15 @@ export function renderPresentationScript(nonce?: string): string {
     await document.documentElement.requestFullscreen?.();
   }
 
+  const boundSlides = new WeakSet();
   function bindSlideClicks() {
-    slides.forEach((slide, slideIndex) => {
+    slides.forEach((slide) => {
+      if (boundSlides.has(slide)) return;
+      boundSlides.add(slide);
       slide.addEventListener("click", () => {
         if (!document.body.hasAttribute("data-overview-mode")) return;
         document.body.removeAttribute("data-overview-mode");
-        show(slideIndex);
+        show(slides.indexOf(slide));
       });
     });
   }

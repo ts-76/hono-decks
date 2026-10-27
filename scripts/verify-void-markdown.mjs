@@ -239,6 +239,25 @@ async function check(mode, port) {
     await sampleCounter.waitFor();
     await sampleCounter.click();
     await page.getByRole("button", { name: "Count: 1", exact: true }).waitFor();
+    if (mode === "dev") {
+      const welcomePath = join(app, "decks/welcome/deck.md");
+      const welcomeSource = await readFile(welcomePath, "utf8");
+      const withoutIsland = welcomeSource.replace(/<script>[\s\S]*?<\/script>\n/, "").replace("<Counter />", "Island removed");
+      assert.notEqual(withoutIsland, welcomeSource);
+      await page.evaluate(() => { window.__liveUpdateTestMarker = 40; });
+      try {
+        await writeFile(welcomePath, withoutIsland);
+        await page.getByText("Island removed", { exact: true }).waitFor({ timeout: 20000 });
+        assert.equal(await page.evaluate(() => window.__liveUpdateTestMarker), 40);
+        await writeFile(welcomePath, welcomeSource);
+        await page.getByRole("button", { name: "Count: 0", exact: true }).waitFor({ timeout: 20000 });
+        assert.equal(await page.evaluate(() => window.__liveUpdateTestMarker), 40);
+        await page.getByRole("button", { name: "Count: 0", exact: true }).click();
+        await page.getByRole("button", { name: "Count: 1", exact: true }).waitFor();
+      } finally {
+        await writeFile(welcomePath, welcomeSource);
+      }
+    }
     assert.equal((await fetch(origin + "/outside-slides")).status, 404);
     for (const suffix of ["/render", "/print", "/presenter"]) {
       const response = await fetch(origin + "/slides/demo" + suffix);
@@ -344,12 +363,87 @@ async function check(mode, port) {
     await viewerCounter.waitFor();
     await viewerCounter.click();
     assert.equal(await viewerCounter.textContent(), "first: 3");
+    if (mode === "dev") {
+      const interactivePath = join(app, "decks/interactive/deck.md");
+      const interactiveSource = await readFile(interactivePath, "utf8");
+      const currentFrame = page.frames().find((frame) => frame.url().includes("/slides/interactive/render"));
+      assert.ok(currentFrame);
+      await currentFrame.evaluate(() => { window.__liveUpdateTestMarker = 41; });
+      const renamed = interactiveSource
+        .replace("# Interactive first slide", "# Edited first slide")
+        .replace('label="first" initial="2"', 'label="renamed" initial="2"');
+      try {
+        await writeFile(interactivePath, renamed);
+        const renamedCounter = viewerFrame.locator('[data-hono-md-mounted="true"] [data-md-counter="renamed"]');
+        await renamedCounter.waitFor({ timeout: 20000 });
+        assert.equal(await renamedCounter.textContent(), "renamed: 3");
+        assert.equal(await renamedCounter.getAttribute("data-context-heading"), "Edited first slide");
+        assert.equal(await currentFrame.evaluate(() => window.__liveUpdateTestMarker), 41);
+        const reordered = renamed.replace(
+          '<Counter label="renamed" initial="2" />\n<Counter label="second" initial="7" />',
+          '<Counter label="second" initial="7" />\n<Counter label="renamed" initial="2" />\n<Counter label="added" initial="9" />',
+        );
+        assert.notEqual(reordered, renamed);
+        await writeFile(interactivePath, reordered);
+        const added = viewerFrame.locator('[data-hono-md-mounted="true"] [data-md-counter="added"]');
+        await added.waitFor({ timeout: 20000 });
+        assert.equal(await renamedCounter.textContent(), "renamed: 3");
+        assert.equal(await viewerFrame.locator('[data-md-counter="second"]').textContent(), "second: 7");
+        await added.click();
+        assert.equal(await added.textContent(), "added: 10");
+        assert.equal(await currentFrame.evaluate(() => window.__liveUpdateTestMarker), 41);
+        await writeFile(interactivePath, reordered.replace('<Counter label="second" initial="7" />\n', ""));
+        await viewerFrame.locator('[data-md-counter="second"]').waitFor({ state: "detached", timeout: 20000 });
+        assert.equal(await renamedCounter.textContent(), "renamed: 3");
+        assert.equal(await added.textContent(), "added: 10");
+        assert.equal(await currentFrame.evaluate(() => window.__liveUpdateTestMarker), 41);
+      } finally {
+        await writeFile(interactivePath, interactiveSource);
+      }
+      await viewerFrame.locator('[data-hono-md-mounted="true"] [data-md-counter="first"]').waitFor({ timeout: 20000 });
+    }
     await page.goto(origin + "/slides/another/render");
     const another = page.locator('[data-hono-md-mounted="true"] [data-md-counter="another"]');
     await another.waitFor();
     assert.equal(await another.getAttribute("data-context-title"), "Another deck context");
     await another.click();
     assert.equal(await another.textContent(), "another: 11");
+    if (mode === "dev") {
+      const legacyPath = join(app, "decks/legacy/deck.mdx");
+      const legacySource = await readFile(legacyPath, "utf8");
+      const components = join(app, "decks/legacy/components");
+      await mkdir(join(components, "client"), { recursive: true });
+      await writeFile(join(components, "index.tsx"),
+        'export const Counter = { client: true, component(p) { return <button>{p.label}: 0</button>; } };');
+      await writeFile(join(components, "client/index.tsx"),
+        '/** @jsxImportSource hono/jsx/dom */ import { useState, useEffect } from "hono/jsx/dom"; export function Counter(p) { const [n, setN] = useState(0); useEffect(() => () => { window.removedLabels = (window.removedLabels || []).concat(p.label); }, []); return <button onClick={() => setN(n + 1)}>{p.label}: {n}</button>; }');
+      const legacyWith = (items) => legacySource + "\n" + items.join("\n\n") + "\n";
+      const first = '<Counter label="First" />';
+      const second = '<Counter label="Second" />';
+      try {
+        await writeFile(legacyPath, legacyWith([first]));
+        await page.waitForFunction(async () => (await (await fetch("/slides/legacy/render")).text()).includes("data-hono-decks-island"), null, { timeout: 20000 });
+        await page.goto(origin + "/slides/legacy/render");
+        await page.getByText("First: 0", { exact: true }).click();
+        await page.getByText("First: 1", { exact: true }).waitFor();
+        await page.evaluate(() => { window.__liveUpdateTestMarker = 42; });
+        await writeFile(legacyPath, legacyWith([first.replace("First", "Renamed")]));
+        await page.getByText("Renamed: 1", { exact: true }).waitFor({ timeout: 20000 });
+        assert.equal(await page.evaluate(() => window.__liveUpdateTestMarker), 42);
+        await writeFile(legacyPath, legacyWith([first.replace("First", "Renamed"), second]));
+        await page.getByText("Second: 0", { exact: true }).waitFor({ timeout: 20000 });
+        await page.getByText("Second: 0", { exact: true }).click();
+        await page.getByText("Second: 1", { exact: true }).waitFor();
+        await writeFile(legacyPath, legacyWith([second]));
+        await page.getByText("Renamed: 1", { exact: true }).waitFor({ state: "detached", timeout: 20000 });
+        await page.waitForFunction(() => window.removedLabels?.includes("First"));
+        assert.equal(await page.evaluate(() => window.__liveUpdateTestMarker), 42);
+        assert.equal(await page.getByText("Second: 1", { exact: true }).count(), 1);
+      } finally {
+        await writeFile(legacyPath, legacySource);
+        await rm(components, { recursive: true, force: true });
+      }
+    }
     await page.goto(origin + "/slides/interactive/render");
     if (mode === "dev") {
       const counterFile = join(app, "decks/interactive/Counter.tsx");
