@@ -2,7 +2,7 @@ import { runInNewContext } from "node:vm";
 import { describe, expect, it, vi } from "vite-plus/test";
 import { renderLiveReloadScript } from "../src/renderer/presentation-script";
 
-function setup(options: { failFetch?: boolean; changedProps?: boolean; changedClient?: boolean; pending?: boolean; changedContext?: boolean; markdownMounted?: boolean; registered?: boolean } = {}) {
+function setup(options: { failFetch?: boolean; invalidHtml?: boolean; changedProps?: boolean; changedClient?: boolean; pending?: boolean; changedContext?: boolean; markdownMounted?: boolean; registered?: boolean } = {}) {
   let listener: (() => Promise<void>) | undefined;
   const oldIsland = island("counter", "1", Boolean(options.pending || options.markdownMounted), '{"headings":["old"]}', Boolean(options.markdownMounted));
   const newIsland = island("counter", options.changedProps ? "2" : "1", Boolean(options.pending || options.markdownMounted), options.changedContext ? '{"headings":["new"]}' : '{"headings":["old"]}', Boolean(options.markdownMounted));
@@ -22,7 +22,7 @@ function setup(options: { failFetch?: boolean; changedProps?: boolean; changedCl
   const next = {
     title: "Updated",
     querySelector(selector: string) {
-      if (selector === "[data-hono-decks-deck]") return newDeck;
+      if (selector === "[data-hono-decks-deck]") return options.invalidHtml ? null : newDeck;
       if (selector === "[data-hono-decks-presentation-style]") return { textContent: "new style" };
       if (selector === "script[data-hono-decks-client-entry]") return { getAttribute: () => "/entry.js" };
       return null;
@@ -106,7 +106,7 @@ describe("live deck updates", () => {
     expect(test.reload).not.toHaveBeenCalled();
   });
 
-  it.each([{ failFetch: true }, { changedProps: true }, { changedClient: true }, { markdownMounted: true, changedContext: true }])("reloads without replacing the deck when an update cannot be safely applied: %o", async (options) => {
+  it.each([{ failFetch: true }, { invalidHtml: true }, { changedProps: true }, { changedClient: true }, { markdownMounted: true, changedContext: true }])("reloads without replacing the deck when an update cannot be safely applied: %o", async (options) => {
     const test = setup(options);
     await test.update();
     expect(test.oldDeck.replaceChildren).not.toHaveBeenCalled();
@@ -115,7 +115,7 @@ describe("live deck updates", () => {
   });
 });
 
-function structure(before: string[], after: string[], options: { failHydrate?: boolean; removeEntry?: boolean } = {}) {
+function structure(before: string[], after: string[], options: { failHydrate?: boolean; removeEntry?: boolean; unsupportedAdapter?: boolean } = {}) {
   let listener: (() => Promise<void>) | undefined;
   function makeIsland(label: string) {
     let mounted = false;
@@ -153,7 +153,7 @@ function structure(before: string[], after: string[], options: { failHydrate?: b
     EventSource, DOMParser, Event, fetch, document, window, location: { href: "https://example.test/render", reload }, console,
   });
   const hydrate = vi.fn(() => { if (!options.failHydrate) newIslands.forEach((item) => item.mount()); });
-  window.__honoDecksLive!.registerHydrator(hydrate);
+  if (!options.unsupportedAdapter) window.__honoDecksLive!.registerHydrator(hydrate);
   const disposers = oldIslands.map(() => vi.fn());
   oldIslands.forEach((element, index) => window.__honoDecksLive!.register(element, vi.fn(), disposers[index]!));
   return { update: () => listener!(), oldIslands, newIslands, oldDeck, hydrate, disposers, refresh, reload };
@@ -192,6 +192,13 @@ describe("live island structure", () => {
     const test = structure(["A"], ["A", "B"], { failHydrate: true });
     await test.update();
     expect(test.hydrate).toHaveBeenCalledOnce();
+    expect(test.reload).toHaveBeenCalledOnce();
+  });
+
+  it("reloads when a custom adapter does not register a live hydrator", async () => {
+    const test = structure(["A"], ["A", "B"], { unsupportedAdapter: true });
+    await test.update();
+    expect(test.hydrate).not.toHaveBeenCalled();
     expect(test.reload).toHaveBeenCalledOnce();
   });
 

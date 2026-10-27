@@ -296,6 +296,20 @@ export default function Counter() {
               await writeFile(markdownPath, markdownSource);
             }
             await page.waitForFunction(() => document.querySelector("[data-neutral-counter]")?.getAttribute("data-title") === "Independent Markdown", null, { timeout: 20000 });
+            const componentPath = join(app, "decks/markdown/Counter.tsx");
+            const componentSource = await readFile(componentPath, "utf8");
+            const editedComponent = componentSource.replace("Count: {count}", "Updated Count: {count}");
+            assert.notEqual(editedComponent, componentSource);
+            await page.evaluate(() => { window.__liveUpdateTestMarker = 74; });
+            try {
+              await writeFile(componentPath, editedComponent);
+              await page.getByText("Updated Count: 0", { exact: true }).waitFor({ timeout: 20000 });
+              assert.equal(await page.evaluate(() => window.__liveUpdateTestMarker), undefined);
+              assert.match(page.url(), /slide=1&step=0/);
+            } finally {
+              await writeFile(componentPath, componentSource);
+            }
+            await page.getByText("Count: 0", { exact: true }).waitFor({ timeout: 20000 });
           }
         }
         await page.screenshot({ path: join(root, `${framework}-${mode}-desktop.png`) });

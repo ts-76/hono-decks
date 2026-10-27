@@ -294,7 +294,7 @@ export default defineConfig({
 });
 ```
 
-pluginはVite起動前にcompileし、deck rootと`hono-decks.config.ts`をVite watcherへ登録します。再compileに成功すると、既存のislandを安全に識別できる場合は表示ページを再読み込みせずに内容を更新します。対応するprops・Markdownコンテキストの変更、別々のislandの並べ替え・追加・削除でも状態を維持し、現在のスライド・ステップを保ちます。クライアントコードの変更や同一islandの区別がつかない場合など、安全に更新できないときは表示ページを再読み込みしてスライドとステップを復元します。このときislandの状態はリセットされます。どちらの構成でも通常の`bun run dev`だけでauthoringできます。
+pluginはVite起動前にcompileし、deck rootと`hono-decks.config.ts`をVite watcherへ登録します。再compileに成功すると、既存のislandを安全に識別できる場合は表示ページを再読み込みせずに内容を更新します。対応するprops・Markdownコンテキストの変更、別々のislandの並べ替え・追加・削除でも状態を維持し、現在のスライド・ステップを保ちます。islandの部品やその他のクライアントコードを編集すると、表示用iframeを再読み込みしてislandの状態をリセットします。viewerの枠は維持し、スライドとステップを復元します。同一islandの区別がつかない場合、アダプターが更新時の初期化に対応していない場合、取得に失敗した場合なども同じ動作になります。どちらの構成でも通常の`bun run dev`だけでauthoringできます。
 
 ## Runtime configuration
 
