@@ -294,7 +294,7 @@ export default defineConfig({
 });
 ```
 
-pluginはVite起動前にcompileし、deck rootと`hono-decks.config.ts`をVite watcherへ登録します。再compileに成功するとfull reloadを通知するため、手動更新は不要です。どちらの構成でも通常の`bun run dev`だけでauthoringできます。
+pluginはVite起動前にcompileし、deck rootと`hono-decks.config.ts`をVite watcherへ登録します。再compileに成功すると開いているスライド表示が自動更新され、viewerの枠と現在のスライド・ステップは維持されます。どちらの構成でも通常の`bun run dev`だけでauthoringできます。
 
 ## Runtime configuration
 
