@@ -297,7 +297,9 @@ describe("HonoX documentation site", () => {
 
     expect(authoring).toContain("まずサーバーコンポーネントを使う");
     expect(authoring).toContain("ブラウザ操作が必要な部品だけをIslandにする");
-    expect(authoring).toContain("<code>dev</code>実行中は、保存したMDXが自動で再コンパイル");
+    expect(authoring).toContain("保存したデッキが自動で再コンパイル");
+    expect(authoring).toContain('id="markdown-adapter"');
+    expect(authoring).toContain("Islandの状態をリセット");
     expect(configuration).toContain("ビルド対象、公開パス、実行時の挙動");
     expect(routing).toContain("はビューアー内のiframeが読み込むURL");
     expect(routing).toContain("slide</code>は1から始まるスライド番号");

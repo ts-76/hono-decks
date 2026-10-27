@@ -33,6 +33,28 @@ CommonMarkとGFM（テーブル、タスクリスト、打ち消し線、自動�
 
 </section>
 
+<section id={"markdown-adapter"}>
+
+## アダプターを使ってMarkdownを書く
+
+HonoとHonoXの標準形式はMDXです。`deck.md`を使うにはMarkdownアダプターとコンパイル用の依存関係を設定します。Voidのinitではアダプターが自動で設定されます。Hono Markdownブリッジの設定と必要なパッケージは[Markdownアダプターの説明](https://github.com/ts-76/hono-decks/blob/main/packages/decks/README.ja.md)を参照してください。
+
+Hono Markdownでは`<script>`内に相対パスのTSX・JSXをdefault importし、`island: "load"`、`"visible"`、`"idle"`、`"media:(query)"`を指定できます。Islandタグのpropsは文字列とbooleanのリテラルに限ります。任意のスクリプト、JSX式、Islandタグの子要素には対応していません。MDXでは従来どおりコンポーネントの登録と式を使えます。
+
+~~~md
+<script>
+import Counter from "./Counter.tsx" with { island: "load" };
+</script>
+---
+title: Interactive slide
+---
+# Demo
+
+<Counter label="Count" initial="2" />
+~~~
+
+</section>
+
 <section id={"metadata"}>
 
 ## デッキ全体と各スライドの設定を分ける
@@ -128,7 +150,7 @@ URLだけの行は通常のリンクになります。外部iframeを公開す�
 
 <CodeBlock filename={"Terminal"} language={"bash"} code={"npm run dev"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
-ViteまたはWranglerの`dev`実行中は、保存したMDXが自動で再コンパイルされ、成功後にブラウザへ反映されます。`npm run decks:compile`は、CIやコンパイラーだけを単独で確認するときに使います。コンパイルエラーには対象ファイルとスライド番号が表示されます。
+設定済みのViteまたはWranglerの`dev`実行中は、保存したデッキが自動で再コンパイルされます。Viteでは対応する内容の編集時に表示とIslandの状態を維持します。クライアントコードの変更時や安全に更新できない場合は表示用iframeを再読み込みし、Islandの状態をリセットして、viewerとスライド・ステップを維持します。Wranglerを直接使う場合のライブリロードはWranglerの動作に従います。CLIのファイル生成を単独で確認するときは`npx hono-decks compile`を実行します。コンパイルエラーには対象ファイルとスライド番号が表示されます。
 
 表示を確認したら、公開画面を変える場合は[ルートと画面](/docs/routing?lang=ja)、環境変数やR2を使う場合は[設定](/docs/configuration?lang=ja)へ進みます。
 

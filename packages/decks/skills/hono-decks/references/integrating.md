@@ -4,7 +4,7 @@ Use this route when adding hono-decks to an existing Hono, HonoX, Vite, Wrangler
 
 ## Preserve the build/runtime boundary
 
-The compiler and `hono-decks/node` use Node filesystem tooling. Run them in a build command. Worker runtime code imports the generated facade and root package only.
+The compiler and `hono-decks/node` use Node filesystem tooling. Run them during development or build, never in the Worker. Vite framework init uses `virtual:hono-decks`; the following generated facade applies to the CLI/file workflow.
 
 ```ts
 // src/decks.ts
@@ -81,6 +81,10 @@ export default defineConfig({
 
 For HonoX, mount the router from a HonoX route module while keeping the generated facade outside the route tree. Follow the application's established catch-all route convention.
 
+## Development updates
+
+In Vite integrations, successful source edits update the presentation in place when island identities can be matched safely, preserving supported state and the current slide/step. Client code edits reload the presentation iframe and reset island state while retaining the viewer and slide/step. Ambiguous identities, unsupported hydration, and update failures also fall back to an iframe reload. Wrangler direct mode uses its own `--live-reload`.
+
 ## Application-owned routes
 
 Use `decks.context()` to share deck lookup, draft policy, paths, and viewer configuration:
@@ -149,7 +153,7 @@ Review any application-wide CSP middleware after mounting: it must preserve the 
 
 ## Integration verification
 
-- Start the normal application dev command and confirm MDX changes recompile.
+- Start the normal application dev command and confirm deck changes recompile and appear.
 - Verify direct navigation and application links use `decks.paths`.
 - Confirm draft decks are unavailable outside development.
 - Test application-owned routes before the deck router catch-all.

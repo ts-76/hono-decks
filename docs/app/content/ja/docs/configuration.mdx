@@ -12,6 +12,8 @@ order: 3
 
 ## 4つのファイルの役割を把握する
 
+フレームワーク別のVite initはメモリ内の仮想モジュールを使うため、`build.outDir`は不要です。以下の生成ファイルと出力先は汎用CLI・ファイル生成方式の説明です。
+
 `hono-decks init`は、必須の`hono-decks.config.ts`と`src/decks.ts`を作ります。ビルド対象、公開パス、実行時の挙動は、この設定ファイルでまとめて管理します。
 
 <DefinitionList items={[{term: <><code>{"package.json"}</code></>, description: <>{"ViteまたはWranglerを使う、普段の開発コマンドを定義します。"}</>},
