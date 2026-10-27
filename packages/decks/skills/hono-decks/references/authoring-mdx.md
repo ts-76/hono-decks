@@ -1,6 +1,6 @@
 # Authoring MDX
 
-Use this route when writing or correcting a `deck.mdx` file. Start with the basic syntax, then load the advanced sections only when the requested deck needs them.
+Use this route when writing or correcting `deck.mdx` or an adapter-backed `deck.md` file. Start with the basic syntax, then load the advanced sections only when the requested deck needs them.
 
 ## Basic deck structure
 
@@ -77,7 +77,7 @@ app.route(decks.mountPath, decks.router())
 
 Local image paths are rewritten during compilation. Put deck-local files under `assets/` and use relative paths.
 
-MDX exports, expressions, and JSX are supported:
+In `.mdx`, exports, expressions, and JSX are supported:
 
 ```mdx
 export const release = "2026.07"
@@ -87,6 +87,10 @@ export const metrics = ["42% faster", "3 fewer steps"]
 
 {metrics.map((metric) => <Badge label={metric} />)}
 ```
+
+## Markdown adapter and islands
+
+`.md` decks require a configured Markdown adapter. Void init configures it; Hono and HonoX default to MDX. For Hono Markdown, a `<script>` may contain relative default TSX/JSX imports marked `with { island: "load" }` (also `visible`, `idle`, or `media:(query)`). Imported island tags accept literal string and boolean props, not JSX expressions or children; arbitrary script code is unsupported. Do not substitute MDX component-registry or expression syntax into `.md`. See the package README for setup and examples.
 
 ## Speaker notes
 
@@ -197,4 +201,4 @@ Client props may contain only strings, finite numbers, booleans, `null`, arrays,
 - Keep visible body copy sparse enough for a 32px base size.
 - Split long lists, large tables, and multi-screen code into multiple slides.
 - Add useful alt text to images and titles to embeds.
-- Compile after syntax changes and resolve all warnings instead of hiding them.
+- Confirm the application build or development compiler succeeds after syntax changes and resolve warnings.

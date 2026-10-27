@@ -22,6 +22,27 @@ Compile MDX in your local development or build environment. The Hono app imports
 
 </section>
 
+<section id={"framework-init"}>
+
+## Choose the setup for your application
+
+For an existing Hono + Vite or HonoX application, install `hono-decks` and choose its integration. For Void, use the Void command; `--install` installs missing compatible Markdown dependencies using the app's package manager. Review the CLI output if it reports an unsupported configuration or an existing integration.
+
+```sh
+npm install hono-decks
+# Choose one:
+npx hono-decks init --framework hono
+npx hono-decks init --framework honox
+npx hono-decks init --framework void --install
+npm run dev
+```
+
+Each integration preserves existing scripts and uses `virtual:hono-decks`; `dev` and `build` compile decks in memory. Open the sample URL printed by init, normally `/slides/welcome`. Hono and HonoX start with MDX; Void creates a Markdown sample with an interactive island. For supported versions, optional peer dependencies, and setup limitations, see the [package README](https://github.com/ts-76/hono-decks#readme).
+
+The steps below describe the separate **generic CLI/file workflow**, useful for manual integration and Wrangler. Its `init` defaults to `/decks` and `compile` writes generated files to disk.
+
+</section>
+
 <section id={"install"}>
 
 ## Install the package and create the config
@@ -90,7 +111,7 @@ Add the generated router to the existing Hono app.
 
 ## Integrate compilation with the existing dev command
 
-For HonoX or Vite, add the plugin to the existing Vite config. It compiles before Vite starts, regenerates modules when MDX changes, and reloads the browser after a successful compile.
+In the generic file workflow, add the plugin to the existing Vite config. It compiles before Vite starts and watches deck changes. Framework init above configures Vite automatically and uses virtual modules instead. In Vite, safe content updates preserve the presentation and supported island state; client code changes or unsafe updates reload the presentation iframe, reset island state, and restore the current slide and step. The viewer remains open.
 
 <CodeBlock filename={"vite.config.ts"} language={"typescript"} code={"import { honoDecks } from \"hono-decks/vite\"\nimport { defineConfig } from \"vite\"\n\nexport default defineConfig({\n  plugins: [honoDecks()],\n})"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
 

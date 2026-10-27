@@ -22,7 +22,7 @@ for manual integration and non-Vite applications.
 
 For an existing Void app, use `npx hono-decks init --framework void` after
 installing the compatible packages and Markdown peers described in the README.
-Use `void-plugin-hono-jsx@^0.6.0` for its standalone compiler and client exports. Init connects the existing Vite config, creates the routing
+New installs use `void-plugin-hono-jsx@^0.9.1`; existing compatible Void 1.1 apps may retain adapter 0.6. Init connects the existing Vite config, creates the routing
 middleware and a sample `.md` deck at `/slides/welcome`, and uses virtual modules without generated
 files. Use the app's normal `dev` and `build` scripts without changes or a manual
 compile. Existing `.mdx` files remain supported. Unsupported configs or existing
@@ -146,7 +146,7 @@ export default defineConfig({
 - Missing config: run `hono-decks init` or create a default-exported `hono-decks.config.ts`.
 - Missing virtual module types: reference `hono-decks/vite-env`; a dev/build or manual compile is not required for typechecking.
 - Missing generated import in the CLI/file workflow: run `hono-decks compile` before typechecking the application.
-- Deck not discovered: use `decks/<slug>/deck.mdx` or a supported single-file deck in the configured root.
+- Deck not discovered: use `decks/<slug>/deck.mdx` or a supported single-file deck in the configured root; `.md` requires a configured Markdown adapter.
 - Broken routes or assets: remove duplicated strings and use `decks.mountPath` and `decks.paths(slug)`.
 - Worker bundling Node modules: import `hono-decks/node` only from build scripts, never from Worker runtime code.
 - Lost edits after compile: move changes out of `src/generated` and into source decks or configuration.
@@ -159,4 +159,4 @@ retain manual dependency installation by omitting --install. Yarn PnP is not
 supported by the automatic installer. The generated Markdown sample includes a
 Counter.tsx island. Markdown uses relative default imports with `island: "load"`,
 `visible`, `idle`, or `media:(query)` and literal props, with no separate registry.
-Arbitrary script code/JSX expressions remain unsupported; MDX stays unchanged.
+Arbitrary script code/JSX expressions remain unsupported; MDX stays unchanged. For Hono or HonoX, MDX is the default; enable `.md` explicitly with `build.markdown: { adapter: "hono-decks/adapters/hono-markdown" }` and install the common Markdown package and its compiler peers as documented in the package README.

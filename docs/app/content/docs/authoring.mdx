@@ -33,6 +33,28 @@ Use CommonMark plus GFM tables, task lists, strikethrough, and autolinks. MDX ad
 
 </section>
 
+<section id={"markdown-adapter"}>
+
+## Use Markdown with an adapter
+
+MDX is the default for Hono and HonoX. To use `deck.md`, configure a Markdown adapter and install its compiler dependencies; Void init configures its adapter automatically. The [Markdown adapter guide](https://github.com/ts-76/hono-decks#markdown-adapters) covers the Hono Markdown bridge and package requirements.
+
+In Hono Markdown, islands use relative default TSX/JSX imports in a `<script>` block, with `island: "load"`, `"visible"`, `"idle"`, or `"media:(query)"`. Island tags accept literal string and boolean props. Arbitrary script code, JSX expressions, and children inside island tags are unsupported. MDX continues to support its own component registry and expressions.
+
+~~~md
+<script>
+import Counter from "./Counter.tsx" with { island: "load" };
+</script>
+---
+title: Interactive slide
+---
+# Demo
+
+<Counter label="Count" initial="2" />
+~~~
+
+</section>
+
 <section id={"metadata"}>
 
 ## Separate deck and slide metadata
@@ -128,7 +150,7 @@ Place `theme.css` beside `deck.mdx` to style only that deck. Start with the prov
 
 <CodeBlock filename={"Terminal"} language={"bash"} code={"npm run dev"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
 
-While the Vite or Wrangler `dev` command is running, saved MDX is recompiled automatically and the browser updates after a successful compile. Use `npm run decks:compile` in CI or when checking the compiler by itself. Compile errors identify the source file and slide number.
+While the configured Vite or Wrangler `dev` command is running, saved deck sources are recompiled automatically. With Vite, supported content edits preserve the presentation and island state; client code edits or unsafe updates reload the presentation iframe and reset island state while retaining the viewer and slide/step. Direct Wrangler live reload follows Wrangler behavior. Use `npx hono-decks compile` when checking the CLI/file compiler separately. Compile errors identify the source file and slide number.
 
 After the deck renders, continue to [routes and UI](/docs/routing?lang=en) for public surfaces or [configuration](/docs/configuration?lang=en) for bindings and R2.
 

@@ -12,6 +12,8 @@ Manage compilation and runtime behavior in one shared hono-decks.config.ts file.
 
 ## Know which file owns each setting
 
+Framework-specific Vite init uses in-memory virtual modules and does not require `build.outDir`; the generated facade and output directory below describe the generic CLI/file workflow.
+
 `hono-decks init` creates the required `hono-decks.config.ts` and `src/decks.ts`. Build input, public paths, and runtime policy live in this one config.
 
 <DefinitionList items={[{term: <><code>{"package.json"}</code></>, description: <>{"Runs the existing Vite or Wrangler development command."}</>},
