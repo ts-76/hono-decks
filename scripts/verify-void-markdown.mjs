@@ -199,6 +199,7 @@ async function check(mode, port) {
     ["run", mode, ...(packageManager === "npm" ? ["--"] : []), "--port", String(port), "--strictPort"],
     {
       cwd: app,
+      env: { ...process.env, VOID_INSPECTOR_PORT: process.env.VOID_INSPECTOR_PORT ?? "false" },
       stdio: ["ignore", "pipe", "pipe"],
       detached: true,
     },
@@ -257,6 +258,35 @@ async function check(mode, port) {
       } finally {
         await writeFile(welcomePath, welcomeSource);
       }
+    }
+    if (mode === "dev") {
+      // Simulate an adapter that hydrates initially but does not provide the
+      // optional live hydrator. The inserted island must force a safe reload.
+      const welcomePath = join(app, "decks/welcome/deck.md");
+      const welcomeSource = await readFile(welcomePath, "utf8");
+      const unsupportedPage = await context.newPage();
+      await unsupportedPage.addInitScript(() => {
+        let runtime;
+        Object.defineProperty(window, "__honoDecksLive", {
+          configurable: true,
+          get: () => runtime,
+          set(value) { value.registerHydrator = () => {}; runtime = value; },
+        });
+      });
+      try {
+        await unsupportedPage.goto(origin + "/slides/welcome/render?slide=2&step=0");
+        await unsupportedPage.locator('[data-hono-md-mounted="true"] button').waitFor();
+        await unsupportedPage.evaluate(() => { window.__unsupportedMarker = 45; });
+        const addedIsland = welcomeSource.replace("<Counter />", '<Counter />\n\n<Counter label="added" />');
+        assert.notEqual(addedIsland, welcomeSource);
+        await writeFile(welcomePath, addedIsland);
+        await unsupportedPage.waitForFunction(() => window.__unsupportedMarker === undefined && document.querySelectorAll('[data-hono-md-mounted="true"]').length === 2, null, { timeout: 20000 });
+        assert.match(unsupportedPage.url(), /slide=2&step=0/);
+      } finally {
+        await writeFile(welcomePath, welcomeSource);
+        await unsupportedPage.close();
+      }
+      await page.waitForFunction(() => document.querySelectorAll("[data-hono-md-island]").length === 1, null, { timeout: 20000 });
     }
     assert.equal((await fetch(origin + "/outside-slides")).status, 404);
     for (const suffix of ["/render", "/print", "/presenter"]) {
@@ -350,6 +380,98 @@ async function check(mode, port) {
       await page.locator('[data-md-counter="first"]').evaluate((el) => getComputedStyle(el).backgroundColor),
       "rgb(12, 34, 56)",
     );
+    if (mode === "dev") {
+      // Keep the earlier render page from consuming this separate test's
+      // edits while it is being replaced by the next presenter navigation.
+      await page.goto(origin + "/slides");
+      const deferredPath = join(app, "decks/interactive/deck.md");
+      const deferredSource = await readFile(deferredPath, "utf8");
+      const deferredPage = await context.newPage();
+      await deferredPage.setViewportSize({ width: 390, height: 844 });
+      await deferredPage.addInitScript(() => {
+        let nextId = 0;
+        const callbacks = new Map();
+        window.requestIdleCallback = (callback) => { const id = ++nextId; callbacks.set(id, callback); return id; };
+        window.cancelIdleCallback = (id) => callbacks.delete(id);
+        window.__runDeferredIdle = () => {
+          const pending = [...callbacks.values()];
+          callbacks.clear();
+          pending.forEach((callback) => callback({ didTimeout: false, timeRemaining: () => 50 }));
+        };
+      });
+      try {
+        await deferredPage.goto(origin + "/slides/interactive/render");
+        const firstDeferred = deferredPage.locator('[data-hono-md-mounted="true"] [data-md-counter="first"]');
+        await firstDeferred.waitFor();
+        await firstDeferred.click();
+        assert.equal(await firstDeferred.textContent(), "first: 3");
+        for (const label of ["idle", "media", "visible"]) {
+          assert.equal(await deferredPage.locator(`[data-md-counter="${label}"]`).evaluate((element) => element.parentElement.dataset.honoMdMounted), undefined);
+        }
+        await deferredPage.evaluate(() => {
+          window.__deferredMarker = 60;
+          window.__observedSlides = Array.from(document.querySelectorAll(".slide"));
+        });
+        const deferredEdit = deferredSource.replace("# Interactive first slide", "# Interactive first slide\n\nDeferred edit");
+        await writeFile(deferredPath, deferredEdit);
+        await deferredPage.getByText("Deferred edit", { exact: true }).waitFor({ timeout: 20000 });
+        assert.equal(await deferredPage.evaluate(() => window.__deferredMarker), 60);
+        assert.equal(await deferredPage.evaluate(() => window.__observedSlides.every((slide, index) => slide === document.querySelectorAll(".slide")[index])), true);
+        assert.equal(await firstDeferred.textContent(), "first: 3");
+        await deferredPage.evaluate(() => window.__runDeferredIdle());
+        const idleCounter = deferredPage.locator('[data-hono-md-mounted="true"] [data-md-counter="idle"]');
+        await idleCounter.waitFor({ timeout: 10000 });
+        await idleCounter.click();
+        assert.equal(await idleCounter.textContent(), "idle: 1");
+        await deferredPage.setViewportSize({ width: 1280, height: 800 });
+        const mediaCounter = deferredPage.locator('[data-hono-md-mounted="true"] [data-md-counter="media"]');
+        await mediaCounter.waitFor({ timeout: 10000 });
+        await mediaCounter.click();
+        assert.equal(await mediaCounter.textContent(), "media: 1");
+        await deferredPage.locator("h1").first().click();
+        await deferredPage.keyboard.press("ArrowRight");
+        const visibleCounter = deferredPage.locator('[data-hono-md-mounted="true"] [data-md-counter="visible"]');
+        await visibleCounter.waitFor({ timeout: 10000 });
+        await visibleCounter.click();
+        assert.equal(await visibleCounter.textContent(), "visible: 5");
+
+        // A still-pending observer cannot follow its island across slides.
+        // Verify the documented fallback and restored position in a real page.
+        await deferredPage.setViewportSize({ width: 390, height: 844 });
+        await deferredPage.goto(origin + "/slides/interactive/render");
+        await deferredPage.locator('[data-hono-md-mounted="true"] [data-md-counter="first"]').waitFor();
+        assert.equal(await deferredPage.locator('[data-md-counter="visible"]').evaluate((element) => element.parentElement.dataset.honoMdMounted), undefined);
+        await deferredPage.evaluate(() => { window.__deferredMarker = 61; });
+        const moved = deferredEdit
+          .replace('<Later label="visible" initial="4" />', "")
+          .replace('<Counter label="first" initial="2" />', '<Later label="visible" initial="4" />\n<Counter label="first" initial="2" />');
+        assert.notEqual(moved, deferredEdit);
+        await writeFile(deferredPath, moved);
+        await deferredPage.waitForFunction(() => window.__deferredMarker === undefined && document.querySelector('[data-md-counter="visible"]')?.closest(".slide")?.getAttribute("data-slide-index") === "0", null, { timeout: 20000 });
+        assert.match(deferredPage.url(), /slide=1&step=0/);
+      } finally {
+        await writeFile(deferredPath, deferredSource);
+        await deferredPage.close();
+      }
+      // The Vite worker reload can outlive the first successful response.
+      // Wait for compilation and worker reload output to settle before opening
+      // a new document for the independent viewer test.
+      let lastLog = log;
+      let quietMs = 0;
+      for (let attempt = 0; attempt < 150 && quietMs < 800; attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        if (log === lastLog) quietMs += 100;
+        else { lastLog = log; quietMs = 0; }
+      }
+      assert.ok(quietMs >= 800, "Vite worker did not settle after restoring the fixture");
+      await page.waitForFunction(async () => {
+        const response = await fetch("/slides/interactive/render");
+        if (!response.ok) return false;
+        const doc = new DOMParser().parseFromString(await response.text(), "text/html");
+        return !doc.body.textContent?.includes("Deferred edit") &&
+          doc.querySelector('[data-md-counter="visible"]')?.closest(".slide")?.getAttribute("data-slide-index") === "1";
+      }, null, { timeout: 20000 });
+    }
     await page.goto(origin + "/slides/interactive/presenter");
     const presenterFrame = page.frameLocator("iframe").first();
     await presenterFrame.locator('[data-md-counter="first"]').waitFor();
@@ -361,6 +483,9 @@ async function check(mode, port) {
     const viewerFrame = page.frameLocator("iframe").first();
     const viewerCounter = viewerFrame.locator('[data-hono-md-mounted="true"] [data-md-counter="first"]');
     await viewerCounter.waitFor();
+    const viewerDocument = page.frames().find((frame) => frame.url().includes("/slides/interactive/render"));
+    assert.ok(viewerDocument);
+    await viewerDocument.waitForFunction(() => document.querySelector('[data-md-counter="visible"]')?.closest(".slide")?.getAttribute("data-slide-index") === "1", null, { timeout: 20000 });
     await viewerCounter.click();
     assert.equal(await viewerCounter.textContent(), "first: 3");
     if (mode === "dev") {
@@ -439,6 +564,118 @@ async function check(mode, port) {
         await page.waitForFunction(() => window.removedLabels?.includes("First"));
         assert.equal(await page.evaluate(() => window.__liveUpdateTestMarker), 42);
         assert.equal(await page.getByText("Second: 1", { exact: true }).count(), 1);
+
+        // Two identical islands cannot be safely distinguished: reload rather
+        // than attaching the first instance's state to an arbitrary position.
+        await writeFile(legacyPath, legacyWith([second, second]));
+        await page.waitForFunction(() => window.__liveUpdateTestMarker === undefined && document.querySelectorAll("[data-hono-decks-island]").length === 2, null, { timeout: 20000 });
+        assert.equal(await page.getByText("Second: 0", { exact: true }).count(), 2);
+        assert.match(page.url(), /slide=1&step=0/);
+        await writeFile(legacyPath, legacyWith([second]));
+        await page.waitForFunction(() => document.querySelectorAll("[data-hono-decks-island]").length === 1, null, { timeout: 20000 });
+
+        // A registered hydrator that fails must cause a full-page fallback.
+        await page.evaluate(() => {
+          window.__liveUpdateTestMarker = 43;
+          window.__honoDecksLive.registerHydrator(() => { throw new Error("test initialization failure"); });
+        });
+        await writeFile(legacyPath, legacyWith([second, first]));
+        await page.waitForFunction(() => window.__liveUpdateTestMarker === undefined && document.querySelectorAll("[data-hono-decks-island]").length === 2, null, { timeout: 20000 });
+        await page.getByText("First: 0", { exact: true }).waitFor();
+        assert.match(page.url(), /slide=1&step=0/);
+
+        // Fetch errors and invalid HTML fall back to a document navigation.
+        for (const failure of ["network", "invalid-html"]) {
+          const routePattern = "**/slides/legacy/render**";
+          const failFetch = (route) => route.request().resourceType() !== "fetch"
+            ? route.continue()
+            : failure === "network" ? route.abort("failed") : route.fulfill({ status: 200, contentType: "text/html", body: "<html><body>invalid</body></html>" });
+          await page.route(routePattern, failFetch);
+          await page.evaluate(() => { window.__liveUpdateTestMarker = 44; });
+          try {
+            await writeFile(legacyPath, legacyWith([second, first]) + `\nFallback ${failure}\n`);
+            await page.waitForFunction((text) => window.__liveUpdateTestMarker === undefined && document.body.textContent?.includes(text), `Fallback ${failure}`, { timeout: 20000 });
+            assert.match(page.url(), /slide=1&step=0/);
+          } finally {
+            await page.unroute(routePattern, failFetch);
+          }
+        }
+
+        const presentationSource = legacySource + '\n---\n\n# Projection slide\n\n<Fire>Reveal</Fire>\n\n' + second + '\n\nPresentation before update\n';
+        await writeFile(legacyPath, presentationSource);
+        await page.getByText("Projection slide", { exact: true }).waitFor({ state: "attached", timeout: 20000 });
+        await page.goto(origin + "/slides/legacy/presenter?slide=2&step=1");
+        await page.frameLocator("iframe").first().getByText("Second: 0", { exact: true }).waitFor();
+        const presentation = page.frames().find((frame) => frame.url().includes("/slides/legacy/presentation"));
+        assert.ok(presentation);
+        await presentation.getByText("Second: 0", { exact: true }).waitFor();
+        await presentation.waitForURL(/slide=2&step=1/);
+        const popupPromise = page.waitForEvent("popup");
+        await page.locator('[data-action="openProjection"]').click();
+        const projection = await popupPromise;
+        try {
+          await projection.waitForLoadState("domcontentloaded");
+          await projection.getByText("Second: 0", { exact: true }).waitFor();
+          await projection.waitForURL(/slide=2&step=1/);
+          await page.evaluate(() => { window.__presenterMarker = 50; });
+          await presentation.evaluate(() => { window.__frameMarker = 51; });
+          await projection.evaluate(() => { window.__projectionMarker = 52; });
+          await writeFile(legacyPath, presentationSource.replace("Presentation before update", "Presentation after update"));
+          await presentation.getByText("Presentation after update", { exact: true }).waitFor({ timeout: 20000 });
+          await projection.getByText("Presentation after update", { exact: true }).waitFor({ timeout: 20000 });
+          assert.equal(await page.evaluate(() => window.__presenterMarker), 50);
+          assert.equal(await presentation.evaluate(() => window.__frameMarker), 51);
+          assert.equal(await projection.evaluate(() => window.__projectionMarker), 52);
+          await page.locator('[data-action="previous"]').click();
+          await presentation.waitForURL(/slide=2&step=0/);
+          await projection.waitForURL(/slide=2&step=0/);
+          await page.locator('[data-action="next"]').click();
+          await presentation.waitForURL(/slide=2&step=1/);
+          await projection.waitForURL(/slide=2&step=1/);
+
+          // A failed update at a non-zero step must restore the exact state and
+          // preserve the presenter's connection to the independent projection.
+          const presentationRoute = "**/slides/legacy/presentation**";
+          const failPresentationFetch = (route) => route.request().resourceType() === "fetch"
+            ? route.fulfill({ status: 503, body: "unavailable" }) : route.continue();
+          await page.route(presentationRoute, failPresentationFetch);
+          try {
+            await presentation.evaluate(() => { window.__frameMarker = 53; });
+            await writeFile(legacyPath, presentationSource.replace("Presentation before update", "Presentation after failed fetch"));
+            await presentation.getByText("Presentation after failed fetch", { exact: true }).waitFor({ timeout: 20000 });
+            assert.equal(await presentation.evaluate(() => window.__frameMarker), undefined);
+            assert.equal(await page.evaluate(() => window.__presenterMarker), 50);
+            assert.match(presentation.url(), /slide=2&step=1/);
+            await projection.getByText("Presentation after failed fetch", { exact: true }).waitFor({ timeout: 20000 });
+            assert.match(projection.url(), /slide=2&step=1/);
+          } finally {
+            await page.unroute(presentationRoute, failPresentationFetch);
+          }
+          await presentation.evaluate(() => { window.__frameMarker = 51; });
+
+          // Option A: editing client code reloads both presentation documents,
+          // retaining slide and step while resetting their independent island state.
+          await presentation.getByText("Second: 0", { exact: true }).click();
+          await presentation.getByText("Second: 1", { exact: true }).waitFor();
+          await projection.getByText("Second: 0", { exact: true }).click();
+          await projection.getByText("Second: 1", { exact: true }).waitFor();
+          const clientPath = join(components, "client/index.tsx");
+          const clientSource = await readFile(clientPath, "utf8");
+          assert.ok(clientSource.includes("{p.label}: {n}"));
+          await writeFile(clientPath, clientSource.replace("{p.label}: {n}", "Updated {p.label}: {n}"));
+          await presentation.getByText("Updated Second: 0", { exact: true }).waitFor({ timeout: 20000 });
+          await projection.getByText("Updated Second: 0", { exact: true }).waitFor({ timeout: 20000 });
+          assert.equal(await page.evaluate(() => window.__presenterMarker), 50);
+          assert.equal(await presentation.evaluate(() => window.__frameMarker), undefined);
+          assert.equal(await projection.evaluate(() => window.__projectionMarker), undefined);
+          assert.match(presentation.url(), /slide=2&step=1/);
+          assert.match(projection.url(), /slide=2&step=1/);
+          await page.locator('[data-action="previous"]').click();
+          await presentation.waitForURL(/slide=2&step=0/);
+          await projection.waitForURL(/slide=2&step=0/);
+        } finally {
+          await projection.close();
+        }
       } finally {
         await writeFile(legacyPath, legacySource);
         await rm(components, { recursive: true, force: true });
@@ -458,6 +695,34 @@ async function check(mode, port) {
         null,
         { timeout: 20000 },
       );
+    }
+    if (mode === "dev") {
+      await page.goto(origin + "/slides/welcome");
+      await page.frameLocator("iframe").first().locator(".slide").first().waitFor({ state: "attached" });
+      const viewerDocument = page.frames().find((frame) => frame.url().includes("/slides/welcome/render"));
+      assert.ok(viewerDocument);
+      await viewerDocument.evaluate(() => window.__honoDecksPresentationRuntime.command("goTo", 1, 0));
+      const viewerIsland = viewerDocument.getByRole("button", { name: "Count: 0", exact: true });
+      await viewerIsland.waitFor();
+      await viewerIsland.click();
+      await viewerDocument.getByRole("button", { name: "Count: 1", exact: true }).waitFor();
+      await page.evaluate(() => { window.__viewerMarker = 70; });
+      await viewerDocument.evaluate(() => { window.__frameMarker = 71; });
+      const welcomeComponent = join(app, "decks/welcome/Counter.tsx");
+      const welcomeComponentSource = await readFile(welcomeComponent, "utf8");
+      const changed = welcomeComponentSource.replace("Count: {count}", "Updated Count: {count}");
+      assert.notEqual(changed, welcomeComponentSource);
+      try {
+        await writeFile(welcomeComponent, changed);
+        await viewerDocument.getByRole("button", { name: "Updated Count: 0", exact: true }).waitFor({ timeout: 20000 });
+        assert.equal(await page.evaluate(() => window.__viewerMarker), 70);
+        assert.equal(await viewerDocument.evaluate(() => window.__frameMarker), undefined);
+        assert.match(viewerDocument.url(), /slide=2&step=0/);
+        assert.match(page.url(), /slide=2&step=0/);
+      } finally {
+        await writeFile(welcomeComponent, welcomeComponentSource);
+      }
+      await viewerDocument.getByRole("button", { name: "Count: 0", exact: true }).waitFor({ timeout: 20000 });
     }
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(origin + "/slides/interactive/render");
@@ -505,7 +770,13 @@ async function check(mode, port) {
       distinctMixedFormatSlugs: true,
       markdownIslands: ["load", "visible", "idle", "media"],
       islandCssAndContext: true,
-      ...(mode === "dev" ? { hmr: ["edit", "add", "remove"] } : {}),
+      ...(mode === "dev" ? {
+        hmr: ["edit", "add", "remove"],
+        deferredUpdates: ["visible", "idle", "media"],
+        fallbacks: ["ambiguous-identity", "pending-move", "unsupported-hydrator", "fetch-failure", "invalid-html", "hydrator-failure", "client-code"],
+        fallbackRetainsSlideAndStep: true,
+        presenterAndProjectionStaySynchronized: true,
+      } : {}),
     });
   } catch (error) {
     await writeFile(
@@ -528,7 +799,10 @@ async function check(mode, port) {
   } finally {
     await writeFile(join(root, `${mode}-server.log`), log);
     await context.close();
-    if (server.pid) process.kill(-server.pid, "SIGTERM");
+    if (server.pid) {
+      try { process.kill(-server.pid, "SIGTERM"); }
+      catch (error) { if (error.code !== "ESRCH") console.warn("Failed to stop test server:", error); }
+    }
   }
 }
 try {

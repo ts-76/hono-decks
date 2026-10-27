@@ -295,7 +295,7 @@ export default defineConfig({
 });
 ~~~
 
-The plugin compiles before Vite starts and adds the deck root and <code>hono-decks.config.ts</code> to the Vite watcher. After a successful recompile, presentation pages update without reloading when existing islands can be identified safely. Their state survives supported prop and Markdown context changes, reordering, and the addition or removal of distinct islands. The current slide and step are retained. When an update cannot be applied safely, such as a changed client bundle or ambiguous duplicate islands, the presentation page reloads and restores the slide and step; island state is then reset. In both setups, the application's normal <code>dev</code> command is enough for authoring.
+The plugin compiles before Vite starts and adds the deck root and <code>hono-decks.config.ts</code> to the Vite watcher. After a successful recompile, presentation pages update without reloading when existing islands can be identified safely. Their state survives supported prop and Markdown context changes, reordering, and the addition or removal of distinct islands. The current slide and step are retained. Editing an island component or other client code reloads the presentation iframe and resets island state; the viewer remains open and the slide and step are restored. Unsafe updates, such as ambiguous duplicate islands, unsupported adapter initialization, or a failed fetch, use the same fallback. In both setups, the application's normal <code>dev</code> command is enough for authoring.
 
 ## Runtime configuration
 
