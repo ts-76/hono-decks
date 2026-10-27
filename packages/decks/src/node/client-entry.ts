@@ -52,11 +52,15 @@ export async function emitClientEntryModule(input: {
 import { hydrateSlideIslands } from "hono-decks/client";
 ${imports.join("\n")}
 
-hydrateSlideIslands({
-  components: {
-    ${registrations.join(",\n    ")}
-  }
-});
+function hydrateDeckIslands() {
+  hydrateSlideIslands({
+    components: {
+      ${registrations.join(",\n      ")}
+    }
+  });
+}
+hydrateDeckIslands();
+if (window.__honoDecksLive) window.__honoDecksLive.registerHydrator(hydrateDeckIslands);
 `;
   const result = await buildBrowserBundle({
     stdin: {

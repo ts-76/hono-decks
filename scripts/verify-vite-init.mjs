@@ -281,6 +281,22 @@ export default function Counter() {
           assert.equal((await fetch(origin + `${mountPath}/_assets/client?deny=1`)).status, 401);
           await counter.click();
           assert.equal(await counter.textContent(), "Count: 1");
+          if (mode === "dev") {
+            const markdownPath = join(app, "decks/markdown/deck.md");
+            const markdownSource = await readFile(markdownPath, "utf8");
+            await page.evaluate(() => { window.__liveUpdateTestMarker = 73; });
+            try {
+              await writeFile(markdownPath, markdownSource.replace("Independent Markdown", "Updated Markdown"));
+              await page.waitForFunction(() => document.querySelector("[data-neutral-counter]")?.getAttribute("data-title") === "Updated Markdown", null, { timeout: 20000 });
+              assert.equal(await counter.textContent(), "Count: 1");
+              assert.equal(await page.evaluate(() => window.__liveUpdateTestMarker), 73);
+              await counter.click();
+              assert.equal(await counter.textContent(), "Count: 2");
+            } finally {
+              await writeFile(markdownPath, markdownSource);
+            }
+            await page.waitForFunction(() => document.querySelector("[data-neutral-counter]")?.getAttribute("data-title") === "Independent Markdown", null, { timeout: 20000 });
+          }
         }
         await page.screenshot({ path: join(root, `${framework}-${mode}-desktop.png`) });
         await page.setViewportSize({ width: 390, height: 844 });

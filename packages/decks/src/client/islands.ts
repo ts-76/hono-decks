@@ -1,4 +1,4 @@
-import { render } from "hono/jsx/dom";
+import { flushSync, render, useState } from "hono/jsx/dom";
 import { jsx } from "hono/jsx/dom/jsx-runtime";
 import type { SlideComponent, SlideComponentProps } from "../renderer/jsx-renderer";
 
@@ -27,7 +27,24 @@ export function hydrateSlideIslands(input: HydrateSlideIslandsInput): void {
     if (!component) continue;
 
     const props: Record<string, ClientIslandPropValue> = parseIslandProps(island.dataset.honoDecksProps);
-    render(jsx(component, props satisfies SlideComponentProps), island);
+    const live = (window as Window & { __honoDecksLive?: {
+      register(element: HTMLElement, update: (props: Record<string, ClientIslandPropValue>) => void, dispose: () => void): void;
+    } }).__honoDecksLive;
+    if (live) {
+      if (island.dataset.honoDecksLiveMounted) continue;
+      // The wrapper remains the same component across dev updates. Updating its
+      // props lets Hono reconcile the existing child and retain its hook state.
+      function LiveIsland() {
+        const [currentProps, setCurrentProps] = useState(props);
+        const [active, setActive] = useState(true);
+        live!.register(island, setCurrentProps, () => flushSync(() => setActive(false)));
+        return active ? jsx(component, currentProps satisfies SlideComponentProps) : null;
+      }
+      render(jsx(LiveIsland, {}), island);
+      island.dataset.honoDecksLiveMounted = "true";
+    } else {
+      render(jsx(component, props satisfies SlideComponentProps), island);
+    }
   }
 }
 
