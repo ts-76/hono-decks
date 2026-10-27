@@ -1,3 +1,4 @@
+import type { ServerResponse } from "node:http";
 import { realpath } from "node:fs/promises";
 import { relative, resolve } from "node:path";
 import { mergeConfig, type Plugin, type ResolvedConfig, type UserConfigExport, type ViteDevServer } from "vite";
@@ -37,6 +38,8 @@ export function honoDecks(options: HonoDecksViteOptions = {}): Plugin {
   let mountChanged = false;
   let modules = new Map<string, string>();
   let routerModulePath = "";
+  const eventClients = new Set<ServerResponse>();
+  let eventsPath = "/@hono-decks/events";
 
   const syncWatchedPaths = async (): Promise<void> => {
     if (!server) return;
@@ -106,7 +109,7 @@ export function honoDecks(options: HonoDecksViteOptions = {}): Plugin {
           environment.moduleGraph.invalidateAll();
           if (environment.name !== "client") environment.hot.send({ type: "full-reload" });
         }
-        server.ws.send({ type: "full-reload" });
+        for (const client of eventClients) client.write("event: deck:updated\ndata: {}\n\n");
       }
     } finally {
       compiling = false;
@@ -162,8 +165,12 @@ export const decks = createDecks(config);`;
       }
       if (!id.startsWith(MODULE_PREFIX)) return null;
       const path = id.slice(MODULE_PREFIX.length);
-      const code = modules.get(path);
+      let code = modules.get(path);
       if (code === undefined) return null;
+      if (path === routerModulePath && resolvedConfig?.command === "serve") {
+        code = code.replace("const generatedDecks = defineDecks({",
+          `const generatedDecks = defineDecks({\n  liveReloadPath: () => ${JSON.stringify(eventsPath)},`);
+      }
       // Virtual IDs do not have a physical TS file for Vite's normal TS loader.
       // Strip types here; authored TSX and all imports still go through Vite.
       return (await transform(code, { loader: "ts", format: "esm", sourcefile: path, sourcemap: "inline" })).code;
@@ -175,16 +182,27 @@ export const decks = createDecks(config);`;
     },
     async configResolved(config) {
       resolvedConfig = config;
+      const base = config.base?.startsWith("/") ? config.base.replace(/\/$/, "") : "";
+      eventsPath = `${base}/@hono-decks/events`;
       projectRoot = config.resolve?.preserveSymlinks ? config.root : await realpath(config.root);
       configPath = resolve(projectRoot, options.configFile ?? DEFAULT_DECKS_CONFIG_FILE);
       await compile(true);
     },
     configureServer(devServer) {
       server = devServer;
+      devServer.middlewares.use((req, res, next) => {
+        if (req.url?.split("?")[0] !== eventsPath || req.method !== "GET") return next();
+        res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache, no-transform", Connection: "keep-alive" });
+        res.write(": connected\n\n");
+        eventClients.add(res);
+        res.on("close", () => eventClients.delete(res));
+      });
       void syncWatchedPaths();
       devServer.watcher.on("all", onWatcherEvent);
       const cleanup = () => {
         if (timer) clearTimeout(timer);
+        for (const client of eventClients) client.end();
+        eventClients.clear();
         devServer.watcher.off("all", onWatcherEvent);
         server = undefined;
         watchedPaths.clear();

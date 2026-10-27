@@ -24,6 +24,18 @@ describe("honoDecks Vite plugin", () => {
     }
   });
 
+  it("does not inject live reload into build modules", async () => {
+    const cwd = await createFixture();
+    try {
+      const plugin = honoDecks();
+      await (plugin.configResolved as Function)({ root: cwd, command: "build", base: "/", logger: { info() {}, error() {} } });
+      const code = await (plugin.load as Function)("\0hono-decks:module:" + join(cwd, "src/generated/decks.ts"));
+      expect(code).not.toContain("/@hono-decks/events");
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("recompiles transitive config dependencies and replaces the watched dependency graph", async () => {
     const cwd = await createFixture();
     const plugin = honoDecks();
@@ -42,6 +54,7 @@ describe("honoDecks Vite plugin", () => {
       (plugin.configureServer as Function)({
         watcher,
         httpServer,
+        middlewares: { use() {} },
         environments: {},
         ws: { send() {} },
         restart: async () => {
@@ -92,18 +105,23 @@ describe("honoDecks Vite plugin", () => {
       return (await load("\0hono-decks:module:" + join(cwd, path))) ?? "";
     };
     let restarts = 0;
+    let middleware: Function = () => {};
+    const writes: string[] = [];
 
     try {
       const configResolved = plugin.configResolved;
       expect(typeof configResolved).toBe("function");
       await (configResolved as Function)({
         root: cwd,
+        command: "serve",
+        base: "/",
         logger: {
           info: (message: string) => info.push(message),
           error: (message: string) => errors.push(message),
         },
       });
 
+      expect(await readModule("src/generated/decks.ts")).toContain("/@hono-decks/events");
       const initial = await readModule("src/generated/decks/intro/slide-0.ts");
       expect(initial).toContain("Initial title");
       expect(await readFile(join(cwd, "src/generated/decks.ts"), "utf8").catch(() => null)).toBe(null);
@@ -122,12 +140,14 @@ describe("honoDecks Vite plugin", () => {
       (configureServer as Function)({
         watcher,
         httpServer,
+        middlewares: { use: (handler: Function) => { middleware = handler; } },
         ws,
         environments,
         restart: async () => {
           restarts += 1;
         },
       });
+      middleware({ url: "/@hono-decks/events", method: "GET", on() {} }, { writeHead() {}, write: (data: string) => writes.push(data), end() {}, on() {} }, () => {});
       expect(watcher.added).toContain(join(cwd, "decks"));
       expect(watcher.added).toContain(join(cwd, "hono-decks.config.ts"));
       expect(ws.fullReloads).toBe(0);
@@ -136,19 +156,21 @@ describe("honoDecks Vite plugin", () => {
       await writeFile(deckPath, "# Updated title\n", "utf8");
       watcher.emit("change", deckPath);
       await waitFor(async () => (await readModule("src/generated/decks/intro/slide-0.ts")).includes("Updated title"));
-      await waitFor(() => ws.fullReloads === 1);
-      expect(events).toEqual(["client:invalidate", "worker:invalidate", "worker:reload", "browser:reload"]);
+      await waitFor(() => writes.length === 2);
+      expect(events).toEqual(["client:invalidate", "worker:invalidate", "worker:reload"]);
+      expect(writes).toEqual([": connected\n\n", "event: deck:updated\ndata: {}\n\n"]);
 
       await writeFile(deckPath, "<Broken", "utf8");
       watcher.emit("change", deckPath);
       await waitFor(() => errors.length > 0);
-      expect(ws.fullReloads).toBe(1);
+      expect(ws.fullReloads).toBe(0);
+      expect(writes).toHaveLength(2);
       expect(await readModule("src/generated/decks/intro/slide-0.ts")).toContain("Updated title");
 
       await writeFile(deckPath, "# Recovered title\n", "utf8");
       watcher.emit("change", deckPath);
       await waitFor(async () => (await readModule("src/generated/decks/intro/slide-0.ts")).includes("Recovered title"));
-      await waitFor(() => ws.fullReloads === 2);
+      await waitFor(() => writes.length === 3);
 
       const nextRoot = join(cwd, "presentations");
       await mkdir(join(nextRoot, "next"), { recursive: true });
@@ -165,7 +187,7 @@ describe("honoDecks Vite plugin", () => {
       );
       watcher.emit("change", configPath);
       await waitFor(async () => (await readModule("src/generated/decks/next/slide-0.ts")).includes("Configured root"));
-      await waitFor(() => ws.fullReloads === 3);
+      await waitFor(() => writes.length === 4);
       expect(watcher.added).toContain(nextRoot);
       expect(watcher.added).not.toContain(join(cwd, "decks"));
 
@@ -176,7 +198,7 @@ describe("honoDecks Vite plugin", () => {
       );
       watcher.emit("change", configPath);
       await waitFor(() => restarts === 1);
-      expect(ws.fullReloads).toBe(3);
+      expect(ws.fullReloads).toBe(0);
 
       httpServer.close();
       expect(watcher.listener).toBeUndefined();

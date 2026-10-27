@@ -38,7 +38,7 @@ export function renderCompiledDeckPage(input: {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapeHtml(presentationPageTitle(deck))}</title>
-  <style${nonceAttribute}>${basePresentationStyle()}${deck.themeStyle ?? ""}${input.style ?? ""}</style>
+  <style data-hono-decks-presentation-style${nonceAttribute}>${basePresentationStyle()}${deck.themeStyle ?? ""}${input.style ?? ""}</style>
   ${document.head}
 </head>
 <body${bodyAttrs.length ? ` ${bodyAttrs.join(" ")}` : ""}>
@@ -81,7 +81,7 @@ export async function renderCompiledDeckPageAsync(input: {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapeHtml(presentationPageTitle(deck))}</title>
-  <style${nonceAttribute}>${basePresentationStyle()}${deck.themeStyle ?? ""}${input.style ?? ""}</style>
+  <style data-hono-decks-presentation-style${nonceAttribute}>${basePresentationStyle()}${deck.themeStyle ?? ""}${input.style ?? ""}</style>
   ${document.head}
 </head>
 <body${bodyAttrs.length ? ` ${bodyAttrs.join(" ")}` : ""}>

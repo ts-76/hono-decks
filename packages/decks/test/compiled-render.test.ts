@@ -365,7 +365,7 @@ describe("compiled deck rendering", () => {
     expect(html).toContain('handleCommand("next")');
     expect(html).toContain('handleCommand("previous")');
     expect(html).toContain("handleCommand(message.action, message.index, message.stepIndex)");
-    expect(html).toContain("window.__honoDecksPresentationRuntime = { command: handleCommand }");
+    expect(html).toContain("window.__honoDecksPresentationRuntime = { command: handleCommand, refresh }");
     expect(html).toContain("let previousIndex = 0");
     expect(html).toContain("let isTransitioning = false");
     expect(html).toContain("let pendingNavigation = null");
@@ -957,7 +957,7 @@ describe("compiled deck rendering", () => {
 
     expect(html).toContain('data-hono-decks-island="Counter__deck1_abcd1234"');
     expect(html).toContain('data-hono-decks-props="{&quot;label&quot;:&quot;Clicks&quot;}"');
-    expect(html).toContain('<script type="module" src="/assets/slides.client.js"></script>');
+    expect(html).toContain('<script data-hono-decks-client-entry type="module" src="/assets/slides.client.js"></script>');
     expect(html).toContain('<button type="button">Clicks</button>');
   });
 

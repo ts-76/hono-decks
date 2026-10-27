@@ -4,21 +4,96 @@ import { documentNonceAttribute } from "../server/document";
 export function renderLiveReloadScript(eventsPath: string, nonce?: string): string {
   return `<script${documentNonceAttribute(nonce)}>
 (() => {
-  const eventsUrl = ${JSON.stringify(eventsPath)};
-  const events = new EventSource(eventsUrl);
-  events.addEventListener("deck:updated", () => location.reload());
+  const events = new EventSource(${JSON.stringify(eventsPath)});
+  let running = false;
+  let pending = false;
+  const selector = "[data-hono-decks-island],[data-hono-md-island]";
+  const clientSelector = "script[data-hono-decks-client-entry]";
+  const clientText = async (url) => {
+    if (!url) return "";
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) throw new Error("Client entry fetch failed");
+    return response.text();
+  };
+  const domReady = document.readyState === "loading"
+    ? new Promise((resolve) => document.addEventListener("DOMContentLoaded", resolve, { once: true }))
+    : Promise.resolve();
+  let clientSnapshot = domReady.then(() => clientText(document.querySelector(clientSelector)?.src)).catch(() => null);
+
+  function signature(element) {
+    const attributes = element.hasAttribute("data-hono-md-island")
+      ? ["data-hono-md-island", "data-hono-md-hydrate", "data-hono-md-props"]
+      : ["data-hono-decks-island", "data-hono-decks-props"];
+    return JSON.stringify([attributes.map((name) => element.getAttribute(name)),
+      element.closest("[data-hono-md-context]")?.getAttribute("data-hono-md-context") ?? null]);
+  }
+
+  async function update() {
+    const response = await fetch(location.href, { cache: "no-store" });
+    if (!response.ok || !response.headers.get("content-type")?.includes("text/html")) throw new Error("Deck fetch failed");
+    const next = new DOMParser().parseFromString(await response.text(), "text/html");
+    const currentDeck = document.querySelector("[data-hono-decks-deck]");
+    const nextDeck = next.querySelector("[data-hono-decks-deck]");
+    const style = document.querySelector("[data-hono-decks-presentation-style]");
+    const nextStyle = next.querySelector("[data-hono-decks-presentation-style]");
+    const runtime = window.__honoDecksPresentationRuntime;
+    if (!currentDeck || !nextDeck || !style || !nextStyle || !runtime?.refresh) throw new Error("Invalid deck document");
+    const oldSlides = Array.from(currentDeck.querySelectorAll(".slide"));
+    const newSlides = Array.from(nextDeck.querySelectorAll(".slide"));
+    if (!newSlides.length) throw new Error("Empty deck");
+    // Scripts parsed from fetched HTML are inert; reload so their behavior is not lost.
+    if (currentDeck.querySelector("script") || nextDeck.querySelector("script")) throw new Error("Deck contains scripts");
+    const oldIslands = oldSlides.flatMap((slide) => Array.from(slide.querySelectorAll(selector)));
+    const nextScript = next.querySelector(clientSelector);
+    const nextClient = await clientText(nextScript?.getAttribute("src"));
+    const previousClient = await clientSnapshot;
+    if (previousClient === null) throw new Error("Initial client entry fetch failed");
+    // Changed client code cannot safely replace a running component while retaining its state.
+    if (oldIslands.length && previousClient !== nextClient) throw new Error("Client code changed");
+    const pairs = [];
+    if (oldIslands.length && oldSlides.length !== newSlides.length) throw new Error("Slide structure changed");
+    for (let i = 0; i < oldSlides.length && i < newSlides.length; i++) {
+      const before = Array.from(oldSlides[i].querySelectorAll(selector));
+      const after = Array.from(newSlides[i].querySelectorAll(selector));
+      if (before.length !== after.length) throw new Error("Island structure changed");
+      for (let j = 0; j < before.length; j++) {
+        if (signature(before[j]) !== signature(after[j])) throw new Error("Island properties changed");
+        // Deferred Markdown islands observe their original slide. Reload rather than strand the observer.
+        if (before[j].hasAttribute("data-hono-md-island") && !before[j].hasAttribute("data-hono-md-mounted"))
+          throw new Error("Island is pending hydration");
+        pairs.push([before[j], after[j]]);
+      }
+    }
+    if (!oldIslands.length && nextDeck.querySelector(selector)) throw new Error("New islands require initialization");
+    for (const [oldIsland, newIsland] of pairs) newIsland.replaceWith(oldIsland);
+    currentDeck.replaceChildren(...nextDeck.childNodes);
+    style.textContent = nextStyle.textContent;
+    document.title = next.title;
+    clientSnapshot = Promise.resolve(nextClient);
+    runtime.refresh();
+  }
+
+  async function onUpdate() {
+    if (running) { pending = true; return; }
+    running = true;
+    try {
+      do { pending = false; await update(); } while (pending);
+    } catch (error) { console.warn("[hono-decks] Live update failed; reloading", error); location.reload(); }
+    finally { running = false; }
+  }
+  events.addEventListener("deck:updated", onUpdate);
 })();
 </script>`;
 }
 
 export function renderClientEntryScript(clientEntry: string, nonce?: string): string {
-  return `<script type="module" src="${escapeHtml(clientEntry)}"${documentNonceAttribute(nonce)}></script>`;
+  return `<script data-hono-decks-client-entry type="module" src="${escapeHtml(clientEntry)}"${documentNonceAttribute(nonce)}></script>`;
 }
 
 export function renderPresentationScript(nonce?: string): string {
   return `<script${documentNonceAttribute(nonce)}>
 (() => {
-  const slides = Array.from(document.querySelectorAll(".slide"));
+  let slides = Array.from(document.querySelectorAll(".slide"));
   const stage = document.querySelector("[data-hono-decks-stage]");
   const deck = document.querySelector("[data-hono-decks-deck]");
   const DESIGN_WIDTH = ${PRESENTATION_DESIGN_WIDTH};
@@ -292,6 +367,7 @@ export function renderPresentationScript(nonce?: string): string {
     updateFires(nextStepIndex);
     publishState();
     requestAnimationFrame(() => {
+      if (token !== transitionToken) return;
       setSlideState(outgoing, "leaving", direction, transition, timing);
       setSlideState(incoming, "active", direction, transition, timing);
       waitForSlideTransition(outgoing, incoming, direction, token);
@@ -398,13 +474,38 @@ export function renderPresentationScript(nonce?: string): string {
     await document.documentElement.requestFullscreen?.();
   }
 
-  slides.forEach((slide, slideIndex) => {
-    slide.addEventListener("click", () => {
-      if (!document.body.hasAttribute("data-overview-mode")) return;
-      document.body.removeAttribute("data-overview-mode");
-      show(slideIndex);
+  function bindSlideClicks() {
+    slides.forEach((slide, slideIndex) => {
+      slide.addEventListener("click", () => {
+        if (!document.body.hasAttribute("data-overview-mode")) return;
+        document.body.removeAttribute("data-overview-mode");
+        show(slideIndex);
+      });
     });
-  });
+  }
+
+  function refresh() {
+    transitionToken += 1;
+    isTransitioning = false;
+    pendingNavigation = null;
+    slides = Array.from(deck?.querySelectorAll(".slide") ?? []);
+    bindSlideClicks();
+    if (document.body.hasAttribute("data-overview-mode")) {
+      slides.forEach((slide) => { slide.hidden = false; slide.setAttribute("data-slide-state", "active"); });
+      setFiresVisible(Array.from(deck?.querySelectorAll("[data-hono-decks-fire]") ?? []), true);
+      index = Math.max(0, Math.min(slides.length - 1, index));
+      stepCount = fireCountForSlide(index);
+      stepIndex = Math.max(0, Math.min(stepCount, stepIndex));
+      publishState();
+    } else {
+      applyInstantSlideChange(index, stepIndex);
+    }
+    document.querySelectorAll(".speaker-notes").forEach((note) => {
+      note.hidden = !document.body.hasAttribute("data-presenter-mode");
+    });
+    fitDeck();
+  }
+  bindSlideClicks();
 
   document.addEventListener("keydown", (event) => {
     if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
@@ -427,7 +528,7 @@ export function renderPresentationScript(nonce?: string): string {
     handleCommand(message.action, message.index, message.stepIndex);
   });
 
-  window.__honoDecksPresentationRuntime = { command: handleCommand };
+  window.__honoDecksPresentationRuntime = { command: handleCommand, refresh };
 
   window.addEventListener("resize", fitDeck);
   if (typeof ResizeObserver !== "undefined" && stage instanceof HTMLElement) {

@@ -1270,7 +1270,7 @@ describe("decksRouter", () => {
     expect(html).toContain('<style nonce="merged-nonce">');
     expect(renderHtml).toContain('<html lang="fr">');
     expect(renderHtml).toContain('<meta name="document-base" content="base"/>');
-    expect(renderHtml).toContain('<style nonce="merged-nonce">');
+    expect(renderHtml).toContain('<style data-hono-decks-presentation-style nonce="merged-nonce">');
   });
 
   it("defines typed deck runtime config without changing the object", () => {
@@ -1577,7 +1577,7 @@ describe("decksRouter", () => {
 
     expect(html).toContain('class="badge"');
     expect(html).toContain("Worker-safe");
-    expect(html).toContain('<script type="module" src="/assets/slides.client.js"></script>');
+    expect(html).toContain('<script data-hono-decks-client-entry type="module" src="/assets/slides.client.js"></script>');
   });
 
   it("renders deck-local theme CSS only in deck render and print routes", async () => {
@@ -1621,7 +1621,7 @@ describe("decksRouter", () => {
     const renderHtml = await (await app.request("/slides/deck1/render")).text();
     const asset = await app.request("/slides/_assets/client.js");
 
-    expect(renderHtml).toContain('<script type="module" src="/slides/_assets/client.js"></script>');
+    expect(renderHtml).toContain('<script data-hono-decks-client-entry type="module" src="/slides/_assets/client.js"></script>');
     expect(asset.status).toBe(200);
     expect(asset.headers.get("content-type")).toContain("text/javascript");
     expect(asset.headers.get("cache-control")).toBe("no-cache");
@@ -1667,7 +1667,7 @@ describe("decksRouter", () => {
 
     const renderHtml = await (await app.request("/slides/deck1/render")).text();
 
-    expect(renderHtml).toContain('<script type="module" src="/assets/slides.client.js"></script>');
+    expect(renderHtml).toContain('<script data-hono-decks-client-entry type="module" src="/assets/slides.client.js"></script>');
     expect(renderHtml).not.toContain("/slides/_assets/client.js");
   });
 
@@ -1719,7 +1719,15 @@ describe("decksRouter", () => {
 
     expect(wrapperHtml).not.toContain("new EventSource");
     expect(renderHtml).toContain("new EventSource");
-    expect(renderHtml).toContain('const eventsUrl = "/decks/deck1/events"');
+    expect(renderHtml).toContain('new EventSource("/decks/deck1/events")');
+
+    const production = new Hono();
+    production.route("/decks", decksRouter({
+      source: manifestDeckSource({ decks: [deck] }),
+      dev: false,
+      liveReloadPath: () => "/events",
+    }));
+    expect(await (await production.request("/decks/deck1/render")).text()).not.toContain("new EventSource");
   });
 
   it("serves local deck assets and returns 404 for missing slugs", async () => {

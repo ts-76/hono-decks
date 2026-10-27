@@ -451,7 +451,7 @@ describe("sample Worker app", () => {
     expect(html).toContain("data-hono-decks-deck");
     expect(html).toContain("function fitDeck()");
     expect(html).toContain('deck.style.transform = "scale(" + scale + ")"');
-    expect(html).toContain('<script type="module" src="/decks/_assets/client.js"></script>');
+    expect(html).toContain('<script data-hono-decks-client-entry type="module" src="/decks/_assets/client.js"></script>');
     expect(html).not.toContain('MDX component "Hero" is rendered as a placeholder.');
     expect(html).not.toContain("mdx-component");
   });
@@ -552,7 +552,7 @@ describe("sample Worker app", () => {
     expect(html).toMatch(/data-hono-decks-island="MotionMeter__motion_[a-z0-9]+"/);
     expect(html).toContain("data-motion-meter");
     expect(html).toContain("Animation island");
-    expect(html).toContain('<script type="module" src="/decks/_assets/client.js"></script>');
+    expect(html).toContain('<script data-hono-decks-client-entry type="module" src="/decks/_assets/client.js"></script>');
   });
 
   it("serves generated local assets for the media deck", async () => {
