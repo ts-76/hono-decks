@@ -94,14 +94,14 @@
     "unified": "^11.0.5"
   },
   "devDependencies": {
-    "@tanstack/intent": "^0.3.6",
-    "hono": "^4.12.30",
+    "@tanstack/intent": "^0.5.5",
+    "hono": "^4.13.16",
     "vite": "catalog:",
     "vite-plus": "catalog:",
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "hono": "^4.12.30",
+    "hono": "^4.13.16",
     "vite": "^6.0.0 || ^7.0.0 || ^8.0.0"
   },
   "peerDependenciesMeta": {

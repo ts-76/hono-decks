@@ -55,16 +55,19 @@ export default defineDecksConfig<Env>({
 By default the R2 key comes from the compiled asset's source path, optionally prefixed by `keyPrefix`. If the upload pipeline uses a different layout, provide a deterministic key resolver:
 
 ```ts
-source(source: DeckSource<Env>) {
-  return withR2Assets(source, {
-    bucket: (c) => c.env.DECK_ASSETS,
-    key: ({ slug, assetPath }) => `decks/${slug}/${assetPath}`,
-    cacheControl: ({ asset }) =>
-      asset.publicPath.includes("/versioned/")
-        ? "public, max-age=31536000, immutable"
-        : "public, max-age=300",
-  });
-}
+export default defineDecksConfig<Env>({
+  mountPath: "/decks",
+  source(source: DeckSource<Env>) {
+    return withR2Assets(source, {
+      bucket: (c) => c.env.DECK_ASSETS,
+      key: ({ slug, assetPath }) => `decks/${slug}/${assetPath}`,
+      cacheControl: ({ asset }) =>
+        asset.publicPath.includes("/versioned/")
+          ? "public, max-age=31536000, immutable"
+          : "public, max-age=300",
+    });
+  },
+});
 ```
 
 ## Operational requirements

@@ -60,7 +60,7 @@ Wrong:
 ```ts
 import { compileDecks } from "hono-decks/node";
 
-app.get("/decks", async (c) => c.json(await compileDecks({ cwd: "." })));
+app.get("/decks", async (c) => c.json(await compileDecks({ cwd: ".", root: "decks", out: "src/generated" })));
 ```
 
 Correct:
@@ -129,9 +129,14 @@ Wrong: add `Access-Control-Allow-Origin` and leave `router.embed` without a pare
 Correct:
 
 ```ts
-router: {
-  embed: { frameAncestors: ["https://blog.example.com"] },
-}
+import { defineDecksConfig } from "hono-decks";
+
+export default defineDecksConfig({
+  mountPath: "/decks",
+  router: {
+    embed: { frameAncestors: ["https://blog.example.com"] },
+  },
+});
 ```
 
 Iframe navigation uses CSP `frame-ancestors`, not CORS.
@@ -141,10 +146,17 @@ Iframe navigation uses CSP `frame-ancestors`, not CORS.
 Wrong:
 
 ```ts
-export: {
-  browser: ({ c }) => c.env.BROWSER,
-  pdf: true,
-}
+import { defineDecksConfig } from "hono-decks";
+
+export default defineDecksConfig({
+  mountPath: "/decks",
+  router: {
+    export: {
+      browser: ({ c }) => c.env.BROWSER,
+      pdf: true,
+    },
+  },
+});
 ```
 
 Correct: add an `authorize` resolver backed by a Wrangler secret. Export authorization defaults to allowed when the resolver is absent.

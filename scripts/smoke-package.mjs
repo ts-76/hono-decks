@@ -59,7 +59,7 @@ try {
       "--no-fund",
       "--package-lock=false",
       tarballPath,
-      "hono@^4.12.30",
+      "hono@^4.13.16",
       "@types/node@^26.1.1",
       "typescript@^7.0.2",
       `vite@${viteVersion}`,

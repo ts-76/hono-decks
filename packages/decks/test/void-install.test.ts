@@ -63,7 +63,7 @@ describe("Void dependency installation", () => {
             expect(command).toBe(manager);
             expect(args).toContain(flag);
             expect(args.at(-1)).toBe("yaml@^2.9.1");
-            expect(args).not.toContain("hono@^4.13.13");
+            expect(args).not.toContain("hono@^4.13.16");
             await stub(cwd, "yaml");
           },
         });

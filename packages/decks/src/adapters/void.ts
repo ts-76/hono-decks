@@ -2,7 +2,7 @@
 export const voidDependencies = [
   ["void", "void@>=1.2.1 <1.3.0"],
   ["vite", "vite@^8.0.16"],
-  ["hono", "hono@^4.13.13"],
+  ["hono", "hono@^4.13.16"],
   ["yaml", "yaml@^2.9.1"],
   ["shiki", "shiki@^4.5.0"],
   ["@shikijs/transformers", "@shikijs/transformers@^4.5.0"],

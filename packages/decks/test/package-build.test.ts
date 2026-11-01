@@ -120,7 +120,7 @@ describe("package build metadata", () => {
     expect(packageJson.bugs.url).toBe("https://github.com/ts-76/hono-decks/issues");
     expect(packageJson.author).toBe("ts-76");
     expect(packageJson.publishConfig.access).toBe("public");
-    expect(packageJson.peerDependencies.hono).toBe("^4.12.30");
+    expect(packageJson.peerDependencies.hono).toBe("^4.13.16");
     expect(packageJson.peerDependencies.vite).toContain("^8.0.0");
     expect(packageJson.peerDependenciesMeta.vite?.optional).toBe(true);
   });
