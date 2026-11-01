@@ -17,6 +17,9 @@ export default {
         ],
       },
     ],
+    // Stable generator 14 uses writer 8; keep the root preset on 9.x until
+    // a stable writer-9 generator is available. scripts/release-notes.test.mjs
+    // verifies the installed pair renders the actual notes before publication.
     ["@semantic-release/release-notes-generator", { preset: "conventionalcommits" }],
     ["@semantic-release/npm", { pkgRoot: packageRoot }],
     "@semantic-release/github",
