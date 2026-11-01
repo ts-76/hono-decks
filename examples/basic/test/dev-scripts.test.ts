@@ -96,7 +96,7 @@ describe("development scripts", () => {
     expect(workflow).toContain("HONO_DECKS_BROWSER_RUN_TOKEN");
     expect(workflow).toContain("github.ref != 'refs/heads/main'");
     expect(workflow).toContain("bun run smoke:browser-run");
-    expect(workflow).toContain("actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a");
+    expect(workflow).toContain("actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9");
     expect(workflow).not.toContain("agent-browser");
     expect(workflow).not.toContain("smoke:pdf");
     expect(workflow).not.toContain("inputs.origin");

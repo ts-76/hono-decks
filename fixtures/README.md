@@ -26,7 +26,7 @@ the injected development client URL, its successful response, and real reloads.
 The consumers, screenshots, server logs, and `evidence.json` are retained.
 Playwright Chromium must be installed. No deployment is performed.
 
-The pinned host versions are Hono 4.13.13, HonoX 0.1.59, Vite 8.3.4,
+The pinned host versions are Hono 4.13.16, HonoX 0.1.59, Vite 8.3.4,
 `@hono/vite-build` 1.11.1, and `@hono/vite-dev-server` 0.26.1.
 The Void consumer has additional adapter prerequisites; see
 `void-markdown/README.md` and `scripts/verify-void-markdown.mjs`.
