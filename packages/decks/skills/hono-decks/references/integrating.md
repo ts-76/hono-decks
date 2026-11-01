@@ -116,12 +116,17 @@ Register more specific application routes before the mounted deck router.
 Presenter view can contain notes and previews. Enable it intentionally:
 
 ```ts
-router: {
-  presenter: {
-    enabled: ({ dev }) => dev,
-    viewerControl: true,
+import { defineDecksConfig } from "hono-decks";
+
+export default defineDecksConfig({
+  mountPath: "/decks",
+  router: {
+    presenter: {
+      enabled: ({ dev }) => dev,
+      viewerControl: true,
+    },
   },
-}
+});
 ```
 
 For production, replace the development condition with application authentication or a trusted binding policy.
@@ -131,12 +136,17 @@ For production, replace the development condition with application authenticatio
 Enable the embed route and explicitly list allowed parent origins:
 
 ```ts
-router: {
-  embed: {
-    frameAncestors: ["https://blog.example.com"],
-    robots: false,
+import { defineDecksConfig } from "hono-decks";
+
+export default defineDecksConfig({
+  mountPath: "/decks",
+  router: {
+    embed: {
+      frameAncestors: ["https://blog.example.com"],
+      robots: false,
+    },
   },
-}
+});
 ```
 
 ```html
