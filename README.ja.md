@@ -1,7 +1,7 @@
 # hono-decks
 
 <p align="center">
-  <img src="docs/public/icon-512.png" alt="Honoの炎と重なったプレゼンテーションスライドを組み合わせたHono Decksアイコン" width="160" />
+  <img src="assets/icon-512.png" alt="Honoの炎と重なったプレゼンテーションスライドを組み合わせたHono Decksアイコン" width="160" />
 </p>
 
 [English](https://github.com/ts-76/hono-decks/blob/main/README.md) | 日本語
@@ -260,7 +260,6 @@ advanced entry は独自 source や独自 pipeline を作る場合に限定し�
 - `examples/basic`: R2 assets、Browser Rendering、custom page、client components
 - `examples/honox`: HonoX route への mount
 - `examples/ogp`: Satori による browserless な build-time OGP 生成
-- `docs`: documentation site と embedded demo
 
 各 example は同じ `hono-decks.config.ts` contract を使います。`decks:compile`、`typecheck`、`test`、`deploy` の前に generated modules を更新します。
 

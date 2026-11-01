@@ -97,8 +97,7 @@
     "@tanstack/intent": "^0.5.5",
     "hono": "^4.13.16",
     "vite": "catalog:",
-    "vite-plus": "catalog:",
-    "vitest": "catalog:"
+    "vite-plus": "catalog:"
   },
   "peerDependencies": {
     "hono": "^4.13.16",

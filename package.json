@@ -3,8 +3,7 @@
   "private": true,
   "workspaces": [
     "packages/*",
-    "examples/*",
-    "docs"
+    "examples/*"
   ],
   "type": "module",
   "scripts": {
@@ -13,10 +12,7 @@
     "dev:minimal": "bun run --cwd examples/minimal dev",
     "dev:honox": "bun run --cwd examples/honox dev",
     "dev:ogp": "bun run --cwd examples/ogp dev",
-    "dev:docs": "bun run --cwd docs dev",
-    "build:docs": "bun run --cwd docs build",
     "build:ogp": "bun run --cwd examples/ogp build",
-    "deploy:docs": "bun run --cwd docs deploy",
     "deploy:minimal": "bun run --cwd examples/minimal deploy:production",
     "deploy:basic": "bun run --cwd examples/basic deploy:production",
     "deploy:honox": "bun run --cwd examples/honox deploy:production",
@@ -30,9 +26,9 @@
     "release": "node scripts/verify-release-baseline.mjs && semantic-release",
     "format": "vp fmt",
     "lint": "vp lint",
-    "typecheck": "bun run --cwd packages/decks typecheck && bun run --cwd examples/basic typecheck && bun run --cwd examples/minimal typecheck && bun run --cwd examples/honox typecheck && bun run --cwd examples/ogp typecheck && bun run --cwd docs typecheck",
-    "test": "bun run --cwd packages/decks test && bun run --cwd examples/basic test && bun run --cwd examples/minimal test && bun run --cwd examples/honox test && bun run --cwd examples/ogp test && bun run --cwd docs test",
-    "check": "vp check && bun run typecheck && bun run test && bun run build:ogp && bun run build:docs && node --test scripts/release-notes.test.mjs"
+    "typecheck": "bun run --cwd packages/decks typecheck && bun run --cwd examples/basic typecheck && bun run --cwd examples/minimal typecheck && bun run --cwd examples/honox typecheck && bun run --cwd examples/ogp typecheck",
+    "test": "bun run --cwd packages/decks test && bun run --cwd examples/basic test && bun run --cwd examples/minimal test && bun run --cwd examples/honox test && bun run --cwd examples/ogp test",
+    "check": "vp check && bun run typecheck && bun run test && bun run build:ogp && node --test scripts/release-notes.test.mjs"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261008.1",
@@ -49,19 +45,16 @@
     "typescript-parser": "npm:typescript@6.0.3",
     "vite": "catalog:",
     "vite-plus": "catalog:",
-    "vitest": "catalog:",
     "wrangler": "^4.156.0"
   },
   "overrides": {
     "hono": "4.13.16",
     "vite": "catalog:",
-    "vitest": "catalog:",
     "handlebars": "4.7.10"
   },
   "packageManager": "bun@1.3.13",
   "catalog": {
     "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0",
-    "vitest": "5.0.5",
     "vite-plus": "1.4.0"
   }
 }
