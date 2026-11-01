@@ -30,6 +30,7 @@ jobs:
       - run: node scripts/release/install-publisher.mjs
       - run: node --test scripts/release/*.test.mjs
       - run: node scripts/release/check-publisher.mjs
+      - run: node scripts/release/publisher-runtime-test.mjs
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 15
