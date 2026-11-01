@@ -35,7 +35,6 @@
     "check": "vp check && bun run typecheck && bun run test && bun run build:ogp && bun run build:docs"
   },
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "^0.18.5",
     "@cloudflare/workers-types": "^5.20260716.1",
     "@semantic-release/commit-analyzer": "^13.0.1",
     "@semantic-release/github": "^12.0.6",
@@ -54,14 +53,15 @@
     "wrangler": "^4.111.0"
   },
   "overrides": {
-    "hono": "4.13.12",
+    "hono": "4.13.16",
     "vite": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "handlebars": "4.7.10"
   },
   "packageManager": "bun@1.3.13",
   "catalog": {
-    "vite": "npm:@voidzero-dev/vite-plus-core@0.2.4",
-    "vitest": "4.1.10",
-    "vite-plus": "0.2.4"
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0",
+    "vitest": "5.0.5",
+    "vite-plus": "1.4.0"
   }
 }
