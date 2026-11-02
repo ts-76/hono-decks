@@ -31,21 +31,21 @@
     "check": "vp check && bun run typecheck && bun run test && bun run build:ogp && node --test scripts/release-notes.test.mjs"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20261008.1",
+    "@cloudflare/workers-types": "^5.20261102.1",
     "@semantic-release/commit-analyzer": "^13.0.1",
     "@semantic-release/github": "^12.0.10",
     "@semantic-release/npm": "^13.2.0",
-    "@semantic-release/release-notes-generator": "^14.1.0",
-    "@types/node": "^26.6.4",
+    "@semantic-release/release-notes-generator": "^14.1.1",
+    "@types/node": "^26.6.6",
     "conventional-changelog-conventionalcommits": "9.3.1",
     "semantic-release": "^25.0.9",
     "semver": "^7.8.5",
-    "tsdown": "^0.23.0",
+    "tsdown": "^0.23.4",
     "typescript": "^7.0.2",
     "typescript-parser": "npm:typescript@6.0.3",
     "vite": "catalog:",
     "vite-plus": "catalog:",
-    "wrangler": "^4.156.0"
+    "wrangler": "^4.156.2"
   },
   "overrides": {
     "hono": "4.13.16",

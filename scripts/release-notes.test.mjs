@@ -4,7 +4,7 @@ import { analyzeCommits } from "@semantic-release/commit-analyzer";
 import { generateNotes } from "@semantic-release/release-notes-generator";
 import releaseConfig from "../release.config.mjs";
 
-test("the locked release plugins produce a patch and complete linked release notes", async () => {
+void test("the locked release plugins produce a patch and complete linked release notes", async () => {
   const pluginOptions = (name) =>
     releaseConfig.plugins.find((plugin) => Array.isArray(plugin) && plugin[0] === name)[1];
   const context = {
