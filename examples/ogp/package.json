@@ -21,7 +21,7 @@
     "@cloudflare/workers-types": "^5.20261008.1",
     "@resvg/resvg-js": "^2.6.2",
     "@types/node": "^26.6.4",
-    "satori": "^0.44.0",
+    "satori": "^0.63.2",
     "typescript": "^7.0.2",
     "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0",
     "vite-plus": "1.4.0",
