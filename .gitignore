@@ -8,6 +8,4 @@ dist-dry-run/
 .superpowers/
 .impeccable/config.local.json
 
-/docs/app/generated/
-
 /examples/honox/app/generated/

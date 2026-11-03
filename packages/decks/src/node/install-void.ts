@@ -46,7 +46,7 @@ export async function installVoidDependencies(cwd: string, options: VoidInstallO
     }
   };
   const hostVersion = missing("void") ? undefined : await installedVersion(require.resolve("void"), "void");
-  let legacyVoid = /^1\.1\./.test(hostVersion ?? "");
+  let legacyVoid = (hostVersion ?? "").startsWith("1.1.");
   const required = [...voidDependencies, ...(legacyVoid ? legacyMarkdownDependencies : [])];
   for (const [id, spec] of required) {
     if (missing(id!)) continue;

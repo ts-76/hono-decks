@@ -140,7 +140,7 @@ describe("generated build consistency", () => {
         jsx: "automatic",
         jsxImportSource: "hono/jsx",
         alias: { "hono-decks/advanced": fileURLToPath(new URL("../src/advanced.ts", import.meta.url)) },
-        nodePaths: [fileURLToPath(new URL("../../../node_modules", import.meta.url))],
+        nodePaths: [fileURLToPath(new URL("../node_modules", import.meta.url))],
       });
       const module = await import(
         `data:text/javascript;base64,${Buffer.from(bundled.outputFiles[0].text).toString("base64")}`

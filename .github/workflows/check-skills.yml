@@ -26,7 +26,6 @@ on:
       - 'packages/decks/src/**'
       - 'examples/basic/**'
       - 'examples/ogp/**'
-      - 'docs/**'
   release:
     types: [published]
   workflow_dispatch: {}
