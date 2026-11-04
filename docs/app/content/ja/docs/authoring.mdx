@@ -39,7 +39,7 @@ CommonMarkとGFM（テーブル、タスクリスト、打ち消し線、自動�
 
 HonoとHonoXの標準形式はMDXです。`deck.md`を使うにはMarkdownアダプターとコンパイル用の依存関係を設定します。Voidのinitではアダプターが自動で設定されます。Hono Markdownブリッジの設定と必要なパッケージは[Markdownアダプターの説明](https://github.com/ts-76/hono-decks/blob/main/packages/decks/README.ja.md)を参照してください。
 
-Hono Markdownでは`<script>`内に相対パスのTSX・JSXをdefault importし、`island: "load"`、`"visible"`、`"idle"`、`"media:(query)"`を指定できます。Islandタグのpropsは文字列とbooleanのリテラルに限ります。任意のスクリプト、JSX式、Islandタグの子要素には対応していません。MDXでは従来どおりコンポーネントの登録と式を使えます。
+Hono Markdownでは`<script>`内で相対パスのTSX・JSXをdefault importし、`island: "load"`、`"visible"`、`"idle"`、`"media:(query)"`を指定できます。Islandタグのpropsは文字列とbooleanのリテラルに限ります。任意のスクリプト、JSX式、Islandタグの子要素には対応していません。MDXでは従来どおりコンポーネントの登録と式を使えます。
 
 ~~~md
 <script>
@@ -98,7 +98,7 @@ title: Interactive slide
 
 ## 発表者ノートを書く
 
-`notes: |`に書いた複数行テキストとMDXコメントは、発表者ノートにまとめられ、スライド本文には表示されません。MDXコメントは、コードの補足として書いた場合もノートとして扱われます。
+`notes: |`に書いた複数行テキストとMDXコメントは、発表者ノートにまとめられ、スライド本文には表示されません。MDXコメントはコードの補足として書いた場合もノートとして扱われます。
 
 <CodeBlock filename={"MDX"} language={"mdx"} code={"---\nnotes: |\n  Explain why generation runs before deployment.\n---\n\n# Build once, serve anywhere\n\n{/* Mention the generated module boundary. */}"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
@@ -108,7 +108,7 @@ title: Interactive slide
 
 ## まずサーバーコンポーネントを使う
 
-`components/index.tsx`の名前付きエクスポートは、同じデッキのMDXからタグとして使えます。デッキごとに登録されるため、別のデッキと同じ名前でも衝突しません。
+`components/index.tsx`の名前付きエクスポートは同じデッキのMDXからタグとして使えます。デッキごとに登録されるため、別のデッキと同じ名前でも衝突しません。
 
 <CodeBlock filename={"TypeScript"} language={"tsx"} code={"// decks/welcome/components/index.tsx\nexport function Metric(props: { value: string; label: string }) {\n  return <figure>\n    <strong>{props.value}</strong>\n    <figcaption>{props.label}</figcaption>\n  </figure>\n}"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
@@ -126,7 +126,7 @@ title: Interactive slide
 
 ## 画像を置き、外部コンテンツを埋め込む
 
-`decks/launch/assets/`に置いた画像は、`deck.mdx`からの相対パスで指定します。`youtube`、`x`、`card`、`embed`、`iframe`は専用記法を使います。
+`decks/launch/assets/`に置いた画像は`deck.mdx`からの相対パスで指定します。`youtube`、`x`、`card`、`embed`、`iframe`は専用記法を使います。
 
 <CodeBlock filename={"MDX"} language={"mdx"} code={"![Architecture](./assets/runtime-boundary.svg)\n\n@[youtube](https://www.youtube.com/watch?v=VIDEO_ID)\n@[x](https://x.com/honojs/status/POST_ID)\n@[card](https://hono.dev/docs/)\n@[embed](https://example.com/demo)\n@[iframe](https://example.com/demo)"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
@@ -150,7 +150,7 @@ URLだけの行は通常のリンクになります。外部iframeを公開す�
 
 <CodeBlock filename={"Terminal"} language={"bash"} code={"npm run dev"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
-設定済みのViteまたはWranglerの`dev`実行中は、保存したデッキが自動で再コンパイルされます。Viteでは対応する内容の編集時に表示とIslandの状態を維持します。クライアントコードの変更時や安全に更新できない場合は表示用iframeを再読み込みし、Islandの状態をリセットして、viewerとスライド・ステップを維持します。Wranglerを直接使う場合のライブリロードはWranglerの動作に従います。CLIのファイル生成を単独で確認するときは`npx hono-decks compile`を実行します。コンパイルエラーには対象ファイルとスライド番号が表示されます。
+設定済みのViteまたはWranglerの`dev`実行中は、保存したデッキが自動で再コンパイルされます。Viteでは対応する内容の編集時に表示とIslandの状態を維持します。クライアントコードの変更時や安全に更新できない場合は表示用iframeを再読み込みし、Islandの状態をリセットします。viewerは開いたままで、スライドとステップの位置は維持されます。Wranglerを直接使う場合のライブリロードはWranglerの動作に従います。CLIのファイル生成を単独で確認するときは`npx hono-decks compile`を実行します。コンパイルエラーには対象ファイルとスライド番号が表示されます。
 
 表示を確認したら、公開画面を変える場合は[ルートと画面](/docs/routing?lang=ja)、環境変数やR2を使う場合は[設定](/docs/configuration?lang=ja)へ進みます。
 

@@ -14,7 +14,7 @@ order: 3
 
 フレームワーク別のVite initはメモリ内の仮想モジュールを使うため、`build.outDir`は不要です。以下の生成ファイルと出力先は汎用CLI・ファイル生成方式の説明です。
 
-`hono-decks init`は、必須の`hono-decks.config.ts`と`src/decks.ts`を作ります。ビルド対象、公開パス、実行時の挙動は、この設定ファイルでまとめて管理します。
+`hono-decks init`は必須の`hono-decks.config.ts`と`src/decks.ts`を作ります。ビルド対象、公開パス、実行時の挙動は、この設定ファイルでまとめて管理します。
 
 <DefinitionList items={[{term: <><code>{"package.json"}</code></>, description: <>{"ViteまたはWranglerを使う、普段の開発コマンドを定義します。"}</>},
 {term: <><code>{"hono-decks.config.ts"}</code></>, description: <>{"CLIと実行時で共有する必須の設定ファイルです。"}</>},
@@ -49,7 +49,7 @@ Viteでは`honoDecks()`を追加し、Wranglerではカスタムビルドに`hon
 
 ## リクエストごとに変わる値を設定する
 
-`defineDecksConfig()`を使うと、HonoのBindingsとVariablesも型検査の対象にできます。`dev`を省略した場合は、ViteとWranglerが設定する`NODE_ENV`から環境を判定します。標準設定では、`vite`と`wrangler dev`は開発モード、プロダクションビルドと`wrangler deploy`は本番モードとして動作します。boolean値または関数を明示すると自動判定より優先されます。環境を判定できない場合は、安全側に倒して本番モードになります。
+`defineDecksConfig()`を使うと、HonoのBindingsとVariablesも型検査の対象にできます。`dev`を省略した場合は、ViteとWranglerが設定する`NODE_ENV`から環境を判定します。標準設定では、`vite`と`wrangler dev`は開発モード、プロダクションビルドと`wrangler deploy`は本番モードとして動作します。boolean値または関数を明示すると自動判定より優先されます。環境を判定できない場合は、安全のため本番モードになります。
 
 <CodeBlock filename={"TypeScript"} language={"typescript"} code={"// hono-decks.config.ts\nimport { defineDecksConfig } from \"hono-decks\"\n\ntype AppEnv = {\n  Bindings: {\n    PRESENTER_ENABLED?: string\n  }\n  Variables: {\n    language: string\n  }\n}\n\nexport default defineDecksConfig<AppEnv>({\n  mountPath: \"/decks\",\n  build: { root: \"decks\", outDir: \"src/generated\" },\n  router: {\n    document: {\n      lang: ({ c }) => c.get(\"language\"),\n    },\n    presenter: {\n      enabled: ({ c, dev }) => dev || c.env.PRESENTER_ENABLED === \"true\",\n    },\n  },\n})"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
@@ -61,7 +61,7 @@ Viteでは`honoDecks()`を追加し、Wranglerではカスタムビルドに`hon
 
 ## 設定が上書きされる順序を確認する
 
-設定は、生成時の既定値、アプリの設定、`decks.router(overrides)`の順に適用されます。入れ子になった設定も`createDecks(config)`が結合します。
+設定は生成時の既定値、アプリの設定、`decks.router(overrides)`の順に適用されます。入れ子になった設定も`createDecks(config)`が結合します。
 
 <CodeBlock filename={"TypeScript"} language={"typescript"} code={"// src/decks.ts\nimport config from \"../hono-decks.config\"\nimport { createDecks } from \"./generated/decks\"\n\nexport const decks = createDecks(config)"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
