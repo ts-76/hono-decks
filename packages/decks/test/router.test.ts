@@ -73,8 +73,8 @@ describe("decksRouter", () => {
     expect(html).toContain("[data-hono-decks-mobile-action='next']");
     expect(html).toContain(".hono-decks-mobile-navigation{position:absolute;top:25%;bottom:25%;display:none");
     expect(html).toContain("width:clamp(2.25rem,6%,2.75rem)");
-    expect(html).toContain("background:rgba(15,23,42,.12)");
-    expect(html).toContain("opacity:.72;pointer-events:none");
+    expect(html).toContain("background:transparent;color:transparent");
+    expect(html).toContain("appearance:none;pointer-events:none");
     expect(html).toContain(".hono-decks-mobile-navigation{display:inline-flex;pointer-events:auto}");
     expect(html).toContain(".hono-decks-viewport>[data-hono-decks-position]{position:absolute;left:50%");
     expect(html).toContain("@media (orientation:landscape) and (max-height:600px)");
@@ -749,7 +749,9 @@ describe("decksRouter", () => {
     expect(first.embedHtml).toMatch(
       /\[data-hono-decks-viewer\]\[data-hono-decks-embed\] \.hono-decks-viewer-controls\{[^}]*z-index:4/,
     );
-    expect(html).toContain("[data-hono-decks-viewer][data-hono-decks-embed] *:focus-visible{outline:2px solid currentColor;outline-offset:2px}");
+    expect(html).toContain(
+      "[data-hono-decks-viewer][data-hono-decks-embed] *:focus-visible{outline:2px solid currentColor;outline-offset:2px}",
+    );
     expect(html).toContain("data-hono-decks-viewer-runtime");
     expect(html).toContain('root.querySelectorAll("[data-hono-decks-viewer-link]")');
     expect(html).toContain('link.setAttribute("href", viewerUrl.href)');
@@ -1577,7 +1579,9 @@ describe("decksRouter", () => {
 
     expect(html).toContain('class="badge"');
     expect(html).toContain("Worker-safe");
-    expect(html).toContain('<script data-hono-decks-client-entry type="module" src="/assets/slides.client.js"></script>');
+    expect(html).toContain(
+      '<script data-hono-decks-client-entry type="module" src="/assets/slides.client.js"></script>',
+    );
   });
 
   it("renders deck-local theme CSS only in deck render and print routes", async () => {
@@ -1621,7 +1625,9 @@ describe("decksRouter", () => {
     const renderHtml = await (await app.request("/slides/deck1/render")).text();
     const asset = await app.request("/slides/_assets/client.js");
 
-    expect(renderHtml).toContain('<script data-hono-decks-client-entry type="module" src="/slides/_assets/client.js"></script>');
+    expect(renderHtml).toContain(
+      '<script data-hono-decks-client-entry type="module" src="/slides/_assets/client.js"></script>',
+    );
     expect(asset.status).toBe(200);
     expect(asset.headers.get("content-type")).toContain("text/javascript");
     expect(asset.headers.get("cache-control")).toBe("no-cache");
@@ -1667,7 +1673,9 @@ describe("decksRouter", () => {
 
     const renderHtml = await (await app.request("/slides/deck1/render")).text();
 
-    expect(renderHtml).toContain('<script data-hono-decks-client-entry type="module" src="/assets/slides.client.js"></script>');
+    expect(renderHtml).toContain(
+      '<script data-hono-decks-client-entry type="module" src="/assets/slides.client.js"></script>',
+    );
     expect(renderHtml).not.toContain("/slides/_assets/client.js");
   });
 
@@ -1722,11 +1730,14 @@ describe("decksRouter", () => {
     expect(renderHtml).toContain('new EventSource("/decks/deck1/events")');
 
     const production = new Hono();
-    production.route("/decks", decksRouter({
-      source: manifestDeckSource({ decks: [deck] }),
-      dev: false,
-      liveReloadPath: () => "/events",
-    }));
+    production.route(
+      "/decks",
+      decksRouter({
+        source: manifestDeckSource({ decks: [deck] }),
+        dev: false,
+        liveReloadPath: () => "/events",
+      }),
+    );
     expect(await (await production.request("/decks/deck1/render")).text()).not.toContain("new EventSource");
   });
 
