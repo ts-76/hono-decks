@@ -2,7 +2,7 @@
 import DemoFrame from "./demo-frame";
 
 // Public sample origin, shared by both documentation languages.
-export const voidSampleOrigin = "https://void-hono-decks-example.ts-create.workers.dev";
+export const voidSampleOrigin = "https://void.hono-decks.com";
 
 export function VoidDeckDemo({ locale = "en" }: { locale?: "en" | "ja" }) {
   return (
