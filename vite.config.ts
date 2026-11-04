@@ -27,6 +27,7 @@ export default defineConfig({
     ignorePatterns: [
       // Installed and checked independently by the consumer verification scripts.
       "fixtures/void-markdown/**",
+      "examples/void/**",
       "fixtures/hono-vite/**",
       "fixtures/honox-vite/**",
       ".agents/**",

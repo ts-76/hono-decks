@@ -1,0 +1,25 @@
+{
+  "name": "void-hono-decks-example",
+  "private": true,
+  "type": "module",
+  "packageManager": "npm@11.19.1",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5197 --strictPort",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 4197 --strictPort",
+    "typecheck": "void prepare && hono-decks compile && tsc --noEmit"
+  },
+  "dependencies": {
+    "hono": "4.13.16",
+    "hono-decks": "1.4.6",
+    "void": "1.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.1",
+    "typescript": "7.0.2",
+    "vite": "8.3.5"
+  },
+  "engines": {
+    "node": ">=24.22.1 <25"
+  }
+}
