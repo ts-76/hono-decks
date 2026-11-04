@@ -24,11 +24,11 @@ ${viewerViewportRule()}
 .hono-decks-viewport:focus-visible{outline:2px solid currentColor;outline-offset:4px}
 .hono-decks-frame-stage{width:100%;height:100%}
 .hono-decks-frame-stage iframe{width:100%;height:100%;border:0;display:block}
-.hono-decks-mobile-navigation{position:absolute;top:25%;bottom:25%;display:none;width:clamp(2.25rem,6%,2.75rem);align-items:center;justify-content:center;z-index:2;margin:0;border:0;border-radius:8px;background:rgba(15,23,42,.12);color:rgba(238,242,255,.56);padding:0;appearance:none;opacity:.72;pointer-events:none;touch-action:manipulation}
+.hono-decks-mobile-navigation{position:absolute;top:25%;bottom:25%;display:none;width:clamp(2.25rem,6%,2.75rem);align-items:center;justify-content:center;z-index:2;margin:0;border:0;border-radius:8px;background:transparent;color:transparent;padding:0;appearance:none;pointer-events:none;touch-action:manipulation}
 .hono-decks-mobile-navigation-previous{left:.25rem}
 .hono-decks-mobile-navigation-next{right:.25rem}
-.hono-decks-mobile-navigation:focus-visible{outline:2px solid currentColor;outline-offset:-4px}
-.hono-decks-mobile-navigation:active{background:rgba(15,23,42,.28);color:#eef2ff;opacity:1}
+.hono-decks-mobile-navigation:focus-visible{background:rgba(15,23,42,.28);color:#eef2ff;outline:2px solid currentColor;outline-offset:-4px}
+.hono-decks-mobile-navigation:active{background:rgba(15,23,42,.28);color:#eef2ff}
 .hono-decks-mobile-navigation .hono-decks-control-icon{width:22px;height:22px}
 .hono-decks-viewport>[data-hono-decks-position]{position:absolute;left:50%;bottom:max(8px,env(safe-area-inset-bottom,0));z-index:3;transform:translateX(-50%);border:0;border-radius:4px;background:rgba(15,23,42,.9);color:#eef2ff;padding:4px 6px;font:inherit;font-size:12px;line-height:1;opacity:1;pointer-events:none;white-space:nowrap}
 .hono-decks-viewer-controls{position:absolute;left:50%;bottom:max(.25rem,env(safe-area-inset-bottom,0));display:flex;gap:8px;align-items:center;justify-content:center;max-width:calc(100% - 1rem);min-width:0;z-index:4;transform:translateX(-50%)}
@@ -39,6 +39,7 @@ ${viewerViewportRule()}
 .hono-decks-viewer-controls button,.hono-decks-viewer-controls a{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;box-sizing:border-box;text-decoration:none;cursor:pointer}
 .hono-decks-viewer-controls button *,.hono-decks-viewer-controls a *{pointer-events:none;cursor:pointer}
 .hono-decks-control-icon{width:16px;height:16px;flex:0 0 auto;stroke:currentColor;pointer-events:none}
+@media (hover:hover){.hono-decks-mobile-navigation:hover{background:rgba(15,23,42,.28);color:#eef2ff}}
 @media (max-width:480px){.hono-decks-viewer-controls{gap:4px}.hono-decks-viewer-controls button,.hono-decks-viewer-controls a{width:36px;height:36px}.hono-decks-viewer-controls button,.hono-decks-viewer-controls a,.hono-decks-viewer-controls span{padding:7px 8px}}
 @media (pointer:coarse){.hono-decks-mobile-navigation{display:inline-flex;pointer-events:auto}.hono-decks-viewer-controls [data-hono-decks-navigation-control="fullscreen"],.hono-decks-viewer-controls [data-hono-decks-print]{display:none}}
 @media (orientation:landscape) and (max-height:600px){.hono-decks-viewer-controls{left:auto;right:max(.5rem,env(safe-area-inset-right,0));top:50%;bottom:auto;flex-direction:column;transform:translateY(-50%)}.hono-decks-viewport{width:min(100%,calc(100dvh * 16 / 9))}}
@@ -55,11 +56,11 @@ ${root} .hono-decks-viewport{width:100%;aspect-ratio:${VIEWER_ASPECT_RATIO};posi
 ${root} .hono-decks-viewport:focus-visible{outline:2px solid currentColor;outline-offset:4px}
 ${root} .hono-decks-frame-stage,${root} .hono-decks-frame-stage iframe{width:100%;height:100%}
 ${root} .hono-decks-frame-stage iframe{border:0;display:block}
-${root} .hono-decks-mobile-navigation{position:absolute;top:25%;bottom:25%;display:none;width:clamp(2.25rem,6%,2.75rem);align-items:center;justify-content:center;z-index:2;margin:0;border:0;border-radius:8px;background:rgba(15,23,42,.12);color:rgba(238,242,255,.56);padding:0;appearance:none;opacity:.72;pointer-events:none;touch-action:manipulation}
+${root} .hono-decks-mobile-navigation{position:absolute;top:25%;bottom:25%;display:none;width:clamp(2.25rem,6%,2.75rem);align-items:center;justify-content:center;z-index:2;margin:0;border:0;border-radius:8px;background:transparent;color:transparent;padding:0;appearance:none;pointer-events:none;touch-action:manipulation}
 ${root} .hono-decks-mobile-navigation-previous{left:.25rem}
 ${root} .hono-decks-mobile-navigation-next{right:.25rem}
-${root} .hono-decks-mobile-navigation:focus-visible{outline:2px solid currentColor;outline-offset:-4px}
-${root} .hono-decks-mobile-navigation:active{background:rgba(15,23,42,.28);color:#eef2ff;opacity:1}
+${root} .hono-decks-mobile-navigation:focus-visible{background:rgba(15,23,42,.28);color:#eef2ff;outline:2px solid currentColor;outline-offset:-4px}
+${root} .hono-decks-mobile-navigation:active{background:rgba(15,23,42,.28);color:#eef2ff}
 ${root} .hono-decks-mobile-navigation .hono-decks-control-icon{width:22px;height:22px}
 ${root} .hono-decks-viewport>[data-hono-decks-position]{position:absolute;left:50%;bottom:8px;z-index:3;transform:translateX(-50%);border:0;border-radius:4px;background:rgba(15,23,42,.9);color:#eef2ff;padding:4px 6px;font:inherit;font-size:12px;line-height:1;opacity:1;pointer-events:none;white-space:nowrap}
 ${root} .hono-decks-viewer-controls{position:absolute;left:50%;bottom:max(.25rem,env(safe-area-inset-bottom,0));display:flex;gap:8px;align-items:center;justify-content:center;max-width:calc(100% - 1rem);min-width:0;z-index:4;transform:translateX(-50%)}
@@ -69,6 +70,7 @@ ${root} .hono-decks-viewer-controls button,${root} .hono-decks-viewer-controls a
 ${root} .hono-decks-viewer-controls button *,${root} .hono-decks-viewer-controls a *{pointer-events:none;cursor:pointer}
 ${root} .hono-decks-control-icon{width:16px;height:16px;flex:0 0 auto;stroke:currentColor;pointer-events:none}
 ${root} .hono-decks-viewer-toc button{font:inherit}
+@media (hover:hover){${root} .hono-decks-mobile-navigation:hover{background:rgba(15,23,42,.28);color:#eef2ff}}
 @media (pointer:coarse){${root} .hono-decks-mobile-navigation{display:inline-flex;pointer-events:auto}}
 @media (prefers-reduced-motion: reduce){${root},${root} *{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}}`;
 }
