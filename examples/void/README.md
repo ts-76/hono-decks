@@ -18,6 +18,8 @@ npm run dev
 
 `http://127.0.0.1:5197/` を開きます。`npm run preview` はビルドした Worker を `http://127.0.0.1:4197/` で確認します。Vite+ がある場合は、各 npm コマンドを `vp env exec --node 24.22.1 --package-manager npm@11.19.1 npm ...` で実行できます。
 
+Void 1.5.0 の Drizzle CLI が依存する `@esbuild-kit/core-utils` に限り、`overrides` で esbuild を `0.25.12` に固定しています。元の `0.18.20` は開発サーバーの既知の脆弱性（[GHSA-67mh-4wv8-2f99](https://github.com/advisories/GHSA-67mh-4wv8-2f99)）に該当します。古い変換アダプターの要求範囲を超えるため、更新時には通常の型検査・ビルドに加えて TypeScript の同期・非同期変換と Drizzle の設定読込・SQL生成を確認してください。Void 側の依存更新で解消されたら、この限定 override を削除できます。
+
 ## 構成と埋め込み
 
 - `decks/welcome/deck.mdx`: スライドの内容。Vite プラグインが開発時に変更を監視します。
