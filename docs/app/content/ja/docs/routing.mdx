@@ -1,0 +1,79 @@
+---
+title: "公開するルートと画面を選ぶ"
+description: "ルーターが作成するURLを確認し、必要な画面だけを公開・カスタマイズします。"
+order: 5
+---
+
+# 公開するルートと画面を選ぶ
+
+ルーターが作成するURLを確認し、必要な画面だけを公開・カスタマイズします。
+
+<section id={"model"}>
+
+## mountPathをすべてのルートの起点にする
+
+`app.route(decks.mountPath, decks.router())`と登録すると、設定した`mountPath`の下にすべてのルートが作られます。
+
+<Callout title={"閲覧者に案内するURL"}>
+
+閲覧者には`decks.paths(slug).viewer`を案内します。`render`はビューアー内のiframeが読み込むURLです。
+
+</Callout>
+
+</section>
+
+<section id={"surfaces"}>
+
+## 画面ごとの役割を確認する
+
+| ルート / API | 役割 |
+| --- | --- |
+| `/` | 公開デッキの一覧。不要なら無効化できます |
+| `/:slug` | 閲覧用ビューアー。操作ボタンとスライドを表示します |
+| `/:slug/render` | ビューアー内のスライド本体 |
+| `/:slug/presentation` | 投影・共有画面用のスライド表示 |
+| `/:slug/presenter` | 発表者向け。次のスライドやノートを表示します |
+| `/:slug/print` | 印刷・PDF保存向けの全スライド表示 |
+| `/:slug/embed` | 外部iframe用。embedを有効にした場合だけ作成します |
+
+</section>
+
+<section id={"visibility"}>
+
+## 使わない画面を設定ファイルで無効にする
+
+通常は`hono-decks.config.ts`の`router.pages`で、不要な画面を`false`にします。標準では`embed`以外の画面が有効です。`dev`を省略すると、ViteとWranglerが設定する`NODE_ENV`から開発モードを判定します。
+
+<CodeBlock filename={"hono-decks.config.ts"} language={"typescript"} code={"export default defineDecksConfig({\n  mountPath: \"/decks\",\n  router: {\n    pages: {\n      index: false,\n      print: false,\n      presenter: ({ dev }) => dev,\n    },\n  },\n})"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+関数を指定した項目はリクエストごとに評価されるため、認証状態や環境変数による制御にも使えます。
+
+`print`を無効にすると、標準ビューアーと外部埋め込みの印刷ボタンも表示されません。ビューアーのCmd / Ctrl + Pは専用ルートへ移動せず、ブラウザ本来の印刷として動作します。独自に追加したリンクは自動では削除されません。
+
+</section>
+
+<section id={"custom"}>
+
+## 標準UIを調整する、または独自画面を作る
+
+`pages.index.render`は、デッキ一覧の見た目だけを変える場合に使います。共通設定は`hono-decks.config.ts`に置きます。次の`decks.router(overrides)`は、特定の登録箇所だけを上書きする例です。
+
+<CodeBlock filename={"TypeScript"} language={"typescript"} code={"decks.router({\n  pages: {\n    index: {\n      title: ({ decks }) => String(decks.length) + \" decks\",\n      render: ({ title, defaultContent }) => <main><h1>{title}</h1>{defaultContent}</main>,\n    },\n  },\n})"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+### Honoアプリ独自の画面を作る
+
+`decks.context()`は、独自の詳細画面や管理画面へデッキ、目次、URL情報を渡します。
+
+<CodeBlock filename={"TypeScript"} language={"typescript"} code={"app.get(\n  \"/decks/:slug/about\",\n  decks.context(),\n  (c) => c.json({\n    title: c.var.deck.meta.title,\n    slides: c.var.deck.slides.length,\n    toc: c.var.deckToc,\n  }),\n)"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+</section>
+
+<section id={"state"}>
+
+## 同じスライド位置をURLで共有する
+
+ビューアー、発表画面、発表者画面は、スライド位置を`?slide=2&step=1`の形で共有します。`slide`は1から始まるスライド番号です。`step`は0から始まり、`step=0`は段階表示がまだ始まっていない状態を表します。最後のスライドの最後のステップから先へ進んでも、URLの値は変わりません。
+
+外部サイトへ埋め込む場合は[HTMLとセキュリティ](/docs/security?lang=ja)で許可するオリジンを設定します。すべてのオプションを探す場合は[API](/api?lang=ja)を参照してください。
+
+</section>

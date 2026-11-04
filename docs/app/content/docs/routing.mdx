@@ -1,0 +1,79 @@
+---
+title: "Choose routes and UI surfaces"
+description: "See which URLs a mounted router creates, then expose and customize only the surfaces your application needs."
+order: 5
+---
+
+# Choose routes and UI surfaces
+
+See which URLs a mounted router creates, then expose and customize only the surfaces your application needs.
+
+<section id={"model"}>
+
+## Use the configured mount path for every deck URL
+
+Mounting `app.route(decks.mountPath, decks.router())` places every route below the configured mount path.
+
+<Callout title={"The URL most people open"}>
+
+Share `decks.paths(slug).viewer` with viewers. The render route is the iframe runtime.
+
+</Callout>
+
+</section>
+
+<section id={"surfaces"}>
+
+## Understand each generated surface
+
+| Route / API | Purpose |
+| --- | --- |
+| `/` | Public deck index; can be disabled |
+| `/:slug` | Viewer with controls and the slide frame |
+| `/:slug/render` | Slide document inside the viewer iframe |
+| `/:slug/presentation` | Projection or shared display |
+| `/:slug/presenter` | Speaker view with next slide and notes |
+| `/:slug/print` | All slides for printing or browser PDF |
+| `/:slug/embed` | External iframe route; created only when embed is enabled |
+
+</section>
+
+<section id={"visibility"}>
+
+## Disable unused surfaces in the shared config
+
+Normally, set unused surfaces to `false` in `router.pages` inside `hono-decks.config.ts`. Every standard surface except `embed` is enabled by default. When `dev` is omitted, development mode is derived from the `NODE_ENV` set by Vite or Wrangler.
+
+<CodeBlock filename={"hono-decks.config.ts"} language={"typescript"} code={"export default defineDecksConfig({\n  mountPath: \"/decks\",\n  router: {\n    pages: {\n      index: false,\n      print: false,\n      presenter: ({ dev }) => dev,\n    },\n  },\n})"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+Resolver functions run per request, so they can also check authentication or environment bindings.
+
+Disabling `print` also removes the print button from the default viewer and external embed. Cmd / Ctrl + P then uses the browser's native print behavior instead of opening the dedicated route. Links added explicitly by your application are left unchanged.
+
+</section>
+
+<section id={"custom"}>
+
+## Customize the default UI or build an app-owned page
+
+Use `pages.index.render` to change only the deck index. Keep shared behavior in `hono-decks.config.ts`; the following `decks.router(overrides)` example changes one mount point only.
+
+<CodeBlock filename={"TypeScript"} language={"typescript"} code={"decks.router({\n  pages: {\n    index: {\n      title: ({ decks }) => String(decks.length) + \" decks\",\n      render: ({ title, defaultContent }) => <main><h1>{title}</h1>{defaultContent}</main>,\n    },\n  },\n})"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+### Build a route owned by the Hono app
+
+`decks.context()` supplies deck, TOC, and URL metadata to custom detail or admin routes.
+
+<CodeBlock filename={"TypeScript"} language={"typescript"} code={"app.get(\n  \"/decks/:slug/about\",\n  decks.context(),\n  (c) => c.json({\n    title: c.var.deck.meta.title,\n    slides: c.var.deck.slides.length,\n    toc: c.var.deckToc,\n  }),\n)"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+</section>
+
+<section id={"state"}>
+
+## Share the same slide position by URL
+
+The viewer, presentation, and presenter screens share the slide position as `?slide=2&step=1`. `slide` is one-based. `step` starts at zero, where `step=0` means staged content has not started appearing. Advancing beyond the last step of the last slide leaves the URL unchanged.
+
+For external iframe use, continue to [security](/docs/security?lang=en) and allow explicit origins. Use the [API reference](/api?lang=en) when you need a specific option.
+
+</section>
