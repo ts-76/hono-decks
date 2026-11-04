@@ -259,6 +259,7 @@ advanced entry は独自 source や独自 pipeline を作る場合に限定し�
 - `examples/minimal`: standalone Worker の最小構成
 - `examples/basic`: R2 assets、Browser Rendering、custom page、client components
 - `examples/honox`: HonoX route への mount
+- `docs`: ドキュメントサイトと埋め込みデモ
 - `examples/ogp`: Satori による browserless な build-time OGP 生成
 
 各 example は同じ `hono-decks.config.ts` contract を使います。`decks:compile`、`typecheck`、`test`、`deploy` の前に generated modules を更新します。
@@ -266,6 +267,8 @@ advanced entry は独自 source や独自 pipeline を作る場合に限定し�
 ## Cloudflare
 
 copy 可能な Worker example は JSONC の Wrangler config、current compatibility date、`nodejs_compat`、`wrangler types` で生成した binding type を基準にします。secret は config の `vars` へ置かず `wrangler secret put` で登録してください。
+
+ドキュメントの編集方法、コンポーネントの配置、サイト設定は[ドキュメントサイトのガイド](docs/README.md)を参照してください。
 
 ## Maintainer release flow
 

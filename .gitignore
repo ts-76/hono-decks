@@ -9,3 +9,5 @@ dist-dry-run/
 .impeccable/config.local.json
 
 /examples/honox/app/generated/
+
+/docs/app/generated/

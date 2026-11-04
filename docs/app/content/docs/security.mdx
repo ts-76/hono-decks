@@ -1,0 +1,73 @@
+---
+title: "Document policy and security"
+description: "Manage authentication and CSP in the Hono app, then apply language, nonce, and external iframe settings to each screen."
+order: 6
+---
+
+# Document policy and security
+
+Manage authentication and CSP in the Hono app, then apply language, nonce, and external iframe settings to each screen.
+
+<section id={"defaults"}>
+
+## Review the routes created by default
+
+By default, the router creates the index, viewer, slide document, presentation, presenter, and print routes. hono-decks does not add authentication to those routes. Only the external `/:slug/embed` route is opt-in. Disable unused surfaces through `router.pages`.
+
+The Hono application owns authentication, authorization, and CSP headers. hono-decks applies the resolved language and nonce to the HTML it generates.
+
+</section>
+
+<section id={"language"}>
+
+## Detect language in Hono and pass it to every surface
+
+Hono's `languageDetector()` checks query, cookie, then `Accept-Language` by default and exposes the result through `c.get("language")`.
+
+<CodeBlock filename={"TypeScript"} language={"typescript"} code={"import { languageDetector } from \"hono/language\"\n\napp.use(languageDetector({\n  supportedLanguages: [\"ja\", \"en\"],\n  fallbackLanguage: \"en\",\n}))"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+Pass that value to `document.lang` so index, viewer, render, print, presentation, and presenter all receive the same `<html lang>`.
+
+</section>
+
+<section id={"csp"}>
+
+## Use the same nonce in the CSP header and generated HTML
+
+Create one nonce per request and store it in Hono Variables. The value in the CSP header must match the value returned by `document.nonce`.
+
+<CodeBlock filename={"Application middleware"} language={"typescript"} code={"import { Hono } from \"hono\"\n\ntype AppEnv = {\n  Variables: {\n    cspNonce: string\n    language: string\n  }\n}\n\nconst app = new Hono<AppEnv>()\n\napp.use(\"*\", async (c, next) => {\n  const nonce = crypto.randomUUID()\n  c.set(\"cspNonce\", nonce)\n  c.header(\"Content-Security-Policy\", [\n    \"default-src 'self'\",\n    \"object-src 'none'\",\n    \"base-uri 'self'\",\n    `script-src 'self' 'nonce-${nonce}'`,\n    `style-src 'self' 'nonce-${nonce}'`,\n    \"img-src 'self' data: https:\",\n    \"frame-src 'self' https://www.youtube.com\",\n  ].join(\"; \"))\n  await next()\n})"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+<CodeBlock filename={"hono-decks configuration"} language={"typescript"} code={"decks.router({\n  document: {\n    lang: ({ c }) => c.get(\"language\"),\n    nonce: ({ c }) => c.get(\"cspNonce\"),\n    head: ({ surface }) => (\n      <meta name=\"hono-decks-surface\" content={surface} />\n    ),\n  },\n})"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+hono-decks adds the nonce to package-generated `<style>` and `<script>` elements. Add required origins to the application CSP when using YouTube, remote images, or islands.
+
+</section>
+
+<section id={"embed"}>
+
+## Allow explicit embedding origins
+
+Enable `embed` only for external iframes and list allowed parent origins.
+
+<CodeBlock filename={"TypeScript"} language={"typescript"} code={"decks.router({\n  embed: {\n    frameAncestors: [\"https://blog.example.com\"],\n    document: { nonce: ({ c }) => c.get(\"cspNonce\") },\n    viewer: { controls: false },\n  },\n})"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+<Callout title={"When origins are omitted"}>
+
+`frame-ancestors 'self'` applies, so another origin cannot embed the page. The embed response removes `X-Frame-Options` to let the configured CSP control framing.
+
+</Callout>
+
+</section>
+
+<section id={"check"}>
+
+## Inspect real responses before release
+
+<DefinitionList items={[{term: <>{"Drafts and presenter"}</>, description: <>{"Confirm routes that should stay private return 404 in production."}</>},
+{term: <>{"CSP"}</>, description: <>{"Check the browser console for CSP violations and confirm header and HTML nonces match."}</>},
+{term: <>{"External embed"}</>, description: <>{"Verify the allowed parent loads and an unlisted origin is rejected."}</>}]} />
+
+[Open the Document and Embed API →](/api?lang=en#deck-document-options)
+
+</section>

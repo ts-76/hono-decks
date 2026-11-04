@@ -1,0 +1,138 @@
+/* Foundations and reading roles shared by the shell and copied components.
+   Override semantic --docs-* properties after the default stylesheet. */
+:root {
+  color-scheme: light;
+
+  /* Canvas is pinned to #F9FAFB. Surfaces use very low-chroma cool neutrals;
+     the rust accent and semantic colors carry deliberate chroma. Hex values are
+     rounded sRGB outputs; check-theme.mjs reports their actual metrics. */
+  --docs-bg: #f9fafb;
+  --docs-panel: #ffffff;
+  --docs-surface: #fafbfd;
+  --docs-text: #202833;
+  --docs-muted: #515f72;
+  --docs-line: #d9dfe8;
+  --docs-accent: #a34222;
+  --docs-tint: #fbede7;
+  --docs-info: #1c5bc3;
+  --docs-tip: #00754c;
+  --docs-warning: #8a5c00;
+  --docs-danger: #c11b41;
+  --docs-code-keyword: var(--docs-accent);
+  --docs-code-string: var(--docs-tip);
+  --docs-code-number: var(--docs-danger);
+  --docs-code-function: var(--docs-info);
+  --docs-code-type: var(--docs-info);
+  --docs-code-comment: var(--docs-muted);
+  --docs-code-punctuation: var(--docs-muted);
+
+  /* A four-pixel foundation. Aliases retain the existing customization API. */
+  --docs-space-1: 0.25rem;
+  --docs-space-2: 0.5rem;
+  --docs-space-3: 0.75rem;
+  --docs-space-4: 1rem;
+  --docs-space-5: 1.25rem;
+  --docs-space-6: 1.5rem;
+  --docs-space-8: 2rem;
+  --docs-space-10: 2.5rem;
+  --docs-space-12: 3rem;
+  --docs-space-16: 4rem;
+  --docs-space-xs: var(--docs-space-1);
+  --docs-space-sm: var(--docs-space-2);
+  --docs-space-md: var(--docs-space-4);
+  --docs-space-lg: var(--docs-space-6);
+  --docs-space-xl: var(--docs-space-8);
+  --docs-panel-padding: var(--docs-space-5);
+  --docs-title-gap: var(--docs-space-2);
+  --docs-block-gap: var(--docs-space-5);
+  --docs-section-gap: var(--docs-space-10);
+  --docs-paragraph-gap: var(--docs-space-4);
+  --docs-disclosure-padding: var(--docs-space-3);
+  --docs-code-padding-block: var(--docs-space-3);
+  --docs-inline-code-padding: 2px 5px;
+
+  /* One family, with separate reading, component, and utility roles. */
+  --docs-font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --docs-code-font: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --docs-text-xs: 0.75rem;
+  --docs-text-sm: 0.875rem;
+  --docs-text-md: 1rem;
+  --docs-text-lg: 1.125rem;
+  --docs-text-xl: 1.25rem;
+  --docs-text-2xl: 1.5rem;
+  --docs-page-title-size: clamp(2rem, 1rem + 2.5vw, 2.5rem);
+  --docs-section-title-size: var(--docs-text-2xl);
+  --docs-title-size: var(--docs-text-lg);
+  --docs-ui-size: var(--docs-text-sm);
+  --docs-code-size: var(--docs-text-sm);
+  --docs-leading-body: 1.75;
+  --docs-leading-ui: 1.5;
+  --docs-leading-heading: 1.2;
+  --docs-leading-code: 1.75;
+  --docs-weight-body: 400;
+  --docs-weight-ui: 500;
+  --docs-weight-heading: 600;
+  --docs-heading-tracking: -0.025em;
+  --docs-measure: 72ch;
+
+  --docs-radius: 0.5rem;
+  --docs-control-radius: 0.375rem;
+  --docs-control-height: 2.25rem;
+  --docs-header-height: 4.5rem;
+  --docs-focus-width: 2px;
+  --docs-focus-offset: 3px;
+}
+@media (max-width: 760px) {
+  :root {
+    --docs-panel-padding: var(--docs-space-4);
+    --docs-section-gap: var(--docs-space-8);
+  }
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --docs-bg: #181b1f;
+    --docs-panel: #1e2125;
+    --docs-surface: #272a30;
+    --docs-text: #e5e8ed;
+    --docs-muted: #a0a8b6;
+    --docs-line: #383d46;
+    --docs-accent: #ffad8c;
+    --docs-tint: #362821;
+    --docs-info: #95baff;
+    --docs-tip: #6dd09e;
+    --docs-warning: #fabc59;
+    --docs-danger: #ff9aab;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --docs-bg: #181b1f;
+  --docs-panel: #1e2125;
+  --docs-surface: #272a30;
+  --docs-text: #e5e8ed;
+  --docs-muted: #a0a8b6;
+  --docs-line: #383d46;
+  --docs-accent: #ffad8c;
+  --docs-tint: #362821;
+  --docs-info: #95baff;
+  --docs-tip: #6dd09e;
+  --docs-warning: #fabc59;
+  --docs-danger: #ff9aab;
+}
+@media (forced-colors: active) {
+  :root {
+    --docs-bg: Canvas;
+    --docs-panel: Canvas;
+    --docs-surface: Canvas;
+    --docs-text: CanvasText;
+    --docs-muted: CanvasText;
+    --docs-line: CanvasText;
+    --docs-accent: LinkText;
+    --docs-tint: Canvas;
+    --docs-info: LinkText;
+    --docs-tip: CanvasText;
+    --docs-warning: CanvasText;
+    --docs-danger: CanvasText;
+  }
+}
