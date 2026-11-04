@@ -1,0 +1,9 @@
+node_modules/
+.void/
+.cloudflare/
+lib/generated/
+dist/
+.wrangler/
+.env*
+.dev.vars*
+.void-wrangler.jsonc

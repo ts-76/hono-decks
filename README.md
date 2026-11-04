@@ -262,6 +262,7 @@ Use the advanced entry only when building a custom source or pipeline.
 - `examples/honox`: mounting the router in a HonoX route
 - `docs`: documentation site and embedded demo
 - `examples/ogp`: browserless build-time OGP generation with Satori
+- [`examples/void`](examples/void): deployed Void integration and same-origin iframe; an independent npm example pinned to published `hono-decks@1.4.6` (run `npm ci`, `npm run typecheck`, and `npm run build` inside that directory). It is excluded from the Bun workspace and checked by its own CI job. The Bun examples are listed explicitly in the root `workspaces`; add future Bun examples to that list.
 
 Every example uses the same `hono-decks.config.ts` contract. The example scripts update generated modules before `decks:compile`, `typecheck`, `test`, and `deploy`.
 

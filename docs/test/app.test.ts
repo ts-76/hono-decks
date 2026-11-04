@@ -422,7 +422,7 @@ describe("HonoX documentation site", () => {
     const html = await (await app.request(`/docs/examples?lang=${locale}`)).text();
     expect(html).toContain('src="https://void.hono-decks.com/slides/welcome/embed"');
     expect(html).toContain('href="https://void.hono-decks.com"');
-    expect(html).toContain("https://github.com/ts-76/honoxpress/tree/ad1909e/pilots/void-decks");
+    expect(html).toContain("https://github.com/ts-76/hono-decks/tree/main/examples/void");
     expect(html).toContain('src="https://honox.hono-decks.com/decks/honox/embed"');
   });
 

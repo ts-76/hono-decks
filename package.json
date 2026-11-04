@@ -3,7 +3,10 @@
   "private": true,
   "workspaces": [
     "packages/*",
-    "examples/*",
+    "examples/basic",
+    "examples/minimal",
+    "examples/honox",
+    "examples/ogp",
     "docs"
   ],
   "type": "module",

@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "source": {
+    "name": "void-hono-decks-example",
+    "routes": [
+      {
+        "pattern": "void.hono-decks.com",
+        "custom_domain": true
+      }
+    ],
+    "workers_dev": true,
+    "preview_urls": false
+  },
+  "resolved": {
+    "name": "void-hono-decks-example",
+    "workers_dev": true,
+    "preview_urls": false,
+    "compatibility_date": "2026-02-24",
+    "routes": [
+      {
+        "pattern": "void.hono-decks.com",
+        "custom_domain": true
+      }
+    ]
+  },
+  "text": "{\n  \"name\": \"void-hono-decks-example\",\n  \"workers_dev\": true,\n  \"preview_urls\": false,\n  \"compatibility_date\": \"2026-02-24\",\n  \"routes\": [\n    {\n      \"pattern\": \"void.hono-decks.com\",\n      \"custom_domain\": true\n    }\n  ]\n}\n"
+}
