@@ -1,0 +1,93 @@
+@layer documentation, application;
+@import "../public/style.css" layer(documentation);
+@import "./site.css" layer(application);
+@import "./home.css" layer(application);
+
+@layer application {
+  [hidden] {
+    display: none !important;
+  }
+  .breadcrumbs {
+    flex-wrap: wrap;
+  }
+  .prose section,
+  .prose .hx-api-reference {
+    scroll-margin-top: calc(var(--docs-header-height) + var(--docs-space-8));
+  }
+  .prose > h1 + p {
+    color: var(--docs-muted);
+    font-size: var(--docs-text-md);
+  }
+  .hx-markdown-table {
+    overflow-x: auto;
+    margin-block: var(--docs-space-lg);
+    border: 1px solid var(--docs-line);
+    border-radius: var(--docs-radius);
+  }
+  .hx-markdown-table table {
+    width: 100%;
+    min-width: 30rem;
+    border-collapse: collapse;
+  }
+  .hx-markdown-table th,
+  .hx-markdown-table td {
+    text-align: left;
+    padding: var(--docs-space-sm) var(--docs-space-md);
+    border-bottom: 1px solid var(--docs-line);
+    font-size: var(--docs-ui-size);
+  }
+  .hx-markdown-table th {
+    color: var(--docs-muted);
+    background: var(--docs-surface);
+  }
+  .hx-markdown-table tr:last-child td {
+    border-bottom: 0;
+  }
+  .hx-markdown-table code {
+    font-family: var(--docs-code-font);
+    white-space: nowrap;
+  }
+  .mobile-page-nav {
+    display: none;
+  }
+  .home .hero-demo,
+  .home .demo-toolbar,
+  .home .demo-meta {
+    color-scheme: dark;
+  }
+  .home .hero-demo {
+    background: var(--dark);
+  }
+  .home .code-block {
+    margin: 0;
+  }
+  .home h2 {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+  }
+  /* Match honoxpress's breakpoint for hiding the right-hand TOC. */
+  @media (max-width: 1180px) {
+    .mobile-page-nav {
+      display: block;
+      margin-bottom: var(--docs-space-lg);
+      border-block: 1px solid var(--docs-line);
+    }
+    .mobile-page-nav-trigger {
+      width: 100%;
+      font-size: var(--docs-ui-size);
+      font-weight: var(--docs-weight-ui);
+    }
+    .mobile-page-nav nav {
+      padding-block: var(--docs-space-sm);
+    }
+    .mobile-page-nav .nav-caption {
+      display: none;
+    }
+    .mobile-page-nav nav a {
+      display: flex;
+      align-items: center;
+      min-height: 44px;
+      padding-block: var(--docs-space-xs);
+      text-decoration: none;
+    }
+  }
+}

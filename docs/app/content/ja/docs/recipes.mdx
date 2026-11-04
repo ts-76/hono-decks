@@ -1,0 +1,71 @@
+---
+title: "OGP画像とファイル出力"
+description: "Satoriによるビルド時のOGP画像生成と、Cloudflare Browser RunによるPDF・PNG出力を追加します。"
+order: 4
+---
+
+# OGP画像とファイル出力
+
+Satoriによるビルド時のOGP画像生成と、Cloudflare Browser RunによるPDF・PNG出力を追加します。
+
+<section id={"ogp"}>
+
+## SatoriでOGP画像をビルド時に保存する
+
+Browser Renderingを使わず、`compileDecks()`が返すデッキ情報からSatoriでSVGを、resvgで1200×630のPNGを生成できます。画像生成はNode.js側のビルドスクリプトに置くため、Workerの実行時コードやhono-decks本体に依存を追加する必要はありません。
+
+<CodeBlock filename={"hono-decks.config.ts"} language={"typescript"} code={"export default defineDecksConfig({\n  mountPath: \"/decks\",\n  router: {\n    viewer: { openGraph: true },\n  },\n})"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+`viewer.openGraph`を有効にすると、`decks.paths(slug).ogImage`（既定では`/decks/:slug/og.png`）の絶対URLを使ったOpen Graph / Twitter Cardタグを生成します。PNGはWrangler Static Assetsへ保存します。
+
+<Callout title={"フォントをビルド対象に含める"}>
+
+SatoriはTTF / OTF / WOFFを扱えますが、WOFF2には対応していません。日本語を描画する場合は、日本語の文字を含むフォントファイルを同梱し、そのディレクトリを`wrangler.jsonc`の`build.watch_dir`にも追加します。
+
+</Callout>
+
+[Satori + resvgの実装例を見る →](https://github.com/ts-76/hono-decks/tree/main/examples/ogp)
+
+`build.ogpCacheFile`はスライド内のリンクカード用キャッシュです。ビューアーのOGP画像とは別に管理されます。
+
+</section>
+
+<section id={"browser-export"}>
+
+## Browser RunでPDF / PNGを書き出す
+
+Cloudflare Browser RunのQuick Actionsをブラウザバインディングから呼び、デッキの`print`画面をPDFまたはPNGとして返せます。`hono-decks`が`quickAction("pdf")`または`quickAction("screenshot")`を呼ぶため、Puppeteer、Playwright、Browser Run用のAPIトークンは不要です。
+
+<CodeBlock filename={"wrangler.jsonc"} language={"jsonc"} code={"{\n  \"compatibility_date\": \"2026-07-15\",\n  \"browser\": {\n    \"binding\": \"BROWSER\",\n    \"remote\": true\n  }\n}"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+<Callout title={"ローカル開発ではリモートバインディングを使う"}>
+
+`quickAction()`には`2026-03-24`以降のcompatibility dateが必要です。ローカルモードでは未対応のため、バインディングに`remote: true`を設定するか、`wrangler dev --remote`で起動します。
+
+</Callout>
+
+次の例では、先に登録したセッションまたはCloudflare Access検証ミドルウェアが`deckExportAllowed`を設定済みとします。
+
+<CodeBlock filename={"hono-decks.config.ts"} language={"typescript"} code={"// hono-decks.config.ts\nimport {\n  defineDecksConfig,\n  type DeckBrowserRunBinding,\n} from \"hono-decks\"\n\ntype AppEnv = {\n  Bindings: {\n    BROWSER: DeckBrowserRunBinding\n  }\n  Variables: {\n    deckExportAllowed: boolean\n  }\n}\n\nexport default defineDecksConfig<AppEnv>({\n  mountPath: \"/decks\",\n  router: {\n    export: {\n      browser: ({ c }) => c.env.BROWSER,\n      authorize: ({ c }) => c.get(\"deckExportAllowed\") === true,\n      pdf: true,\n      png: true,\n    },\n  },\n})"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+
+| ルート / API | 役割 |
+| --- | --- |
+| `/:slug/print` | 全スライドを並べるBrowser Runの入力画面 |
+| `/:slug/export.pdf` | print画面をPDFとしてダウンロード |
+| `/:slug/export.png` | print画面全体をPNGとしてダウンロード |
+
+出力リクエストが`authorize`を通過すると、公開オリジン上の`print` URLをバインディングへ渡し、返されたファイルを添付ファイルとして応答します。ビューアーの出力ボタンも、同じ認可を通過したリクエストにだけ表示されます。
+
+<Callout title={"authorizeはPDF・PNG出力だけを制御します"}>
+
+`authorize`の対象は`/:slug/export.pdf`、`/:slug/export.png`と、対応するビューアー上の出力ボタンです。ビューアー、発表画面、発表者画面、`print`画面の公開範囲は変わりません。`authorize: () => true`では誰でもファイルを書き出せます。省略した場合も同じく公開されるため、公開する場合も明示を推奨します。利用者を制限する場合は、既存のセッションやAccess検証の結果を返します。
+
+</Callout>
+
+Bearerトークンを使う場合は`vars`へ直書きせず、Wranglerのsecretで管理します。
+
+[Cloudflare Browser Run Quick Actionsを確認する →](https://developers.cloudflare.com/browser-run/quick-actions/)
+
+[Browser Runを組み込んだサンプルを見る →](https://github.com/ts-76/hono-decks/tree/main/examples/basic)
+
+</section>

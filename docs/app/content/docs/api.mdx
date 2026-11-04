@@ -1,0 +1,177 @@
+---
+title: "API reference"
+description: "Choose the correct package entry first, then find the function or type for the task at hand."
+order: 7
+---
+
+# API reference
+
+Choose the correct package entry first, then find the function or type for the task at hand.
+
+<Callout title={"hono-decks API"}>
+
+This page covers the main APIs that applications use directly, based on the package exports and source.
+
+</Callout>
+
+<section id={"start"}>
+
+## Most applications start with the generated createDecks(config)
+
+The `src/decks.ts` facade created in the getting-started guide is the boundary between generated modules and public APIs. You do not need to compose low-level APIs just to render a deck.
+
+<DefinitionList items={[{term: <><code>{"hono-decks"}</code></>, description: <>{"Worker-safe runtime APIs for Hono applications. This is the normal entry."}</>},
+{term: <><code>{"hono-decks/advanced"}</code></>, description: <>{"Low-level APIs for custom sources, routers, and renderers."}</>},
+{term: <><code>{"hono-decks/node"}</code></>, description: <>{"Filesystem and compiler APIs for builds only. Never import this entry in Worker runtime code."}</>},
+{term: <><code>{"hono-decks/client"}</code></>, description: <>{"Island hydration. Generated client code normally uses it for you."}</>},
+{term: <><code>{"hono-decks/vite"}</code></>, description: <>{"Compiles before Vite starts and recompiles when decks change."}</>}]} />
+
+[Start with the getting-started guide →](/docs/getting-started?lang=en)
+
+</section>
+
+<section id={"runtime"}>
+
+## Runtime entry
+
+Import these APIs from hono-decks in Hono and Worker code. Start with the generated facade, and use a direct API only when the facade does not cover your use case.
+
+<APIReference name={"defineDecksConfig"} id={"define-decks-config"} importFrom={"hono-decks"} description={"Defines the shared CLI and runtime configuration."} usage={"Keeping mount path, build input, and runtime policy in one file."} guideHref={"/docs/configuration?lang=en"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/server/define-decks.ts"} labels={{"usage": "Use it when", "guide": "Guide", "source": "Source"}}>
+
+<CodeBlock filename={"Import + signature"} language={"typescript"} code={"import { defineDecksConfig } from \"hono-decks\"\n\ndefineDecksConfig(config: DecksConfig): DecksConfig"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+</APIReference>
+
+<APIReference name={"ConfiguredDecks"} id={"configured-decks"} importFrom={"hono-decks"} description={"The application kit returned by generated createDecks(config)."} usage={"Using routes, custom pages, and URLs from one config."} guideHref={"/docs/getting-started?lang=en"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/server/define-decks.ts"} labels={{"usage": "Use it when", "guide": "Guide", "source": "Source"}}>
+
+<CodeBlock filename={"Import + signature"} language={"typescript"} code={"import type { ConfiguredDecks } from \"hono-decks\"\n\ninterface ConfiguredDecks { mountPath; source; router(); context(); paths(slug) }"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+</APIReference>
+
+<APIReference name={"createDeckPaths"} id={"create-deck-paths"} importFrom={"hono-decks"} description={"Creates every public URL for one deck."} usage={"Creating a path map outside a configured kit."} guideHref={"/docs/routing?lang=en"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/server/paths.ts"} labels={{"usage": "Use it when", "guide": "Guide", "source": "Source"}}>
+
+<CodeBlock filename={"Import + signature"} language={"typescript"} code={"import { createDeckPaths } from \"hono-decks\"\n\ncreateDeckPaths(mountPath, slug): DeckPaths"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+</APIReference>
+
+<APIReference name={"decksRouter"} id={"decks-router"} importFrom={"hono-decks/advanced"} description={"Builds a low-level router from a custom DeckSource."} usage={"Building a custom pipeline without generated createDecks(config)."} guideHref={"/docs/routing?lang=en"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/server/router.ts"} labels={{"usage": "Use it when", "guide": "Guide", "source": "Source"}}>
+
+<CodeBlock filename={"Import + signature"} language={"typescript"} code={"import { decksRouter } from \"hono-decks/advanced\"\n\ndecksRouter(options: DecksRouterOptions): Hono"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+</APIReference>
+
+</section>
+
+<section id={"rendering"}>
+
+## Rendering and extension
+
+Decompose and extend the default UI or replace its asset source.
+
+<APIReference name={"createDeckViewerParts"} id={"create-viewer-parts"} importFrom={"hono-decks/advanced"} description={"Returns viewer parts independently."} usage={"Composing a fully custom viewer layout."} guideHref={"/docs/routing?lang=en"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/server/viewer.ts"} labels={{"usage": "Use it when", "guide": "Guide", "source": "Source"}}>
+
+<CodeBlock filename={"Import + signature"} language={"typescript"} code={"import { createDeckViewerParts } from \"hono-decks/advanced\"\n\ncreateDeckViewerParts(input): Promise<DeckViewerParts>"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+</APIReference>
+
+<APIReference name={"createDeckViewerEmbed"} id={"create-viewer-embed"} importFrom={"hono-decks"} description={"Creates an embedded viewer with scoped CSS and runtime behavior."} usage={"Embedding a viewer directly in a custom page. Use the router embed option for an external iframe route."} guideHref={"/docs/routing?lang=en"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/server/viewer.ts"} labels={{"usage": "Use it when", "guide": "Guide", "source": "Source"}}>
+
+<CodeBlock filename={"Import + signature"} language={"typescript"} code={"import { createDeckViewerEmbed } from \"hono-decks\"\n\ncreateDeckViewerEmbed(input: DeckViewerEmbedOptions): Promise<DeckViewerEmbed>"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+</APIReference>
+
+<APIReference name={"withR2Assets"} id={"with-r2-assets"} importFrom={"hono-decks"} description={"Wraps generated assets with an R2-backed source."} usage={"Moving generated asset delivery to Cloudflare R2 without changing relative MDX paths."} guideHref={"/docs/authoring?lang=en"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/source/r2-assets.ts"} labels={{"usage": "Use it when", "guide": "Guide", "source": "Source"}}>
+
+<CodeBlock filename={"Import + signature"} language={"typescript"} code={"import { withR2Assets } from \"hono-decks\"\n\nwithR2Assets(source: DeckSource, options: R2AssetSourceOptions): DeckSource"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+</APIReference>
+
+<APIReference name={"defineSlideComponents"} id={"define-slide-components"} importFrom={"hono-decks"} description={"Creates a typed registry for built-in and application components."} usage={"Registering shared components across decks or replacing built-ins. Keep deck-specific components under components/."} guideHref={"/docs/authoring?lang=en"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/renderer/jsx-renderer.ts"} labels={{"usage": "Use it when", "guide": "Guide", "source": "Source"}}>
+
+<CodeBlock filename={"Import + signature"} language={"typescript"} code={"import { defineSlideComponents } from \"hono-decks\"\n\ndefineSlideComponents(input: Record<string, SlideComponentInput>): SlideComponentRegistry"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+</APIReference>
+
+<APIReference name={"renderCompiledDeckAsync"} id={"render-compiled-deck-async"} importFrom={"hono-decks/advanced"} description={"Renders a compiled deck directly."} usage={"Building a low-level custom rendering pipeline."} guideHref={"/docs/authoring?lang=en"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/renderer/compiled-render.ts"} labels={{"usage": "Use it when", "guide": "Guide", "source": "Source"}}>
+
+<CodeBlock filename={"Import + signature"} language={"typescript"} code={"import { renderCompiledDeckAsync } from \"hono-decks/advanced\"\n\nrenderCompiledDeckAsync(deck: CompiledDeck, input?): Promise<string>"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+</APIReference>
+
+</section>
+
+<section id={"policy-types"}>
+
+## Configuration and model types
+
+Types for public surfaces, shared HTML policy, and custom DeckSource implementations.
+
+<APIReference name={"DeckViewerOpenGraphOptions"} id={"deck-viewer-open-graph-options"} importFrom={"hono-decks"} description={"Configures the viewer's Open Graph and Twitter Card image from the canonical path or a resolver."} usage={"Connecting a build-generated or CDN-hosted image to viewer social metadata."} guideHref={"/docs/configuration?lang=en"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/server/viewer.ts"} labels={{"usage": "Use it when", "guide": "Guide", "source": "Source"}}>
+
+<CodeBlock filename={"Import + signature"} language={"typescript"} code={"import type { DeckViewerOpenGraphOptions } from \"hono-decks\"\n\ninterface DeckViewerOpenGraphOptions { imagePath?: string | (({ deck, paths }) => MaybePromise<string | undefined>) }"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+</APIReference>
+
+<APIReference name={"DecksRouterPagesOptions"} id={"decks-router-pages-options"} importFrom={"hono-decks"} description={"Configures index rendering and HTML route surfaces per request."} usage={"Disabling unused public surfaces or gating them by authentication and environment."} guideHref={"/docs/routing?lang=en"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/server/router.ts"} labels={{"usage": "Use it when", "guide": "Guide", "source": "Source"}}>
+
+<CodeBlock filename={"Import + signature"} language={"typescript"} code={"import type { DecksRouterPagesOptions } from \"hono-decks\"\n\ninterface DecksRouterPagesOptions { index?; viewer?; render?; print?; presentation?; presenter? }"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+</APIReference>
+
+<APIReference name={"DeckRouteSurfaceInput"} id={"deck-route-surface-input"} importFrom={"hono-decks"} description={"Passes Hono context, deck, mount path, and dev state into route gates."} usage={"Typing a reusable pages resolver defined outside the router configuration."} guideHref={"/docs/routing?lang=en"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/server/router.ts"} labels={{"usage": "Use it when", "guide": "Guide", "source": "Source"}}>
+
+<CodeBlock filename={"Import + signature"} language={"typescript"} code={"import type { DeckRouteSurfaceInput } from \"hono-decks\"\n\ninterface DeckRouteSurfaceInput { c; surface; mountPath; dev; deck?; slug? }"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+</APIReference>
+
+<APIReference name={"DeckDocumentOptions"} id={"deck-document-options"} importFrom={"hono-decks"} description={"Defines language, nonce, head content, and per-surface overrides."} usage={"Applying lang, CSP nonce, or head elements to every generated HTML surface."} guideHref={"/docs/security?lang=en"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/server/document.ts"} labels={{"usage": "Use it when", "guide": "Guide", "source": "Source"}}>
+
+<CodeBlock filename={"Import + signature"} language={"typescript"} code={"import type { DeckDocumentOptions } from \"hono-decks\"\n\ninterface DeckDocumentOptions extends DeckDocumentPageOptions { surfaces? }"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+</APIReference>
+
+<APIReference name={"DeckExternalEmbedOptions"} id={"deck-external-embed-options"} importFrom={"hono-decks"} description={"Opts into an external iframe document route with explicit policy."} usage={"Embedding decks on another origin with explicit parent origins and viewer settings."} guideHref={"/docs/security?lang=en"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/server/external-embed.ts"} labels={{"usage": "Use it when", "guide": "Guide", "source": "Source"}}>
+
+<CodeBlock filename={"Import + signature"} language={"typescript"} code={"import type { DeckExternalEmbedOptions } from \"hono-decks\"\n\ninterface DeckExternalEmbedOptions { frameAncestors?; document?; viewer? }"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+</APIReference>
+
+<APIReference name={"DeckSource"} id={"deck-source"} importFrom={"hono-decks"} description={"Separates runtime deck and asset access from storage implementations."} usage={"Loading decks outside the generated manifest or implementing a custom storage source."} guideHref={"/docs/routing?lang=en"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/deck/model.ts"} labels={{"usage": "Use it when", "guide": "Guide", "source": "Source"}}>
+
+<CodeBlock filename={"Import + signature"} language={"typescript"} code={"import type { DeckSource } from \"hono-decks\"\n\ninterface DeckSource { listDecks(c); getCompiledDeck(c, slug); getAsset?(c, slug, path) }"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+</APIReference>
+
+</section>
+
+<section id={"build-client"}>
+
+## Node, client, and Vite entries
+
+Filesystem/compiler APIs live in the Node entry, hydration in the client entry, and existing Vite setups use the Vite entry.
+
+<APIReference name={"compileDecks"} id={"compile-decks"} importFrom={"hono-decks/node"} description={"Compiles filesystem decks and emits the manifest and generated modules."} usage={"Calling the compiler from a custom build script or plugin. Most projects use the hono-decks compile CLI."} guideHref={"/docs/getting-started?lang=en"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/node/compile-decks.ts"} labels={{"usage": "Use it when", "guide": "Guide", "source": "Source"}}>
+
+<CodeBlock filename={"Import + signature"} language={"typescript"} code={"import { compileDecks } from \"hono-decks/node\"\n\ncompileDecks(input: CompileDecksInput): Promise<DeckManifest>"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+</APIReference>
+
+<APIReference name={"createLocalDeckIO"} id={"create-local-deck-io"} importFrom={"hono-decks/node"} description={"Keeps dev-only raw deck I/O separate from the runtime DeckSource."} usage={"Building custom deck editing or preview tooling. It does not belong in ordinary runtime code."} guideHref={"/docs/getting-started?lang=en"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/node/local-deck-io.ts"} labels={{"usage": "Use it when", "guide": "Guide", "source": "Source"}}>
+
+<CodeBlock filename={"Import + signature"} language={"typescript"} code={"import { createLocalDeckIO } from \"hono-decks/node\"\n\ncreateLocalDeckIO(input: CreateLocalDeckIOInput): LocalDeckIO"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+</APIReference>
+
+<APIReference name={"hydrateSlideIslands"} id={"hydrate-slide-islands"} importFrom={"hono-decks/client"} description={"Hydrates interactive islands from the generated client entry."} usage={"Building a custom client delivery pipeline. The generated client entry normally calls it for you."} guideHref={"/docs/authoring?lang=en"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/client/islands.ts"} labels={{"usage": "Use it when", "guide": "Guide", "source": "Source"}}>
+
+<CodeBlock filename={"Import + signature"} language={"typescript"} code={"import { hydrateSlideIslands } from \"hono-decks/client\"\n\nhydrateSlideIslands(input: HydrateSlideIslandsInput): void"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+</APIReference>
+
+<APIReference name={"honoDecks"} id={"hono-decks-vite"} importFrom={"hono-decks/vite"} description={"Compiles decks before Vite starts and watches authoring changes."} usage={"Adding deck compilation and reloads to an existing Hono or HonoX Vite setup without a separate watcher."} guideHref={"/docs/getting-started?lang=en"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/vite.ts"} labels={{"usage": "Use it when", "guide": "Guide", "source": "Source"}}>
+
+<CodeBlock filename={"Import + signature"} language={"typescript"} code={"import { honoDecks } from \"hono-decks/vite\"\n\nhonoDecks(options?: HonoDecksViteOptions): Plugin"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+
+</APIReference>
+
+</section>
