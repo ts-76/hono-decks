@@ -12,9 +12,9 @@ order: 6
 
 ## 標準で作成されるルートを確認する
 
-標準では、一覧、ビューアー、スライド本体、発表画面、発表者画面、印刷画面が作成されます。これらのルートにhono-decks独自の認証は付きません。外部iframe用の`/:slug/embed`だけは、`embed`を指定するまで作成されません。不要な画面は`router.pages`で無効にしてください。
+標準では、一覧、ビューアー、スライド本体、発表画面、発表者画面、印刷画面が作成されます。これらのルートにhono-decks独自の認証は付きません。外部iframe用の`/:slug/embed`だけは`embed`を指定するまで作成されません。不要な画面は`router.pages`で無効にしてください。
 
-認証、認可、CSPヘッダーはHonoアプリが担当します。hono-decksは、アプリから渡された言語やnonceを生成するHTMLへ反映します。
+認証、認可、CSPヘッダーはHonoアプリが担当します。hono-decksはアプリから渡された言語やnonceを生成するHTMLへ反映します。
 
 </section>
 
@@ -22,7 +22,7 @@ order: 6
 
 ## Honoで言語を判定し、すべての画面へ渡す
 
-Honoの`languageDetector()`は、既定でクエリ、Cookie、`Accept-Language`の順に言語を判定し、`c.get("language")`から取得できるようにします。
+Honoの`languageDetector()`は既定でクエリ、Cookie、`Accept-Language`の順に言語を判定し、`c.get("language")`から取得できるようにします。
 
 <CodeBlock filename={"TypeScript"} language={"typescript"} code={"import { languageDetector } from \"hono/language\"\n\napp.use(languageDetector({\n  supportedLanguages: [\"ja\", \"en\"],\n  fallbackLanguage: \"en\",\n}))"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 

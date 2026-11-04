@@ -54,7 +54,7 @@ Cloudflare Browser RunのQuick Actionsをブラウザバインディングから
 | `/:slug/export.pdf` | print画面をPDFとしてダウンロード |
 | `/:slug/export.png` | print画面全体をPNGとしてダウンロード |
 
-出力リクエストが`authorize`を通過すると、公開オリジン上の`print` URLをバインディングへ渡し、返されたファイルを添付ファイルとして応答します。ビューアーの出力ボタンも、同じ認可を通過したリクエストにだけ表示されます。
+出力リクエストが`authorize`を通過すると、公開オリジン上の`print` URLをバインディングへ渡し、返されたファイルを添付ファイルとして応答します。ビューアーの出力ボタンも同じ認可を通過したリクエストにだけ表示されます。
 
 <Callout title={"authorizeはPDF・PNG出力だけを制御します"}>
 

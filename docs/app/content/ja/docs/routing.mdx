@@ -56,13 +56,13 @@ order: 5
 
 ## 標準UIを調整する、または独自画面を作る
 
-`pages.index.render`は、デッキ一覧の見た目だけを変える場合に使います。共通設定は`hono-decks.config.ts`に置きます。次の`decks.router(overrides)`は、特定の登録箇所だけを上書きする例です。
+`pages.index.render`はデッキ一覧の見た目だけを変える場合に使います。共通設定は`hono-decks.config.ts`に置きます。次の`decks.router(overrides)`は特定の登録箇所だけを上書きする例です。
 
 <CodeBlock filename={"TypeScript"} language={"typescript"} code={"decks.router({\n  pages: {\n    index: {\n      title: ({ decks }) => String(decks.length) + \" decks\",\n      render: ({ title, defaultContent }) => <main><h1>{title}</h1>{defaultContent}</main>,\n    },\n  },\n})"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
 ### Honoアプリ独自の画面を作る
 
-`decks.context()`は、独自の詳細画面や管理画面へデッキ、目次、URL情報を渡します。
+`decks.context()`は独自の詳細画面や管理画面へデッキ、目次、URL情報を渡します。
 
 <CodeBlock filename={"TypeScript"} language={"typescript"} code={"app.get(\n  \"/decks/:slug/about\",\n  decks.context(),\n  (c) => c.json({\n    title: c.var.deck.meta.title,\n    slides: c.var.deck.slides.length,\n    toc: c.var.deckToc,\n  }),\n)"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 

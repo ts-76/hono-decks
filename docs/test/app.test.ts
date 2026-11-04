@@ -202,7 +202,7 @@ describe("HonoX documentation site", () => {
     expect(ja).toContain("defineDecksConfig");
     expect(ja).toContain("wrangler dev");
     expect(ja).toContain("boolean値または関数を明示すると自動判定より優先");
-    expect(ja).toContain("環境を判定できない場合は、安全側に倒して本番モード");
+    expect(ja).toContain("環境を判定できない場合は、安全のため本番モード");
     expect(ja).toContain("decks.router(overrides)");
     expect(ja).toContain('href="/api?lang=ja#define-decks-config"');
     expect(en).toContain("Know which file owns each setting");
@@ -342,7 +342,7 @@ describe("HonoX documentation site", () => {
     expect(ja).toContain("@[x]");
     expect(ja).toContain("@[embed]");
     expect(ja).toContain("@[iframe]");
-    expect(ja).toContain("MDXコメントは、コードの補足として書いた場合もノートとして扱われます");
+    expect(ja).toContain("MDXコメントはコードの補足として書いた場合もノートとして扱われます");
     expect(ja).toContain("view-transition");
     expect(en).toContain("Write slide content with GFM and MDX");
     expect(en).toContain("Use CommonMark plus GFM tables, task lists, strikethrough, and autolinks");

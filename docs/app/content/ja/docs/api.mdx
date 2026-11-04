@@ -18,13 +18,13 @@ package.jsonのexportsと実装に基づき、アプリから直接使う主なA
 
 ## まずcreateDecks(config)から始める
 
-導入手順で作る`src/decks.ts`が、生成物と公開APIの境界になります。デッキを表示するだけなら、このページの低レベルAPIを直接組み合わせる必要はありません。
+導入手順で作る`src/decks.ts`が生成物と公開APIの境界になります。デッキを表示するだけなら、このページの低レベルAPIを直接組み合わせる必要はありません。
 
 <DefinitionList items={[{term: <><code>{"hono-decks"}</code></>, description: <>{"HonoアプリとWorkerで使う実行時APIです。通常はこのエントリーを使います。"}</>},
 {term: <><code>{"hono-decks/advanced"}</code></>, description: <>{"データ取得、ルーター、レンダラーを独自に組み立てるための低レベルAPIです。"}</>},
 {term: <><code>{"hono-decks/node"}</code></>, description: <>{"ファイル読み込みとコンパイルに使います。ビルド処理だけで読み込み、Workerには含めません。"}</>},
 {term: <><code>{"hono-decks/client"}</code></>, description: <>{"Islandを有効にするためのエントリーです。通常は生成されたクライアントコードが使用します。"}</>},
-{term: <><code>{"hono-decks/vite"}</code></>, description: <>{"Viteの起動前compileと、デッキ変更時の再compileを行います。"}</>}]} />
+{term: <><code>{"hono-decks/vite"}</code></>, description: <>{"Viteの起動前とデッキの変更時にコンパイルします。"}</>}]} />
 
 [導入手順から始める →](/docs/getting-started?lang=ja)
 

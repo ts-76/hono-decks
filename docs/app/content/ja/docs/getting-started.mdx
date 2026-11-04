@@ -26,7 +26,7 @@ MDXの変換はローカルの開発・ビルド環境で行います。Honoア�
 
 ## アプリに合った導入方法を選ぶ
 
-既存のHono + ViteまたはHonoXアプリでは、`hono-decks`を追加して対応するコマンドを選びます。VoidではVoid用コマンドを使います。`--install`は不足している互換Markdown依存をアプリのパッケージマネージャーで追加します。未対応の設定や既存の統合がある場合はCLIの案内を確認してください。
+既存のHono + ViteまたはHonoXアプリでは、`hono-decks`を追加して対応するコマンドを選びます。VoidではVoid用コマンドを使います。`--install`は不足している互換性のあるMarkdown依存を、アプリのパッケージマネージャーで追加します。未対応の設定や既存の統合がある場合はCLIの案内を確認してください。
 
 ```sh
 npm install hono-decks
@@ -37,9 +37,9 @@ npx hono-decks init --framework void --install
 npm run dev
 ```
 
-いずれも既存のスクリプトを維持し、`virtual:hono-decks`を使用します。`dev`と`build`がメモリ内でデッキをコンパイルします。initが表示したサンプルのURL（通常は`/slides/welcome`）を開いてください。HonoとHonoXのサンプルはMDX、Voidは操作できるIslandを含むMarkdownです。対応バージョン、任意の依存関係、設定上の制約は[パッケージのREADME](https://github.com/ts-76/hono-decks/blob/main/packages/decks/README.ja.md)を参照してください。
+いずれの方法も既存のスクリプトを維持し、`virtual:hono-decks`を使用します。`dev`と`build`はメモリ内でデッキをコンパイルします。initが表示したサンプルのURL（通常は`/slides/welcome`）を開いてください。HonoとHonoXのサンプルはMDX、Voidのサンプルは操作できるIslandを含むMarkdownです。対応バージョン、任意の依存関係、設定上の制約は[パッケージのREADME](https://github.com/ts-76/hono-decks/blob/main/packages/decks/README.ja.md)を参照してください。
 
-以下は、手動統合やWrangler向けの**汎用CLI・ファイル生成方式**です。この方式の`init`は標準で`/decks`を使い、`compile`は生成ファイルをディスクに出力します。
+以下は手動統合やWrangler向けの**汎用CLI・ファイル生成方式**です。この方式の`init`は標準で`/decks`を使い、`compile`は生成ファイルをディスクに出力します。
 
 </section>
 
@@ -58,7 +58,7 @@ npm run dev
 | Yarn | `yarn add hono-decks` | `yarn hono-decks <command>` |
 | Bun | `bun add hono-decks` | `bunx hono-decks <command>` |
 
-`<command>`には`init`や`compile`を指定します。以降の例も、利用中のパッケージマネージャーに合わせて読み替えてください。
+`<command>`には`init`や`compile`を指定します。以降の例も利用中のパッケージマネージャーに合わせて読み替えてください。
 
 </section>
 
@@ -111,7 +111,7 @@ MDXをHono JSXモジュールへ変換します。成功すると`src/generated/
 
 ## 普段の開発コマンドにコンパイルを組み込む
 
-汎用ファイル生成方式でViteを使う場合は、既存のVite設定へプラグインを追加します。起動前にコンパイルし、デッキの変更を監視します。上記のフレームワーク別initではViteの設定は自動で追加され、仮想モジュールを使用します。Viteでは安全に差し替えられる内容の編集時、表示と対応するIslandの状態を維持します。クライアントコードの変更時や安全に差し替えられない場合は表示用iframeを再読み込みし、Islandの状態をリセットしてスライドとステップを復元します。viewerは開いたままです。
+汎用ファイル生成方式でViteを使う場合は、既存のVite設定へプラグインを追加します。プラグインは起動前にコンパイルし、デッキの変更を監視します。上記のフレームワーク別initではViteの設定が自動で追加され、仮想モジュールを使用します。Viteでは安全に差し替えられる内容の編集時に、表示と対応するIslandの状態を維持します。クライアントコードの変更時や安全に差し替えられない場合は表示用iframeを再読み込みし、Islandの状態をリセットしてスライドとステップを復元します。viewerは開いたままです。
 
 <CodeBlock filename={"vite.config.ts"} language={"typescript"} code={"import { honoDecks } from \"hono-decks/vite\"\nimport { defineConfig } from \"vite\"\n\nexport default defineConfig({\n  plugins: [honoDecks()],\n})"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
