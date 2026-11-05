@@ -85,6 +85,8 @@ Satoriとresvgで、デッキ情報から1200×630の共有画像を生成。
 
 Void サンプルは catch-all ルートから `/slides/*` のリクエストを hono-decks の Hono ルーターへ渡します。トップページでは `decks.paths("welcome")` の URL を使ってデッキを埋め込み、単独のビューアーへリンクします。開発時とビルド時の MDX コンパイルは `hono-decks/vite` が担当します。
 
+このサンプルは MDX を使うため、Hono Markdown アダプターは不要です。Void 用の `init` が生成する Markdown（`deck.md`）を使う場合は、対応するアダプターが必要です。[Void の導入方法](/docs/getting-started?lang=ja#framework-init)では、`--install` で不足している依存関係を追加できます。
+
 <VoidDeckDemo locale={"ja"} />
 
 タッチ端末ではスライドの左右端を押してページを送れます。操作部は通常時は透明で、押している間やキーボードでフォーカスしたときに表示されます。
