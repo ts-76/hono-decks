@@ -34,6 +34,27 @@ const deck = {
 } satisfies CompiledDeck;
 
 describe("decksRouter", () => {
+  it("does not display external asset diagnostics in render, presentation, or print pages", async () => {
+    const external = {
+      ...deck,
+      warnings: [
+        { code: "external-asset-unverified", message: "Remote asset existence cannot be verified" },
+        { code: "unknown-transition", message: "Unknown transition" },
+      ],
+    };
+    const app = new Hono();
+    app.route("/slides", decksRouter({ source: manifestDeckSource({ decks: [external] }) }));
+
+    for (const surface of ["render", "presentation", "print"]) {
+      const response = await app.request(`/slides/deck1/${surface}`);
+      expect(response.status).toBe(200);
+      const html = await response.text();
+      expect(html).not.toContain("Remote asset existence cannot be verified");
+      expect(html).toContain("Unknown transition");
+    }
+    expect(external.warnings).toHaveLength(2);
+  });
+
   it("serves an index and an iframe viewer wrapper under the mount path", async () => {
     const app = new Hono();
     app.route("/slides", decksRouter({ source: manifestDeckSource({ decks: [deck] }) }));

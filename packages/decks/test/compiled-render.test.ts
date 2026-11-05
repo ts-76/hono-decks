@@ -10,6 +10,7 @@ import {
 } from "../src/renderer/compiled-render";
 import { builtInSlideComponents } from "../src/renderer/jsx-renderer";
 import type { CompiledDeck } from "../src/deck/model";
+import { compileMarkdown } from "../src/compiler/compiler";
 
 const deck = {
   slug: "deck1",
@@ -285,6 +286,32 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("data-overview-mode");
     expect(html).toContain("Unsupported component");
     expect(html).not.toContain("/edit");
+  });
+
+  it("keeps external asset diagnostics out of pages without hiding other warnings", async () => {
+    const compiled = await compileMarkdown({
+      slug: "external",
+      sourcePath: "decks/external.mdx",
+      kind: "single-file",
+      markdown: '# Slide\n\n![Logo](https://cdn.example.com/logo.png)\n\n<a href="https://example.com">Link</a>',
+    });
+    expect(compiled.warnings).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: "external-asset-unverified" })]),
+    );
+    for (const render of [renderCompiledDeckPage, renderCompiledDeckPageAsync]) {
+      const html = await render({ deck: compiled, mountPath: "/decks" });
+      expect(html).not.toContain('<aside class="hono-decks-warnings">');
+      expect(html).toContain("https://cdn.example.com/logo.png");
+      expect(html).toContain("https://example.com");
+
+      const mixed = {
+        ...compiled,
+        warnings: [...compiled.warnings, { code: "test-warning", message: "Other warning" }],
+      };
+      const mixedHtml = await render({ deck: mixed, mountPath: "/decks", printPreview: true });
+      expect(mixedHtml).toContain('<aside class="hono-decks-warnings"><p>Other warning</p></aside>');
+      expect(mixedHtml).not.toContain("asset existence cannot be verified");
+    }
   });
 
   it("injects deck-local theme CSS between package base CSS and router style", () => {
@@ -957,7 +984,9 @@ describe("compiled deck rendering", () => {
 
     expect(html).toContain('data-hono-decks-island="Counter__deck1_abcd1234"');
     expect(html).toContain('data-hono-decks-props="{&quot;label&quot;:&quot;Clicks&quot;}"');
-    expect(html).toContain('<script data-hono-decks-client-entry type="module" src="/assets/slides.client.js"></script>');
+    expect(html).toContain(
+      '<script data-hono-decks-client-entry type="module" src="/assets/slides.client.js"></script>',
+    );
     expect(html).toContain('<button type="button">Clicks</button>');
   });
 

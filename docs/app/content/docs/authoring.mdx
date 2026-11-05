@@ -138,6 +138,8 @@ Use `components/client/index.tsx` only for components that need clicks or local 
 
 ## Reference assets and embeds explicitly
 
+External URLs and R2 assets cannot be checked for existence at compile time. These diagnostics remain in the compilation result's `warnings`, but are not displayed on slides. Other warnings still appear.
+
 Reference images under `decks/launch/assets/` with paths relative to `deck.mdx`. Explicit directives are available for `youtube`, `x`, `card`, `embed`, and `iframe`.
 
 <CodeBlock filename={"MDX"} language={"mdx"} code={"![Architecture](./assets/runtime-boundary.svg)\n\n@[youtube](https://www.youtube.com/watch?v=VIDEO_ID)\n@[x](https://x.com/honojs/status/POST_ID)\n@[card](https://hono.dev/docs/)\n@[embed](https://example.com/demo)\n@[iframe](https://example.com/demo)"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
