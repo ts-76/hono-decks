@@ -300,7 +300,7 @@ describe("compiled deck rendering", () => {
     );
     for (const render of [renderCompiledDeckPage, renderCompiledDeckPageAsync]) {
       const html = await render({ deck: compiled, mountPath: "/decks" });
-      expect(html).not.toContain('<aside class="hono-decks-warnings">');
+      expect(html).not.toContain('<aside class="hono-decks-warnings"');
       expect(html).toContain("https://cdn.example.com/logo.png");
       expect(html).toContain("https://example.com");
 
@@ -309,7 +309,9 @@ describe("compiled deck rendering", () => {
         warnings: [...compiled.warnings, { code: "test-warning", message: "Other warning" }],
       };
       const mixedHtml = await render({ deck: mixed, mountPath: "/decks", printPreview: true });
-      expect(mixedHtml).toContain('<aside class="hono-decks-warnings"><p>Other warning</p></aside>');
+      expect(mixedHtml).toContain(
+        '<aside class="hono-decks-warnings" tabindex="0" aria-label="Deck warnings"><p>Other warning</p></aside>',
+      );
       expect(mixedHtml).not.toContain("asset existence cannot be verified");
     }
   });

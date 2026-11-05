@@ -176,7 +176,7 @@ export async function renderPresenterPageAsync(input: {
 function renderWarnings(deck: CompiledDeck): string {
   const visibleWarnings = deck.warnings.filter((warning) => warning.code !== "external-asset-unverified");
   return visibleWarnings.length
-    ? `<aside class="hono-decks-warnings">${visibleWarnings.map((warning) => `<p>${escapeHtml(warning.message)}</p>`).join("")}</aside>`
+    ? `<aside class="hono-decks-warnings" tabindex="0" aria-label="Deck warnings">${visibleWarnings.map((warning) => `<p>${escapeHtml(warning.message)}</p>`).join("")}</aside>`
     : "";
 }
 

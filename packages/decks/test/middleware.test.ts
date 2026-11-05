@@ -3,6 +3,17 @@ import { describe, expect, it } from "vite-plus/test";
 import { deckMiddleware } from "../src/node";
 
 describe("deckMiddleware middleware", () => {
+  it("keeps a parse warning available in a focusable fixed overlay", async () => {
+    const app = new Hono();
+    app.use("/deck", deckMiddleware({ markdown: "# Hello\n\n```js\nconst x = 1" }));
+    const response = await app.request("/deck");
+    const html = await response.text();
+    expect(response.status).toBe(200);
+    expect(html).toContain('<aside class="hono-decks-warnings" tabindex="0" aria-label="Deck warnings">');
+    expect(html).toContain("code fence is not closed");
+    expect(html).toContain(".hono-decks-warnings{position:fixed;");
+  });
+
   it("serves a rendered slide deck from a mounted Hono route", async () => {
     const app = new Hono();
     app.use("/deck", deckMiddleware({ markdown: "# Hello\n\n---\n\n## Second" }));
