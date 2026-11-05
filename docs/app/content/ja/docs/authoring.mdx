@@ -138,6 +138,8 @@ title: Interactive slide
 
 ## 画像を置き、外部コンテンツを埋め込む
 
+外部URLやR2アセットの存在はコンパイル時に検証できません。この診断はコンパイル結果の`warnings`に残りますが、スライド上には表示されません。ほかの警告は引き続き表示されます。
+
 `decks/launch/assets/`に置いた画像は`deck.mdx`からの相対パスで指定します。`youtube`、`x`、`card`、`embed`、`iframe`は専用記法を使います。
 
 <CodeBlock filename={"MDX"} language={"mdx"} code={"![Architecture](./assets/runtime-boundary.svg)\n\n@[youtube](https://www.youtube.com/watch?v=VIDEO_ID)\n@[x](https://x.com/honojs/status/POST_ID)\n@[card](https://hono.dev/docs/)\n@[embed](https://example.com/demo)\n@[iframe](https://example.com/demo)"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
