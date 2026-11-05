@@ -1,3 +1,5 @@
+import { warningStyle } from "./warning-style";
+
 export const PRESENTATION_DESIGN_WIDTH = 1920;
 export const PRESENTATION_DESIGN_HEIGHT = 1080;
 
@@ -85,6 +87,7 @@ body[data-overview-mode] .hono-decks-deck{grid-template-columns:repeat(auto-fit,
 body[data-overview-mode] .slide{cursor:pointer}
 body[data-presenter-mode] .speaker-notes{display:block;margin-top:1rem;padding:.75rem;border-radius:8px;background:var(--hono-decks-card-image-background)}
 .hono-decks-warnings{margin:1rem;padding:.75rem;border-radius:14px;background:var(--hono-decks-warning-background);color:var(--hono-decks-warning-color)}
+${warningStyle()}
 @media screen{html[data-hono-decks-print-preview]{width:auto;height:auto;min-height:100%;overflow:visible}
 body[data-hono-decks-print-preview]{min-height:100vh;overflow:auto;color-scheme:light;color:#000;--hono-decks-print-gap:6mm;--hono-decks-print-slot-height:80mm;--hono-decks-print-scale:.28}
 body[data-hono-decks-print-preview] .hono-decks-stage{display:block;width:auto;height:auto;min-height:100vh;overflow:visible;padding:12mm 0;box-sizing:border-box}

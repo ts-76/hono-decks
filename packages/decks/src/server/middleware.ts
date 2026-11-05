@@ -1,6 +1,7 @@
 import type { Context, MiddlewareHandler } from "hono";
 import { parseDeck } from "../parser/parser";
 import { renderDeck } from "../renderer/render";
+import { warningStyle } from "../renderer/warning-style";
 import type { SlideDeck } from "../shared/types";
 
 declare module "hono" {
@@ -39,12 +40,14 @@ export function deckMiddleware(options: DeckMiddlewareOptions = {}): MiddlewareH
       return;
     }
 
-    return c.html(renderDeckPage({
-      title: options.title ?? deck.slides[0]?.title ?? "Hono Decks",
-      slideHtml,
-      warnings: deck.warnings,
-      style: options.style,
-    }));
+    return c.html(
+      renderDeckPage({
+        title: options.title ?? deck.slides[0]?.title ?? "Hono Decks",
+        slideHtml,
+        warnings: deck.warnings,
+        style: options.style,
+      }),
+    );
   };
 }
 
@@ -67,7 +70,7 @@ export function renderDeckPage(input: {
   style?: string;
 }): string {
   const warnings = input.warnings?.length
-    ? `<aside class="hono-decks-warnings">${input.warnings.map((warning) => `<p>${escapeHtml(warning)}</p>`).join("")}</aside>`
+    ? `<aside class="hono-decks-warnings" tabindex="0" aria-label="Deck warnings">${input.warnings.map((warning) => `<p>${escapeHtml(warning)}</p>`).join("")}</aside>`
     : "";
 
   return `<!doctype html>
@@ -76,7 +79,7 @@ export function renderDeckPage(input: {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapeHtml(input.title)}</title>
-  <style>${baseDeckStyle()}${input.style ?? ""}</style>
+  <style>${baseDeckStyle()}${warningStyle()}${input.style ?? ""}</style>
 </head>
 <body>
   ${warnings}
