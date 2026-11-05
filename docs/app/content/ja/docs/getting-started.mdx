@@ -10,9 +10,9 @@ order: 0
 
 <section id={"prerequisites"}>
 
-## Honoアプリを用意する
+## アプリを用意する
 
-npm、pnpm、Yarn、Bunのいずれかと、起動できるHonoアプリが必要です。この手順が終わると、2枚のスライドを`/decks/welcome`で表示できます。
+npm、pnpm、Yarn、Bunのいずれかと、起動できるHono、HonoX、またはVoidアプリが必要です。フレームワーク別の導入では、通常`/slides/welcome`にサンプルを表示します。汎用CLI・ファイル生成方式では`/decks/welcome`を使います。
 
 <Callout title={"コンパイルと配信は分かれています"}>
 
@@ -39,7 +39,7 @@ npm run dev
 
 いずれの方法も既存のスクリプトを維持し、`virtual:hono-decks`を使用します。`dev`と`build`はメモリ内でデッキをコンパイルします。initが表示したサンプルのURL（通常は`/slides/welcome`）を開いてください。HonoとHonoXのサンプルはMDX、Voidのサンプルは操作できるIslandを含むMarkdownです。対応バージョン、任意の依存関係、設定上の制約は[パッケージのREADME](https://github.com/ts-76/hono-decks/blob/main/packages/decks/README.ja.md)を参照してください。
 
-以下は手動統合やWrangler向けの**汎用CLI・ファイル生成方式**です。この方式の`init`は標準で`/decks`を使い、`compile`は生成ファイルをディスクに出力します。
+フレームワーク別の導入はここまでです。以下は手動統合やWrangler向けの**汎用CLI・ファイル生成方式**です。この方式の`init`は標準で`/decks`を使い、`compile`は生成ファイルをディスクに出力します。
 
 </section>
 
@@ -113,6 +113,8 @@ MDXをHono JSXモジュールへ変換します。成功すると`src/generated/
 
 汎用ファイル生成方式でViteを使う場合は、既存のVite設定へプラグインを追加します。プラグインは起動前にコンパイルし、デッキの変更を監視します。上記のフレームワーク別initではViteの設定が自動で追加され、仮想モジュールを使用します。Viteでは安全に差し替えられる内容の編集時に、表示と対応するIslandの状態を維持します。クライアントコードの変更時や安全に差し替えられない場合は表示用iframeを再読み込みし、Islandの状態をリセットしてスライドとステップを復元します。viewerは開いたままです。
 
+Viteの開発中はHMRのようなライブ更新で、対応する本文やIslandのpropsの変更、区別できるIslandの追加・削除・並べ替えでも状態を維持します。同じIslandを区別できない場合や更新データを取得できない場合などはiframeを再読み込みします。詳しい条件は[READMEの開発フロー](https://github.com/ts-76/hono-decks/blob/main/packages/decks/README.ja.md#development-integration)を参照してください。
+
 <CodeBlock filename={"vite.config.ts"} language={"typescript"} code={"import { honoDecks } from \"hono-decks/vite\"\nimport { defineConfig } from \"vite\"\n\nexport default defineConfig({\n  plugins: [honoDecks()],\n})"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
 <CodeBlock filename={"package.json"} language={"jsonc"} code={"{\n  \"scripts\": {\n    \"decks:compile\": \"hono-decks compile\",\n    \"dev\": \"vite\",\n    \"build\": \"vite build\"\n  }\n}"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
@@ -127,7 +129,7 @@ Wranglerを直接使うCloudflare Workerでは、`wrangler.jsonc`のカスタム
 
 <section id={"verify"}>
 
-## ブラウザで表示を確認する
+## 汎用方式の表示を確認する
 
 <CodeBlock filename={"Terminal"} language={"bash"} code={"npm run dev"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 

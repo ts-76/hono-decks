@@ -39,6 +39,18 @@ Use CommonMark plus GFM tables, task lists, strikethrough, and autolinks. MDX ad
 
 MDX is the default for Hono and HonoX. To use `deck.md`, configure a Markdown adapter and install its compiler dependencies; Void init configures its adapter automatically. The [Markdown adapter guide](https://github.com/ts-76/hono-decks#markdown-adapters) covers the Hono Markdown bridge and package requirements.
 
+To use the shared Hono Markdown bridge in Hono or HonoX, select it in `build`. The compiler dependencies must also be installed; see the [README Markdown adapter section](https://github.com/ts-76/hono-decks/blob/main/packages/decks/README.md) for versions and dependencies.
+
+```ts
+// hono-decks.config.ts
+import { defineDecksConfig } from "hono-decks"
+
+export default defineDecksConfig({
+  mountPath: "/slides",
+  build: { root: "decks", markdown: { adapter: "hono-decks/adapters/hono-markdown" } },
+})
+```
+
 In Hono Markdown, islands use relative default TSX/JSX imports in a `<script>` block, with `island: "load"`, `"visible"`, `"idle"`, or `"media:(query)"`. Island tags accept literal string and boolean props. Arbitrary script code, JSX expressions, and children inside island tags are unsupported. MDX continues to support its own component registry and expressions.
 
 ~~~md

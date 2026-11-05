@@ -39,6 +39,18 @@ CommonMarkとGFM（テーブル、タスクリスト、打ち消し線、自動�
 
 HonoとHonoXの標準形式はMDXです。`deck.md`を使うにはMarkdownアダプターとコンパイル用の依存関係を設定します。Voidのinitではアダプターが自動で設定されます。Hono Markdownブリッジの設定と必要なパッケージは[Markdownアダプターの説明](https://github.com/ts-76/hono-decks/blob/main/packages/decks/README.ja.md)を参照してください。
 
+HonoやHonoXで共通のHono Markdownブリッジを使う場合は、設定ファイルの`build`にアダプターを指定します。コンパイラー用の依存関係も必要です。対応バージョンと依存関係は[READMEのMarkdownアダプター](https://github.com/ts-76/hono-decks/blob/main/packages/decks/README.ja.md#markdownアダプター)を確認してください。
+
+```ts
+// hono-decks.config.ts
+import { defineDecksConfig } from "hono-decks"
+
+export default defineDecksConfig({
+  mountPath: "/slides",
+  build: { root: "decks", markdown: { adapter: "hono-decks/adapters/hono-markdown" } },
+})
+```
+
 Hono Markdownでは`<script>`内で相対パスのTSX・JSXをdefault importし、`island: "load"`、`"visible"`、`"idle"`、`"media:(query)"`を指定できます。Islandタグのpropsは文字列とbooleanのリテラルに限ります。任意のスクリプト、JSX式、Islandタグの子要素には対応していません。MDXでは従来どおりコンポーネントの登録と式を使えます。
 
 ~~~md
