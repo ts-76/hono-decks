@@ -14,7 +14,16 @@ order: 3
 
 フレームワーク別のVite initはメモリ内の仮想モジュールを使うため、`build.outDir`は不要です。以下の生成ファイルと出力先は汎用CLI・ファイル生成方式の説明です。
 
-`hono-decks init`は必須の`hono-decks.config.ts`と`src/decks.ts`を作ります。ビルド対象、公開パス、実行時の挙動は、この設定ファイルでまとめて管理します。
+フレームワーク別のinitが作る`src/decks.ts`は、設定済みの`decks`を仮想モジュールから読み込みます。`decks.router()`や`decks.paths()`を使えます。型定義もパッケージに含まれます。
+
+```ts
+/// <reference types="hono-decks/vite-env" />
+import { decks } from "virtual:hono-decks"
+
+export { decks }
+```
+
+汎用方式の`hono-decks init`は必須の`hono-decks.config.ts`と`src/decks.ts`を作ります。ビルド対象、公開パス、実行時の挙動は、この設定ファイルでまとめて管理します。
 
 <DefinitionList items={[{term: <><code>{"package.json"}</code></>, description: <>{"ViteまたはWranglerを使う、普段の開発コマンドを定義します。"}</>},
 {term: <><code>{"hono-decks.config.ts"}</code></>, description: <>{"CLIと実行時で共有する必須の設定ファイルです。"}</>},
@@ -60,6 +69,8 @@ Viteでは`honoDecks()`を追加し、Wranglerではカスタムビルドに`hon
 <section id={"facade"}>
 
 ## 設定が上書きされる順序を確認する
+
+以下の`src/decks.ts`は汎用CLI・ファイル生成方式の例です。フレームワーク別initでは、上記の仮想モジュールから`decks`を読み込みます。
 
 設定は生成時の既定値、アプリの設定、`decks.router(overrides)`の順に適用されます。入れ子になった設定も`createDecks(config)`が結合します。
 

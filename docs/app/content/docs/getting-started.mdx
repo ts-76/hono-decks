@@ -10,9 +10,9 @@ Compile an MDX deck, mount the generated router in an existing Hono application,
 
 <section id={"prerequisites"}>
 
-## Start with a working Hono app
+## Start with a working app
 
-You need npm, pnpm, Yarn, or Bun and a Hono app that already runs. By the end of this guide, it will serve a two-slide deck at `/decks/welcome`.
+You need npm, pnpm, Yarn, or Bun and a running Hono, HonoX, or Void app. Framework-specific setup normally serves its sample at `/slides/welcome`; the generic CLI/file workflow uses `/decks/welcome`.
 
 <Callout title={"Compilation and delivery are separate"}>
 
@@ -39,7 +39,7 @@ npm run dev
 
 Each integration preserves existing scripts and uses `virtual:hono-decks`; `dev` and `build` compile decks in memory. Open the sample URL printed by init, normally `/slides/welcome`. Hono and HonoX start with MDX; Void creates a Markdown sample with an interactive island. For supported versions, optional peer dependencies, and setup limitations, see the [package README](https://github.com/ts-76/hono-decks#readme).
 
-The steps below describe the separate **generic CLI/file workflow**, useful for manual integration and Wrangler. Its `init` defaults to `/decks` and `compile` writes generated files to disk.
+Framework-specific setup ends here. The steps below describe the separate **generic CLI/file workflow**, useful for manual integration and Wrangler. Its `init` defaults to `/decks` and `compile` writes generated files to disk.
 
 </section>
 
@@ -113,6 +113,8 @@ Add the generated router to the existing Hono app.
 
 In the generic file workflow, add the plugin to the existing Vite config. It compiles before Vite starts and watches deck changes. Framework init above configures Vite automatically and uses virtual modules instead. In Vite, safe content updates preserve the presentation and supported island state; client code changes or unsafe updates reload the presentation iframe, reset island state, and restore the current slide and step. The viewer remains open.
 
+During Vite development, live updates similar to HMR preserve island state for supported content and prop edits, as well as adding, removing, or reordering distinguishable islands. The iframe reloads if identical islands cannot be distinguished or updated content cannot be fetched. See the [README development workflow](https://github.com/ts-76/hono-decks/blob/main/packages/decks/README.md#development-integration) for details.
+
 <CodeBlock filename={"vite.config.ts"} language={"typescript"} code={"import { honoDecks } from \"hono-decks/vite\"\nimport { defineConfig } from \"vite\"\n\nexport default defineConfig({\n  plugins: [honoDecks()],\n})"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
 
 <CodeBlock filename={"package.json"} language={"jsonc"} code={"{\n  \"scripts\": {\n    \"decks:compile\": \"hono-decks compile\",\n    \"dev\": \"vite\",\n    \"build\": \"vite build\"\n  }\n}"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
@@ -127,7 +129,7 @@ For a Cloudflare Worker that runs Wrangler directly, register the compiler as a 
 
 <section id={"verify"}>
 
-## Verify it in the browser
+## Verify the generic workflow in the browser
 
 <CodeBlock filename={"Terminal"} language={"bash"} code={"npm run dev"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
 

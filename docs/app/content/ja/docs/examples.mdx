@@ -1,12 +1,12 @@
 ---
 title: "実例"
-description: "デザインされた公開デッキと、登壇資料をポートフォリオへ組み込むHonoX構成を確認できます。"
+description: "公開デッキと、HonoXやVoidのアプリにデッキを組み込む例を確認できます。"
 order: 1
 ---
 
 # 実例
 
-デザインされた公開デッキと、登壇資料をポートフォリオへ組み込むHonoX構成を確認できます。
+公開デッキと、HonoXやVoidのアプリにデッキを組み込む例を確認できます。
 
 <section id={"live"}>
 
@@ -37,6 +37,14 @@ order: 1
 通常ページと登壇資料を同じHonoXアプリから公開するポートフォリオ例。
 
 [ソース ↗](https://github.com/ts-76/hono-decks/tree/main/examples/honox)
+
+</Card>
+
+<Card title={"Void"} href={"https://void.hono-decks.com/"}>
+
+Voidアプリのページにデッキを埋め込む例。
+
+[ソース ↗](https://github.com/ts-76/hono-decks/tree/main/examples/void)
 
 </Card>
 
@@ -79,6 +87,8 @@ Void サンプルは catch-all ルートから `/slides/*` のリクエストを
 
 <VoidDeckDemo locale={"ja"} />
 
+タッチ端末ではスライドの左右端を押してページを送れます。操作部は通常時は透明で、押している間やキーボードでフォーカスしたときに表示されます。
+
 この例で使うのはビューアーと埋め込み画面です。発表・発表者・印刷・エクスポートは無効にしています。埋め込み先は `frameAncestors` でサンプル自身とこのドキュメントサイトに限定しています。
 
 [ソースと起動手順 ↗](https://github.com/ts-76/hono-decks/tree/main/examples/void)
@@ -91,6 +101,7 @@ Void サンプルは catch-all ルートから `/slides/*` のリクエストを
 
 <DefinitionList items={[{term: <>{"Minimal"}</>, description: <>{"既存のHono Workerへ、最小のデッキ配信を追加するとき。"}</>},
 {term: <>{"HonoX"}</>, description: <>{"ブログ、プロフィール、作品一覧と登壇資料を同じサイトで公開するとき。"}</>},
+{term: <>{"Void"}</>, description: <>{"Voidのページにデッキを埋め込むとき。"}</>},
 {term: <>{"Basic"}</>, description: <>{"R2、埋め込み、アニメーション、出力まで含めて検証するとき。"}</>},
 {term: <>{"OGP"}</>, description: <>{"SNSで共有する画像をbuild時に自動生成するとき。"}</>}]} />
 

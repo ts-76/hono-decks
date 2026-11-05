@@ -14,7 +14,16 @@ Manage compilation and runtime behavior in one shared hono-decks.config.ts file.
 
 Framework-specific Vite init uses in-memory virtual modules and does not require `build.outDir`; the generated facade and output directory below describe the generic CLI/file workflow.
 
-`hono-decks init` creates the required `hono-decks.config.ts` and `src/decks.ts`. Build input, public paths, and runtime policy live in this one config.
+Framework-specific init creates `src/decks.ts` to import the configured `decks` from the virtual module. You can use `decks.router()` and `decks.paths()`; the package also provides its types.
+
+```ts
+/// <reference types="hono-decks/vite-env" />
+import { decks } from "virtual:hono-decks"
+
+export { decks }
+```
+
+In the generic workflow, `hono-decks init` creates the required `hono-decks.config.ts` and `src/decks.ts`. Build input, public paths, and runtime policy live in this one config.
 
 <DefinitionList items={[{term: <><code>{"package.json"}</code></>, description: <>{"Runs the existing Vite or Wrangler development command."}</>},
 {term: <><code>{"hono-decks.config.ts"}</code></>, description: <>{"Required configuration shared by the CLI and runtime."}</>},
@@ -60,6 +69,8 @@ The `c.get("language")` example assumes Hono's `languageDetector()` is registere
 <section id={"facade"}>
 
 ## Make precedence explicit in the facade
+
+The following `src/decks.ts` example uses the generic CLI/file workflow. Framework-specific init imports `decks` from the virtual module above.
 
 Generated defaults, app config, and `decks.router(overrides)` are applied in order; the configured kit merges nested options.
 

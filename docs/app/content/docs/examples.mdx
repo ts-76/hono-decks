@@ -1,12 +1,12 @@
 ---
 title: "Examples"
-description: "Explore polished live decks and a HonoX portfolio that keeps talks inside the application that introduces them."
+description: "Explore live decks and examples that integrate decks into HonoX and Void applications."
 order: 1
 ---
 
 # Examples
 
-Explore polished live decks and a HonoX portfolio that keeps talks inside the application that introduces them.
+Explore live decks and examples that integrate decks into HonoX and Void applications.
 
 <section id={"live"}>
 
@@ -37,6 +37,14 @@ The smallest Worker: one deck, one facade, and one mounted router.
 A portfolio that publishes ordinary pages and talks from the same HonoX app.
 
 [Source ↗](https://github.com/ts-76/hono-decks/tree/main/examples/honox)
+
+</Card>
+
+<Card title={"Void"} href={"https://void.hono-decks.com/"}>
+
+A deck embedded in a Void application page.
+
+[Source ↗](https://github.com/ts-76/hono-decks/tree/main/examples/void)
 
 </Card>
 
@@ -79,6 +87,8 @@ The Void sample forwards `/slides/*` from a catch-all route to the hono-decks Ho
 
 <VoidDeckDemo locale={"en"} />
 
+On touch devices, tap the slide edges to navigate. The controls are transparent at rest and become visible while pressed or keyboard-focused.
+
 The sample enables the viewer and embed surfaces, while presentation, presenter, print, and export are disabled. The embed permits the sample itself and this documentation site through `frameAncestors`.
 
 [Source and setup instructions ↗](https://github.com/ts-76/hono-decks/tree/main/examples/void)
@@ -91,6 +101,7 @@ The sample enables the viewer and embed surfaces, while presentation, presenter,
 
 <DefinitionList items={[{term: <>{"Minimal"}</>, description: <>{"Adding the smallest deck surface to an existing Hono Worker."}</>},
 {term: <>{"HonoX"}</>, description: <>{"Publishing talks beside a blog, profile, or work index."}</>},
+{term: <>{"Void"}</>, description: <>{"Embedding a deck in a Void application page."}</>},
 {term: <>{"Basic"}</>, description: <>{"Evaluating R2, embeds, motion, and export in one project."}</>},
 {term: <>{"OGP"}</>, description: <>{"Generating social share images during the build."}</>}]} />
 
