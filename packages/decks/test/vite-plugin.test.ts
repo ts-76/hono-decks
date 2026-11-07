@@ -129,6 +129,8 @@ describe("honoDecks Vite plugin", () => {
       expect(await readModule("src/generated/decks.ts")).toContain("/@hono-decks/events");
       const initial = await readModule("src/generated/decks/intro/slide-0.js");
       expect(initial).toContain("Initial title");
+      // Vite can request a .js slide by its .ts twin when the importer is TypeScript.
+      expect(await readModule("src/generated/decks/intro/slide-0.ts")).toContain("Initial title");
       expect(await readFile(join(cwd, "src/generated/decks.ts"), "utf8").catch(() => null)).toBe(null);
       const resolveId = plugin.resolveId as Function;
       expect(await resolveId("virtual:hono-decks")).toBe("\0hono-decks:entry");
