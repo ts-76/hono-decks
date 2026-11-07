@@ -18,6 +18,15 @@ Generate an SVG with Satori and a 1200×630 PNG with resvg from the manifest ret
 
 Enabling `viewer.openGraph` emits absolute Open Graph and Twitter Card tags from `decks.paths(slug).ogImage`, which defaults to `/decks/:slug/og.png`. Save the PNG under Wrangler Static Assets.
 
+To let X posts play the deck inline, set `viewer.openGraph.twitterPlayer` and enable `embed`. The Player Card frames `/:slug/embed`, and hono-decks adds X's origins to its `frame-ancestors`. X plays player cards only for domains it has approved and offers no self-serve approval today; other domains show the image above, so keep generating it.
+
+```ts
+export const decks = createDecks({
+  embed: {},
+  viewer: { openGraph: { twitterPlayer: true } },
+})
+```
+
 <Callout title={"Keep fonts in the build input"}>
 
 Satori accepts TTF, OTF, and WOFF, but not WOFF2. Bundle a font that covers every rendered language and add its directory to `build.watch_dir` in `wrangler.jsonc`.

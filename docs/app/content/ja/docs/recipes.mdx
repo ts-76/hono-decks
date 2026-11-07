@@ -18,6 +18,15 @@ Browser Renderingを使わず、`compileDecks()`が返すデッキ情報からSa
 
 `viewer.openGraph`を有効にすると、`decks.paths(slug).ogImage`（既定では`/decks/:slug/og.png`）の絶対URLを使ったOpen Graph / Twitter Cardタグを生成します。PNGはWrangler Static Assetsへ保存します。
 
+Xのポスト内でスライドを再生させる場合は、`viewer.openGraph.twitterPlayer`を指定し、`embed`も有効にします。Player Cardは`/:slug/embed`を表示し、hono-decksがそのルートの`frame-ancestors`にXのオリジンを追加します。XがPlayer Cardを再生するのは承認済みのドメインだけで、現在は自分で申請する手段が公開されていません。承認されていないドメインでは上記の画像が表示されるため、画像の生成も続けてください。
+
+```ts
+export const decks = createDecks({
+  embed: {},
+  viewer: { openGraph: { twitterPlayer: true } },
+})
+```
+
 <Callout title={"フォントをビルド対象に含める"}>
 
 SatoriはTTF / OTF / WOFFを扱えますが、WOFF2には対応していません。日本語を描画する場合は、日本語の文字を含むフォントファイルを同梱し、そのディレクトリを`wrangler.jsonc`の`build.watch_dir`にも追加します。

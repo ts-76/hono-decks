@@ -248,6 +248,7 @@ const paths = decks.paths("product");
 paths.viewer;       // /decks/product
 paths.render;       // /decks/product/render
 paths.print;        // /decks/product/print
+paths.overview;     // /decks/product/overview
 paths.presentation; // /decks/product/presentation
 paths.presenter;    // /decks/product/presenter
 paths.embed;        // /decks/product/embed
@@ -426,6 +427,23 @@ Override <code>imagePath</code> with a resolver when images are served from a se
 Image generation is intentionally not part of the core package. The <code>examples/ogp</code> recipe uses the deck metadata returned by <code>compileDecks()</code> from <code>hono-decks/node</code> to Satori and resvg, then stores 1200 by 630 PNG files in Workers Static Assets. Satori and resvg are example-only dependencies, and the recipe does not require Browser Rendering. Satori accepts TTF, OTF, and WOFF fonts but not WOFF2, so the build script must receive a font file that covers the target language.
 
 <code>build.ogpCacheFile</code> stores external site metadata used by <code>@[card](...)</code>. It is separate from the viewer's share image.
+
+## Slide overview
+
+`/:slug/overview` shows every slide as a thumbnail in a responsive grid, using the deck's theme. Each thumbnail opens the viewer at that slide, and the viewer's grid button opens the overview with the current slide highlighted. Disable it with `pages: { overview: false }`, or hide only the button with `viewer.controls.hidden: ["overview"]`.
+
+### X (Twitter) Player Card
+
+Set `twitterPlayer` to let posts play the deck inline. The card points at the deck's `embed` route, so enable `embed` too; hono-decks then allows X's origins in that route's `frame-ancestors`. The player must be served over HTTPS.
+
+~~~ts
+createDecks({
+  embed: {},
+  viewer: { openGraph: { twitterPlayer: true } }, // or { width: 1280, height: 720 }
+});
+~~~
+
+X plays player cards inline only for domains it has approved, and it no longer offers a self-serve approval form or card validator. Until your domain is approved, posts show the share image instead, so keep `ogImage` meaningful. X caches cards per URL; after changing tags, share a new URL (for example with a query string) to see the update.
 
 ## Public entries
 

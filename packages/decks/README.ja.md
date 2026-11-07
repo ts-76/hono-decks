@@ -250,6 +250,7 @@ const paths = decks.paths("product");
 paths.viewer;       // /decks/product
 paths.render;       // /decks/product/render
 paths.print;        // /decks/product/print
+paths.overview;     // /decks/product/overview
 paths.presentation; // /decks/product/presentation
 paths.presenter;    // /decks/product/presenter
 paths.embed;        // /decks/product/embed
@@ -424,6 +425,23 @@ export const decks = createDecks({
 生成処理は core に含まれません。`examples/ogp` では `hono-decks/node` の `compileDecks()` が返すデッキのメタデータを Satori + resvg へ渡し、1200×630 PNG を Workers Static Assets へ保存します。Satori / resvg は example だけの依存で、Browser Rendering binding は不要です。Satori は TTF / OTF / WOFF を読み込めますが WOFF2 は扱えないため、対象言語の font file を build script から明示的に渡してください。
 
 `build.ogpCacheFile` は `@[card](...)` が参照する外部サイトのメタデータキャッシュです。viewer 自身の share image とは別機能です。
+
+## スライドのオーバービュー
+
+`/:slug/overview` は、デッキのテーマのまま全スライドをサムネイルのグリッドで表示します。サムネイルを選ぶとそのスライドからビューアーで開き、ビューアーのグリッドボタンからは現在のスライドを強調した状態でオーバービューを開けます。`pages: { overview: false }` で無効化でき、ボタンだけを隠す場合は `viewer.controls.hidden: ["overview"]` を指定します。
+
+### X(Twitter)の Player Card
+
+`twitterPlayer` を指定すると、ポスト内でスライドを再生できる Player Card を出力します。カードはデッキの `embed` ルートを参照するため、`embed` も有効にしてください。hono-decks はそのルートの `frame-ancestors` に X のオリジンを自動で追加します。配信は HTTPS が必須です。
+
+~~~ts
+createDecks({
+  embed: {},
+  viewer: { openGraph: { twitterPlayer: true } }, // または { width: 1280, height: 720 }
+});
+~~~
+
+X が Player Card をインラインで再生するのは、X が承認したドメインだけです。現在は承認を申請するフォームやカード検証ツールが公開されていません。承認されるまでは共有画像が表示されるため、`ogImage` も用意しておいてください。X はカードを URL 単位でキャッシュします。タグを変えた後は、クエリ文字列を付けるなど別の URL で共有すると反映を確認できます。
 
 ## Public entries
 

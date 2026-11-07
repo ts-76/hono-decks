@@ -86,6 +86,7 @@ decks.paths("welcome");
   viewer,
   render,
   print,
+  overview,
   presentation,
   presenter,
   embed,
@@ -254,6 +255,10 @@ PDF/PNG は Cloudflare Browser Rendering binding を `browser: ({ c }) => c.env.
 
 Viewer 上の `Cmd + P` / `Ctrl + P` は print route へ移動し、すべての slide を印刷対象にします。
 
+## スライドのオーバービュー
+
+`/:slug/overview` は、デッキのテーマのまま全スライドをサムネイルのグリッドで表示します。サムネイルを選ぶとそのスライドからビューアーで開き、ビューアーのグリッドボタンからは現在のスライドを強調した状態でオーバービューを開けます。`pages: { overview: false }` で無効化でき、ボタンだけを隠す場合は `viewer.controls.hidden: ["overview"]` を指定します。
+
 ## Build-time OGP images
 
 `viewer.openGraph` を有効にすると、viewer は `decks.paths(slug).ogImage` を使って Open Graph / Twitter Card の絶対URLを出力します。画像生成ライブラリは core へ含めていません。
@@ -265,6 +270,19 @@ createDecks({
 ```
 
 `examples/ogp` は Satori と resvg を example だけの依存として追加し、frontmatter から 1200×630 PNG をビルド時に生成して Workers Static Assets で配信するレシピです。Browser Rendering binding は不要です。`build.ogpCacheFile` はスライド内 LinkCard 用の外部メタデータキャッシュであり、この share image 生成とは別機能です。
+
+### X(Twitter)の Player Card
+
+`twitterPlayer` を指定すると、ポスト内でスライドを再生できる Player Card を出力します。カードはデッキの `embed` ルートを参照するため、`embed` も有効にしてください。hono-decks はそのルートの `frame-ancestors` に X のオリジンを自動で追加します。配信は HTTPS が必須です。
+
+```ts
+createDecks({
+  embed: {},
+  viewer: { openGraph: { twitterPlayer: true } }, // または { width: 1280, height: 720 }
+});
+```
+
+X が Player Card をインラインで再生するのは、X が承認したドメインだけです。現在は承認を申請するフォームやカード検証ツールが公開されていません。承認されるまでは共有画像が表示されるため、`ogImage` も用意しておいてください。X はカードを URL 単位でキャッシュします。タグを変えた後は、クエリ文字列を付けるなど別の URL で共有すると反映を確認できます。
 
 ## Public entries
 

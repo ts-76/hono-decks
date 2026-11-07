@@ -86,6 +86,7 @@ decks.paths("welcome");
   viewer,
   render,
   print,
+  overview,
   presentation,
   presenter,
   embed,
@@ -254,6 +255,10 @@ For PDF and PNG exports, return the Cloudflare Browser Rendering binding from `b
 
 In the viewer, `Cmd + P` or `Ctrl + P` opens the print route and includes every slide in the print job.
 
+## Slide overview
+
+`/:slug/overview` shows every slide as a thumbnail in a responsive grid, using the deck's theme. Each thumbnail opens the viewer at that slide, and the viewer's grid button opens the overview with the current slide highlighted. Disable it with `pages: { overview: false }`, or hide only the button with `viewer.controls.hidden: ["overview"]`.
+
 ## Build-time OGP images
 
 When `viewer.openGraph` is enabled, the viewer uses `decks.paths(slug).ogImage` to emit absolute Open Graph and Twitter Card image URLs. The core package does not include an image-generation library.
@@ -265,6 +270,19 @@ createDecks({
 ```
 
 `examples/ogp` provides a recipe that installs Satori and resvg only in the example, generates 1200×630 PNG files from frontmatter at build time, and serves them through Workers Static Assets. It does not require a Browser Rendering binding. `build.ogpCacheFile` is an external metadata cache for LinkCards inside slides and is separate from this share-image generation.
+
+### X (Twitter) Player Card
+
+Set `twitterPlayer` to let posts play the deck inline. The card points at the deck's `embed` route, so enable `embed` too; hono-decks then allows X's origins in that route's `frame-ancestors`. The player must be served over HTTPS.
+
+```ts
+createDecks({
+  embed: {},
+  viewer: { openGraph: { twitterPlayer: true } }, // or { width: 1280, height: 720 }
+});
+```
+
+X plays player cards inline only for domains it has approved, and it no longer offers a self-serve approval form or card validator. Until your domain is approved, posts show the share image instead, so keep `ogImage` meaningful. X caches cards per URL; after changing tags, share a new URL (for example with a query string) to see the update.
 
 ## Public entries
 
