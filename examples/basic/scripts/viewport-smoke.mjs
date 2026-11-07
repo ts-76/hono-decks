@@ -200,9 +200,14 @@ async function verifyMotionFireSteps(label) {
   );
   assertSlideOnlyPosition(secondSlide.position, `${label} motion second slide position`);
   const transitionProbe = await evalJson(`(() => ({
-    starts: Number(document.querySelector("[data-hono-decks-viewer]")?.getAttribute("data-motion-incoming-transition-starts") ?? 0)
+    starts: Number(document.querySelector("[data-hono-decks-viewer]")?.getAttribute("data-motion-incoming-transition-starts") ?? 0),
+    samples: Number(document.querySelector("[data-hono-decks-viewer]")?.getAttribute("data-motion-seam-samples") ?? 0),
+    minOverlap: Number(document.querySelector("[data-hono-decks-viewer]")?.getAttribute("data-motion-seam-min-overlap") ?? 0)
   }))()`);
   if (transitionProbe.starts < 1) throw new Error(label + " incoming slide skipped its transition");
+  if (transitionProbe.samples < 1 || transitionProbe.minOverlap < 0.75) {
+    throw new Error(label + " slide edges lack a physical pixel of overlap: " + JSON.stringify(transitionProbe));
+  }
 
   await evalJson(clickNavigationLayerScript("next"));
   const secondReveal = await waitForMotionState(
@@ -396,11 +401,24 @@ function installMotionTransitionProbeScript() {
     if (!(root instanceof HTMLElement) || fires.length === 0) throw new Error("missing motion fire probe target");
     root.setAttribute("data-motion-visible-opacity-transition-starts", "0");
     root.setAttribute("data-motion-incoming-transition-starts", "0");
+    root.setAttribute("data-motion-seam-samples", "0");
+    root.setAttribute("data-motion-seam-min-overlap", "Infinity");
     const incoming = iframe.contentDocument.querySelectorAll(".slide")[1];
+    const outgoing = activeSlide;
     incoming.addEventListener("transitionrun", (event) => {
       if (event.target !== incoming || !["transform", "opacity"].includes(event.propertyName)) return;
       const current = Number(root.getAttribute("data-motion-incoming-transition-starts") ?? 0);
       root.setAttribute("data-motion-incoming-transition-starts", String(current + 1));
+      if (event.propertyName !== "transform") return;
+      const frameWindow = iframe.contentWindow;
+      function sampleSeam() {
+        if (!outgoing.hasAttribute("data-active-transition") || !incoming.hasAttribute("data-active-transition")) return;
+        const overlap = (outgoing.getBoundingClientRect().right - incoming.getBoundingClientRect().left) * frameWindow.devicePixelRatio;
+        root.setAttribute("data-motion-seam-min-overlap", String(Math.min(overlap, Number(root.getAttribute("data-motion-seam-min-overlap")))));
+        root.setAttribute("data-motion-seam-samples", String(Number(root.getAttribute("data-motion-seam-samples")) + 1));
+        frameWindow.requestAnimationFrame(sampleSeam);
+      }
+      frameWindow.requestAnimationFrame(sampleSeam);
     });
 
     fires.forEach((fire) => {
