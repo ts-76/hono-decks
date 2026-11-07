@@ -65,7 +65,7 @@ describe("compiled deck rendering", () => {
   });
 
   it("fails explicitly for a build summary mistakenly passed as a runtime slide", async () => {
-    const summary = { index: 0, meta: { meta: {} }, modulePath: "generated/slide-0.ts" };
+    const summary = { index: 0, meta: { meta: {} }, modulePath: "generated/slide-0.js" };
     expect(() => renderCompiledSlide(summary as never)).toThrow("compileDecks() returns build information only");
     await expect(renderCompiledSlideAsync(summary as never)).rejects.toThrow(
       "compileDecks() returns build information only",

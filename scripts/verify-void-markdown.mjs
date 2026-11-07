@@ -144,7 +144,7 @@ const generated = await readFile(join(app, "src/generated/decks.ts"), "utf8");
 assert.match(generated, /Void Markdown Demo/);
 assert.match(generated, /Legacy MDX/);
 assert.match(generated, /発表者だけ/);
-assert.match(await readFile(join(app, "src/generated/decks/demo/slide-0.ts"), "utf8"), /MarkdownContext.Provider/);
+assert.match(await readFile(join(app, "src/generated/decks/demo/slide-0.js"), "utf8"), /MarkdownContext.Provider/);
 try {
   console.log(run(packageManager, ["run", "build"]));
   console.log(run(packageManager, ["run", "typecheck"]));

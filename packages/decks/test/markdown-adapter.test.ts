@@ -39,8 +39,8 @@ describe("host-independent Markdown adapter", () => {
           markdown: { adapter: "custom-markdown", options: { message: "Custom compiler" } },
         });
         expect(output.decks.map((deck) => deck.slug)).toEqual(["legacy", "plain"]);
-        expect(await readFile(join(cwd, "generated/decks/plain/slide-0.ts"), "utf8")).toContain("Custom compiler");
-        expect(await readFile(join(cwd, "generated/decks/legacy/slide-0.ts"), "utf8")).toContain("Existing MDX");
+        expect(await readFile(join(cwd, "generated/decks/plain/slide-0.js"), "utf8")).toContain("Custom compiler");
+        expect(await readFile(join(cwd, "generated/decks/legacy/slide-0.js"), "utf8")).toContain("Existing MDX");
       },
     );
   });

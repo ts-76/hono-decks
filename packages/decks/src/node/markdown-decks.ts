@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import { transform } from "esbuild";
 import { isLocalRelativeAssetCandidate } from "../deck/assets";
 import { CompileError } from "../deck/model";
 import type { CompiledDeck } from "../deck/model";
@@ -78,7 +79,7 @@ export async function compileMarkdownDecks(
       for (const [index, slideSource] of splitMarkdownSlides(parsed.content).entries()) {
         const prelude = parsed.script ? `<script>\n${parsed.script}\n</script>\n` : "";
         const slide = adapter.read(prelude + slideSource);
-        const path = `${input.outDir}/decks/${entry.slug}/slide-${index}.ts`;
+        const path = `${input.outDir}/decks/${entry.slug}/slide-${index}.js`;
         const mergedSource = `${prelude}---\n${JSON.stringify({ ...parsed.frontmatter, ...slide.frontmatter })}\n---\n${slide.content}`;
         const rewritten = rewriteAssetUrls(mergedSource, assets);
         const result = await adapter.compile(rewritten, {
@@ -102,7 +103,14 @@ export async function compileMarkdownDecks(
         slideModules.push({
           path,
           importPath: `./decks/${entry.slug}/slide-${index}`,
-          code: `// @ts-nocheck\n${rewriteRelativeMdxImports(result.code, dirname(entry.sourcePath), dirname(path))}`,
+          // Adapters may return TypeScript; slide modules are emitted as plain JavaScript.
+          code: (
+            await transform(rewriteRelativeMdxImports(result.code, dirname(entry.sourcePath), dirname(path)), {
+              loader: "ts",
+              format: "esm",
+              sourcefile: entry.sourcePath,
+            })
+          ).code,
         });
         slides.push({ index, meta: slideMeta, html: "", components: [], notes: slideMeta.notes });
       }

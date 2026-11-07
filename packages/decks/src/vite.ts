@@ -236,7 +236,7 @@ const PUBLIC_MODULE_PREFIX = "virtual:hono-decks/module/";
 const MODULE_PREFIX = "\0hono-decks:module:";
 
 function findModule(modules: Map<string, string>, path: string): string | undefined {
-  return [path, path.replace(/\.js$/, ".ts"), path + ".ts", path + "/index.ts"].find((candidate) =>
+  return [path, path.replace(/\.js$/, ".ts"), path + ".ts", path + ".js", path + "/index.ts"].find((candidate) =>
     modules.has(candidate),
   );
 }

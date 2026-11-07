@@ -32,7 +32,7 @@ describe("generated build consistency", () => {
         index: 0,
         meta: expect.objectContaining({ title: "Expected body" }),
         notes: undefined,
-        modulePath: "generated/decks/demo/slide-0.ts",
+        modulePath: "generated/decks/demo/slide-0.js",
       });
       expect(result.decks[0].slides[0]).not.toHaveProperty("html");
       expect(result.decks[0].slides[0]).not.toHaveProperty("render");
@@ -96,7 +96,7 @@ describe("generated build consistency", () => {
       expect(await readFile(join(cwd, "decks/cache.json"), "utf8")).toBe("{}\n");
       await writeFile(join(cwd, "decks/demo/components/client/index.tsx"), "export const lowerCase = 1;");
       await compileDecks({ ...input, refreshOgp: true, resolveOgp: async () => ({ title: "Fresh card" }) });
-      expect(await readFile(join(cwd, "generated/decks/demo/slide-0.ts"), "utf8")).toContain("After");
+      expect(await readFile(join(cwd, "generated/decks/demo/slide-0.js"), "utf8")).toContain("After");
       expect(await readFile(join(cwd, "decks/cache.json"), "utf8")).toContain("Fresh card");
       expect(await readFile(join(cwd, "generated/owned.txt"), "utf8")).toBe("Keep application file");
     } finally {
