@@ -73,7 +73,7 @@ title: Interactive slide
 
 Opening frontmatter applies to the deck. Frontmatter immediately after a slide separator applies only to that slide. Unknown keys remain in meta but produce a warning.
 
-<DefinitionList items={[{term: <>{"Deck"}</>, description: <><code>{"title"}</code>{", "}<code>{"description"}</code>{", "}<code>{"author"}</code>{", "}<code>{"tags"}</code>{", "}<code>{"date"}</code>{", "}<code>{"theme"}</code>{", "}<code>{"transition"}</code>{", "}<code>{"transitionDuration"}</code>{", "}<code>{"transitionEasing"}</code>{", "}<code>{"draft"}</code>{", "}<code>{"assets"}</code>{", "}<code>{"presenter"}</code></>},
+<DefinitionList items={[{term: <>{"Deck"}</>, description: <><code>{"title"}</code>{", "}<code>{"description"}</code>{", "}<code>{"author"}</code>{", "}<code>{"tags"}</code>{", "}<code>{"date"}</code>{", "}<code>{"theme"}</code>{", "}<code>{"transition"}</code>{", "}<code>{"transitionDuration"}</code>{", "}<code>{"transitionEasing"}</code>{", "}<code>{"draft"}</code>{", "}<code>{"assets"}</code>{", "}<code>{"presenter"}</code>{", "}<code>{"duration"}</code></>},
 {term: <>{"Slide"}</>, description: <><code>{"title"}</code>{", "}<code>{"layout"}</code>{", "}<code>{"class"}</code>{", "}<code>{"notes"}</code>{", "}<code>{"background"}</code>{", "}<code>{"transition"}</code>{", "}<code>{"transitionDuration"}</code>{", "}<code>{"transitionEasing"}</code></>},
 {term: <>{"Transitions"}</>, description: <><code>{"none"}</code>{", "}<code>{"fade"}</code>{", "}<code>{"fade-out"}</code>{", "}<code>{"slide-left"}</code>{", "}<code>{"slide-right"}</code>{", "}<code>{"slide-up"}</code>{", "}<code>{"slide-down"}</code>{", "}<code>{"view-transition"}</code></>},
 {term: <>{"Layouts"}</>, description: <><code>{"default"}</code>{", centered "}<code>{"cover"}</code>{", and centered "}<code>{"statement"}</code>{" are built in. A custom name becomes a "}<code>{"layout-<name>"}</code>{" class that can be styled in "}<code>{"theme.css"}</code>{"."}</>}]} />
@@ -107,6 +107,8 @@ Use `fire="scale"` on a component and `effect="scale"` with `:::fire`. Built-ins
 </section>
 
 <section id={"notes"}>
+
+`duration: 20m` sets the presenter timer target; `1h30m`, `90s`, and numeric minutes are also supported. `presenter.duration` overrides it at runtime (numeric seconds or the same strings). Press `T` to start or pause the timer.
 
 ## Add notes for the presenter
 

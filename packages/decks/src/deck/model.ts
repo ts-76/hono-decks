@@ -30,6 +30,8 @@ export interface DeckFrontmatter {
   draft?: boolean;
   assets?: string | string[];
   presenter?: boolean;
+  /** Target talk duration in seconds. */
+  duration?: number;
   meta: Record<string, unknown>;
 }
 

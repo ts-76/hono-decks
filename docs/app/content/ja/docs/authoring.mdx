@@ -31,6 +31,8 @@ CommonMarkとGFM（テーブル、タスクリスト、打ち消し線、自動�
 <DefinitionList items={[{term: <>{"コードフェンス"}</>, description: <>{"開始行に"}<code>{"ts"}</code>{"、"}<code>{"tsx"}</code>{"、"}<code>{"css"}</code>{"などの言語名を付けると、スライド内でシンタックスハイライトされます。"}</>},
 {term: <>{"MDX"}</>, description: <>{"JSXコンポーネント、props、式を使えます。"}<code>{"import"}</code>{"と"}<code>{"export"}</code>{"はファイル先頭にまとめます。"}</>}]} />
 
+`duration: 20m` でプレゼンタータイマーの目安を設定できます。`1h30m`、`90s`、分単位の数値にも対応します。実行時の `presenter.duration` で上書きでき、数値は秒単位です。`T` キーでタイマーを開始・一時停止します。
+
 </section>
 
 <section id={"markdown-adapter"}>
@@ -73,7 +75,7 @@ title: Interactive slide
 
 ファイル先頭のフロントマターはデッキ全体に適用されます。区切り線の直後に置いたフロントマターは、そのスライドだけに適用されます。未定義のキーはmetaに残り、コンパイル時に警告が表示されます。
 
-<DefinitionList items={[{term: <>{"デッキ"}</>, description: <><code>{"title"}</code>{", "}<code>{"description"}</code>{", "}<code>{"author"}</code>{", "}<code>{"tags"}</code>{", "}<code>{"date"}</code>{", "}<code>{"theme"}</code>{", "}<code>{"transition"}</code>{", "}<code>{"transitionDuration"}</code>{", "}<code>{"transitionEasing"}</code>{", "}<code>{"draft"}</code>{", "}<code>{"assets"}</code>{", "}<code>{"presenter"}</code></>},
+<DefinitionList items={[{term: <>{"デッキ"}</>, description: <><code>{"title"}</code>{", "}<code>{"description"}</code>{", "}<code>{"author"}</code>{", "}<code>{"tags"}</code>{", "}<code>{"date"}</code>{", "}<code>{"theme"}</code>{", "}<code>{"transition"}</code>{", "}<code>{"transitionDuration"}</code>{", "}<code>{"transitionEasing"}</code>{", "}<code>{"draft"}</code>{", "}<code>{"assets"}</code>{", "}<code>{"presenter"}</code>{", "}<code>{"duration"}</code></>},
 {term: <>{"スライド"}</>, description: <><code>{"title"}</code>{", "}<code>{"layout"}</code>{", "}<code>{"class"}</code>{", "}<code>{"notes"}</code>{", "}<code>{"background"}</code>{", "}<code>{"transition"}</code>{", "}<code>{"transitionDuration"}</code>{", "}<code>{"transitionEasing"}</code></>},
 {term: <>{"トランジション"}</>, description: <><code>{"none"}</code>{", "}<code>{"fade"}</code>{", "}<code>{"fade-out"}</code>{", "}<code>{"slide-left"}</code>{", "}<code>{"slide-right"}</code>{", "}<code>{"slide-up"}</code>{", "}<code>{"slide-down"}</code>{", "}<code>{"view-transition"}</code></>},
 {term: <>{"レイアウト"}</>, description: <><code>{"default"}</code>{"、中央配置の"}<code>{"cover"}</code>{"と"}<code>{"statement"}</code>{"が標準です。独自名は"}<code>{"layout-<name>"}</code>{"クラスとして"}<code>{"theme.css"}</code>{"から指定できます。"}</>}]} />

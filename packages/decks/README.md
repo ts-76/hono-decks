@@ -586,3 +586,7 @@ Markdown checks without Void, set `HONO_MARKDOWN_PACKAGE` to the common tarball
 and run `node scripts/verify-vite-init.mjs`.
 
 The presentation prepares images and CSS backgrounds for the next slide, reuses decoded resources within the document, and bounds background-image retention. Data Saver disables speculative preparation. Default embedded local assets use ETag revalidation (`public, max-age=0, must-revalidate`); explicit cache policies remain unchanged. Development asset responses use `no-store`.
+
+## Presenter timer
+
+Set `duration: 20m` in deck frontmatter for a target (also `1h30m`, `90s`, or a number of minutes). Override it with `createDecks({ presenter: { duration: 1200 } })`, in seconds, or use the same string syntax. The timer starts on navigation or with Start; press `T` to start or pause it. Reset clears it. The presenter tab retains its elapsed and paused state across reloads.

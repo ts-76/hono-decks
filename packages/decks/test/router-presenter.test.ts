@@ -181,7 +181,7 @@ describe("decksRouter presenter and presentation surfaces", () => {
     expect(presenterHtml).toContain("data-hono-decks-presenter-position");
     expect(presenterHtml).not.toContain("data-hono-decks-presenter-clock");
     expect(presenterHtml).not.toContain("updateClock");
-    expect(presenterHtml).not.toContain("setInterval");
+    expect(presenterHtml).toContain("setInterval(renderTimer, 1000)");
     expect(presenterHtml).toContain("data-hono-decks-presenter-connection");
     expect(presenterHtml).toContain("syncProjectionState(event.source, message.index, stepIndex)");
     expect(presenterHtml).toContain("event.origin !== window.location.origin");
