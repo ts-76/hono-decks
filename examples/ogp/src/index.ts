@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { decks } from "./decks";
+import { decks } from "../decks";
 
 const app = new Hono();
 const robotsPolicy = "noindex, nofollow, noarchive";

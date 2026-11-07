@@ -8,18 +8,20 @@ order: 3
 
 Keep build settings in hono-decks.config.ts and runtime options in createDecks().
 
+CLI init keeps build settings in `decks/config.ts` and runtime settings in `decks/index.ts`, and records the config path in package.json. Vite framework init retains `hono-decks.config.ts` and its app-owned facade. Explicit config paths and existing layouts remain supported.
+
 <section id={"files"}>
 
 ## Know which file owns each setting
 
-`hono-decks init` creates `hono-decks.config.ts`, `src/decks.ts`, and a sample deck, and adds the generated directory to `.gitignore`. The config file is build-only: the CLI and the Vite plugin read it, and the Worker never imports it.
+`hono-decks init` creates `hono-decks.config.ts`, `decks/index.ts`, and a sample deck, and adds the generated directory to `.gitignore`. The config file is build-only: the CLI and the Vite plugin read it, and the Worker never imports it.
 
 <DefinitionList items={[{term: <><code>{"hono-decks.config.ts"}</code></>, description: <>{"Build settings: the public mountPath, deck root, and output directory."}</>},
-{term: <><code>{"src/decks.ts"}</code></>, description: <>{"Runtime options passed to createDecks(): viewer, presenter, export, source, and more."}</>},
-{term: <><code>{"generated/"}</code></>, description: <>{"Compiler-owned modules. Rebuilt on every dev, build, and typecheck run; not committed."}</>},
+{term: <><code>{"decks/index.ts"}</code></>, description: <>{"Runtime options passed to createDecks(): viewer, presenter, export, source, and more."}</>},
+{term: <><code>{".hono-decks/"}</code></>, description: <>{"Compiler-owned modules. Rebuilt on every dev, build, and typecheck run; not committed."}</>},
 {term: <><code>{"package.json"}</code></>, description: <>{"Runs the existing Vite or Wrangler development command."}</>}]} />
 
-<CodeBlock filename={"hono-decks.config.ts"} language={"typescript"} code={"// hono-decks.config.ts\nimport { defineDecksConfig } from \"hono-decks\"\n\nexport default defineDecksConfig({\n  mountPath: \"/decks\",\n  build: { root: \"decks\", outDir: \"src/generated\" },\n})"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+<CodeBlock filename={"hono-decks.config.ts"} language={"typescript"} code={"// hono-decks.config.ts\nimport { defineDecksConfig } from \"hono-decks\"\n\nexport default defineDecksConfig({\n  mountPath: \"/decks\",\n  build: { root: \"decks\", outDir: \".hono-decks\" },\n})"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
 
 With Vite (`init --framework hono`, `honox`, or `void`), modules stay in memory and `src/decks.ts` imports `createDecks` from `virtual:hono-decks`. `build.outDir` is not needed.
 
@@ -60,7 +62,7 @@ Set LinkCard cache at `build.ogpCacheFile`. Use `--refresh-ogp` only for an inte
 
 Pass runtime options to `createDecks()`. Its type parameter type-checks Hono Bindings and Variables in every resolver. When `dev` is omitted, hono-decks reads the `NODE_ENV` set by Vite and Wrangler. With their standard settings, `vite` and `wrangler dev` use development mode, while production builds and `wrangler deploy` use production mode. An explicit boolean or resolver takes precedence. If the environment cannot be detected, hono-decks defaults safely to production mode.
 
-<CodeBlock filename={"TypeScript"} language={"typescript"} code={"// src/decks.ts\nimport { createDecks } from \"./generated/decks\"\n\ntype AppEnv = {\n  Bindings: {\n    PRESENTER_ENABLED?: string\n  }\n  Variables: {\n    language: string\n  }\n}\n\nexport const decks = createDecks<AppEnv>({\n  document: {\n    lang: ({ c }) => c.get(\"language\"),\n  },\n  presenter: {\n    enabled: ({ c, dev }) => dev || c.env.PRESENTER_ENABLED === \"true\",\n  },\n})"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+<CodeBlock filename={"TypeScript"} language={"typescript"} code={"// src/decks.ts\nimport { createDecks } from \"#decks\"\n\ntype AppEnv = {\n  Bindings: {\n    PRESENTER_ENABLED?: string\n  }\n  Variables: {\n    language: string\n  }\n}\n\nexport const decks = createDecks<AppEnv>({\n  document: {\n    lang: ({ c }) => c.get(\"language\"),\n  },\n  presenter: {\n    enabled: ({ c, dev }) => dev || c.env.PRESENTER_ENABLED === \"true\",\n  },\n})"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
 
 The `c.get("language")` example assumes Hono's `languageDetector()` is registered first; see [document policy and security](/docs/security?lang=en#language). For a single-language app, use a fixed value such as `lang: "en"`.
 

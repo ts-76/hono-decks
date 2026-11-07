@@ -1,3 +1,6 @@
 /dist/
 /public/**/*.png
 /.wrangler-config/
+
+.hono-decks/
+.cloudflare/

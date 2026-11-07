@@ -8,7 +8,7 @@ import { spawn } from "node:child_process";
 const cwd = path.resolve(import.meta.dirname, "..");
 const root = path.resolve(cwd, "../..");
 const wranglerConfigHome = path.join(cwd, ".wrangler-config");
-const wranglerBin = path.join(root, "node_modules", ".bin", process.platform === "win32" ? "wrangler.cmd" : "wrangler");
+const cfBin = path.join(root, "node_modules", ".bin", process.platform === "win32" ? "cf.cmd" : "cf");
 const port = process.env.HONO_DECKS_PDF_SMOKE_PORT ?? String(19787 + (process.pid % 1000));
 const host = "127.0.0.1";
 const baseUrl = `http://${host}:${port}`;
@@ -28,7 +28,7 @@ let serverExited = false;
 try {
   await ensureAgentBrowser();
   await run("bun", ["run", "decks:compile"], { cwd });
-  server = spawn(wranglerBin, ["dev", "--ip", host, "--port", port], {
+  server = spawn(cfBin, ["dev", "--port", port], {
     cwd,
     stdio: ["ignore", "pipe", "pipe"],
     env: { ...process.env, CI: "1", XDG_CONFIG_HOME: wranglerConfigHome, NO_COLOR: "1" },
@@ -39,8 +39,8 @@ try {
       resolve({ code, signal });
     });
   });
-  server.stdout.on("data", (chunk) => process.stdout.write(`[wrangler] ${chunk}`));
-  server.stderr.on("data", (chunk) => process.stderr.write(`[wrangler] ${chunk}`));
+  server.stdout.on("data", (chunk) => process.stdout.write(`[cf] ${chunk}`));
+  server.stderr.on("data", (chunk) => process.stderr.write(`[cf] ${chunk}`));
 
   await waitForServer(`${baseUrl}/decks/sample/print`);
   await mkdir(artifactDir, { recursive: true });
@@ -239,7 +239,7 @@ async function waitForServer(url) {
   while (Date.now() - startedAt < 30000) {
     if (serverExited) {
       const exit = await serverExit;
-      throw new Error(`wrangler dev exited before serving ${url}: ${JSON.stringify(exit)}`);
+      throw new Error(`cf dev exited before serving ${url}: ${JSON.stringify(exit)}`);
     }
     try {
       const response = await fetch(url);

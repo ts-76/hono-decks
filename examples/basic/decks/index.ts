@@ -1,7 +1,7 @@
-// App-owned runtime options. Files under src/generated are rebuilt by `hono-decks compile`.
+// App-owned runtime options. The compiler manages .hono-decks; do not edit its contents.
 import { withR2Assets, type DeckBrowserRunBinding, type DeckSource, type R2BucketLike } from "hono-decks";
-import { createDecks } from "./generated/decks";
-import { renderSampleViewerHead } from "./pages";
+import { createDecks } from "#decks";
+import { renderSampleViewerHead } from "../src/pages";
 
 export interface DecksBindings {
   DECK_ASSETS?: R2BucketLike;

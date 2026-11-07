@@ -30,3 +30,9 @@ bun run dev
 Open `/decks/welcome` and inspect `/decks/welcome/og.png`. `bun run check` also verifies the PNG signature and dimensions, type-checks the Worker and build script, and performs a Wrangler dry run.
 
 Wrangler watches `decks`, `scripts`, and `assets/fonts`. The custom build regenerates both deck modules and OGP files; `--live-reload` refreshes the browser after a successful rebuild.
+
+## cf configuration
+
+Use `cf dev`, `cf build`, and `cf deploy`. Use `cf deploy --mode production` only for the maintained public sample. `cloudflare.config.ts` owns the Worker, production account/domain, and bindings. `wrangler.config.ts` configures the bundler delegated to by cf, including the deck compilation watcher. The ignored `.hono-decks/` cache is recreated automatically; app-owned settings live in `decks/index.ts` and import `#decks`.
+
+The current cf Wrangler backend rebuilds the local Worker on source changes but does not accept the old `--live-reload` flag. Refresh the browser after edits; Vite integrations retain their existing live updates.

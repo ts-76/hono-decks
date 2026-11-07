@@ -35,8 +35,8 @@ bunx hono-decks init
 
 `init` creates these files without overwriting existing files:
 
-- `hono-decks.config.ts`: build-only configuration
-- `src/decks.ts`: editable facade around generated modules
+- `decks/config.ts`: build-only configuration
+- `decks/index.ts`: editable facade around generated modules
 
 Use the equivalent `npm`, `pnpm`, or Yarn commands when the repository does not use Bun.
 
@@ -51,21 +51,21 @@ OGP data caches retain disk persistence. The generic CLI/file workflow follows.
 ## Configure once
 
 ```ts
-// hono-decks.config.ts
+// decks/config.ts
 import { defineDecksConfig } from "hono-decks";
 
 export default defineDecksConfig({
   mountPath: "/decks",
   build: {
     root: "decks",
-    outDir: "src/generated",
+    outDir: ".hono-decks",
   },
 });
 ```
 
 ```ts
-// src/decks.ts
-import { createDecks } from "./generated/decks";
+// decks/index.ts
+import { createDecks } from "#decks";
 
 export const decks = createDecks();
 ```
@@ -93,7 +93,7 @@ layout: default
 ## Build-time compilation
 
 - Author in `decks/`
-- Compile to `src/generated/`
+- Compile to `.hono-decks/`
 - Serve generated modules from Hono
 ```
 
@@ -106,7 +106,7 @@ bunx hono-decks compile
 ```ts
 // src/index.ts
 import { Hono } from "hono";
-import { decks } from "./decks";
+import { decks } from "../decks";
 
 const app = new Hono();
 
@@ -142,13 +142,13 @@ export default defineConfig({
 
 ## Diagnose setup failures
 
-- Missing config: run `hono-decks init` or create a default-exported `hono-decks.config.ts`.
+- Missing config: run `hono-decks init` or create a default-exported `decks/config.ts`.
 - Missing virtual module types: reference `hono-decks/vite-env`; a dev/build or manual compile is not required for typechecking.
 - Missing generated import in the CLI/file workflow: run `hono-decks compile` before typechecking the application.
 - Deck not discovered: use `decks/<slug>/deck.mdx` or a supported single-file deck in the configured root; `.md` requires a configured Markdown adapter.
 - Broken routes or assets: remove duplicated strings and use `decks.mountPath` and `decks.paths(slug)`.
 - Worker bundling Node modules: import `hono-decks/node` only from build scripts, never from Worker runtime code.
-- Lost edits after compile: move changes out of `src/generated` and into source decks or configuration.
+- Lost edits after compile: move changes out of `.hono-decks` and into source decks or configuration.
 
 
 For an existing Void app, `init --framework void --install` installs missing
@@ -159,3 +159,5 @@ supported by the automatic installer. The generated Markdown sample includes a
 Counter.tsx island. Markdown uses relative default imports with `island: "load"`,
 `visible`, `idle`, or `media:(query)` and literal props, with no separate registry.
 Arbitrary script code/JSX expressions remain unsupported; MDX stays unchanged. For Hono or HonoX, MDX is the default; enable `.md` explicitly with `build.markdown: { adapter: "hono-decks/adapters/hono-markdown" }` and install the common Markdown package and its compiler peers as documented in the package README.
+
+CLI init registers `#decks` in package.json and prefixes existing app commands with compilation. Treat `.hono-decks/` as an internal ignored cache; do not create or edit its contents manually. Vite uses virtual modules and writes no cache. Existing explicit `build.outDir` remains supported.

@@ -4,6 +4,10 @@
 
 Hono と Cloudflare Workers 上で MDX のスライドを配信するためのライブラリです。ビルド時に MDX を TypeScript module へ変換し、Worker runtime ではファイルシステムや compiler を読み込みません。
 
+CLIのinitは `decks/index.ts` を作り、package.jsonに `#decks` を登録します。中間コードはGit管理しない内部キャッシュ `.hono-decks/` に保存し、既存のdev/build/typecheck/test/deployコマンドの前にコンパイルを追加します。Viteは引き続きメモリ上の仮想モジュールを使います。独自ビルド向けの `build.outDir` 指定も維持しています。Basic・Minimal・OGPは `cf dev/build/deploy` を使い、`wrangler.config.ts` はcfが使うビルド処理の設定だけを保持します。
+
+cfのサンプルはデッキ編集時にローカルWorkerを再ビルドします。現行のcfはWranglerの `--live-reload` を受け付けないため、ブラウザは再読み込みしてください。Viteのライブ更新は維持しています。
+
 ## Hono＋Vite／HonoX：init で接続する
 
 既存のアプリに `hono-decks` をインストールし、構成に合わせて初期設定します。
@@ -170,7 +174,7 @@ export const decks = createDecks({
 
 通常は `decks/` の原稿・画像・部品と設定ファイルを編集します。
 Vite はコンパイル結果をメモリ上のモジュールとして読み込み、ビルド時にアプリへ取り込みます。
-`src/generated` の作成や直接 import、`build.outDir` の指定は不要です。
+`.hono-decks` の作成や直接 import、`build.outDir` の指定は不要です。
 明示的に設定した OGP メタデータキャッシュは、従来どおり保存します。
 設定から import した別ファイルも監視するため、公開パスなどを分けて管理できます。
 init の開発クライアントは Vite の `BASE_URL` を使います。ホストの開発サーバーが
@@ -192,28 +196,28 @@ bunx hono-decks compile
 
 AI agent を使う場合は `npx @tanstack/intent@latest install` を実行してください。公開パッケージには、agent が `node_modules` から検出できるバージョン付きの hono-decks Skill が含まれます。
 
-`init` は次のファイルを作り、`.gitignore` に `/src/generated/` を追加します。既存ファイルは上書きしません。
+`init` は次のファイルを作り、`.gitignore` に `/.hono-decks/` を追加します。既存ファイルは上書きしません。
 
-- `hono-decks.config.ts`: CLI だけが読むビルド設定(Worker は import しません)
-- `src/decks.ts`: 生成された `createDecks()` に渡すランタイムのオプション
+- `decks/config.ts`: CLI だけが読むビルド設定(Worker は import しません)
+- `decks/index.ts`: 生成された `createDecks()` に渡すランタイムのオプション
 - `decks/welcome/deck.mdx`: `decks` ディレクトリが無い場合のサンプル
 
 ```ts
-// hono-decks.config.ts
+// decks/config.ts
 import { defineDecksConfig } from "hono-decks";
 
 export default defineDecksConfig({
   mountPath: "/decks",
   build: {
     root: "decks",
-    outDir: "src/generated",
+    outDir: ".hono-decks",
   },
 });
 ```
 
 ```ts
-// src/decks.ts
-import { createDecks } from "./generated/decks";
+// decks/index.ts
+import { createDecks } from "#decks";
 
 export const decks = createDecks();
 ```
@@ -221,7 +225,7 @@ export const decks = createDecks();
 ```ts
 // src/index.ts
 import { Hono } from "hono";
-import { decks } from "./decks";
+import { decks } from "../decks";
 
 const app = new Hono();
 app.get("/", (c) => c.redirect(decks.paths("welcome").viewer));
@@ -229,7 +233,7 @@ app.route(decks.mountPath, decks.router());
 export default app;
 ```
 
-`bunx hono-decks compile` を実行すると `src/generated/decks.ts` と slide modules が更新されます。生成ディレクトリは直接編集もコミットもしません。dev・build・typecheck のたびに作り直されます。
+`bunx hono-decks compile` を実行すると `.hono-decks/decks.ts` と slide modules が更新されます。生成ディレクトリは直接編集もコミットもしません。dev・build・typecheck のたびに作り直されます。
 
 ## ビルド設定とランタイムのオプション
 
@@ -305,7 +309,7 @@ pluginはVite起動前にcompileし、deck rootと`hono-decks.config.ts`をVite 
 ```ts
 // src/decks.ts
 import type { DeckBrowserRunBinding } from "hono-decks";
-import { createDecks } from "./generated/decks";
+import { createDecks } from "#decks";
 
 interface AppEnv {
   Bindings: {

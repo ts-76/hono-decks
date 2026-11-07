@@ -37,7 +37,7 @@ Compiled data must satisfy the public `CompiledDeck` model. Do not send raw MDX 
 If only asset lookup, visibility, metadata, or caching changes, prefer the `source` option of `createDecks()` over replacing the entire generated flow:
 
 ```ts
-import { createDecks } from "./generated/decks";
+import { createDecks } from "#decks";
 import { type DeckSource } from "hono-decks";
 
 export const decks = createDecks({

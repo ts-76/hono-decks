@@ -8,6 +8,10 @@ English | [日本語](https://github.com/ts-76/hono-decks/blob/main/README.ja.md
 
 This monorepo contains hono-decks, a toolkit for serving MDX slide decks from Hono applications and Cloudflare Workers. The CLI compiles MDX into TypeScript modules, so Workers only load generated modules at runtime.
 
+CLI init creates the app-owned `decks/index.ts`, registers `#decks` in package.json, and keeps intermediate code in the ignored `.hono-decks/` cache. Existing dev/build/typecheck/test/deploy scripts are preserved and prefixed with compilation. Vite continues to use in-memory virtual modules. Explicit `build.outDir` paths remain supported for custom pipelines. Basic, Minimal, and OGP use `cf dev/build/deploy`; their `wrangler.config.ts` only configures the current cf bundler backend.
+
+The cf examples rebuild the local Worker on deck edits. The current cf backend does not accept Wrangler’s `--live-reload` flag; refresh the browser after edits. Vite live updates are unchanged.
+
 ## Quick start
 
 ```bash
@@ -16,24 +20,24 @@ bunx hono-decks init
 bunx hono-decks compile
 ```
 
-`init` creates three files and adds `/src/generated/` to `.gitignore`:
+`init` creates three files and adds `/.hono-decks/` to `.gitignore`:
 
 ```ts
-// hono-decks.config.ts — build-only settings read by the CLI and the Vite plugin
+// decks/config.ts — build-only settings read by the CLI and the Vite plugin
 import { defineDecksConfig } from "hono-decks";
 
 export default defineDecksConfig({
   mountPath: "/decks",
   build: {
     root: "decks",
-    outDir: "src/generated",
+    outDir: ".hono-decks",
   },
 });
 ```
 
 ```ts
-// src/decks.ts — runtime options live here
-import { createDecks } from "./generated/decks";
+// decks/index.ts — runtime options live here
+import { createDecks } from "#decks";
 
 export const decks = createDecks();
 ```
@@ -51,7 +55,7 @@ Mount the router in your app, then open `/decks/welcome`.
 ```ts
 // src/index.ts
 import { Hono } from "hono";
-import { decks } from "./decks";
+import { decks } from "../decks";
 
 const app = new Hono();
 app.get("/", (c) => c.redirect(decks.paths("welcome").viewer));
@@ -120,7 +124,7 @@ Integrate generation into the existing `dev` command. For Cloudflare Workers, us
 }
 ```
 
-This automatically recompiles decks when they change. Use `wrangler dev --live-reload` in the dev script to refresh the browser as well. Generated files are rebuilt by every dev, build, and typecheck run, so keep `src/generated/` out of version control.
+This automatically recompiles decks when they change. Use `wrangler dev --live-reload` in the dev script to refresh the browser as well. Generated files are rebuilt by every dev, build, and typecheck run, so keep `.hono-decks/` out of version control.
 
 For HonoX or Vite applications, run `hono-decks init --framework hono` (or `honox`, `void`), or add the plugin yourself. The plugin keeps the compiled modules in memory and exposes them as `virtual:hono-decks`; nothing is written to disk.
 
@@ -153,7 +157,7 @@ Pass runtime options to `createDecks()`. Every resolver accepts a single object 
 ```ts
 // src/decks.ts
 import type { DeckBrowserRunBinding } from "hono-decks";
-import { createDecks } from "./generated/decks";
+import { createDecks } from "#decks";
 
 interface AppEnv {
   Bindings: {

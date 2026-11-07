@@ -22,7 +22,7 @@ Generate binding types with `wrangler types`.
 ## Decorate the source
 
 ```ts
-import { createDecks } from "./generated/decks";
+import { createDecks } from "#decks";
 // src/decks.ts
 import {
   withR2Assets,
@@ -50,7 +50,7 @@ export const decks = createDecks<Env>({
 By default the R2 key comes from the compiled asset's source path, optionally prefixed by `keyPrefix`. If the upload pipeline uses a different layout, provide a deterministic key resolver:
 
 ```ts
-import { createDecks } from "./generated/decks";
+import { createDecks } from "#decks";
 export const decks = createDecks<Env>({
   source(source: DeckSource<Env>) {
     return withR2Assets(source, {

@@ -258,7 +258,7 @@ describe("HonoX documentation site", () => {
     expect(html).toContain('id="install"');
     expect(html).toContain('id="deck"');
     expect(html).toContain("decks/welcome/deck.mdx");
-    expect(html).toContain("src/generated/");
+    expect(html).toContain(".hono-decks/");
     expect(html).toContain("npm run dev");
     expect(html).toContain("npm install hono-decks");
     expect(html).toContain("pnpm add hono-decks");

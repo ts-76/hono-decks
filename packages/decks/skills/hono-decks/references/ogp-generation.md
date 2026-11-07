@@ -7,7 +7,7 @@ hono-decks exposes OGP paths and metadata but intentionally does not bundle an i
 ## Enable viewer metadata
 
 ```ts
-import { createDecks } from "./generated/decks";
+import { createDecks } from "#decks";
 // src/decks.ts
 
 export const decks = createDecks({
@@ -35,7 +35,7 @@ const cwd = process.cwd();
 const manifest = await compileDecks({
   cwd,
   root: config.build?.root ?? "decks",
-  out: config.build?.outDir ?? "src/generated",
+  out: config.build?.outDir ?? ".hono-decks",
   mountPath: config.mountPath,
   ogpCacheFile: config.build?.ogpCacheFile,
 });

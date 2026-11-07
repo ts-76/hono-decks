@@ -157,17 +157,17 @@ describe("hono-decks CLI", () => {
 
       expect(result.exitCode).toBe(0);
       expect(stdout.join("\n")).toContain(
-        "Created hono-decks.config.ts, src/decks.ts, decks/welcome/deck.mdx, .gitignore.",
+        "Created decks/config.ts, src/decks.ts, decks/welcome/deck.mdx, package.json, .gitignore.",
       );
 
       const facade = await readFile(join(cwd, "src", "decks.ts"), "utf8");
       expect(facade).not.toContain("hono-decks.config");
-      expect(facade).toContain('import { createDecks } from "./generated/decks";');
+      expect(facade).toContain('import { createDecks } from "#decks";');
       expect(facade).toContain("export const decks = createDecks();");
-      const config = await readFile(join(cwd, "hono-decks.config.ts"), "utf8");
+      const config = await readFile(join(cwd, "decks/config.ts"), "utf8");
       expect(config).toContain('mountPath: "/decks"');
-      expect(config).toContain('outDir: "src/generated"');
-      expect(await readFile(join(cwd, ".gitignore"), "utf8")).toBe("/src/generated/\n");
+      expect(config).toContain('outDir: ".hono-decks"');
+      expect(await readFile(join(cwd, ".gitignore"), "utf8")).toBe("/.hono-decks/\n");
       expect(await readFile(join(cwd, "decks", "welcome", "deck.mdx"), "utf8")).toContain("# Welcome");
 
       const compiled = await runHonoDecksCli({ argv: ["compile"], cwd });
@@ -181,28 +181,84 @@ describe("hono-decks CLI", () => {
       });
 
       expect(second.exitCode).toBe(1);
-      expect(stderr.join("\n")).toContain("Refusing to overwrite existing file: hono-decks.config.ts");
+      expect(stderr.join("\n")).toContain("Refusing to overwrite existing file: decks/config.ts");
     } finally {
       await rm(cwd, { recursive: true, force: true });
     }
   });
 
-  it("derives the facade import from its location and keeps an existing .gitignore entry", async () => {
+  it("uses a stable facade import regardless of its location and keeps an existing .gitignore entry", async () => {
     const cwd = await createEmptyFixture();
 
     try {
-      await writeFile(join(cwd, ".gitignore"), "node_modules/\nsrc/generated/");
+      await writeFile(join(cwd, ".gitignore"), "node_modules/\n.hono-decks/");
       const result = await runHonoDecksCli({ argv: ["init", "--out", "app/slides.ts"], cwd });
 
       expect(result.exitCode).toBe(0);
       const facade = await readFile(join(cwd, "app", "slides.ts"), "utf8");
-      expect(facade).toContain('import { createDecks } from "../src/generated/decks";');
-      expect(await readFile(join(cwd, ".gitignore"), "utf8")).toBe("node_modules/\nsrc/generated/");
+      expect(facade).toContain('import { createDecks } from "#decks";');
+      expect(await readFile(join(cwd, ".gitignore"), "utf8")).toBe("node_modules/\n.hono-decks/");
       expect((await runHonoDecksCli({ argv: ["init", "--generated", "x"], cwd })).exitCode).toBe(1);
     } finally {
       await rm(cwd, { recursive: true, force: true });
     }
   });
+
+  it("preserves package settings and prepares cache before existing app commands", async () => {
+    const cwd = await createEmptyFixture();
+    try {
+      await writeFile(
+        join(cwd, "package.json"),
+        JSON.stringify({
+          name: "consumer",
+          scripts: { dev: "cf dev", build: "cf build", test: "vp test run", deploy: "cf deploy" },
+          imports: { "#other": "./other.ts" },
+        }),
+      );
+      expect((await runHonoDecksCli({ argv: ["init"], cwd })).exitCode).toBe(0);
+      const manifest = JSON.parse(await readFile(join(cwd, "package.json"), "utf8"));
+      expect(manifest.name).toBe("consumer");
+      expect(manifest.imports).toEqual({ "#other": "./other.ts", "#decks": "./.hono-decks/decks.ts" });
+      expect(manifest.scripts.dev).toBe("hono-decks compile && cf dev");
+      expect(manifest.scripts.build).toBe("hono-decks compile && cf build");
+      expect(manifest.scripts.deploy).toBe("hono-decks compile && cf deploy");
+      expect(await readFile(join(cwd, "decks/index.ts"), "utf8")).toContain('from "#decks"');
+      expect((await runHonoDecksCli({ argv: ["compile"], cwd })).exitCode).toBe(0);
+      await rm(join(cwd, ".hono-decks"), { recursive: true, force: true });
+      expect((await runHonoDecksCli({ argv: ["compile"], cwd })).exitCode).toBe(0);
+      expect(await readFile(join(cwd, ".hono-decks/decks.ts"), "utf8")).toContain("createDecks");
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("remembers a custom config path for automatic commands without shell interpolation", async () => {
+    const cwd = await createEmptyFixture();
+    try {
+      const configFile = "settings/decks config.ts";
+      expect((await runHonoDecksCli({ argv: ["init", "--config", configFile], cwd })).exitCode).toBe(0);
+      expect((await runHonoDecksCli({ argv: ["compile"], cwd })).exitCode).toBe(0);
+      expect(await readFile(join(cwd, ".hono-decks/decks.ts"), "utf8")).toContain("createDecks");
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it.each(["./owned.ts", null])(
+    "refuses an import alias collision (%s) before writing app files",
+    async (existingImport) => {
+      const cwd = await createEmptyFixture();
+      try {
+        const original = JSON.stringify({ imports: { "#decks": existingImport } });
+        await writeFile(join(cwd, "package.json"), original);
+        expect((await runHonoDecksCli({ argv: ["init"], cwd, stderr: () => {} })).exitCode).toBe(1);
+        expect(await readFile(join(cwd, "package.json"), "utf8")).toBe(original);
+        await expect(readFile(join(cwd, "decks/config.ts"), "utf8")).rejects.toThrow();
+      } finally {
+        await rm(cwd, { recursive: true, force: true });
+      }
+    },
+  );
 
   it("reports MDX compile errors with deck file and slide context", async () => {
     const cwd = await createFixture();

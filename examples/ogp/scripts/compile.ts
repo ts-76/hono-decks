@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createDeckPaths } from "hono-decks";
 import { compileDecks } from "hono-decks/node";
-import config from "../hono-decks.config";
+import config from "../decks/config";
 import { renderOgpCard } from "./ogp-card";
 
 const cwd = fileURLToPath(new URL("..", import.meta.url));

@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -46,7 +46,7 @@ try {
   mkdirSync(consumerRoot);
   writeFileSync(
     join(consumerRoot, "package.json"),
-    `${JSON.stringify({ name: "hono-decks-smoke-consumer", private: true, type: "module" }, null, 2)}\n`,
+    `${JSON.stringify({ name: "hono-decks-smoke-consumer", private: true, type: "module", scripts: { build: "node build.mjs" } }, null, 2)}\n`,
   );
 
   const tarballPath = join(temporaryRoot, packResult.filename);
@@ -90,6 +90,41 @@ for (const entrypoint of entrypoints) {
   run(join(consumerRoot, "node_modules", ".bin", "hono-decks"), ["--help"], {
     cwd: consumerRoot,
   });
+
+  // A fresh CLI consumer builds through its normal command, with no managed output in src.
+  run(join(consumerRoot, "node_modules", ".bin", "hono-decks"), ["init"], { cwd: consumerRoot });
+  writeFileSync(
+    join(consumerRoot, "app.ts"),
+    `
+import { Hono } from "hono";
+import { decks } from "./decks/index";
+const app = new Hono();
+app.route(decks.mountPath, decks.router());
+export default app;
+`,
+  );
+  writeFileSync(
+    join(consumerRoot, "build.mjs"),
+    `
+import { build } from "esbuild";
+await build({ entryPoints: ["app.ts"], bundle: true, platform: "neutral", format: "esm", outfile: "dist/worker.js" });
+`,
+  );
+  const prepared = JSON.parse(readFileSync(join(consumerRoot, "package.json"), "utf8"));
+  if (prepared.imports["#decks"] !== "./.hono-decks/decks.ts") throw new Error("Missing managed import");
+  if (existsSync(join(consumerRoot, "src/generated"))) throw new Error("Unexpected generated source directory");
+  run("npm", ["run", "build"], { cwd: consumerRoot });
+  rmSync(join(consumerRoot, ".hono-decks"), { recursive: true, force: true });
+  run("npm", ["run", "build"], { cwd: consumerRoot });
+  writeFileSync(
+    join(consumerRoot, "verify.mjs"),
+    `
+import app from "./dist/worker.js";
+const response = await app.request("/decks/welcome/render");
+if (response.status !== 200 || !(await response.text()).includes("Welcome")) throw new Error("Managed consumer failed");
+`,
+  );
+  run(process.execPath, ["verify.mjs"], { cwd: consumerRoot });
 
   const typeSmokeScriptPath = join(consumerRoot, "type-smoke.ts");
   writeFileSync(
