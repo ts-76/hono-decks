@@ -57,6 +57,7 @@ export type {
   DeckViewerOpenGraphInput,
   DeckViewerOpenGraphOptions,
   DeckViewerPart,
+  DeckViewerProgressStyle,
   DeckViewerParts,
   DeckViewerRenderControlItem,
   DeckViewerRenderInput,

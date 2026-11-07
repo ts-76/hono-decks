@@ -86,6 +86,8 @@ export type DeckViewerControlKey =
   | "exportPdf"
   | "exportPng";
 
+export type DeckViewerProgressStyle = "bar" | "count" | "both";
+
 export interface DeckViewerControlsOptions {
   className?: string;
   itemClassName?: string;
@@ -97,6 +99,11 @@ export interface DeckViewerControlsOptions {
   after?: DeckViewerControlSlotItems;
   items?: DeckViewerControlItem[] | DeckViewerControlsItemsResolver;
   renderItem?: DeckViewerControlItemRenderer;
+  /**
+   * How the `position` item shows slide progress: a bar along the slide's bottom
+   * edge, the "n / total" count, or both. @default "bar"
+   */
+  progress?: DeckViewerProgressStyle;
 }
 
 export type DeckViewerControlsItemsResolver = (
@@ -649,6 +656,8 @@ function renderDefaultViewerControlItem(
       // keeps "n / total" for assistive technology and scripts; the viewer runtime
       // updates both and sets --hono-decks-progress (no inline style, so strict CSP works).
       const total = Math.max(context.slides.length, 1);
+      const progress: DeckViewerProgressStyle =
+        options.progress === "count" || options.progress === "both" ? options.progress : "bar";
       return jsx("div", {
         ...itemProps,
         ...classAttribute("hono-decks-progress", options.itemClassName, item.className),
@@ -660,8 +669,9 @@ function renderDefaultViewerControlItem(
         "aria-valuetext": `Slide 1 of ${total}`,
         "data-slide-position": true,
         "data-hono-decks-position": true,
+        "data-hono-decks-progress": progress,
         children: [
-          jsx("span", { class: "hono-decks-progress-bar", "aria-hidden": "true" }),
+          progress === "count" ? null : jsx("span", { class: "hono-decks-progress-bar", "aria-hidden": "true" }),
           jsx("span", { class: "hono-decks-progress-text", children: `1 / ${total}` }),
         ],
       });

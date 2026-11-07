@@ -8,6 +8,25 @@ export function viewerViewportRule(): string {
 @supports (width:1cqw){.hono-decks-viewport{width:min(100cqw,calc(100cqh * 16 / 9));height:min(100cqh,calc(100cqw * 9 / 16))}}`;
 }
 
+/**
+ * Slide progress inside the viewport, by `viewer.controls.progress`:
+ * `bar` (default) draws a bar along the slide's bottom edge and keeps the count
+ * visually hidden, `count` shows the "n / total" badge, and `both` shows the
+ * badge above the bar. Selectors share zero specificity, so order decides.
+ */
+function viewerProgressRules(scope: string): string {
+  const position = `${scope}.hono-decks-viewport>[data-hono-decks-position]`;
+  const text = (mode: string) => `${scope}[data-hono-decks-progress="${mode}"] .hono-decks-progress-text`;
+  return [
+    `${position}{position:absolute;left:0;right:0;bottom:0;z-index:3;height:4px;margin:0;padding:0;border:0;background:var(--hono-decks-viewer-progress-track,rgba(15,23,42,.22));pointer-events:none}`,
+    `${scope}.hono-decks-progress-bar{display:block;width:100%;height:100%;background:var(--hono-decks-viewer-progress-color,#3b82f6);transform:scaleX(var(--hono-decks-progress,0));transform-origin:left center;transition:transform .32s cubic-bezier(.22,1,.36,1)}`,
+    `${scope}.hono-decks-progress-text{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}`,
+    `${position}[data-hono-decks-progress="count"]{left:50%;right:auto;bottom:max(8px,env(safe-area-inset-bottom,0));height:auto;background:none;transform:translateX(-50%)}`,
+    `${text("count")},${text("both")}{position:static;display:block;width:auto;height:auto;margin:0;overflow:visible;clip:auto;border-radius:4px;background:rgba(15,23,42,.9);color:#eef2ff;padding:4px 6px;font:inherit;font-size:12px;line-height:1}`,
+    `${text("both")}{position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%)}`,
+  ].join("\n");
+}
+
 /** Layered stylesheet for the standalone viewer page. */
 export function baseViewerStyle(): string {
   return [
@@ -27,9 +46,7 @@ export function baseViewerStyle(): string {
 .hono-decks-mobile-navigation:focus-visible{background:rgba(15,23,42,.28);color:#eef2ff;outline:2px solid currentColor;outline-offset:-4px}
 .hono-decks-mobile-navigation:active{background:rgba(15,23,42,.28);color:#eef2ff}
 .hono-decks-mobile-navigation .hono-decks-control-icon{width:22px;height:22px}
-.hono-decks-viewport>[data-hono-decks-position]{position:absolute;left:0;right:0;bottom:0;z-index:3;height:4px;margin:0;padding:0;border:0;overflow:hidden;background:var(--hono-decks-viewer-progress-track,rgba(15,23,42,.22));pointer-events:none}
-.hono-decks-progress-bar{display:block;width:100%;height:100%;background:var(--hono-decks-viewer-progress-color,#3b82f6);transform:scaleX(var(--hono-decks-progress,0));transform-origin:left center;transition:transform .32s cubic-bezier(.22,1,.36,1)}
-.hono-decks-progress-text{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+${viewerProgressRules("")}
 .hono-decks-viewer-controls{position:absolute;left:50%;bottom:max(.25rem,env(safe-area-inset-bottom,0));display:flex;gap:8px;align-items:center;justify-content:center;max-width:calc(100% - 1rem);min-width:0;z-index:4;transform:translateX(-50%)}
 .hono-decks-viewer-controls [data-hono-decks-navigation-control="previous"],.hono-decks-viewer-controls [data-hono-decks-navigation-control="next"],.hono-decks-viewer-controls [data-hono-decks-position]{position:absolute;visibility:hidden;pointer-events:none}
 .hono-decks-viewer-controls button,.hono-decks-viewer-controls a,.hono-decks-viewer-controls span{border:1px solid rgba(148,163,184,.32);border-radius:8px;background:rgba(15,23,42,.78);color:inherit;padding:8px 10px;font:inherit;font-size:14px}
@@ -81,9 +98,7 @@ ${root} .hono-decks-mobile-navigation-next{right:.25rem}
 ${root} .hono-decks-mobile-navigation:focus-visible{background:rgba(15,23,42,.28);color:#eef2ff;outline:2px solid currentColor;outline-offset:-4px}
 ${root} .hono-decks-mobile-navigation:active{background:rgba(15,23,42,.28);color:#eef2ff}
 ${root} .hono-decks-mobile-navigation .hono-decks-control-icon{width:22px;height:22px}
-${root} .hono-decks-viewport>[data-hono-decks-position]{position:absolute;left:0;right:0;bottom:0;z-index:3;height:4px;margin:0;padding:0;border:0;overflow:hidden;background:var(--hono-decks-viewer-progress-track,rgba(15,23,42,.22));pointer-events:none}
-${root} .hono-decks-progress-bar{display:block;width:100%;height:100%;background:var(--hono-decks-viewer-progress-color,#3b82f6);transform:scaleX(var(--hono-decks-progress,0));transform-origin:left center;transition:transform .32s cubic-bezier(.22,1,.36,1)}
-${root} .hono-decks-progress-text{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+${viewerProgressRules(`${root} `)}
 ${root} .hono-decks-viewer-controls{position:absolute;left:50%;bottom:max(.25rem,env(safe-area-inset-bottom,0));display:flex;gap:8px;align-items:center;justify-content:center;max-width:calc(100% - 1rem);min-width:0;z-index:4;transform:translateX(-50%)}
 ${root} .hono-decks-viewer-controls [data-hono-decks-navigation-control="previous"],${root} .hono-decks-viewer-controls [data-hono-decks-navigation-control="next"],${root} .hono-decks-viewer-controls [data-hono-decks-position]{position:absolute;visibility:hidden;pointer-events:none}
 ${root} .hono-decks-viewer-controls button,${root} .hono-decks-viewer-controls a,${root} .hono-decks-viewer-controls span{border:1px solid rgba(148,163,184,.32);border-radius:8px;background:rgba(15,23,42,.78);color:inherit;padding:8px 10px;font:inherit;font-size:14px}

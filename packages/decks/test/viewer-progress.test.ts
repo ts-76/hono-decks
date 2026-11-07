@@ -28,6 +28,40 @@ describe("viewer slide progress", () => {
     expect(element).not.toContain("style=");
   });
 
+  it.each([
+    ["bar", true, undefined],
+    ["count", false, "count"],
+    ["both", true, "both"],
+  ] as const)("renders the %s progress style", async (mode, hasBar, option) => {
+    const app = new Hono();
+    app.route(
+      "/slides",
+      decksRouter({
+        source: manifestDeckSource({ decks: [fourSlides] }),
+        ...(option ? { viewer: { controls: { progress: option } } } : {}),
+      }),
+    );
+    const html = await (await app.request("/slides/deck1")).text();
+    const element = html.match(/<div[^>]*data-hono-decks-position[^>]*>.*?<\/div>/s)?.[0] ?? "";
+
+    expect(element).toContain(`data-hono-decks-progress="${mode}"`);
+    expect(element.includes("hono-decks-progress-bar")).toBe(hasBar);
+    expect(element).toContain('<span class="hono-decks-progress-text">1 / 4</span>');
+    expect(element).toContain('role="progressbar"');
+  });
+
+  it("falls back to the bar for an unknown progress style", async () => {
+    const app = new Hono();
+    app.route(
+      "/slides",
+      decksRouter({
+        source: manifestDeckSource({ decks: [fourSlides] }),
+        viewer: { controls: { progress: "dots" as never } },
+      }),
+    );
+    expect(await (await app.request("/slides/deck1")).text()).toContain('data-hono-decks-progress="bar"');
+  });
+
   it("updates the bar, ARIA values, and hidden text from presentation state", async () => {
     const app = new Hono();
     app.route("/slides", decksRouter({ source: manifestDeckSource({ decks: [fourSlides] }) }));
@@ -50,5 +84,13 @@ describe("viewer slide progress", () => {
       "background:var(--hono-decks-viewer-progress-color,#3b82f6);transform:scaleX(var(--hono-decks-progress,0))",
     );
     expect(css).toMatch(/\.hono-decks-progress-text\)\{position:absolute;width:1px;height:1px/);
+    // count shows the badge at the bottom center; both lifts the badge above the bar.
+    expect(css).toMatch(/\[data-hono-decks-progress="count"\]\)\{left:50%;right:auto;bottom:max\(8px/);
+    expect(css).toMatch(
+      /\[data-hono-decks-progress="both"\] \.hono-decks-progress-text\)\{position:absolute;left:50%;bottom:calc\(100% \+ 8px\)/,
+    );
+    expect(css.indexOf('[data-hono-decks-progress="count"] .hono-decks-progress-text')).toBeGreaterThan(
+      css.indexOf(".hono-decks-progress-text){position:absolute;width:1px"),
+    );
   });
 });

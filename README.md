@@ -249,7 +249,7 @@ code {
 }
 ```
 
-The viewer shows slide progress as a 4px bar along the bottom edge of the slide, with the exact position kept as `role="progressbar"` values and visually hidden text for assistive technology. Recolor it with `--hono-decks-viewer-progress-color` and `--hono-decks-viewer-progress-track`, or hide it with `viewer.controls.hidden: ["position"]`.
+The viewer shows slide progress as a 4px bar along the bottom edge of the slide, with the exact position kept as `role="progressbar"` values and visually hidden text for assistive technology. Set `viewer.controls.progress` to `"count"` for the `n / total` badge or `"both"` for the badge above the bar (default `"bar"`). Recolor the bar with `--hono-decks-viewer-progress-color` and `--hono-decks-viewer-progress-track`, or hide progress with `viewer.controls.hidden: ["position"]`.
 
 Runtime rules stay unlayered with their usual specificity: slide stacking, transitions, step reveals, fitting the canvas, and print layout. A theme rule such as `.slide { position: relative; }` therefore cannot break presentation mechanics. Tune them through custom properties instead, such as `--hono-decks-transition-duration`, `--hono-decks-transition-easing`, and the `--fire-*` variables on `[data-fire-effect]`.
 
