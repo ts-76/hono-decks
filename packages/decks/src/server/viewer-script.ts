@@ -21,7 +21,21 @@ export function renderViewerScript(nonce?: string): string {
     const overviewLinks = Array.from(root.querySelectorAll("[data-hono-decks-overview-link]"));
     const printPath = root.getAttribute("data-hono-decks-print-path") || "";
 
+    const positionText = position?.querySelector(".hono-decks-progress-text") ?? position;
+
+    function writeProgress(index, slideCount) {
+      if (!position || !Number.isInteger(index)) return;
+      const total = Number.isInteger(slideCount) && slideCount > 0 ? slideCount : Number(position.getAttribute("aria-valuemax")) || 1;
+      const current = Math.min(Math.max(index + 1, 1), total);
+      position.setAttribute("aria-valuenow", String(current));
+      position.setAttribute("aria-valuemax", String(total));
+      position.setAttribute("aria-valuetext", "Slide " + current + " of " + total);
+      position.style.setProperty("--hono-decks-progress", String(current / total));
+      if (positionText) positionText.textContent = current + " / " + total;
+    }
+
     if (position && viewport) viewport.append(position);
+    writeProgress(0);
 
     function sendCommand(action, index) {
       const target = iframe?.contentWindow;
@@ -99,10 +113,7 @@ export function renderViewerScript(nonce?: string): string {
       writeViewerPaginationState(message);
       root.setAttribute("data-step-index", String(message.stepIndex ?? 0));
       root.setAttribute("data-step-count", String(message.stepCount ?? 0));
-      if (position) {
-        const slideText = String(message.index + 1) + " / " + String(message.slideCount ?? "?");
-        position.textContent = slideText;
-      }
+      writeProgress(message.index, message.slideCount);
     }
 
     function handleKeydown(event) {

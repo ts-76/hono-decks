@@ -71,7 +71,9 @@ describe("decksRouter page surfaces", () => {
     expect(html).toContain("background:transparent;color:transparent");
     expect(html).toContain("appearance:none;pointer-events:none");
     expect(html).toContain(".hono-decks-mobile-navigation){display:inline-flex;pointer-events:auto}");
-    expect(html).toContain(":where(.hono-decks-viewport>[data-hono-decks-position]){position:absolute;left:50%");
+    expect(html).toContain(
+      ":where(.hono-decks-viewport>[data-hono-decks-position]){position:absolute;left:0;right:0;bottom:0",
+    );
     expect(html).toContain("@media (orientation:landscape) and (max-height:600px)");
     expect(html).toContain("bottom:auto;flex-direction:column");
     expect(html).toContain("@media (pointer:coarse)");

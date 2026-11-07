@@ -392,6 +392,8 @@ code {
 }
 ~~~
 
+ビューアーはスライドの進捗を、スライド下端の高さ4pxのバーで表示します。現在の位置は `role="progressbar"` の値と、画面には表示しないテキストで支援技術に伝えます。色は `--hono-decks-viewer-progress-color` と `--hono-decks-viewer-progress-track` で変えられ、`viewer.controls.hidden: ["position"]` で非表示にできます。
+
 スライドの重ね合わせ・切り替え・段階表示・キャンバスの拡大縮小・印刷レイアウトなど、動作に必要なルールはレイヤーに入れず、従来の詳細度のまま出力します。そのため、テーマに `.slide { position: relative; }` のような指定があっても表示の仕組みは壊れません。これらは `--hono-decks-transition-duration`、`--hono-decks-transition-easing`、`[data-fire-effect]` の `--fire-*` などのカスタムプロパティで調整します。
 
 アプリ側の CSS もレイヤーを使っている場合(Tailwind CSS v4 など)は、hono-decks のスタイルより前にレイヤーの順序を宣言し、アプリのレイヤーを後ろに置いてください。

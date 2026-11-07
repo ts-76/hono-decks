@@ -644,13 +644,28 @@ function renderDefaultViewerControlItem(
       });
     case "previous":
       return renderIconButton("previous", item, itemProps);
-    case "position":
-      return jsx("span", {
+    case "position": {
+      // A progress bar along the bottom edge of the slide. The visually hidden text
+      // keeps "n / total" for assistive technology and scripts; the viewer runtime
+      // updates both and sets --hono-decks-progress (no inline style, so strict CSP works).
+      const total = Math.max(context.slides.length, 1);
+      return jsx("div", {
         ...itemProps,
+        ...classAttribute("hono-decks-progress", options.itemClassName, item.className),
+        role: "progressbar",
+        "aria-label": item.label ?? "Slide progress",
+        "aria-valuemin": "1",
+        "aria-valuemax": String(total),
+        "aria-valuenow": "1",
+        "aria-valuetext": `Slide 1 of ${total}`,
         "data-slide-position": true,
         "data-hono-decks-position": true,
-        children: item.label ?? "1 / ?",
+        children: [
+          jsx("span", { class: "hono-decks-progress-bar", "aria-hidden": "true" }),
+          jsx("span", { class: "hono-decks-progress-text", children: `1 / ${total}` }),
+        ],
       });
+    }
     case "next":
       return renderIconButton("next", item, itemProps);
     case "fullscreen":

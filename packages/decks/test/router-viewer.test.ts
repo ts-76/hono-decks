@@ -387,7 +387,7 @@ describe("decksRouter viewer page, controls, and social metadata", () => {
 
     expect(html).toContain('class="hono-decks-viewer-controls custom-controls"');
     expect(html).toContain('class="custom-control-item custom-link-item"');
-    expect(html).toContain('class="custom-control-item custom-position-item"');
+    expect(html).toContain('class="hono-decks-progress custom-control-item custom-position-item"');
     expect(html).toContain('href="/library?deck=deck1&amp;name=&lt;Deck One&gt;"');
     expect(html).toContain(">Library &lt;Home&gt;</a>");
     expect(html).toContain('data-custom-control="home"');
