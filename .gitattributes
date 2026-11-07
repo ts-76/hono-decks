@@ -1,3 +1,0 @@
-# Agent tooling installed from upstream skills; hide it from diffs and language stats.
-.agents/** linguist-vendored
-.agents/** -diff

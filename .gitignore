@@ -6,7 +6,7 @@ dist-dry-run/
 .env
 .DS_Store
 .superpowers/
-.impeccable/config.local.json
+.impeccable/
 
 # Compiled decks are rebuilt by every dev, build, typecheck, and test command.
 **/src/generated/
