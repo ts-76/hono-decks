@@ -40,11 +40,11 @@ Share `decks.paths(slug).viewer` with viewers. The render route is the iframe ru
 
 <section id={"visibility"}>
 
-## Disable unused surfaces in the shared config
+## Disable unused surfaces in createDecks()
 
-Normally, set unused surfaces to `false` in `router.pages` inside `hono-decks.config.ts`. Every standard surface except `embed` is enabled by default. When `dev` is omitted, development mode is derived from the `NODE_ENV` set by Vite or Wrangler.
+Normally, set unused surfaces to `false` in the `pages` option of `createDecks()`. Every standard surface except `embed` is enabled by default. When `dev` is omitted, development mode is derived from the `NODE_ENV` set by Vite or Wrangler.
 
-<CodeBlock filename={"hono-decks.config.ts"} language={"typescript"} code={"export default defineDecksConfig({\n  mountPath: \"/decks\",\n  router: {\n    pages: {\n      index: false,\n      print: false,\n      presenter: ({ dev }) => dev,\n    },\n  },\n})"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+<CodeBlock filename={"src/decks.ts"} language={"typescript"} code={"// src/decks.ts\nexport const decks = createDecks({\n  pages: {\n    index: false,\n    print: false,\n    presenter: ({ dev }) => dev,\n  },\n})"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
 
 Resolver functions run per request, so they can also check authentication or environment bindings.
 
@@ -56,7 +56,7 @@ Disabling `print` also removes the print button from the default viewer and exte
 
 ## Customize the default UI or build an app-owned page
 
-Use `pages.index.render` to change only the deck index. Keep shared behavior in `hono-decks.config.ts`; the following `decks.router(overrides)` example changes one mount point only.
+Use `pages.index.render` to change only the deck index. Keep shared behavior in the `createDecks()` options; the following `decks.router(overrides)` example changes one mount point only.
 
 <CodeBlock filename={"TypeScript"} language={"typescript"} code={"decks.router({\n  pages: {\n    index: {\n      title: ({ decks }) => String(decks.length) + \" decks\",\n      render: ({ title, defaultContent }) => <main><h1>{title}</h1>{defaultContent}</main>,\n    },\n  },\n})"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
 

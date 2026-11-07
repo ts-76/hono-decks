@@ -76,7 +76,7 @@ app.route(decks.mountPath, decks.router());
 Wrong:
 
 ```ts
-app.route("/slides", decks.router());
+app.route(decks.mountPath, decks.router());
 const presenter = `/decks/${slug}/presenter`;
 ```
 
@@ -129,13 +129,10 @@ Wrong: add `Access-Control-Allow-Origin` and leave `router.embed` without a pare
 Correct:
 
 ```ts
-import { defineDecksConfig } from "hono-decks";
+import { createDecks } from "./generated/decks";
 
-export default defineDecksConfig({
-  mountPath: "/decks",
-  router: {
-    embed: { frameAncestors: ["https://blog.example.com"] },
-  },
+export const decks = createDecks({
+  embed: { frameAncestors: ["https://blog.example.com"] },
 });
 ```
 
@@ -146,15 +143,12 @@ Iframe navigation uses CSP `frame-ancestors`, not CORS.
 Wrong:
 
 ```ts
-import { defineDecksConfig } from "hono-decks";
+import { createDecks } from "./generated/decks";
 
-export default defineDecksConfig({
-  mountPath: "/decks",
-  router: {
-    export: {
-      browser: ({ c }) => c.env.BROWSER,
-      pdf: true,
-    },
+export const decks = createDecks({
+  export: {
+    browser: ({ c }) => c.env.BROWSER,
+    pdf: true,
   },
 });
 ```

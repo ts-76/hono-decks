@@ -96,7 +96,7 @@ const configPath = join(app, "hono-decks.config.ts");
 await writeFile(
   configPath,
   'import { mountPath } from "./deck-settings";\n' +
-    (await readFile(configPath, "utf8")).replace('mountPath: "/slides"', "mountPath"),
+    (await readFile(configPath, "utf8")).replace('mountPath: "/decks"', "mountPath"),
 );
 assert.deepEqual(installedPackage.scripts, JSON.parse(originalPackage).scripts);
 assert.equal(await readFile(join(app, "src/generated/decks.ts"), "utf8").catch(() => null), null);
@@ -391,7 +391,7 @@ async function check(mode, port) {
     assert.match(printHtml, /data-hono-md-island/);
     assert.match(printHtml, /md-counter/);
     const staticHtml = await fetch(origin + "/slides/collision-one/render").then((r) => r.text());
-    assert.ok(!staticHtml.includes("/_assets/client.js"));
+    assert.ok(!staticHtml.includes("/_assets/client"));
     await page.goto(origin + "/slides/interactive/print");
     assert.equal(
       await page.locator('[data-md-counter="first"]').evaluate((el) => getComputedStyle(el).backgroundColor),

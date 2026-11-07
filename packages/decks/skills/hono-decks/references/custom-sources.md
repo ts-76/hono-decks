@@ -1,8 +1,8 @@
 # Custom sources and low-level APIs
 
-Use this route only when the request needs an existing manifest, database, remote object store, custom `DeckSource`, or a router pipeline that the generated `createDecks(config)` kit cannot express.
+Use this route only when the request needs an existing manifest, database, remote object store, custom `DeckSource`, or a router pipeline that the generated `createDecks()` kit cannot express.
 
-For normal file-based decks, stay with `hono-decks init`, generated modules, and `createDecks(config)`.
+For normal file-based decks, stay with `hono-decks init`, generated modules, and `createDecks()`.
 
 ## Custom DeckSource
 
@@ -34,13 +34,13 @@ Compiled data must satisfy the public `CompiledDeck` model. Do not send raw MDX 
 
 ## Decorate generated data
 
-If only asset lookup, visibility, metadata, or caching changes, prefer `config.source(source)` over replacing the entire generated flow:
+If only asset lookup, visibility, metadata, or caching changes, prefer the `source` option of `createDecks()` over replacing the entire generated flow:
 
 ```ts
-import { defineDecksConfig, type DeckSource } from "hono-decks";
+import { createDecks } from "./generated/decks";
+import { type DeckSource } from "hono-decks";
 
-export default defineDecksConfig({
-  mountPath: "/decks",
+export const decks = createDecks({
   source(source: DeckSource): DeckSource {
     return {
       async listDecks(c) {

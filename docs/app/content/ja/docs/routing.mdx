@@ -40,11 +40,11 @@ order: 5
 
 <section id={"visibility"}>
 
-## 使わない画面を設定ファイルで無効にする
+## 使わない画面をcreateDecks()で無効にする
 
-通常は`hono-decks.config.ts`の`router.pages`で、不要な画面を`false`にします。標準では`embed`以外の画面が有効です。`dev`を省略すると、ViteとWranglerが設定する`NODE_ENV`から開発モードを判定します。
+通常は`createDecks()`の`pages`で、不要な画面を`false`にします。標準では`embed`以外の画面が有効です。`dev`を省略すると、ViteとWranglerが設定する`NODE_ENV`から開発モードを判定します。
 
-<CodeBlock filename={"hono-decks.config.ts"} language={"typescript"} code={"export default defineDecksConfig({\n  mountPath: \"/decks\",\n  router: {\n    pages: {\n      index: false,\n      print: false,\n      presenter: ({ dev }) => dev,\n    },\n  },\n})"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+<CodeBlock filename={"src/decks.ts"} language={"typescript"} code={"// src/decks.ts\nexport const decks = createDecks({\n  pages: {\n    index: false,\n    print: false,\n    presenter: ({ dev }) => dev,\n  },\n})"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
 関数を指定した項目はリクエストごとに評価されるため、認証状態や環境変数による制御にも使えます。
 
@@ -56,7 +56,7 @@ order: 5
 
 ## 標準UIを調整する、または独自画面を作る
 
-`pages.index.render`はデッキ一覧の見た目だけを変える場合に使います。共通設定は`hono-decks.config.ts`に置きます。次の`decks.router(overrides)`は特定の登録箇所だけを上書きする例です。
+`pages.index.render`はデッキ一覧の見た目だけを変える場合に使います。共通の設定は`createDecks()`に渡します。次の`decks.router(overrides)`は特定の登録箇所だけを上書きする例です。
 
 <CodeBlock filename={"TypeScript"} language={"typescript"} code={"decks.router({\n  pages: {\n    index: {\n      title: ({ decks }) => String(decks.length) + \" decks\",\n      render: ({ title, defaultContent }) => <main><h1>{title}</h1>{defaultContent}</main>,\n    },\n  },\n})"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 

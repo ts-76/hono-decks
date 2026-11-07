@@ -16,7 +16,7 @@ This page covers the main APIs that applications use directly, based on the pack
 
 <section id={"start"}>
 
-## Most applications start with the generated createDecks(config)
+## Most applications start with the generated createDecks()
 
 The `src/decks.ts` facade created in the getting-started guide is the boundary between generated modules and public APIs. You do not need to compose low-level APIs just to render a deck.
 
@@ -38,13 +38,13 @@ The `src/decks.ts` facade created in the getting-started guide is the boundary b
 
 Import these APIs from hono-decks in Hono and Worker code. Start with the generated facade, and use a direct API only when the facade does not cover your use case.
 
-<APIReference name={"defineDecksConfig"} id={"define-decks-config"} importFrom={"hono-decks"} description={"Defines the shared CLI and runtime configuration."} usage={"Keeping mount path, build input, and runtime policy in one file."} guideHref={"/docs/configuration?lang=en"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/server/define-decks.ts"} labels={{"usage": "Use it when", "guide": "Guide", "source": "Source"}}>
+<APIReference name={"defineDecksConfig"} id={"define-decks-config"} importFrom={"hono-decks"} description={"Types the build-only hono-decks.config.ts read by the CLI and the Vite plugin."} usage={"Setting the public mount path, deck root, and output directory."} guideHref={"/docs/configuration?lang=en"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/server/define-decks.ts"} labels={{"usage": "Use it when", "guide": "Guide", "source": "Source"}}>
 
 <CodeBlock filename={"Import + signature"} language={"typescript"} code={"import { defineDecksConfig } from \"hono-decks\"\n\ndefineDecksConfig(config: DecksConfig): DecksConfig"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
 
 </APIReference>
 
-<APIReference name={"ConfiguredDecks"} id={"configured-decks"} importFrom={"hono-decks"} description={"The application kit returned by generated createDecks(config)."} usage={"Using routes, custom pages, and URLs from one config."} guideHref={"/docs/getting-started?lang=en"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/server/define-decks.ts"} labels={{"usage": "Use it when", "guide": "Guide", "source": "Source"}}>
+<APIReference name={"ConfiguredDecks"} id={"configured-decks"} importFrom={"hono-decks"} description={"The application API returned by the generated createDecks(options)."} usage={"Using routes, custom pages, and URLs with one set of runtime options."} guideHref={"/docs/getting-started?lang=en"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/server/define-decks.ts"} labels={{"usage": "Use it when", "guide": "Guide", "source": "Source"}}>
 
 <CodeBlock filename={"Import + signature"} language={"typescript"} code={"import type { ConfiguredDecks } from \"hono-decks\"\n\ninterface ConfiguredDecks { mountPath; source; router(); context(); paths(slug) }"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
 
@@ -56,7 +56,7 @@ Import these APIs from hono-decks in Hono and Worker code. Start with the genera
 
 </APIReference>
 
-<APIReference name={"decksRouter"} id={"decks-router"} importFrom={"hono-decks/advanced"} description={"Builds a low-level router from a custom DeckSource."} usage={"Building a custom pipeline without generated createDecks(config)."} guideHref={"/docs/routing?lang=en"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/server/router.ts"} labels={{"usage": "Use it when", "guide": "Guide", "source": "Source"}}>
+<APIReference name={"decksRouter"} id={"decks-router"} importFrom={"hono-decks/advanced"} description={"Builds a low-level router from a custom DeckSource."} usage={"Building a custom pipeline without the generated createDecks()."} guideHref={"/docs/routing?lang=en"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/server/router.ts"} labels={{"usage": "Use it when", "guide": "Guide", "source": "Source"}}>
 
 <CodeBlock filename={"Import + signature"} language={"typescript"} code={"import { decksRouter } from \"hono-decks/advanced\"\n\ndecksRouter(options: DecksRouterOptions): Hono"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
 

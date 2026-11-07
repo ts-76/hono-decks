@@ -16,7 +16,7 @@ package.jsonのexportsと実装に基づき、アプリから直接使う主なA
 
 <section id={"start"}>
 
-## まずcreateDecks(config)から始める
+## まずcreateDecks()から始める
 
 導入手順で作る`src/decks.ts`が生成物と公開APIの境界になります。デッキを表示するだけなら、このページの低レベルAPIを直接組み合わせる必要はありません。
 
@@ -36,21 +36,21 @@ package.jsonのexportsと実装に基づき、アプリから直接使う主なA
 
 ## 実行時API
 
-HonoアプリやWorkerでは、hono-decksから読み込みます。まず生成されたcreateDecks(config)を使い、必要な機能が足りない場合に限って個別のAPIを利用してください。
+HonoアプリやWorkerでは、hono-decksから読み込みます。まず生成されたcreateDecks()を使い、必要な機能が足りない場合に限って個別のAPIを利用してください。
 
-<APIReference name={"defineDecksConfig"} id={"define-decks-config"} importFrom={"hono-decks"} description={"CLIと実行時で共有する設定を型付きで定義します。"} usage={"公開パス、ビルド対象、実行時の設定を1ファイルにまとめるとき。"} guideHref={"/docs/configuration?lang=ja"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/server/define-decks.ts"} labels={{"usage": "使う場面", "guide": "関連ガイド", "source": "ソース"}}>
+<APIReference name={"defineDecksConfig"} id={"define-decks-config"} importFrom={"hono-decks"} description={"CLIとViteプラグインが読むビルド専用の設定を型付きで定義します。"} usage={"公開パス、デッキの場所、出力先を指定するとき。"} guideHref={"/docs/configuration?lang=ja"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/server/define-decks.ts"} labels={{"usage": "使う場面", "guide": "関連ガイド", "source": "ソース"}}>
 
 <CodeBlock filename={"Import + signature"} language={"typescript"} code={"import { defineDecksConfig } from \"hono-decks\"\n\ndefineDecksConfig(config: DecksConfig): DecksConfig"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
 </APIReference>
 
-<APIReference name={"ConfiguredDecks"} id={"configured-decks"} importFrom={"hono-decks"} description={"生成されたcreateDecks(config)が返す、設定済みのAPIです。"} usage={"ルート、独自画面、URLを同じ設定から利用するとき。"} guideHref={"/docs/getting-started?lang=ja"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/server/define-decks.ts"} labels={{"usage": "使う場面", "guide": "関連ガイド", "source": "ソース"}}>
+<APIReference name={"ConfiguredDecks"} id={"configured-decks"} importFrom={"hono-decks"} description={"生成されたcreateDecks(options)が返す、設定済みのAPIです。"} usage={"ルート、独自画面、URLを同じ実行時の設定から利用するとき。"} guideHref={"/docs/getting-started?lang=ja"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/server/define-decks.ts"} labels={{"usage": "使う場面", "guide": "関連ガイド", "source": "ソース"}}>
 
 <CodeBlock filename={"Import + signature"} language={"typescript"} code={"import type { ConfiguredDecks } from \"hono-decks\"\n\ninterface ConfiguredDecks { mountPath; source; router(); context(); paths(slug) }"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
 </APIReference>
 
-<APIReference name={"createDeckPaths"} id={"create-deck-paths"} importFrom={"hono-decks"} description={"1つのデッキに対応する公開URLをまとめて生成します。"} usage={"createDecks(config)を使わず、URL一覧だけが必要なとき。"} guideHref={"/docs/routing?lang=ja"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/server/paths.ts"} labels={{"usage": "使う場面", "guide": "関連ガイド", "source": "ソース"}}>
+<APIReference name={"createDeckPaths"} id={"create-deck-paths"} importFrom={"hono-decks"} description={"1つのデッキに対応する公開URLをまとめて生成します。"} usage={"createDecks()を使わず、URL一覧だけが必要なとき。"} guideHref={"/docs/routing?lang=ja"} sourceHref={"https://github.com/ts-76/hono-decks/blob/main/packages/decks/src/server/paths.ts"} labels={{"usage": "使う場面", "guide": "関連ガイド", "source": "ソース"}}>
 
 <CodeBlock filename={"Import + signature"} language={"typescript"} code={"import { createDeckPaths } from \"hono-decks\"\n\ncreateDeckPaths(mountPath, slug): DeckPaths"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 

@@ -52,7 +52,7 @@ for (const [framework, devPort, productionPort] of [
   await writeFile(
     configPath,
     'import { mountPath } from "./deck-settings";\n' +
-      (await readFile(configPath, "utf8")).replace('mountPath: "/slides"', "mountPath"),
+      (await readFile(configPath, "utf8")).replace('mountPath: "/decks"', "mountPath"),
   );
   assert.equal(await readFile(join(app, "package.json"), "utf8"), packageBefore);
   assert.equal(await readFile(sourcePath, "utf8"), source);

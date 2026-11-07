@@ -11,7 +11,7 @@ Identify the package manager, application entry point, Hono environment type, bu
 For an existing Hono + Vite app, use `npx hono-decks init --framework hono`.
 For HonoX, use `npx hono-decks init --framework honox`. Both preserve package
 scripts and Vite options, add virtual compilation and routing, and create a sample MDX
-deck at `/slides/welcome`. Use normal `dev`/`build` without manual compile.
+deck at `/decks/welcome`. Use normal `dev`/`build` without manual compile.
 Hono accepts `--entry path/to/app.ts` if the conventional entry is ambiguous;
 it expects a default-exported `const app = new Hono()`, and refuses conflicting
 earlier routes. HonoX wraps the existing createApp options and adds a route using its public
@@ -23,7 +23,7 @@ for manual integration and non-Vite applications.
 For an existing Void app, use `npx hono-decks init --framework void` after
 installing the compatible packages and Markdown peers described in the README.
 New installs use `void-plugin-hono-jsx@^0.9.1`; existing compatible Void 1.1 apps may retain adapter 0.6. Init connects the existing Vite config, creates the routing
-middleware and a sample `.md` deck at `/slides/welcome`, and uses virtual modules without generated
+middleware and a sample `.md` deck at `/decks/welcome`, and uses virtual modules without generated
 files. Use the app's normal `dev` and `build` scripts without changes or a manual
 compile. Existing `.mdx` files remain supported. Unsupported configs or existing
 integration files cause a non-destructive error. The generic Hono flow follows.
@@ -35,7 +35,7 @@ bunx hono-decks init
 
 `init` creates these files without overwriting existing files:
 
-- `hono-decks.config.ts`: shared build and runtime configuration
+- `hono-decks.config.ts`: build-only configuration
 - `src/decks.ts`: editable facade around generated modules
 
 Use the equivalent `npm`, `pnpm`, or Yarn commands when the repository does not use Bun.
@@ -43,7 +43,7 @@ Use the equivalent `npm`, `pnpm`, or Yarn commands when the repository does not 
 ## Vite runtime entry
 
 Framework init uses `virtual:hono-decks` with `/// <reference types="hono-decks/vite-env" />`.
-It exports a configured `decks` kit and `createDecks(config)`. Vite dev/build keep
+It exports `createDecks(options)`; call it in the app-owned facade. Vite dev/build keep
 compiled modules in memory; do not add manual compile scripts, physical generated
 imports, outDir, or ignore rules. Typechecking works before dev/build. Explicit
 OGP data caches retain disk persistence. The generic CLI/file workflow follows.
@@ -65,10 +65,9 @@ export default defineDecksConfig({
 
 ```ts
 // src/decks.ts
-import config from "../hono-decks.config";
 import { createDecks } from "./generated/decks";
 
-export const decks = createDecks(config);
+export const decks = createDecks();
 ```
 
 Create `decks/welcome/deck.mdx`:

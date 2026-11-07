@@ -441,9 +441,7 @@ describe("sample Worker app", () => {
     expect(html).toContain("data-hono-decks-deck");
     expect(html).toContain("function fitDeck()");
     expect(html).toContain('deck.style.transform = "scale(" + scale + ")"');
-    expect(html).toContain(
-      '<script data-hono-decks-client-entry type="module" src="/decks/_assets/client.js"></script>',
-    );
+    expect(html).toContain('<script data-hono-decks-client-entry type="module" src="/decks/_assets/client"></script>');
     expect(html).not.toContain('MDX component "Hero" is rendered as a placeholder.');
     expect(html).not.toContain("mdx-component");
   });
@@ -544,9 +542,7 @@ describe("sample Worker app", () => {
     expect(html).toMatch(/data-hono-decks-island="MotionMeter__motion_[a-z0-9]+"/);
     expect(html).toContain("data-motion-meter");
     expect(html).toContain("Animation island");
-    expect(html).toContain(
-      '<script data-hono-decks-client-entry type="module" src="/decks/_assets/client.js"></script>',
-    );
+    expect(html).toContain('<script data-hono-decks-client-entry type="module" src="/decks/_assets/client"></script>');
   });
 
   it("serves generated local assets for the media deck", async () => {
@@ -587,7 +583,7 @@ describe("sample Worker app", () => {
 
   it("serves the sample client entry for interactive islands", async () => {
     const app = await sampleApp();
-    const response = await app.request("/decks/_assets/client.js");
+    const response = await app.request("/decks/_assets/client");
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/javascript");

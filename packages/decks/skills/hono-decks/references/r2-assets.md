@@ -22,9 +22,9 @@ Generate binding types with `wrangler types`.
 ## Decorate the source
 
 ```ts
-// hono-decks.config.ts
+import { createDecks } from "./generated/decks";
+// src/decks.ts
 import {
-  defineDecksConfig,
   withR2Assets,
   type DeckSource,
   type R2BucketLike,
@@ -36,12 +36,7 @@ interface Env {
   };
 }
 
-export default defineDecksConfig<Env>({
-  mountPath: "/decks",
-  build: {
-    root: "decks",
-    outDir: "src/generated",
-  },
+export const decks = createDecks<Env>({
   source(source: DeckSource<Env>) {
     return withR2Assets(source, {
       bucket: (c) => c.env.DECK_ASSETS,
@@ -55,8 +50,8 @@ export default defineDecksConfig<Env>({
 By default the R2 key comes from the compiled asset's source path, optionally prefixed by `keyPrefix`. If the upload pipeline uses a different layout, provide a deterministic key resolver:
 
 ```ts
-export default defineDecksConfig<Env>({
-  mountPath: "/decks",
+import { createDecks } from "./generated/decks";
+export const decks = createDecks<Env>({
   source(source: DeckSource<Env>) {
     return withR2Assets(source, {
       bucket: (c) => c.env.DECK_ASSETS,
