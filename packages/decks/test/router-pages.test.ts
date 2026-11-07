@@ -8,6 +8,16 @@ import type { CompiledDeck } from "../src/deck/model";
 import { deck } from "./support/router-fixtures";
 
 describe("decksRouter page surfaces", () => {
+  it("includes overflow diagnostics only on development presentation surfaces", async () => {
+    for (const dev of [true, false]) {
+      const app = new Hono();
+      app.route("/slides", decksRouter({ source: manifestDeckSource({ decks: [deck] }), dev }));
+      for (const surface of ["render", "presentation", "print"]) {
+        const html = await (await app.request(`/slides/deck1/${surface}`)).text();
+        expect(html.includes("data-hono-decks-overflow-checker")).toBe(dev && surface !== "print");
+      }
+    }
+  });
   it("does not display external asset diagnostics in render, presentation, or print pages", async () => {
     const external = {
       ...deck,
