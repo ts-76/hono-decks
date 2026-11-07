@@ -251,8 +251,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
   router.get("/", async (c) => {
     const dev = await isDevEnabled(c, options);
     const decks = (await options.source.listDecks(c)).filter((deck) => dev || !deck.draft);
-    const mountPath =
-      configuredMount === undefined ? c.req.path.replace(/\/$/, "") : resolveMountPath(c.req.path, "");
+    const mountPath = configuredMount === undefined ? c.req.path.replace(/\/$/, "") : resolveMountPath(c.req.path, "");
     const pageInput: DeckIndexPageInput<E> = { c, surface: "index", mountPath, dev, decks };
     if (!(await isPageSurfaceEnabled(options, pageInput))) {
       return c.notFound();

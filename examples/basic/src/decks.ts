@@ -84,9 +84,7 @@ export const decks = createDecks<DecksEnv>({
       const token = c.env?.DECK_EXPORT_TOKEN;
       const authorization = c.req.header("authorization");
       return (
-        typeof token === "string" &&
-        token.length > 0 &&
-        authorization?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim() === token
+        typeof token === "string" && token.length > 0 && authorization?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim() === token
       );
     },
     browser: ({ c }) => c.env?.BROWSER,

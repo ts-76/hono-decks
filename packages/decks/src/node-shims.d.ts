@@ -58,7 +58,11 @@ declare const process: {
   };
 };
 
-
 declare module "node:child_process" {
-  export function execFile(command: string, args: string[], options: { cwd: string }, callback: (error: Error | null, stdout: string, stderr: string) => void): void;
+  export function execFile(
+    command: string,
+    args: string[],
+    options: { cwd: string },
+    callback: (error: Error | null, stdout: string, stderr: string) => void,
+  ): void;
 }

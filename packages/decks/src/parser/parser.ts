@@ -277,7 +277,9 @@ function toNodes(node: MarkdownNode, slideIndex: number, source: string): Parsed
     case "delete":
       return elementNodeResult(node, "del", slideIndex, source);
     case "inlineCode":
-      return nodeResult([{ type: "element", tag: "code", props: {}, children: [{ type: "text", value: node.value ?? "" }] }]);
+      return nodeResult([
+        { type: "element", tag: "code", props: {}, children: [{ type: "text", value: node.value ?? "" }] },
+      ]);
     case "break":
       return nodeResult([{ type: "element", tag: "br", props: {}, children: [] }]);
     case "heading":
@@ -476,7 +478,8 @@ function jsxElementNodes(node: MarkdownNode, slideIndex: number, source: string)
   const children = parsedChildren.nodes.filter((child) => child.type !== "text" || child.value.trim() !== "");
   const warnings = [...parsedProps.warnings, ...parsedChildren.warnings];
 
-  if (isComponentName(name)) return nodeResult([{ type: "component", name, props: parsedProps.props, children }], warnings);
+  if (isComponentName(name))
+    return nodeResult([{ type: "component", name, props: parsedProps.props, children }], warnings);
   return nodeResult([{ type: "element", tag: name, props: parsedProps.props, children }], warnings);
 }
 
@@ -535,7 +538,11 @@ function textContent(node: MarkdownNode): string {
   if (node.type === "emphasis") return `*${(node.children ?? []).map(textContent).join("")}*`;
   if (node.type === "delete") return `~~${(node.children ?? []).map(textContent).join("")}~~`;
   if (node.type === "inlineCode") return `\`${node.value ?? ""}\``;
-  if ((node.type === "mdxJsxFlowElement" || node.type === "mdxJsxTextElement") && node.name && !isComponentName(node.name)) {
+  if (
+    (node.type === "mdxJsxFlowElement" || node.type === "mdxJsxTextElement") &&
+    node.name &&
+    !isComponentName(node.name)
+  ) {
     return `<${node.name}>${(node.children ?? []).map(textContent).join("")}</${node.name}>`;
   }
   return (node.children ?? []).map(textContent).join("");

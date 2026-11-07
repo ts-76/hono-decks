@@ -698,10 +698,7 @@ describe("decksRouter", () => {
       ...deck,
       meta: { ...deck.meta, description: 'Share <this> & "that"' },
     };
-    const configured = configureDecks(
-      { mountPath: "/slides", decks: [describedDeck] },
-      { viewer: { openGraph: {} } },
-    );
+    const configured = configureDecks({ mountPath: "/slides", decks: [describedDeck] }, { viewer: { openGraph: {} } });
     app.get("/slides/:slug/meta", configured.context(), (c) => c.json(c.var.deckMeta));
     app.route(configured.mountPath, configured.router());
 
@@ -1220,30 +1217,33 @@ describe("decksRouter", () => {
   });
 
   it("deeply composes nested router overrides without dropping unrelated defaults", async () => {
-    const decks = configureDecks({ mountPath: "/decks", decks: [deck] }, {
-      viewer: {
-        lang: "en",
-        style: ".base-viewer { color: red; }",
-        openGraph: { imagePath: "/base-social.png" },
-        controls: {
-          className: "base-controls",
-          hidden: ["fullscreen"],
-          labels: { previous: "Back" },
-          before: [{ type: "link", href: "/base", label: "Base" }],
+    const decks = configureDecks(
+      { mountPath: "/decks", decks: [deck] },
+      {
+        viewer: {
+          lang: "en",
+          style: ".base-viewer { color: red; }",
+          openGraph: { imagePath: "/base-social.png" },
+          controls: {
+            className: "base-controls",
+            hidden: ["fullscreen"],
+            labels: { previous: "Back" },
+            before: [{ type: "link", href: "/base", label: "Base" }],
+          },
+        },
+        presenter: {
+          enabled: true,
+          viewerControl: { label: "Speaker", icon: "presenter" },
+        },
+        document: {
+          lang: "ja",
+          head: jsx("meta", { name: "document-base", content: "base" }),
+          surfaces: {
+            render: { lang: "fr" },
+          },
         },
       },
-      presenter: {
-        enabled: true,
-        viewerControl: { label: "Speaker", icon: "presenter" },
-      },
-      document: {
-        lang: "ja",
-        head: jsx("meta", { name: "document-base", content: "base" }),
-        surfaces: {
-          render: { lang: "fr" },
-        },
-      },
-    });
+    );
     const app = new Hono();
     app.route(
       "/decks",
@@ -1323,7 +1323,13 @@ describe("decksRouter", () => {
   it("restores deck transition defaults omitted from generated slide metadata", async () => {
     const configured = configureDecks({
       mountPath: "/slides",
-      decks: [{ ...deck, meta: { ...deck.meta, transition: "fade" }, slides: deck.slides.map((slide) => ({ ...slide, meta: { meta: {} } })) }],
+      decks: [
+        {
+          ...deck,
+          meta: { ...deck.meta, transition: "fade" },
+          slides: deck.slides.map((slide) => ({ ...slide, meta: { meta: {} } })),
+        },
+      ],
     });
     const compiled = await configured.source.getCompiledDeck({} as never, "deck1");
     expect(compiled?.slides[0]?.meta.transition).toBe("fade");

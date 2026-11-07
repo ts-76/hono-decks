@@ -40,11 +40,11 @@ function transformDeckSyntaxChildren(
     rejectRemovedFireAuthoring(child);
     children.push(
       fireAttributeNode(child) ??
-      zennEmbedNode(child, input) ??
-      plainUrlLinkNode(child) ??
-      fireDirectiveNode(child) ??
-      unknownDirectiveFallback(child) ??
-      child,
+        zennEmbedNode(child, input) ??
+        plainUrlLinkNode(child) ??
+        fireDirectiveNode(child) ??
+        unknownDirectiveFallback(child) ??
+        child,
     );
   }
   node.children = children;
@@ -84,7 +84,9 @@ function fireAttributeNode(node: MarkdownNode): MarkdownNode | undefined {
     throw new Error('The "fire" attribute is only supported on custom components. Use :::fire for Markdown content.');
   }
   if (node.type !== "mdxJsxFlowElement") {
-    throw new Error('The "fire" attribute is only supported on block-level custom components. Move the component to its own line.');
+    throw new Error(
+      'The "fire" attribute is only supported on block-level custom components. Move the component to its own line.',
+    );
   }
   if (fireAttribute.value !== null && fireAttribute.value !== undefined && typeof fireAttribute.value !== "string") {
     throw new Error('The "fire" attribute accepts no value or a static effect name such as fire="fade-up".');
@@ -95,10 +97,7 @@ function fireAttributeNode(node: MarkdownNode): MarkdownNode | undefined {
   node.attributes = node.attributes.filter((attribute) => attribute !== fireAttribute && attribute !== atAttribute);
   return mdxElement(
     "Fire",
-    [
-      ...(effect ? [mdxAttribute("effect", effect)] : []),
-      ...(at ? [mdxAttribute("at", at)] : []),
-    ],
+    [...(effect ? [mdxAttribute("effect", effect)] : []), ...(at ? [mdxAttribute("at", at)] : [])],
     [node],
   );
 }
@@ -139,14 +138,7 @@ function zennEmbedNode(
   }
   if (name === "card") {
     const metadata = input.linkCardMetadata?.get(link.url);
-    return mdxElement(
-      "LinkCard",
-      [
-        mdxAttribute("href", link.url),
-        ...metadataAttributes(metadata),
-      ],
-      [],
-    );
+    return mdxElement("LinkCard", [mdxAttribute("href", link.url), ...metadataAttributes(metadata)], []);
   }
   if (name === "embed" || name === "iframe") {
     return mdxElement(
@@ -274,7 +266,13 @@ function fireListItemAt(at: string | undefined, every: number, itemIndex: number
 }
 
 function fireEffectToken(value: string): string {
-  return value.trim().replace(/[^A-Za-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase() || "fade";
+  return (
+    value
+      .trim()
+      .replace(/[^A-Za-z0-9_-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .toLowerCase() || "fade"
+  );
 }
 
 function unknownDirectiveFallback(node: MarkdownNode): MarkdownNode | undefined {
@@ -336,10 +334,7 @@ async function highlightMarkdownNode(node: MarkdownNode): Promise<void> {
 
     node.type = "mdxJsxFlowElement";
     node.name = "CodeBlock";
-    node.attributes = [
-      ...(lang ? [mdxAttribute("lang", lang)] : []),
-      mdxAttribute("highlightedHtml", highlightedHtml),
-    ];
+    node.attributes = [...(lang ? [mdxAttribute("lang", lang)] : []), mdxAttribute("highlightedHtml", highlightedHtml)];
     node.children = [{ type: "text", value: code }];
     delete node.value;
     delete node.lang;

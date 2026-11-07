@@ -37,16 +37,28 @@ export async function renderOgpCard(input: OgpCardInput): Promise<Uint8Array> {
         hono-decks
       </div>
       <div style={{ display: "flex", flexDirection: "column", maxWidth: 1040 }}>
-        <div style={{ display: "flex", fontSize: titleSize, lineHeight: 1.02, letterSpacing: "-0.035em", fontWeight: 700 }}>
+        <div
+          style={{ display: "flex", fontSize: titleSize, lineHeight: 1.02, letterSpacing: "-0.035em", fontWeight: 700 }}
+        >
           {input.title}
         </div>
         {input.description ? (
-          <div style={{ display: "flex", marginTop: 28, maxWidth: 940, fontSize: 32, lineHeight: 1.28, color: "#c7c8c2" }}>
+          <div
+            style={{ display: "flex", marginTop: 28, maxWidth: 940, fontSize: 32, lineHeight: 1.28, color: "#c7c8c2" }}
+          >
             {input.description}
           </div>
         ) : null}
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 24, color: "#91938d" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          fontSize: 24,
+          color: "#91938d",
+        }}
+      >
         <div style={{ display: "flex" }}>{input.author ?? "hono-decks"}</div>
         <div style={{ display: "flex", color: "#c7c8c2" }}>{input.path}</div>
       </div>

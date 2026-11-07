@@ -27,12 +27,7 @@ export async function buildAssetRefs(
   );
 }
 
-export {
-  componentImportPath,
-  dirname,
-  rewriteAssetUrls,
-  rewriteRelativeMdxImports,
-} from "./mdx/assets";
+export { componentImportPath, dirname, rewriteAssetUrls, rewriteRelativeMdxImports } from "./mdx/assets";
 export {
   addExternalAssetWarnings,
   buildExternalAssetRefs,
@@ -55,5 +50,8 @@ function normalizeMountPath(value: string): string {
 }
 
 function normalizePath(path: string): string {
-  return path.replaceAll("\\", "/").replace(/^\.\/+/, "").replace(/\/+/g, "/");
+  return path
+    .replaceAll("\\", "/")
+    .replace(/^\.\/+/, "")
+    .replace(/\/+/g, "/");
 }

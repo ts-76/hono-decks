@@ -17,16 +17,16 @@ name: Check Skills
 on:
   pull_request:
     paths:
-      - 'skills/**'
-      - '**/skills/**'
-      - '_artifacts/**'
-      - '**/_artifacts/**'
-      - 'packages/decks/package.json'
-      - 'packages/decks/README*.md'
-      - 'packages/decks/src/**'
-      - 'examples/basic/**'
-      - 'examples/ogp/**'
-      - 'docs/**'
+      - "skills/**"
+      - "**/skills/**"
+      - "_artifacts/**"
+      - "**/_artifacts/**"
+      - "packages/decks/package.json"
+      - "packages/decks/README*.md"
+      - "packages/decks/src/**"
+      - "examples/basic/**"
+      - "examples/ogp/**"
+      - "docs/**"
   release:
     types: [published]
   workflow_dispatch: {}

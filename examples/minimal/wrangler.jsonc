@@ -6,6 +6,6 @@
   "compatibility_flags": ["nodejs_compat"],
   "build": {
     "command": "bun run decks:compile",
-    "watch_dir": ["decks"]
-  }
+    "watch_dir": ["decks"],
+  },
 }

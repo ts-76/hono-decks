@@ -254,13 +254,7 @@ function parseInitArgs(args: string[]): { options: InitCommandOptions; error?: s
       options.install = true;
       continue;
     }
-    if (
-      arg === "--adapter" ||
-      arg === "--config" ||
-      arg === "--out" ||
-      arg === "--framework" ||
-      arg === "--entry"
-    ) {
+    if (arg === "--adapter" || arg === "--config" || arg === "--out" || arg === "--framework" || arg === "--entry") {
       const value = args[index + 1];
       if (!value || value.startsWith("--")) return { options, error: `Missing value for ${arg}` };
       if (arg === "--framework") {

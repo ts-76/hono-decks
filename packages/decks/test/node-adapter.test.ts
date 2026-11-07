@@ -80,10 +80,9 @@ describe("Node filesystem deck adapter", () => {
 
   it("decodes each OGP HTML entity exactly once", async () => {
     const fetch = vi.fn().mockResolvedValue(
-      new Response(
-        '<meta property="og:title" content="&amp;quot;Nested&amp;quot; &quot;Plain&quot; &amp;" />',
-        { headers: { "content-type": "text/html" } },
-      ),
+      new Response('<meta property="og:title" content="&amp;quot;Nested&amp;quot; &quot;Plain&quot; &amp;" />', {
+        headers: { "content-type": "text/html" },
+      }),
     );
     vi.stubGlobal("fetch", fetch);
 

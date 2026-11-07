@@ -61,7 +61,8 @@ function emitDeckObject(generated: GeneratedModuleDeck, deckIndex: number): stri
     ["kind", JSON.stringify(deck.kind)],
     ["meta", serializeValue(deck.meta, 2)],
   ];
-  if (typeof deck.clientEntryRequired === "boolean") fields.push(["clientEntryRequired", String(deck.clientEntryRequired)]);
+  if (typeof deck.clientEntryRequired === "boolean")
+    fields.push(["clientEntryRequired", String(deck.clientEntryRequired)]);
   if (deck.themeStyle) fields.push(["themeStyle", serializeValue(deck.themeStyle, 2)]);
   if (deck.themeSourcePath) fields.push(["themeSourcePath", JSON.stringify(deck.themeSourcePath)]);
   fields.push(["assets", serializeValue(deck.assets, 2)]);
@@ -90,7 +91,10 @@ function emitSlideObject(deck: CompiledDeck, slide: CompiledDeck["slides"][numbe
 }
 
 /** Drops values the runtime re-derives from the deck (see inheritDeckDefaults) and duplicated notes. */
-function compactSlideMeta(meta: SlideFrontmatter, deck: CompiledDeck): Partial<SlideFrontmatter> & { meta: SlideFrontmatter["meta"] } {
+function compactSlideMeta(
+  meta: SlideFrontmatter,
+  deck: CompiledDeck,
+): Partial<SlideFrontmatter> & { meta: SlideFrontmatter["meta"] } {
   const { notes: _notes, ...rest } = meta;
   const compact: Partial<SlideFrontmatter> & { meta: SlideFrontmatter["meta"] } = { ...rest };
   if (compact.transition === deck.meta.transition) delete compact.transition;

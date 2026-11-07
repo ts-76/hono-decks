@@ -7,12 +7,10 @@
   "compatibility_flags": ["nodejs_compat"],
   "build": {
     "command": "bun run decks:compile:hook",
-    "watch_dir": ["decks", "scripts", "assets/fonts"]
+    "watch_dir": ["decks", "scripts", "assets/fonts"],
   },
   "assets": {
-    "directory": "./public"
+    "directory": "./public",
   },
-  "routes": [
-    { "pattern": "ogp.hono-decks.com", "custom_domain": true }
-  ]
+  "routes": [{ "pattern": "ogp.hono-decks.com", "custom_domain": true }],
 }

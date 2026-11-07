@@ -97,9 +97,9 @@
   "devDependencies": {
     "@tanstack/intent": "^0.5.5",
     "hono": "^4.13.16",
+    "honox": "0.1.62",
     "vite": "catalog:",
-    "vite-plus": "catalog:",
-    "honox": "0.1.62"
+    "vite-plus": "catalog:"
   },
   "peerDependencies": {
     "hono": "^4.13.16",

@@ -90,7 +90,7 @@ export const builtInSlideComponents = defineSlideComponents({
                 ...(lang ? { class: `language-${safeToken(lang)}`, "data-lang": lang } : {}),
                 children: code,
               }),
-        }),
+            }),
       ],
     });
   },
@@ -105,7 +105,8 @@ export const builtInSlideComponents = defineSlideComponents({
       props.sandbox === false
         ? undefined
         : (stringProp(props.sandbox) ?? "allow-scripts allow-same-origin allow-presentation allow-popups");
-    const referrerPolicy = stringProp(props.referrerPolicy ?? props.referrerpolicy) ?? "strict-origin-when-cross-origin";
+    const referrerPolicy =
+      stringProp(props.referrerPolicy ?? props.referrerpolicy) ?? "strict-origin-when-cross-origin";
     const fallbackHref = stringProp(props.fallbackHref ?? props.fallbackUrl ?? props.href) ?? src;
     const fallback = codeBlockText(props.children) || "Open embed";
     const printPoster = provider === "youtube" ? youtubePrintPoster(src) : undefined;
@@ -121,14 +122,14 @@ export const builtInSlideComponents = defineSlideComponents({
           children: [
             src
               ? jsx("iframe", {
-                src,
-                title,
-                loading,
-                referrerpolicy: referrerPolicy,
-                ...(sandbox ? { sandbox } : {}),
-                ...(allow ? { allow } : {}),
-                allowfullscreen: true,
-              })
+                  src,
+                  title,
+                  loading,
+                  referrerpolicy: referrerPolicy,
+                  ...(sandbox ? { sandbox } : {}),
+                  ...(allow ? { allow } : {}),
+                  allowfullscreen: true,
+                })
               : "",
             fallbackHref
               ? jsx("a", {
@@ -289,7 +290,13 @@ export function createMdxComponents(
   for (const [name, definition] of Object.entries(registry)) {
     components[name] = (props) => {
       const resolvedProps = props ?? {};
-      return renderRegisteredComponent(name, definition, resolvedProps, resolvedProps.children as DeckRenderable, input.assets);
+      return renderRegisteredComponent(
+        name,
+        definition,
+        resolvedProps,
+        resolvedProps.children as DeckRenderable,
+        input.assets,
+      );
     };
   }
 
@@ -300,7 +307,11 @@ function heroImage(props: SlideComponentProps): DeckRenderable {
   const image = typeof props.image === "string" ? props.image : typeof props.src === "string" ? props.src : undefined;
   if (!image) return "";
   const alt =
-    typeof props.alt === "string" && props.alt ? props.alt : typeof props.title === "string" ? props.title : "Hero image";
+    typeof props.alt === "string" && props.alt
+      ? props.alt
+      : typeof props.title === "string"
+        ? props.title
+        : "Hero image";
   return jsx("img", { class: "mdx-hero-image", src: image, alt });
 }
 
@@ -324,20 +335,25 @@ function fireAtProp(value: unknown): string | undefined {
 }
 
 function safeToken(value: string): string {
-  return value.trim().replace(/[^A-Za-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "text";
+  return (
+    value
+      .trim()
+      .replace(/[^A-Za-z0-9_-]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "text"
+  );
 }
 
 function safeAspectRatio(value: string): string {
-  return /^\s*\d+(\.\d+)?\s*(\/|:)\s*\d+(\.\d+)?\s*$/.test(value)
-    ? value.replace(":", " / ")
-    : "16 / 9";
+  return /^\s*\d+(\.\d+)?\s*(\/|:)\s*\d+(\.\d+)?\s*$/.test(value) ? value.replace(":", " / ") : "16 / 9";
 }
 
 function youtubePrintPoster(src: string | undefined): string | undefined {
   if (!src) return undefined;
   try {
     const url = new URL(src);
-    if (!["youtube.com", "www.youtube.com", "youtube-nocookie.com", "www.youtube-nocookie.com"].includes(url.hostname)) {
+    if (
+      !["youtube.com", "www.youtube.com", "youtube-nocookie.com", "www.youtube-nocookie.com"].includes(url.hostname)
+    ) {
       return undefined;
     }
     const match = url.pathname.match(/^\/embed\/([A-Za-z0-9_-]+)$/);
@@ -505,7 +521,10 @@ function rewriteAssetProps(
   return rewritten;
 }
 
-function serializableProps(componentName: string, props: Record<string, unknown>): Record<string, ClientIslandPropValue> {
+function serializableProps(
+  componentName: string,
+  props: Record<string, unknown>,
+): Record<string, ClientIslandPropValue> {
   const result: Record<string, ClientIslandPropValue> = {};
   for (const [key, value] of Object.entries(props)) {
     result[key] = serializeClientIslandProp(value, `${componentName}.${key}`);
@@ -523,16 +542,24 @@ function serializeClientIslandProp(value: unknown, path: string): ClientIslandPr
     return value;
   }
   if (typeof value === "function") {
-    throw new Error(`Client island prop "${path}" must be JSON-serializable; functions cannot be passed to the client.`);
+    throw new Error(
+      `Client island prop "${path}" must be JSON-serializable; functions cannot be passed to the client.`,
+    );
   }
   if (value === undefined || typeof value === "symbol" || typeof value === "bigint") {
-    throw new Error(`Client island prop "${path}" must be JSON-serializable; ${typeof value} values are not supported.`);
+    throw new Error(
+      `Client island prop "${path}" must be JSON-serializable; ${typeof value} values are not supported.`,
+    );
   }
   if (isJsxValue(value)) {
-    throw new Error(`Client island prop "${path}" must be JSON-serializable; JSX values cannot be passed to the client.`);
+    throw new Error(
+      `Client island prop "${path}" must be JSON-serializable; JSX values cannot be passed to the client.`,
+    );
   }
   if (value instanceof Date) {
-    throw new Error(`Client island prop "${path}" must be JSON-serializable; Date values must be converted to strings.`);
+    throw new Error(
+      `Client island prop "${path}" must be JSON-serializable; Date values must be converted to strings.`,
+    );
   }
   if (Array.isArray(value)) return value.map((item, index) => serializeClientIslandProp(item, `${path}[${index}]`));
   if (!isPlainObject(value)) {
@@ -547,13 +574,7 @@ function serializeClientIslandProp(value: unknown, path: string): ClientIslandPr
 }
 
 function isJsxValue(value: unknown): boolean {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "tag" in value &&
-    "props" in value &&
-    "type" in value
-  );
+  return typeof value === "object" && value !== null && "tag" in value && "props" in value && "type" in value;
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -579,7 +600,9 @@ function localAssetRelativePath(sourcePath: string): string {
   const marker = "/assets/";
   const normalized = sourcePath.replaceAll("\\", "/");
   const markerIndex = normalized.indexOf(marker);
-  return markerIndex === -1 ? (normalized.split("/").at(-1) ?? normalized) : normalized.slice(markerIndex + marker.length);
+  return markerIndex === -1
+    ? (normalized.split("/").at(-1) ?? normalized)
+    : normalized.slice(markerIndex + marker.length);
 }
 
 function normalizeVoidElementSpacing(html: string): string {

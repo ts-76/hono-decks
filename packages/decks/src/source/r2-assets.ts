@@ -38,7 +38,10 @@ export interface R2AssetSourceOptions<E extends Env = any> {
   cacheControl?: string | false | ((input: R2AssetKeyInput) => string | false | undefined);
 }
 
-export function withR2Assets<E extends Env = any>(source: DeckSource<E>, options: R2AssetSourceOptions<E>): DeckSource<E> {
+export function withR2Assets<E extends Env = any>(
+  source: DeckSource<E>,
+  options: R2AssetSourceOptions<E>,
+): DeckSource<E> {
   return {
     async listDecks(c) {
       return source.listDecks(c);
@@ -132,8 +135,10 @@ function applyHttpMetadata(headers: Headers, metadata: R2ObjectHttpMetadataLike 
   if (metadata.contentDisposition && !headers.has("content-disposition")) {
     headers.set("content-disposition", metadata.contentDisposition);
   }
-  if (metadata.contentEncoding && !headers.has("content-encoding")) headers.set("content-encoding", metadata.contentEncoding);
-  if (metadata.contentLanguage && !headers.has("content-language")) headers.set("content-language", metadata.contentLanguage);
+  if (metadata.contentEncoding && !headers.has("content-encoding"))
+    headers.set("content-encoding", metadata.contentEncoding);
+  if (metadata.contentLanguage && !headers.has("content-language"))
+    headers.set("content-language", metadata.contentLanguage);
 }
 
 function resolveCacheControl(

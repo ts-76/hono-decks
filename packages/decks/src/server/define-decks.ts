@@ -29,7 +29,10 @@ export interface DecksConfig {
 }
 
 /** Router options an application may set. Generated data (mount, bundle) is fixed by the compiler. */
-export type DecksRouterConfig<E extends Env = any> = Omit<DecksRouterOptions<E>, "source" | "mountPath" | "liveReloadPath">;
+export type DecksRouterConfig<E extends Env = any> = Omit<
+  DecksRouterOptions<E>,
+  "source" | "mountPath" | "liveReloadPath"
+>;
 
 /** Runtime options passed to the generated `createDecks()`. */
 export interface DecksOptions<E extends Env = any> extends DecksRouterConfig<E> {

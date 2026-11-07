@@ -16,5 +16,12 @@
       "hono-decks/*": ["./src/*.ts"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "test/**/*.ts", "worker-configuration.d.ts", "vitest.config.ts", "vitest.dist.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "test/**/*.ts",
+    "worker-configuration.d.ts",
+    "vitest.config.ts",
+    "vitest.dist.config.ts"
+  ]
 }

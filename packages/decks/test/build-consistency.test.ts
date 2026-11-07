@@ -45,7 +45,10 @@ describe("generated build consistency", () => {
     const cwd = await mkdtemp(join(tmpdir(), "decks-opening-frontmatter-"));
     try {
       await mkdir(join(cwd, "decks/cover"), { recursive: true });
-      await writeFile(join(cwd, "decks/cover/deck.mdx"), "---\ntitle: Launch\nlayout: cover\n---\n\n# Launch\n\n---\n\n## Next");
+      await writeFile(
+        join(cwd, "decks/cover/deck.mdx"),
+        "---\ntitle: Launch\nlayout: cover\n---\n\n# Launch\n\n---\n\n## Next",
+      );
       const result = await compileDecks({ cwd, root: "decks", out: "generated" });
       expect(result.decks[0]?.slides.map((slide) => slide.meta.layout)).toEqual(["cover", "default"]);
       expect(result.decks[0]?.warnings).toEqual([]);

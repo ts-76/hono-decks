@@ -91,11 +91,11 @@ export async function compileMarkdownDecks(
           index === 0 ? { ...opening.firstSlide, ...slide.frontmatter } : slide.frontmatter,
           warnings,
           {
-          slideIndex: index,
-          fallbackTitle: result.headings[0]?.text,
-          fallbackTransition: meta.transition,
-          fallbackTransitionDuration: meta.transitionDuration,
-          fallbackTransitionEasing: meta.transitionEasing,
+            slideIndex: index,
+            fallbackTitle: result.headings[0]?.text,
+            fallbackTransition: meta.transition,
+            fallbackTransitionDuration: meta.transitionDuration,
+            fallbackTransitionEasing: meta.transitionEasing,
           },
         );
         addUnknownFrontmatterWarnings(warnings, slideMeta.meta, "slide", index);

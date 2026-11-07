@@ -28,7 +28,12 @@ describe("honoDecks Vite plugin", () => {
     const cwd = await createFixture();
     try {
       const plugin = honoDecks();
-      await (plugin.configResolved as Function)({ root: cwd, command: "build", base: "/", logger: { info() {}, error() {} } });
+      await (plugin.configResolved as Function)({
+        root: cwd,
+        command: "build",
+        base: "/",
+        logger: { info() {}, error() {} },
+      });
       const code = await (plugin.load as Function)("\0hono-decks:module:" + join(cwd, "src/generated/decks.ts"));
       expect(code).not.toContain("/@hono-decks/events");
     } finally {
@@ -138,14 +143,22 @@ describe("honoDecks Vite plugin", () => {
       (configureServer as Function)({
         watcher,
         httpServer,
-        middlewares: { use: (handler: Function) => { middleware = handler; } },
+        middlewares: {
+          use: (handler: Function) => {
+            middleware = handler;
+          },
+        },
         ws,
         environments,
         restart: async () => {
           restarts += 1;
         },
       });
-      middleware({ url: "/@hono-decks/events", method: "GET", on() {} }, { writeHead() {}, write: (data: string) => writes.push(data), end() {}, on() {} }, () => {});
+      middleware(
+        { url: "/@hono-decks/events", method: "GET", on() {} },
+        { writeHead() {}, write: (data: string) => writes.push(data), end() {}, on() {} },
+        () => {},
+      );
       expect(watcher.added).toContain(join(cwd, "decks"));
       expect(watcher.added).toContain(join(cwd, "hono-decks.config.ts"));
       expect(ws.fullReloads).toBe(0);

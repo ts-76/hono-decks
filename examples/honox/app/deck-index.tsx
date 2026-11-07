@@ -3,11 +3,7 @@ import { localizedHref, type Locale } from "./i18n";
 
 type DeckPathResolver = (slug: string) => DeckPaths;
 
-export function renderHonoXDeckIndexPage(input: {
-  decks: CompiledDeck[];
-  paths: DeckPathResolver;
-  locale: Locale;
-}) {
+export function renderHonoXDeckIndexPage(input: { decks: CompiledDeck[]; paths: DeckPathResolver; locale: Locale }) {
   const isJa = input.locale === "ja";
   return (
     <>
@@ -15,11 +11,7 @@ export function renderHonoXDeckIndexPage(input: {
         {isJa ? "登壇資料へ移動" : "Skip to published talks"}
       </a>
       <header class="archive-header">
-        <a
-          class="archive-brand"
-          href={localizedHref("/", input.locale)}
-          aria-label="ts-76 Talks home"
-        >
+        <a class="archive-brand" href={localizedHref("/", input.locale)} aria-label="ts-76 Talks home">
           <span aria-hidden="true">H</span>
           <strong>ts-76 / Talks</strong>
         </a>
@@ -27,24 +19,12 @@ export function renderHonoXDeckIndexPage(input: {
           <a class="archive-portfolio-link" href={localizedHref("/", input.locale)}>
             Portfolio
           </a>
-          <span
-            class="archive-language-switcher"
-            aria-label={isJa ? "言語" : "Language"}
-            role="group"
-          >
-            <a
-              href={localizedHref("/decks", "ja")}
-              lang="ja"
-              aria-current={isJa ? "true" : undefined}
-            >
+          <span class="archive-language-switcher" aria-label={isJa ? "言語" : "Language"} role="group">
+            <a href={localizedHref("/decks", "ja")} lang="ja" aria-current={isJa ? "true" : undefined}>
               JA
             </a>
             <span aria-hidden="true">/</span>
-            <a
-              href={localizedHref("/decks", "en")}
-              lang="en"
-              aria-current={!isJa ? "true" : undefined}
-            >
+            <a href={localizedHref("/decks", "en")} lang="en" aria-current={!isJa ? "true" : undefined}>
               EN
             </a>
           </span>
@@ -74,11 +54,7 @@ export function renderHonoXDeckIndexPage(input: {
           </div>
         </section>
 
-        <section
-          id="published-talks"
-          class="published-talks"
-          aria-labelledby="published-talks-title"
-        >
+        <section id="published-talks" class="published-talks" aria-labelledby="published-talks-title">
           <header class="published-talks-heading">
             <h2 id="published-talks-title">{isJa ? "公開中の登壇資料" : "Published talks"}</h2>
             <p>
@@ -106,9 +82,7 @@ export function renderHonoXDeckIndexPage(input: {
                     aria-label={isJa ? `${title}を開く` : `Open ${title}`}
                   >
                     <span class="archive-talk-poster">
-                      <small>
-                        {isJa ? "HonoXポートフォリオパターン" : "HonoX portfolio pattern"}
-                      </small>
+                      <small>{isJa ? "HonoXポートフォリオパターン" : "HonoX portfolio pattern"}</small>
                       <strong>
                         HonoX +<br />
                         hono-decks
@@ -124,13 +98,9 @@ export function renderHonoXDeckIndexPage(input: {
                   <div class="archive-talk-copy">
                     <p class="archive-talk-meta">
                       {deck.meta.date ? (
-                        <time datetime={deck.meta.date}>
-                          {formatArchiveDate(deck.meta.date, input.locale)}
-                        </time>
+                        <time datetime={deck.meta.date}>{formatArchiveDate(deck.meta.date, input.locale)}</time>
                       ) : null}
-                      <span>
-                        {isJa ? `${deck.slides.length}枚` : `${deck.slides.length} slides`}
-                      </span>
+                      <span>{isJa ? `${deck.slides.length}枚` : `${deck.slides.length} slides`}</span>
                     </p>
                     <h3>{title}</h3>
                     <p class="archive-talk-description">
@@ -139,10 +109,7 @@ export function renderHonoXDeckIndexPage(input: {
                         : "Embed a presentation directly in a HonoX portfolio."}
                     </p>
                     {deck.meta.tags?.length ? (
-                      <ul
-                        class="archive-talk-tags"
-                        aria-label={isJa ? `${title}のトピック` : `${title} topics`}
-                      >
+                      <ul class="archive-talk-tags" aria-label={isJa ? `${title}のトピック` : `${title} topics`}>
                         {deck.meta.tags.map((tag) => (
                           <li>{tag}</li>
                         ))}
@@ -158,9 +125,7 @@ export function renderHonoXDeckIndexPage(input: {
                       <a href={localizedHref(paths.presentation, input.locale)}>
                         {isJa ? "発表画面" : "Presentation"} <span aria-hidden="true">↗</span>
                       </a>
-                      <a href={localizedHref(paths.print, input.locale)}>
-                        {isJa ? "印刷表示" : "Print view"}
-                      </a>
+                      <a href={localizedHref(paths.print, input.locale)}>{isJa ? "印刷表示" : "Print view"}</a>
                     </nav>
                   </div>
                 </article>
@@ -188,9 +153,7 @@ export function renderHonoXDeckIndexPage(input: {
 
       <footer class="archive-footer">
         <p>{isJa ? "HonoXとhono-decksで構築。" : "Built with HonoX and hono-decks."}</p>
-        <a href={localizedHref("/", input.locale)}>
-          {isJa ? "Portfolioへ戻る" : "Back to portfolio"}
-        </a>
+        <a href={localizedHref("/", input.locale)}>{isJa ? "Portfolioへ戻る" : "Back to portfolio"}</a>
       </footer>
     </>
   );
@@ -211,10 +174,7 @@ export function renderHonoXDeckIndexHead(locale: Locale) {
       <meta name="theme-color" content="#111216" />
       <meta property="og:type" content="website" />
       <meta property="og:locale" content={isJa ? "ja_JP" : "en_US"} />
-      <meta
-        property="og:title"
-        content={isJa ? "登壇資料一覧 — ts-76 Talks" : "Talk archive — ts-76 Talks"}
-      />
+      <meta property="og:title" content={isJa ? "登壇資料一覧 — ts-76 Talks" : "Talk archive — ts-76 Talks"} />
       <meta
         property="og:description"
         content={

@@ -119,7 +119,11 @@ async function compileMdxModuleDeck(
     });
     addUnknownFrontmatterWarnings(warnings, slideMeta.meta, "slide", index);
     const moduleSource = [prelude, rewriteAssetUrls(speakerNotes.body, assets)].filter(Boolean).join("\n\n");
-    const rewrittenSource = rewriteRelativeMdxImports(moduleSource, dirname(entry.sourcePath), dirname(slideModulePath));
+    const rewrittenSource = rewriteRelativeMdxImports(
+      moduleSource,
+      dirname(entry.sourcePath),
+      dirname(slideModulePath),
+    );
     const code = await compileMdxModule(rewrittenSource, entry.sourcePath, index, input.resolveOgp);
 
     slideModules.push({
@@ -155,7 +159,10 @@ async function compileMdxModuleDeck(
   };
 }
 
-function collectGeneratedExternalAssetRefs(contentBody: string, deckMeta: Pick<CompiledDeck["meta"], "assets">): AssetRef[] {
+function collectGeneratedExternalAssetRefs(
+  contentBody: string,
+  deckMeta: Pick<CompiledDeck["meta"], "assets">,
+): AssetRef[] {
   return buildExternalAssetRefs([
     ...collectMarkdownAssetCandidates(contentBody),
     ...collectFrontmatterAssetCandidates(deckMeta.assets),
@@ -166,10 +173,7 @@ function generatedMdxParserWarnings(warnings: ParserWarning[]): ParserWarning[] 
   return warnings.filter((warning) => warning.code === "code-fence-unclosed");
 }
 
-function toGeneratedParserCompileWarnings(
-  warnings: ParserWarning[],
-  slideIndex: number,
-): CompiledDeck["warnings"] {
+function toGeneratedParserCompileWarnings(warnings: ParserWarning[], slideIndex: number): CompiledDeck["warnings"] {
   return generatedMdxParserWarnings(warnings).map((warning) => ({
     code: "parse-warning",
     message: warning.message,
@@ -193,12 +197,7 @@ async function compileMdxModule(
           jsxImportSource: "hono/jsx",
           format: "mdx",
           elementAttributeNameCase: "html",
-          remarkPlugins: [
-            remarkGfm,
-            remarkDirective,
-            remarkDeckSyntax({ linkCardMetadata }),
-            remarkCodeHighlight,
-          ],
+          remarkPlugins: [remarkGfm, remarkDirective, remarkDeckSyntax({ linkCardMetadata }), remarkCodeHighlight],
         },
       ),
     );

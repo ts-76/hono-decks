@@ -28,7 +28,9 @@ export function applyDeckComponentRegistry(input: ApplyDeckComponentRegistryInpu
     ...component,
     internalName: componentInternalName(component),
   }));
-  const bySlugAndName = new Map(components.map((component) => [`${component.slug}:${component.exportName}`, component]));
+  const bySlugAndName = new Map(
+    components.map((component) => [`${component.slug}:${component.exportName}`, component]),
+  );
 
   return {
     components,
@@ -54,10 +56,7 @@ export function emitDeckComponentRegistryModule(components: ResolvedDeckComponen
     .join(",\n")}\n});\n`;
 }
 
-function rewriteDeckComponents(
-  deck: CompiledDeck,
-  components: Map<string, ResolvedDeckComponentExport>,
-): CompiledDeck {
+function rewriteDeckComponents(deck: CompiledDeck, components: Map<string, ResolvedDeckComponentExport>): CompiledDeck {
   return {
     ...deck,
     slides: deck.slides.map((slide) => ({

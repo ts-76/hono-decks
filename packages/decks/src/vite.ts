@@ -181,7 +181,11 @@ export function honoDecks(options: HonoDecksViteOptions = {}): Plugin {
       server = devServer;
       devServer.middlewares.use((req, res, next) => {
         if (req.url?.split("?")[0] !== eventsPath || req.method !== "GET") return next();
-        res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache, no-transform", Connection: "keep-alive" });
+        res.writeHead(200, {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache, no-transform",
+          Connection: "keep-alive",
+        });
         res.write(": connected\n\n");
         eventClients.add(res);
         res.on("close", () => eventClients.delete(res));

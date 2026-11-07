@@ -1,5 +1,11 @@
 export { defineDecksConfig } from "./server/define-decks";
-export type { ConfiguredDecks, DecksBuildConfig, DecksConfig, DecksOptions, DecksRouterConfig } from "./server/define-decks";
+export type {
+  ConfiguredDecks,
+  DecksBuildConfig,
+  DecksConfig,
+  DecksOptions,
+  DecksRouterConfig,
+} from "./server/define-decks";
 export { createDeckPaths } from "./server/paths";
 export type { DeckPaths } from "./server/paths";
 export { createDeckViewerEmbed } from "./server/router";

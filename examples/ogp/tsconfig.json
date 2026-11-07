@@ -11,5 +11,12 @@
     "noEmit": true,
     "verbatimModuleSyntax": true
   },
-  "include": ["src/**/*.ts", "scripts/**/*.ts", "scripts/**/*.tsx", "decks/**/*.tsx", "test/**/*.ts", "vitest.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "scripts/**/*.ts",
+    "scripts/**/*.tsx",
+    "decks/**/*.tsx",
+    "test/**/*.ts",
+    "vitest.config.ts"
+  ]
 }

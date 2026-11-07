@@ -132,7 +132,9 @@ function collectComponents(
   }));
 }
 
-function collectComponentNodes(nodes: SlideNode[]): Array<Extract<SlideNode, { type: "component" }> & { source?: string }> {
+function collectComponentNodes(
+  nodes: SlideNode[],
+): Array<Extract<SlideNode, { type: "component" }> & { source?: string }> {
   const components: Array<Extract<SlideNode, { type: "component" }> & { source?: string }> = [];
   for (const node of nodes) {
     if (node.type === "component") components.push(node);
@@ -141,7 +143,11 @@ function collectComponentNodes(nodes: SlideNode[]): Array<Extract<SlideNode, { t
   return components;
 }
 
-function assertSingleFileAssetRules(input: CompileDeckInput, markdown: string, deckAttrs: Record<string, unknown>): void {
+function assertSingleFileAssetRules(
+  input: CompileDeckInput,
+  markdown: string,
+  deckAttrs: Record<string, unknown>,
+): void {
   if (input.kind !== "single-file") return;
   if (hasLocalRelativeAssetReference(markdown, deckAttrs)) {
     throw new CompileError(

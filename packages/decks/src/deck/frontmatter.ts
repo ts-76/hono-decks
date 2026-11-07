@@ -14,7 +14,10 @@ export function readFrontmatter(source: string): FrontmatterParseResult {
   if (end === -1) throw new CompileError("Frontmatter block is not closed.", "frontmatter-unclosed");
 
   const rawAttrs = normalized.slice(4, end).trim();
-  const body = normalized.slice(end + 4).replace(/^\n/, "").trim();
+  const body = normalized
+    .slice(end + 4)
+    .replace(/^\n/, "")
+    .trim();
   return { attrs: parseFrontmatterAttrs(rawAttrs), body };
 }
 
@@ -50,7 +53,14 @@ export function toDeckFrontmatter(attrs: Record<string, unknown>, warnings: Comp
   deck.author = takeString(meta, "author");
   deck.date = takeString(meta, "date");
   deck.theme = takeString(meta, "theme");
-  deck.transition = takeKnownStringWithWarning(meta, "transition", SLIDE_TRANSITIONS, "none", warnings, "unknown-transition");
+  deck.transition = takeKnownStringWithWarning(
+    meta,
+    "transition",
+    SLIDE_TRANSITIONS,
+    "none",
+    warnings,
+    "unknown-transition",
+  );
   deck.transitionDuration = takeTransitionDuration(meta, warnings);
   deck.transitionEasing = takeTransitionEasing(meta, warnings);
   deck.assets = takeStringOrStringArray(meta, "assets");

@@ -100,11 +100,7 @@ function controlIconPathHtml(name: DeckControlIconName): string {
 function controlIconPaths(name: DeckControlIconName): DeckRenderable[] {
   switch (name) {
     case "deck-list":
-      return [
-        jsx("path", { d: "M4 5h16" }),
-        jsx("path", { d: "M4 12h16" }),
-        jsx("path", { d: "M4 19h16" }),
-      ];
+      return [jsx("path", { d: "M4 5h16" }), jsx("path", { d: "M4 12h16" }), jsx("path", { d: "M4 19h16" })];
     case "home":
       return [
         jsx("path", { d: "M3 11l9-8 9 8" }),
@@ -117,17 +113,9 @@ function controlIconPaths(name: DeckControlIconName): DeckRenderable[] {
         jsx("circle", { cx: "12", cy: "12", r: "3" }),
       ];
     case "projection":
-      return [
-        jsx("path", { d: "M4 5h16v10H4z" }),
-        jsx("path", { d: "M8 19h8" }),
-        jsx("path", { d: "M12 15v4" }),
-      ];
+      return [jsx("path", { d: "M4 5h16v10H4z" }), jsx("path", { d: "M8 19h8" }), jsx("path", { d: "M12 15v4" })];
     case "presenter":
-      return [
-        jsx("path", { d: "M4 5h16v10H4z" }),
-        jsx("path", { d: "M8 21l4-6 4 6" }),
-        jsx("path", { d: "M9 9h6" }),
-      ];
+      return [jsx("path", { d: "M4 5h16v10H4z" }), jsx("path", { d: "M8 21l4-6 4 6" }), jsx("path", { d: "M9 9h6" })];
     case "previous":
       return [jsx("path", { d: "M15 6l-6 6 6 6" })];
     case "next":
