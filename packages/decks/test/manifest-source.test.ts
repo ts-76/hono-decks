@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
+import { Hono } from "hono";
+import { decksRouter } from "../src/server/router";
 import { manifestDeckSource } from "../src/source/manifest-source";
 import type { CompiledDeck } from "../src/deck/model";
 
@@ -57,5 +59,45 @@ describe("manifestDeckSource", () => {
     expect(response?.status).toBe(200);
     expect(response?.headers.get("content-type")).toBe("image/png");
     expect(await response?.arrayBuffer()).toEqual(new Uint8Array([1, 2, 3]).buffer);
+  });
+});
+
+describe("local asset revalidation", () => {
+  function appFor(input: CompiledDeck, dev = false) {
+    return new Hono().route("/decks", decksRouter({ source: manifestDeckSource({ decks: [input] }), dev }));
+  }
+
+  it("revalidates unchanged assets without a body and changes the tag when bytes change", async () => {
+    const app = appFor(deck);
+    const path = "/decks/deck1/assets/image.png";
+    const response = await app.request(path);
+    const tag = response.headers.get("etag");
+    expect(tag).toMatch(/^"[a-f0-9]{64}"$/);
+    expect(response.headers.get("cache-control")).toBe("public, max-age=0, must-revalidate");
+    const cached = await app.request(path, { headers: { "if-none-match": "W/" + tag } });
+    expect(cached.status).toBe(304);
+    expect(await cached.text()).toBe("");
+    const updated = appFor({ ...deck, assets: [{ ...deck.assets[0]!, body: new Uint8Array([4, 5, 6]) }] });
+    const fresh = await updated.request(path, { headers: { "if-none-match": tag! } });
+    expect(fresh.status).toBe(200);
+    expect(fresh.headers.get("etag")).not.toBe(tag);
+    expect([...new Uint8Array(await fresh.arrayBuffer())]).toEqual([4, 5, 6]);
+  });
+
+  it("avoids browser caching during development even when a prior tag matches", async () => {
+    const path = "/decks/deck1/assets/image.png";
+    const tag = (await appFor(deck).request(path)).headers.get("etag")!;
+    const response = await appFor(deck, true).request(path, { headers: { "if-none-match": tag } });
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(response.headers.get("etag")).toBeNull();
+  });
+
+  it("preserves an explicitly selected production cache policy", async () => {
+    const response = await appFor({
+      ...deck,
+      assets: [{ ...deck.assets[0]!, cacheControl: "private, max-age=60" }],
+    }).request("/decks/deck1/assets/image.png");
+    expect(response.headers.get("cache-control")).toBe("private, max-age=60");
   });
 });

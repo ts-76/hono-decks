@@ -521,3 +521,5 @@ Viteは仮想モジュールを利用し、既存の `hono-decks compile` はフ
 `@hono/vite-dev-server`が標準で`.js`を除外するためです。配信は既存アプリのミドルウェア・認可を通り、
 `createDecks({ client: { path } })`で変更できます。VoidなしのMarkdown実アプリ検証は、
 `HONO_MARKDOWN_PACKAGE`に共通パッケージのtarballを指定し、`node scripts/verify-vite-init.mjs`で実行できます。
+
+プレゼンテーションは次の1枚の画像・CSS背景画像を先読みし、デコード済みのリソースを同じ画面内で再利用します。背景画像の保持数には上限を設け、データ節約モードでは自動先読みを控えます。埋め込みローカルアセットの既定値はETagによる再検証（`public, max-age=0, must-revalidate`）です。明示的なキャッシュ設定は維持し、開発時のアセット応答は `no-store` にします。

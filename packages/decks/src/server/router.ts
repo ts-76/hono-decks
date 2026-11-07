@@ -276,6 +276,26 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
     }
     const response = await options.source.getAsset?.(c, slug, assetPath);
     if (!response) return c.notFound();
+    const headers = new Headers(response.headers);
+    if (await isDevEnabled(c, options)) {
+      headers.set("cache-control", "no-store");
+      headers.delete("etag");
+      return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+    }
+    const etag = headers.get("etag");
+    const candidates = c.req
+      .header("if-none-match")
+      ?.split(",")
+      .map((tag) => tag.trim().replace(/^W\//, ""));
+    if (
+      response.status === 200 &&
+      etag &&
+      !headers.get("cache-control")?.includes("no-store") &&
+      candidates?.some((tag) => tag === "*" || tag === etag.replace(/^W\//, ""))
+    ) {
+      await response.body?.cancel();
+      return new Response(null, { status: 304, headers });
+    }
     return response;
   });
 
