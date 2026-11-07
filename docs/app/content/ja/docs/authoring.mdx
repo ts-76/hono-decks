@@ -14,7 +14,7 @@ order: 2
 
 `decks/<slug>/deck.mdx`が基本形です。ディレクトリ名がURLの`:slug`になります。たとえば`decks/launch/deck.mdx`は`/decks/launch`で表示されます。
 
-ファイル先頭の`---`ブロックはデッキ情報、その後の区切り線は新しいスライドの開始を表します。スライド内の水平線として単独の`---`は使えません。
+ファイル先頭の`---`ブロックはデッキ情報、その後の`---`の行は新しいスライドの開始を表します。スライド内に水平線を入れる場合は、`***`、`___`、`<hr />`のいずれかを使います。YAMLの例など、コードブロック内の`---`はコードとしてそのまま残ります。
 
 <CodeBlock filename={"decks/launch/deck.mdx"} language={"mdx"} code={"---\ntitle: Hono at the edge\ntransition: fade\n---\n\n# Hono at the edge\n\n---\ntitle: Runtime boundary\nlayout: statement\n---\n\nNode for I/O. Hono for routes."} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 

@@ -41,6 +41,25 @@ describe("generated build consistency", () => {
     }
   });
 
+  it("compiles horizontal rules and fenced --- without starting new slides", async () => {
+    const cwd = await mkdtemp(join(tmpdir(), "decks-horizontal-rules-"));
+    try {
+      await mkdir(join(cwd, "decks/rules"), { recursive: true });
+      await writeFile(
+        join(cwd, "decks/rules/deck.mdx"),
+        "# Rules\n\n```yaml\n---\nkey: value\n---\n```\n\nA\n\n***\n\nB\n\n___\n\nC\n\n<hr />\n\nD\n\n---\n\n# Second",
+      );
+      const result = await compileDecks({ cwd, root: "decks", out: "generated" });
+      expect(result.decks[0]?.slides.map((slide) => slide.meta.title)).toEqual(["Rules", "Second"]);
+      const slide = await readFile(join(cwd, result.decks[0]!.slides[0]!.modulePath), "utf8");
+      expect(slide.match(/_components\.hr\b/g)?.length).toBe(2);
+      expect(slide).toMatch(/_jsx\("hr"/);
+      expect(slide).toContain("key: value");
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("applies opening slide keys to the first generated slide like compileMarkdown", async () => {
     const cwd = await mkdtemp(join(tmpdir(), "decks-opening-frontmatter-"));
     try {

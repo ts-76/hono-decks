@@ -4,7 +4,7 @@ Use this route when writing or correcting `deck.mdx` or an adapter-backed `deck.
 
 ## Basic deck structure
 
-The first frontmatter block describes the deck. Each following `---` boundary starts a slide; a slide may immediately include its own frontmatter.
+The first frontmatter block describes the deck. Each following `---` boundary starts a slide; a slide may immediately include its own frontmatter. Use `***`, `___`, or `<hr />` for a horizontal rule inside a slide. `---` inside fenced code stays code.
 
 ```mdx
 ---

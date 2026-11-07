@@ -136,6 +136,14 @@ export function splitSlideSources(source: string): string[] {
   let cursor = 0;
 
   while (cursor < lines.length) {
+    const codeFenceEnd = findCodeFenceEnd(lines, cursor);
+    if (codeFenceEnd !== undefined) {
+      // `---` inside fenced code (YAML samples, diffs) is content, not a separator.
+      current.push(...lines.slice(cursor, codeFenceEnd + 1));
+      cursor = codeFenceEnd + 1;
+      continue;
+    }
+
     if (isFence(lines[cursor])) {
       if (looksLikeFrontmatterFence(lines, cursor) && findFrontmatterEnd(lines, cursor) === -1) {
         throw new CompileError("Frontmatter block is not closed.", "frontmatter-unclosed");
@@ -169,6 +177,22 @@ export function splitSlideSources(source: string): string[] {
   }
 
   return slides;
+}
+
+/**
+ * Returns the closing line of a fenced code block opening at `start`, or
+ * undefined when `start` does not open one. An unclosed fence runs to the end,
+ * matching CommonMark.
+ */
+export function findCodeFenceEnd(lines: string[], start: number): number | undefined {
+  const open = /^ {0,3}(`{3,}|~{3,})/.exec(lines[start] ?? "");
+  if (!open) return undefined;
+  const marker = open[1]!;
+  const close = new RegExp(`^ {0,3}${marker[0] === "`" ? "`" : "~"}{${marker.length},}[ \\t]*$`);
+  for (let index = start + 1; index < lines.length; index += 1) {
+    if (close.test(lines[index]!)) return index;
+  }
+  return lines.length - 1;
 }
 
 function parseFrontmatterAttrs(source: string): Record<string, unknown> {

@@ -14,7 +14,7 @@ Use the Markdown, MDX, and deck-specific syntax supported by the compiler.
 
 Use `decks/<slug>/deck.mdx`. The directory name becomes the URL slug, so `decks/launch/deck.mdx` appears at `/decks/launch`.
 
-The opening `---` block contains deck metadata. Later separators start new slides, so a bare `---` cannot be used as a thematic break inside a slide.
+The opening `---` block contains deck metadata. Later `---` lines start new slides. For a horizontal rule inside a slide, write `***`, `___`, or `<hr />`. A `---` line inside a fenced code block, such as a YAML sample, stays part of the code.
 
 <CodeBlock filename={"decks/launch/deck.mdx"} language={"mdx"} code={"---\ntitle: Hono at the edge\ntransition: fade\n---\n\n# Hono at the edge\n\n---\ntitle: Runtime boundary\nlayout: statement\n---\n\nNode for I/O. Hono for routes."} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
 

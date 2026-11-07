@@ -2,6 +2,43 @@ import { describe, expect, it } from "vite-plus/test";
 import { compileMarkdown } from "../src/compiler/compiler";
 
 describe("compileMarkdown", () => {
+  it("keeps --- inside fenced code and renders *** as a horizontal rule", async () => {
+    const deck = await compileMarkdown({
+      slug: "rules",
+      sourcePath: "decks/rules/deck.mdx",
+      kind: "directory",
+      markdown: [
+        "# Config",
+        "",
+        "```yaml",
+        "---",
+        "title: Example",
+        "---",
+        "```",
+        "",
+        "~~~md",
+        "---",
+        "~~~",
+        "",
+        "Above",
+        "",
+        "***",
+        "",
+        "Below",
+        "",
+        "---",
+        "",
+        "# Next",
+      ].join("\n"),
+    });
+
+    expect(deck.slides).toHaveLength(2);
+    expect(deck.slides[0]?.html).toContain("title: Example");
+    expect(deck.slides[0]?.html).toContain("Below");
+    expect(deck.slides[0]?.nodes).toContainEqual({ type: "element", tag: "hr", props: {}, children: [] });
+    expect(deck.slides[1]?.meta.title).toBe("Next");
+  });
+
   it("applies slide-only keys in the opening frontmatter to the first slide", async () => {
     const deck = await compileMarkdown({
       slug: "cover",
