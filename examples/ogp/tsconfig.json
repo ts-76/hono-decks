@@ -17,6 +17,7 @@
     "scripts/**/*.tsx",
     "decks/**/*.tsx",
     "test/**/*.ts",
-    "vitest.config.ts"
+    "vitest.config.ts",
+    "decks/index.ts"
   ]
 }

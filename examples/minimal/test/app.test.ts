@@ -12,9 +12,9 @@ describe("minimal example", () => {
   });
 
   it("imports the generated router from the runtime entry", async () => {
-    const generated = await readFile(new URL("../src/generated/decks.ts", import.meta.url), "utf8");
-    const wranglerConfig = await readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8");
-    const productionConfig = await readFile(new URL("../wrangler.production.jsonc", import.meta.url), "utf8");
+    const generated = await readFile(new URL("../.hono-decks/decks.ts", import.meta.url), "utf8");
+    const wranglerConfig = await readFile(new URL("../wrangler.config.ts", import.meta.url), "utf8");
+    const productionConfig = await readFile(new URL("../cloudflare.config.ts", import.meta.url), "utf8");
     const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8")) as {
       scripts: Record<string, string>;
       dependencies: Record<string, string>;
@@ -26,9 +26,9 @@ describe("minimal example", () => {
     expect(generated).toContain('from "hono-decks"');
     expect(generated).not.toContain("hono-decks/runtime");
     expect(packageJson.dependencies["hono-decks"]).toBe(publishedPackage.version);
-    expect(packageJson.scripts.dev).toBe("wrangler dev --live-reload");
-    expect(packageJson.scripts.deploy).toBe("wrangler deploy");
-    expect(packageJson.scripts["deploy:production"]).toContain("wrangler.production.jsonc");
+    expect(packageJson.scripts.dev).toBe("cf dev");
+    expect(packageJson.scripts.deploy).toBe("cf deploy");
+    expect(packageJson.scripts["deploy:production"]).toBe("cf deploy --mode production");
     expect(wranglerConfig).not.toContain("account_id");
     expect(wranglerConfig).not.toContain("hono-decks.com");
     expect(productionConfig).toContain("minimal.hono-decks.com");

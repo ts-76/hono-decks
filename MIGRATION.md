@@ -114,3 +114,30 @@ HonoX では、HonoX のルート探索 glob をアプリ側にコピーする�
 - **`layout: cover` が既定になるのは最初のスライドだけです。** 2 枚目以降で `layout` を省略すると `default` になります。従来の挙動に頼っていたスライドには `layout: cover` を追加してください。
 - **最初のフロントマターで 1 枚目を指定できます。** デッキ冒頭のブロックに書いた `layout`・`class`・`notes`・`background` は 1 枚目に適用されます。
 - **生成ファイルはコミットしません。** `init` が `.gitignore` に `/src/generated/` を追加します。コミット済みの生成ファイルは削除し、`hono-decks compile`(または Wrangler の `build.command`)で再生成してください。
+
+
+## Managed CLI cache and cf examples
+
+New generic init uses `decks/index.ts` and registers `#decks` in package.json,
+pointing to the ignored `.hono-decks/` cache. Existing dev/build/typecheck/test/deploy
+scripts are preserved and prefixed with compilation. Vite continues to use
+`virtual:hono-decks` without writing generated modules to disk.
+
+Existing applications with explicit `build.outDir` and physical imports keep
+working. To opt into the cache layout, set `build.outDir: ".hono-decks"`, add
+`"imports": { "#decks": "./.hono-decks/decks.ts" }` to package.json, replace the
+physical import with `#decks`, and ignore `.hono-decks/`. Retain an automatic
+compilation hook before build/dev/typecheck and the source watcher during dev.
+
+Basic, Minimal, and OGP now use `cf dev`, `cf build`, and `cf deploy`.
+The maintained production targets require `--mode production`.
+`cloudflare.config.ts` owns deployment identities and bindings;
+`wrangler.config.ts` retains the bundler settings delegated to by cf.
+
+新しいCLIのinitでは、アプリ側の設定を `decks/index.ts` に置き、
+package.jsonの `#decks` 経由で内部キャッシュを読み込みます。
+既存の `build.outDir` と物理importはそのまま利用できます。
+上記の手順でキャッシュ構成へ移行できます。Basic・Minimal・OGPの
+公開設定は `cf deploy --mode production` で選択します。
+
+Generic CLI init keeps build settings in `decks/config.ts` and runtime settings in `decks/index.ts`. package.json `hono-decks.configFile` records the build config path, so ordinary compile commands need no path argument. Explicit `--config` takes precedence; existing root configs still work.

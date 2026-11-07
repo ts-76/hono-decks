@@ -8,7 +8,7 @@ The compiler and `hono-decks/node` use Node filesystem tooling. Run them during 
 
 ```ts
 // src/decks.ts
-import { createDecks } from "./generated/decks";
+import { createDecks } from "#decks";
 
 export const decks = createDecks();
 ```
@@ -115,7 +115,7 @@ Register more specific application routes before the mounted deck router.
 Presenter view can contain notes and previews. Enable it intentionally:
 
 ```ts
-import { createDecks } from "./generated/decks";
+import { createDecks } from "#decks";
 
 export const decks = createDecks({
   presenter: {
@@ -132,7 +132,7 @@ For production, replace the development condition with application authenticatio
 Enable the embed route and explicitly list allowed parent origins:
 
 ```ts
-import { createDecks } from "./generated/decks";
+import { createDecks } from "#decks";
 
 export const decks = createDecks({
   embed: {

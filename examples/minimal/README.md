@@ -30,6 +30,12 @@ bun run --cwd examples/minimal dev
 - `/decks/welcome` — viewer
 - `/decks/welcome/render` — slide renderer
 
-`hono-decks.config.ts`はcompile専用の設定(mount path・デッキの場所・出力先)です。`src/decks.ts`で生成された`createDecks()`にランタイムのオプションを渡します。`src/generated`以下は自動生成でGit管理しません。`bun run dev`を起動するとWrangler custom buildが初回compileとMDX変更を監視し、live reloadでブラウザを自動更新します。
+`decks/config.ts`はcompile専用の設定(mount path・デッキの場所・出力先)です。`decks/index.ts`で生成された`createDecks()`にランタイムのオプションを渡します。`.hono-decks`以下は自動生成でGit管理しません。`bun run dev`を起動するとcfのビルドフックが初回compileとMDX変更を監視し、ローカルサーバーを更新します。ブラウザは再読み込みしてください。
 
 `package.json`はnpmで公開されている`hono-decks`を参照します。リポジトリ内のパッケージソースには依存しないため、このディレクトリをCloudflareへ直接デプロイできます。
+
+## cf configuration
+
+Use `cf dev`, `cf build`, and `cf deploy`. Use `cf deploy --mode production` only for the maintained public sample. `cloudflare.config.ts` owns the Worker, production account/domain, and bindings. `wrangler.config.ts` configures the bundler delegated to by cf, including the deck compilation watcher. The ignored `.hono-decks/` cache is recreated automatically; app-owned settings live in `decks/index.ts` and import `#decks`.
+
+The current cf Wrangler backend rebuilds the local Worker on source changes but does not accept the old `--live-reload` flag. Refresh the browser after edits; Vite integrations retain their existing live updates.

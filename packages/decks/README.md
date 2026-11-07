@@ -4,6 +4,10 @@ English | [日本語](https://github.com/ts-76/hono-decks/blob/main/packages/dec
 
 hono-decks serves MDX slide decks from Hono applications and Cloudflare Workers. It compiles MDX into TypeScript modules at build time, so the Worker runtime does not load the filesystem or the compiler.
 
+CLI init creates the app-owned `decks/index.ts`, registers `#decks` in package.json, and keeps intermediate code in the ignored `.hono-decks/` cache. Existing dev/build/typecheck/test/deploy scripts are preserved and prefixed with compilation. Vite continues to use in-memory virtual modules. Explicit `build.outDir` paths remain supported for custom pipelines. Basic, Minimal, and OGP use `cf dev/build/deploy`; their `wrangler.config.ts` only configures the current cf bundler backend.
+
+The cf examples rebuild the local Worker on deck edits. The current cf backend does not accept Wrangler’s `--live-reload` flag; refresh the browser after edits. Vite live updates are unchanged.
+
 ## Hono + Vite / HonoX: connect with init
 
 Install hono-decks in an existing app and choose its integration:
@@ -166,7 +170,7 @@ or build run; `createDecks<AppEnv>()` carries your bindings into resolvers.
 
 Edit sources, images, components, and themes under `decks/`, plus your config.
 Vite reads compiled code from an in-memory module map and bundles it into the
-application. There is no `src/generated` directory to create or import and no
+application. There is no `.hono-decks` directory to create or import and no
 need to set `build.outDir`. An explicitly configured OGP metadata cache is still
 written to disk. Imported config inputs (for example a separate mount-path
 settings file) are also watched. Init uses Vite's `BASE_URL` for its development
@@ -190,28 +194,28 @@ bunx hono-decks compile
 
 If you use an AI agent, run `npx @tanstack/intent@latest install`. The published package includes a versioned hono-decks skill that the agent can discover from `node_modules`.
 
-<code>init</code> creates these files without overwriting existing ones, and adds <code>/src/generated/</code> to <code>.gitignore</code>:
+<code>init</code> creates these files without overwriting existing ones, and adds <code>/.hono-decks/</code> to <code>.gitignore</code>:
 
-- <code>hono-decks.config.ts</code>: build-only settings read by the CLI (never imported by the Worker)
-- <code>src/decks.ts</code>: your runtime options, passed to the generated <code>createDecks()</code>
+- <code>decks/config.ts</code>: build-only settings read by the CLI (never imported by the Worker)
+- <code>decks/index.ts</code>: your runtime options, passed to the generated <code>createDecks()</code>
 - <code>decks/welcome/deck.mdx</code>: a sample deck, when no <code>decks</code> directory exists
 
 ~~~ts
-// hono-decks.config.ts
+// decks/config.ts
 import { defineDecksConfig } from "hono-decks";
 
 export default defineDecksConfig({
   mountPath: "/decks",
   build: {
     root: "decks",
-    outDir: "src/generated",
+    outDir: ".hono-decks",
   },
 });
 ~~~
 
 ~~~ts
-// src/decks.ts
-import { createDecks } from "./generated/decks";
+// decks/index.ts
+import { createDecks } from "#decks";
 
 export const decks = createDecks();
 ~~~
@@ -219,7 +223,7 @@ export const decks = createDecks();
 ~~~ts
 // src/index.ts
 import { Hono } from "hono";
-import { decks } from "./decks";
+import { decks } from "../decks";
 
 const app = new Hono();
 app.get("/", (c) => c.redirect(decks.paths("welcome").viewer));
@@ -227,7 +231,7 @@ app.route(decks.mountPath, decks.router());
 export default app;
 ~~~
 
-Run <code>bunx hono-decks compile</code>. The command updates <code>src/generated/decks.ts</code> and the generated slide modules. Do not edit or commit the generated directory; every dev, build, and typecheck run recreates it.
+Run <code>bunx hono-decks compile</code>. The command updates <code>.hono-decks/decks.ts</code> and the generated slide modules. Do not edit or commit the generated directory; every dev, build, and typecheck run recreates it.
 
 ## Build config, runtime options
 
@@ -307,7 +311,7 @@ Pass runtime options to <code>createDecks()</code>. Every resolver receives one 
 ~~~ts
 // src/decks.ts
 import type { DeckBrowserRunBinding } from "hono-decks";
-import { createDecks } from "./generated/decks";
+import { createDecks } from "#decks";
 
 interface AppEnv {
   Bindings: {

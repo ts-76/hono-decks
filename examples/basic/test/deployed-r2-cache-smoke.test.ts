@@ -59,11 +59,11 @@ describe("deployed R2 cache smoke helpers", () => {
   });
 
   it("keeps the reusable R2 sample free of owner-specific routing", async () => {
-    const config = await readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8");
+    const config = await readFile(new URL("../cloudflare.config.ts", import.meta.url), "utf8");
 
-    expect(config).toContain('"r2_buckets"');
-    expect(config).toContain('"binding": "DECK_ASSETS"');
-    expect(config).toContain('"bucket_name": "hono-decks-basic-assets"');
+    expect(config).toContain("bindings.r2");
+    expect(config).toContain("DECK_ASSETS");
+    expect(config).toContain('name: "hono-decks-basic-assets"');
     expect(config).not.toContain('"account_id"');
     expect(config).not.toContain('"routes"');
     expect(config).not.toContain("tslab.app");

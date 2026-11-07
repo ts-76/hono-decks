@@ -46,7 +46,7 @@ Cloudflare Browser RunのQuick Actionsをブラウザバインディングから
 
 次の例では、先に登録したセッションまたはCloudflare Access検証ミドルウェアが`deckExportAllowed`を設定済みとします。
 
-<CodeBlock filename={"src/decks.ts"} language={"typescript"} code={"// src/decks.ts\nimport type { DeckBrowserRunBinding } from \"hono-decks\"\nimport { createDecks } from \"./generated/decks\"\n\ntype AppEnv = {\n  Bindings: {\n    BROWSER: DeckBrowserRunBinding\n  }\n  Variables: {\n    deckExportAllowed: boolean\n  }\n}\n\nexport const decks = createDecks<AppEnv>({\n  export: {\n    browser: ({ c }) => c.env.BROWSER,\n    authorize: ({ c }) => c.get(\"deckExportAllowed\") === true,\n    pdf: true,\n    png: true,\n  },\n})"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+<CodeBlock filename={"src/decks.ts"} language={"typescript"} code={"// src/decks.ts\nimport type { DeckBrowserRunBinding } from \"hono-decks\"\nimport { createDecks } from \"#decks\"\n\ntype AppEnv = {\n  Bindings: {\n    BROWSER: DeckBrowserRunBinding\n  }\n  Variables: {\n    deckExportAllowed: boolean\n  }\n}\n\nexport const decks = createDecks<AppEnv>({\n  export: {\n    browser: ({ c }) => c.env.BROWSER,\n    authorize: ({ c }) => c.get(\"deckExportAllowed\") === true,\n    pdf: true,\n    png: true,\n  },\n})"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
 | ルート / API | 役割 |
 | --- | --- |

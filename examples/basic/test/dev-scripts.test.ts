@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vite-plus/test";
 
 describe("development scripts", () => {
-  it("runs wrangler dev with non-interactive workspace-local configuration", async () => {
+  it("uses cf dev with the managed compilation hook", async () => {
     const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8")) as {
       scripts: Record<string, string>;
       dependencies: Record<string, string>;
@@ -17,18 +17,15 @@ describe("development scripts", () => {
     expect(packageJson.scripts["decks:watch"]).toBeUndefined();
     expect(packageJson.scripts.dev).not.toContain("decks:compile");
     expect(packageJson.scripts.dev).not.toContain("../../packages/decks");
-    expect(packageJson.scripts.dev).toContain("CI=1");
-    expect(packageJson.scripts.dev).toContain("XDG_CONFIG_HOME=.wrangler-config");
-    expect(packageJson.scripts.dev).toContain("wrangler dev");
-    expect(packageJson.scripts.dev).toContain("--live-reload");
+    expect(packageJson.scripts.dev).toBe("cf dev");
     expect(packageJson.scripts.dev).not.toContain("--alias");
   });
 
   it("uses Wrangler's custom build watcher for deck authoring", async () => {
-    const wranglerJson = await readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8");
+    const wranglerJson = await readFile(new URL("../wrangler.config.ts", import.meta.url), "utf8");
 
-    expect(wranglerJson).toContain('"command": "bun run decks:compile:hook"');
-    expect(wranglerJson).toContain('"watch_dir": ["decks"]');
+    expect(wranglerJson).toContain('command: "bun run decks:compile:hook"');
+    expect(wranglerJson).toContain('watchDir: ["decks"]');
     expect(wranglerJson).not.toContain('"alias"');
     expect(wranglerJson).not.toContain("../../packages/decks");
   });
@@ -37,13 +34,12 @@ describe("development scripts", () => {
     const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8")) as {
       scripts: Record<string, string>;
     };
-    const productionConfig = await readFile(new URL("../wrangler.production.jsonc", import.meta.url), "utf8");
+    const productionConfig = await readFile(new URL("../cloudflare.config.ts", import.meta.url), "utf8");
 
-    expect(packageJson.scripts.deploy).toBe("wrangler deploy");
-    expect(packageJson.scripts["deploy:production"]).toContain("--config wrangler.production.jsonc");
-    expect(productionConfig).toContain('"pattern": "basic.hono-decks.com"');
-    expect(productionConfig).toContain('"custom_domain": true');
-    expect(productionConfig).not.toContain('"binding": "DECK_ASSETS"');
+    expect(packageJson.scripts.deploy).toBe("cf deploy");
+    expect(packageJson.scripts["deploy:production"]).toBe("cf deploy --mode production");
+    expect(productionConfig).toContain('domains: ["basic.hono-decks.com"]');
+    expect(productionConfig).toContain('ctx.mode !== "production"');
     expect(productionConfig).not.toContain('"alias"');
   });
 
@@ -80,7 +76,7 @@ describe("development scripts", () => {
     expect(source).toContain("HONO_DECKS_BROWSER_RUN_ORIGIN");
     expect(source).toContain("HONO_DECKS_BROWSER_RUN_TOKEN");
     expect(source).not.toContain("agent-browser");
-    expect(source).not.toContain("wrangler dev");
+    expect(source).not.toBe("cf dev");
   });
 
   it("keeps Browser Run workflow credentialed and manually triggered", async () => {

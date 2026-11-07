@@ -97,7 +97,7 @@ bd close <id>         # Complete work
 
 ## Build & Test
 
-Requires Bun 1.3 and Node.js 22.3+ (the Vite+ managed Node from `vp env` works).
+Requires Bun 1.3 and Node.js 24.22.1 (the CI baseline) (the Vite+ managed Node from `vp env` works).
 
 ```bash
 bun install                                 # one install; the CLI bin works before the first build
@@ -108,7 +108,7 @@ bun run check                               # full gate: build, generate, lint+f
 bun run format                              # apply formatting (enforced by `vp check`)
 ```
 
-`bun run check` builds the package once, compiles the Wrangler examples (`bun run generate`), then runs every workspace's typecheck and tests in parallel. `*.dist.test.ts` files inspect the published build and run only through `bun run --cwd packages/decks test:dist`.
+`bun run check` builds the package once, compiles the CLI examples (`bun run generate`), then runs every workspace's typecheck and tests in parallel. `*.dist.test.ts` files inspect the published build and run only through `bun run --cwd packages/decks test:dist`.
 
 ## Architecture Overview
 
@@ -116,7 +116,7 @@ bun run format                              # apply formatting (enforced by `vp 
   - Worker-safe runtime: `src/server`, `src/renderer`, `src/source`, `src/deck`, `src/client`, `src/shared` (entries `hono-decks`, `hono-decks/advanced`, `hono-decks/client`).
   - Node-only build side: `src/node`, `src/generator`, `src/compiler`, `src/parser`, `src/routing`, `src/adapters` (entries `hono-decks/node`, `hono-decks/vite`, `hono-decks/cli`). `test/source-structure.test.ts` enforces this boundary.
 - `hono-decks.config.ts` is build-only (`mountPath` + `build`). The compiler embeds `mountPath` in the generated module, whose `createDecks(options)` takes all runtime options.
-- Two integrations: the CLI writes `src/generated/` for Wrangler apps (gitignored), and the Vite plugin serves the same modules virtually as `virtual:hono-decks` (plus `virtual:hono-decks/honox`).
+- Two integrations: CLI init registers `#decks` and writes compiler-owned modules to the ignored `.hono-decks/` cache (explicit legacy output directories remain supported), and the Vite plugin serves the same modules virtually as `virtual:hono-decks` (plus `virtual:hono-decks/honox`).
 - `examples/*` and `docs` consume the workspace package like an app would. `examples/void` and `fixtures/*` install published or packed builds and are verified by `scripts/verify-*.mjs`.
 
 ## Conventions & Patterns
@@ -124,3 +124,7 @@ bun run format                              # apply formatting (enforced by `vp 
 - Conventional Commits drive semantic-release; PRs are squash-merged, so the final squash message decides the release (`feat!:` / `BREAKING CHANGE:` for majors).
 - Router options merge with one rule: objects merge recursively, arrays concatenate, other values (including `false` and functions) replace.
 - HTML routes defer missing decks and disabled surfaces to the host app's `notFound` handler.
+
+Basic, Minimal, and OGP use `cf dev/build/deploy` with `cloudflare.config.ts`. Production identities are selected with `--mode production`. Their `wrangler.config.ts` contains the cf bundler hooks; Wrangler remains an implementation dependency. Runtime options live in `decks/index.ts`.
+
+Generic CLI init keeps build settings in `decks/config.ts` and runtime settings in `decks/index.ts`. package.json `hono-decks.configFile` records the build config path, so ordinary compile commands need no path argument. Explicit `--config` takes precedence; existing root configs still work.

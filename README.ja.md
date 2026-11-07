@@ -8,6 +8,10 @@
 
 Hono / Cloudflare Workers で MDX の slide deck を配信するための monorepo です。MDX は CLI で TypeScript module に変換され、Worker は生成済み module だけを読み込みます。
 
+CLIのinitは `decks/index.ts` を作り、package.jsonに `#decks` を登録します。中間コードはGit管理しない内部キャッシュ `.hono-decks/` に保存し、既存のdev/build/typecheck/test/deployコマンドの前にコンパイルを追加します。Viteは引き続きメモリ上の仮想モジュールを使います。独自ビルド向けの `build.outDir` 指定も維持しています。Basic・Minimal・OGPは `cf dev/build/deploy` を使い、`wrangler.config.ts` はcfが使うビルド処理の設定だけを保持します。
+
+cfのサンプルはデッキ編集時にローカルWorkerを再ビルドします。現行のcfはWranglerの `--live-reload` を受け付けないため、ブラウザは再読み込みしてください。Viteのライブ更新は維持しています。
+
 ## 最短の導入
 
 ```bash
@@ -16,24 +20,24 @@ bunx hono-decks init
 bunx hono-decks compile
 ```
 
-`init` は次の 3 ファイルを作り、`.gitignore` に `/src/generated/` を追加します。
+`init` は次の 3 ファイルを作り、`.gitignore` に `/.hono-decks/` を追加します。
 
 ```ts
-// hono-decks.config.ts — CLI と Vite plugin だけが読むビルド設定
+// decks/config.ts — CLI と Vite plugin だけが読むビルド設定
 import { defineDecksConfig } from "hono-decks";
 
 export default defineDecksConfig({
   mountPath: "/decks",
   build: {
     root: "decks",
-    outDir: "src/generated",
+    outDir: ".hono-decks",
   },
 });
 ```
 
 ```ts
-// src/decks.ts — ランタイムのオプションはここに書く
-import { createDecks } from "./generated/decks";
+// decks/index.ts — ランタイムのオプションはここに書く
+import { createDecks } from "#decks";
 
 export const decks = createDecks();
 ```
@@ -51,7 +55,7 @@ title: Welcome
 ```ts
 // src/index.ts
 import { Hono } from "hono";
-import { decks } from "./decks";
+import { decks } from "../decks";
 
 const app = new Hono();
 app.get("/", (c) => c.redirect(decks.paths("welcome").viewer));
@@ -120,7 +124,7 @@ createDecks({
 }
 ```
 
-これでdeck変更時に自動compileされます。ブラウザも自動更新するため、dev scriptでは`wrangler dev --live-reload`を使います。生成ファイルは dev・build・typecheck のたびに作り直されるため、`src/generated/` はGitで管理しません。
+これでdeck変更時に自動compileされます。ブラウザも自動更新するため、dev scriptでは`wrangler dev --live-reload`を使います。生成ファイルは dev・build・typecheck のたびに作り直されるため、`.hono-decks/` はGitで管理しません。
 
 HonoXやViteを使う場合は `hono-decks init --framework hono`(または `honox`、`void`)を実行するか、pluginを追加します。pluginは生成モジュールをメモリ上に保持して `virtual:hono-decks` として公開し、ディスクには書き出しません。
 
@@ -153,7 +157,7 @@ config を別名にした場合だけ `hono-decks compile --config path/to/confi
 ```ts
 // src/decks.ts
 import type { DeckBrowserRunBinding } from "hono-decks";
-import { createDecks } from "./generated/decks";
+import { createDecks } from "#decks";
 
 interface AppEnv {
   Bindings: {

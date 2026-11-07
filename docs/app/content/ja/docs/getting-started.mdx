@@ -51,7 +51,7 @@ VoidでMDXを使う構成は、[Voidの実例](/docs/examples?lang=ja#void)で�
 
 ## パッケージを追加し、設定ファイルを作る
 
-以下の例ではnpmを使います。`init`を実行すると、ビルド専用の`hono-decks.config.ts`、実行時の設定を書く`src/decks.ts`、サンプルのデッキが作られ、`.gitignore`に`src/generated/`が追加されます。既存のファイルは上書きされません。
+以下の例ではnpmを使います。`init`を実行すると、ビルド専用の`decks/config.ts`、実行時の設定を書く`decks/index.ts`、サンプルのデッキが作られ、`.gitignore`に`.hono-decks/`が追加されます。既存のファイルは上書きされません。
 
 <CodeBlock filename={"Terminal"} language={"bash"} code={"npm install hono-decks\nnpx hono-decks init"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
@@ -74,28 +74,21 @@ VoidでMDXを使う構成は、[Voidの実例](/docs/examples?lang=ja#void)で�
 
 <CodeBlock filename={"decks/welcome/deck.mdx"} language={"mdx"} code={"---\ntitle: Welcome\ndescription: My first hono-decks presentation\n---\n\n---\nlayout: cover\n---\n\n# Welcome\n\nThis deck is served from my Hono app.\n\n---\n\n## Next slide\n\n- Write slides in MDX\n- Serve them with Hono"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
-MDXをHono JSXモジュールへ変換します。成功すると`src/generated/`が作成されます。
+MDXをHono JSXモジュールへ変換します。成功すると`.hono-decks/`が作成されます。
 
 <CodeBlock filename={"Terminal"} language={"bash"} code={"npx hono-decks compile"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
 **生成されるファイル**
 
-<FileTree label={"生成されるファイル"}>
-  <File name={"hono-decks.config.ts"} />
+<FileTree label={"Source files"}>
+  <File name={"decks/config.ts"} />
   <Folder name={"decks"}>
-    <Folder name={"welcome"}>
-      <File name={"deck.mdx"} />
-    </Folder>
-  </Folder>
-  <Folder name={"src"}>
-    <File name={"decks.ts"} />
-    <Folder name={"generated"}>
-      <File name={"decks.ts"} highlighted />
-    </Folder>
+    <File name={"index.ts"} />
+    <Folder name={"welcome"}><File name={"deck.mdx"} /></Folder>
   </Folder>
 </FileTree>
 
-`hono-decks.config.ts`はCLIだけが読むビルド設定です。アプリ側で管理する`src/decks.ts`と`deck.mdx`は編集してかまいません。一方、`src/generated/`はコンパイルのたびに上書きされるため、直接編集もコミットもしないでください。
+`decks/config.ts`はCLIだけが読むビルド設定です。アプリ側で管理する`decks/index.ts`と`deck.mdx`は編集してかまいません。一方、`.hono-decks/`はコンパイルのたびに上書きされるため、直接編集もコミットもしないでください。
 
 </section>
 
@@ -105,7 +98,7 @@ MDXをHono JSXモジュールへ変換します。成功すると`src/generated/
 
 生成したルーターを、既存のHonoアプリの`/decks`配下に登録します。
 
-<CodeBlock filename={"TypeScript"} language={"typescript"} code={"// src/index.ts\nimport { Hono } from \"hono\"\nimport { decks } from \"./decks\"\n\nconst app = new Hono()\napp.route(decks.mountPath, decks.router())\n\nexport default app"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+<CodeBlock filename={"TypeScript"} language={"typescript"} code={"// src/index.ts\nimport { Hono } from \"hono\"\nimport { decks } from \"../decks\"\n\nconst app = new Hono()\napp.route(decks.mountPath, decks.router())\n\nexport default app"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
 `decks.mountPath`は設定ファイルの値から生成されるため、コンパイル時と実行時で公開パスがずれません。別のパスにルーターを登録すると、分かりやすいエラーになります。
 
@@ -113,21 +106,13 @@ MDXをHono JSXモジュールへ変換します。成功すると`src/generated/
 
 <section id={"scripts"}>
 
-## 普段の開発コマンドにコンパイルを組み込む
+## 普段の開発コマンドで起動する
 
-汎用ファイル生成方式でViteを使う場合は、既存のVite設定へプラグインを追加します。プラグインは起動前にコンパイルし、デッキの変更を監視します。上記のフレームワーク別initではViteの設定が自動で追加され、仮想モジュールを使用します。Viteでは安全に差し替えられる内容の編集時に、表示と対応するIslandの状態を維持します。クライアントコードの変更時や安全に差し替えられない場合は表示用iframeを再読み込みし、Islandの状態をリセットしてスライドとステップを復元します。viewerは開いたままです。
+CLIのinitはpackage.jsonに `#decks` を登録し、既存のdev/build/typecheck/test/deployコマンドの前にコンパイルを追加します。内部キャッシュ `.hono-decks/` の編集やコミットは不要です。
 
-Viteの開発中はHMRのようなライブ更新で、対応する本文やIslandのpropsの変更、区別できるIslandの追加・削除・並べ替えでも状態を維持します。同じIslandを区別できない場合や更新データを取得できない場合などはiframeを再読み込みします。詳しい条件は[READMEの開発フロー](https://github.com/ts-76/hono-decks/blob/main/packages/decks/README.ja.md#development-integration)を参照してください。
+cfのプロジェクトでは、`wrangler.config.ts` にコンパイルのフックを設定すると、`cf dev` がデッキの編集も検知します。Minimalサンプルを参照してください。既存のWranglerプロジェクトは [Cloudflareの移行手順](https://developers.cloudflare.com/cf/wrangler/migrate/) を先に実施します。Viteは `virtual:hono-decks` を使い、このキャッシュを書き出しません。
 
-<CodeBlock filename={"vite.config.ts"} language={"typescript"} code={"import { honoDecks } from \"hono-decks/vite\"\nimport { defineConfig } from \"vite\"\n\nexport default defineConfig({\n  plugins: [honoDecks()],\n})"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
-
-<CodeBlock filename={"package.json"} language={"jsonc"} code={"{\n  \"scripts\": {\n    \"dev\": \"vite\",\n    \"build\": \"vite build\"\n  }\n}"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
-
-Wranglerを直接使うCloudflare Workerでは、`wrangler.jsonc`のカスタムビルドへ登録します。`--live-reload`を付けると、普段の開発コマンドだけでデッキの変更監視とブラウザ更新まで行えます。
-
-<CodeBlock filename={"wrangler.jsonc"} language={"jsonc"} code={"{\n  \"build\": {\n    \"command\": \"hono-decks compile\",\n    \"watch_dir\": [\"decks\"]\n  }\n}"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
-
-<CodeBlock filename={"package.json"} language={"jsonc"} code={"{\n  \"scripts\": {\n    \"dev\": \"wrangler dev --live-reload\"\n  }\n}"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+<CodeBlock filename={"package.json"} language={"jsonc"} code={"{\n  \"imports\": {\n    \"#decks\": \"./.hono-decks/decks.ts\"\n  },\n  \"scripts\": {\n    \"dev\": \"hono-decks compile && cf dev\",\n    \"build\": \"hono-decks compile && cf build\"\n  }\n}"} />
 
 </section>
 
@@ -151,7 +136,7 @@ Wranglerを直接使うCloudflare Workerでは、`wrangler.jsonc`のカスタム
 
 ## うまくいかないとき
 
-<DefinitionList items={[{term: <><code>{"src/generated/decks.ts"}</code>{"がない"}</>, description: <><code>{"npx hono-decks compile"}</code>{"を再実行し、設定ファイルの"}<code>{"build.root"}</code>{"と"}<code>{"build.outDir"}</code>{"を確認します。"}</>},
+<DefinitionList items={[{term: <><code>{".hono-decks/decks.ts"}</code>{"がない"}</>, description: <><code>{"npx hono-decks compile"}</code>{"を再実行し、設定ファイルの"}<code>{"build.root"}</code>{"と"}<code>{"build.outDir"}</code>{"を確認します。"}</>},
 {term: <><code>{"/decks"}</code>{"が404になる"}</>, description: <><code>{"app.route(decks.mountPath, decks.router())"}</code>{"になっているか確認します。"}</>},
 {term: <>{"WorkerのビルドにNode.js用モジュールが含まれる"}</>, description: <>{"実行時APIは"}<code>{"hono-decks"}</code>{"から読み込みます。"}<code>{"hono-decks/node"}</code>{"はコンパイル用スクリプトだけで使用してください。"}</>}]} />
 

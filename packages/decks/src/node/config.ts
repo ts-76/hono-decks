@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
@@ -17,11 +17,17 @@ export interface LoadedDecksConfig {
 }
 
 export async function loadDecksConfig(input: { cwd: string; configFile?: string }): Promise<LoadedDecksConfig> {
-  const path = resolve(input.cwd, input.configFile ?? DEFAULT_DECKS_CONFIG_FILE);
+  const packagePath = resolve(input.cwd, "package.json");
+  const packageConfig = existsSync(packagePath)
+    ? JSON.parse(readFileSync(packagePath, "utf8"))["hono-decks"]?.configFile
+    : undefined;
+  if (input.configFile === undefined && packageConfig !== undefined && typeof packageConfig !== "string") {
+    throw new Error("package.json hono-decks.configFile must be a string");
+  }
+  const configFile = input.configFile ?? packageConfig ?? DEFAULT_DECKS_CONFIG_FILE;
+  const path = resolve(input.cwd, configFile);
   if (!existsSync(path)) {
-    throw new Error(
-      `Config file not found: ${input.configFile ?? DEFAULT_DECKS_CONFIG_FILE}. Run \`hono-decks init\` first.`,
-    );
+    throw new Error(`Config file not found: ${configFile}. Run \`hono-decks init\` first.`);
   }
 
   const result = await build({

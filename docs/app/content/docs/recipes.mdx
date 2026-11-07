@@ -46,7 +46,7 @@ Use Cloudflare Browser Run Quick Actions through a browser binding to return the
 
 The next example assumes an earlier session or Cloudflare Access validation middleware has set `deckExportAllowed`.
 
-<CodeBlock filename={"src/decks.ts"} language={"typescript"} code={"// src/decks.ts\nimport type { DeckBrowserRunBinding } from \"hono-decks\"\nimport { createDecks } from \"./generated/decks\"\n\ntype AppEnv = {\n  Bindings: {\n    BROWSER: DeckBrowserRunBinding\n  }\n  Variables: {\n    deckExportAllowed: boolean\n  }\n}\n\nexport const decks = createDecks<AppEnv>({\n  export: {\n    browser: ({ c }) => c.env.BROWSER,\n    authorize: ({ c }) => c.get(\"deckExportAllowed\") === true,\n    pdf: true,\n    png: true,\n  },\n})"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
+<CodeBlock filename={"src/decks.ts"} language={"typescript"} code={"// src/decks.ts\nimport type { DeckBrowserRunBinding } from \"hono-decks\"\nimport { createDecks } from \"#decks\"\n\ntype AppEnv = {\n  Bindings: {\n    BROWSER: DeckBrowserRunBinding\n  }\n  Variables: {\n    deckExportAllowed: boolean\n  }\n}\n\nexport const decks = createDecks<AppEnv>({\n  export: {\n    browser: ({ c }) => c.env.BROWSER,\n    authorize: ({ c }) => c.get(\"deckExportAllowed\") === true,\n    pdf: true,\n    png: true,\n  },\n})"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
 
 | Route / API | Purpose |
 | --- | --- |

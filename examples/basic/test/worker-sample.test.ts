@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vite-plus/test";
 import { Badge } from "../decks/sample/components";
-import { decks } from "../src/decks";
+import { decks } from "../decks";
 
 async function sampleApp() {
   return (await import("../src/index")).default;
@@ -19,8 +19,8 @@ describe("sample Worker app", () => {
 
   it("keeps generated deck imports behind a sample facade", async () => {
     const entrySource = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
-    const facadeSource = await readFile(new URL("../src/decks.ts", import.meta.url), "utf8");
-    const configSource = await readFile(new URL("../hono-decks.config.ts", import.meta.url), "utf8");
+    const facadeSource = await readFile(new URL("../decks/index.ts", import.meta.url), "utf8");
+    const configSource = await readFile(new URL("../decks/config.ts", import.meta.url), "utf8");
     const packageSource = await readFile(new URL("../package.json", import.meta.url), "utf8");
     const pagesSource = await readFile(new URL("../src/pages.tsx", import.meta.url), "utf8");
 
@@ -33,7 +33,7 @@ describe("sample Worker app", () => {
     expect(entrySource).not.toContain("DeckBrowserRunBinding");
     expect(entrySource).not.toContain("pdf: true");
     expect(entrySource).toContain("decks.mountPath");
-    expect(facadeSource).toContain('import { createDecks } from "./generated/decks"');
+    expect(facadeSource).toContain('import { createDecks } from "#decks"');
     expect(facadeSource).toContain("export const decks = createDecks<DecksEnv>({");
     expect(facadeSource).not.toContain("hono-decks.config");
     expect(facadeSource).not.toContain("c.env as");

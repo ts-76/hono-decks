@@ -2,7 +2,7 @@ import { existsSync, watch } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { compileDecks } from "./index";
-import { DEFAULT_DECKS_CONFIG_FILE, loadDecksConfig } from "./config";
+import { loadDecksConfig } from "./config";
 
 export interface RunHonoDecksCliInput {
   argv: string[];
@@ -45,15 +45,16 @@ const USAGE = `Usage:
   hono-decks compile [--config <file>] [--watch] [--refresh-ogp]
 
 Commands:
-  init      Create hono-decks.config.ts, the app-owned src/decks.ts, and a sample deck.
+  init      Create decks/config.ts, the app-owned decks/index.ts, and a sample deck.
             Without --framework, decks are compiled to files by \`hono-decks compile\`
-            (wire it into Wrangler's build.command). With --framework, the existing
+            (existing app scripts are prepared; add a source watcher hook as needed).
+            With --framework, the existing
             Vite config gets the honoDecks() plugin and no compile step is needed.
   compile   Compile decks to the build.outDir from the config. Alias: build.
 
 Options:
-  --config <file>          Config file. Default: hono-decks.config.ts
-  --out <file>             init: app-owned decks module. Default: src/decks.ts
+  --config <file>          Config file. init: decks/config.ts; compile: package metadata or hono-decks.config.ts
+  --out <file>             init: app-owned decks module. Default: decks/index.ts
   --framework <name>       init: integrate with an existing Vite app (hono, honox, or void).
   --entry <file>           init --framework hono: Hono app entry. Default: auto-detect.
   --install                init --framework void: install missing dependencies.
@@ -207,12 +208,14 @@ async function runInitCommand(
     }
   }
 
-  const configFile = normalizeOutputFile(parsed.options.configFile ?? DEFAULT_DECKS_CONFIG_FILE);
-  const out = normalizeOutputFile(parsed.options.out ?? "src/decks.ts");
+  const configFile = normalizeOutputFile(parsed.options.configFile ?? "decks/config.ts");
+  const out = normalizeOutputFile(parsed.options.out ?? "decks/index.ts");
   try {
     const created = await writeInitialFiles({ cwd: input.cwd, configFile, out });
     stdout(`Created ${created.join(", ")}.`);
-    stdout("Next: run `hono-decks compile`, then mount it with app.route(decks.mountPath, decks.router()).");
+    stdout(
+      "Next: mount with app.route(decks.mountPath, decks.router()) and run your usual dev/build command. Custom builds can run `hono-decks compile`.",
+    );
     return { exitCode: 0 };
   } catch (error) {
     stderr(error instanceof Error ? error.message : String(error));
@@ -282,22 +285,45 @@ function parseInitArgs(args: string[]): { options: InitCommandOptions; error?: s
   return { options };
 }
 
-const GENERATED_DIR = "src/generated";
+const GENERATED_DIR = ".hono-decks";
 
 async function writeInitialFiles(input: { cwd: string; configFile: string; out: string }): Promise<string[]> {
   for (const path of [input.configFile, input.out]) {
     if (existsSync(join(input.cwd, path))) throw new Error(`Refusing to overwrite existing file: ${path}`);
   }
+  const packagePath = join(input.cwd, "package.json");
+  const manifest = existsSync(packagePath)
+    ? JSON.parse(await readFile(packagePath, "utf8"))
+    : { private: true, type: "module" };
+  const cacheImport = "./" + GENERATED_DIR + "/decks.ts";
+  const existingImport = manifest.imports?.["#decks"];
+  if (existingImport !== undefined && existingImport !== cacheImport) {
+    throw new Error("Refusing to overwrite existing package.json import: #decks");
+  }
+  const existingConfig = manifest["hono-decks"]?.configFile;
+  if (existingConfig !== undefined && existingConfig !== input.configFile) {
+    throw new Error("Refusing to overwrite existing package.json hono-decks.configFile");
+  }
+  manifest["hono-decks"] = { ...manifest["hono-decks"], configFile: input.configFile };
+  manifest.imports = { ...manifest.imports, "#decks": cacheImport };
+  manifest.scripts = { ...manifest.scripts };
+  for (const name of ["dev", "build", "typecheck", "test", "deploy"]) {
+    const command = manifest.scripts[name];
+    if (typeof command === "string" && !command.includes("hono-decks compile")) {
+      manifest.scripts[name] = "hono-decks compile && " + command;
+    }
+  }
   const files = [
     { path: input.configFile, content: emitDecksConfig() },
-    { path: input.out, content: emitDecksFacade(relativeImport(input.out, `${GENERATED_DIR}/decks.ts`)) },
+    { path: input.out, content: emitDecksFacade("#decks") },
   ];
   if (!existsSync(join(input.cwd, "decks"))) files.push({ path: "decks/welcome/deck.mdx", content: SAMPLE_DECK });
   for (const file of files) {
     await mkdir(join(input.cwd, dirname(file.path)), { recursive: true });
     await writeFile(join(input.cwd, file.path), file.content, "utf8");
   }
-  const created = files.map((file) => file.path);
+  await writeFile(packagePath, JSON.stringify(manifest, null, 2) + "\n", "utf8");
+  const created = [...files.map((file) => file.path), "package.json"];
   if (await ignoreGeneratedDirectory(input.cwd)) created.push(".gitignore");
   return created;
 }
@@ -315,7 +341,7 @@ async function ignoreGeneratedDirectory(cwd: string): Promise<boolean> {
 function emitDecksConfig(): string {
   return `import { defineDecksConfig } from "hono-decks";
 
-// Build-only settings read by \`hono-decks compile\`. Runtime options belong in src/decks.ts.
+// Build-only settings read by \`hono-decks compile\`. Runtime options belong in the app-owned decks module.
 export default defineDecksConfig({
   mountPath: "/decks",
   build: {
@@ -348,11 +374,6 @@ Edit decks/welcome/deck.mdx to write your slides.
 
 Separate slides with a line containing only three dashes.
 `;
-
-function relativeImport(fromFile: string, toFile: string): string {
-  const path = normalizePath(relative(dirname(fromFile), toFile)).replace(/\.(?:[cm]?[jt]sx?)$/, "");
-  return path.startsWith(".") ? path : `./${path}`;
-}
 
 function normalizeOutputFile(path: string): string {
   const normalized = normalizePath(path).replace(/\/$/, "");

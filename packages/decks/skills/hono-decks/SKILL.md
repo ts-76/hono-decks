@@ -47,7 +47,7 @@ If the request is simply “make a deck,” read Authoring MDX and Styling. If i
 Wrong:
 
 ```ts
-// src/generated/decks.ts
+// .hono-decks/decks.ts
 // Hand-edit the generated manifest or routes.
 ```
 
@@ -60,7 +60,7 @@ Wrong:
 ```ts
 import { compileDecks } from "hono-decks/node";
 
-app.get("/decks", async (c) => c.json(await compileDecks({ cwd: ".", root: "decks", out: "src/generated" })));
+app.get("/decks", async (c) => c.json(await compileDecks({ cwd: ".", root: "decks", out: ".hono-decks" })));
 ```
 
 Correct:
@@ -129,7 +129,7 @@ Wrong: add `Access-Control-Allow-Origin` and leave `router.embed` without a pare
 Correct:
 
 ```ts
-import { createDecks } from "./generated/decks";
+import { createDecks } from "#decks";
 
 export const decks = createDecks({
   embed: { frameAncestors: ["https://blog.example.com"] },
@@ -143,7 +143,7 @@ Iframe navigation uses CSP `frame-ancestors`, not CORS.
 Wrong:
 
 ```ts
-import { createDecks } from "./generated/decks";
+import { createDecks } from "#decks";
 
 export const decks = createDecks({
   export: {

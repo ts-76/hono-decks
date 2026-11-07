@@ -11,7 +11,7 @@ bun install --frozen-lockfile
 bun run --cwd examples/basic dev
 ```
 
-Open these routes after Wrangler starts:
+Open these routes after cf starts:
 
 - `/` — application home page
 - `/decks` — the deck index
@@ -25,7 +25,7 @@ Use `?lang=ja` or `?lang=en` to switch the application and deck surfaces between
 
 ## Optional bindings
 
-The local Wrangler config declares the bindings used by the sample:
+The development mode in `cloudflare.config.ts` declares the bindings used by the sample:
 
 - `DECK_ASSETS` — R2 bucket for generated assets; assets fall back to embedded responses when the binding is unavailable.
 - `BROWSER` — Cloudflare Browser Rendering for PDF and PNG export.
@@ -33,12 +33,7 @@ The local Wrangler config declares the bindings used by the sample:
 - `DECK_EMBED_ALLOWED_ORIGINS` — origins allowed by the embed route's `frame-ancestors` policy.
 - `DECK_PRESENTER_ENABLED` — enables the presenter route outside development.
 
-Set secrets with Wrangler rather than placing them in `wrangler.jsonc`:
-
-```bash
-bunx wrangler secret put DECK_EXPORT_TOKEN
-bunx wrangler secret put DECK_EMBED_ALLOWED_ORIGINS
-```
+Store secrets through `cf workers secrets update` using its documented input options. Keep tokens out of source configuration and shell history. The configuration declares binding names, not secret values.
 
 The production config is an example deployment configuration. Replace its account, domain, and resource names with values owned by your Cloudflare account before deploying. Add the `DECK_ASSETS` R2 binding to the production config when the deployed sample should exercise R2 rather than embedded assets.
 
@@ -59,8 +54,14 @@ The repository's manual `Browser Run smoke` workflow reads the origin and token 
 
 ## What to inspect
 
-- `hono-decks.config.ts` — build-only settings (mount path, deck root, output directory)
-- `src/decks.ts` — runtime options passed to the generated `createDecks()`
+- `decks/config.ts` — build-only settings (mount path, deck root, output directory)
+- `decks/index.ts` — runtime options passed to the generated `createDecks()`
 - `src/index.ts` — normal Hono routes alongside `app.route(decks.mountPath, decks.router())`
 - `decks/*/components` — server components and browser islands
 - `test/worker-sample.test.ts` — route, security, R2, embed, presenter, locale, and export expectations
+
+## cf configuration
+
+Use `cf dev`, `cf build`, and `cf deploy`. Use `cf deploy --mode production` only for the maintained public sample. `cloudflare.config.ts` owns the Worker, production account/domain, and bindings. `wrangler.config.ts` configures the bundler delegated to by cf, including the deck compilation watcher. The ignored `.hono-decks/` cache is recreated automatically; app-owned settings live in `decks/index.ts` and import `#decks`.
+
+The current cf Wrangler backend rebuilds the local Worker on source changes but does not accept the old `--live-reload` flag. Refresh the browser after edits; Vite integrations retain their existing live updates.
