@@ -2,7 +2,7 @@
 
 Void のルートから hono-decks を配信し、トップページに同一オリジンの iframe でスライドを埋め込みます。公開先は `https://void.hono-decks.com` です。`https://hono-decks.com` のドキュメントからも埋め込めます。
 
-ソースは [hono-decks の examples/void](https://github.com/ts-76/hono-decks/tree/main/examples/void) で管理します。公開済み Worker とドメインは維持し、この配置変更によるデプロイは行いません。
+ソースは [hono-decks の examples/void](https://github.com/ts-76/hono-decks/tree/main/examples/void) で管理します。hono-decks 2.0.0を使用し、既存のWorkerとドメイン、公開URLを維持します。
 
 ## 起動と確認
 
@@ -23,12 +23,12 @@ Void 1.5.0 の Drizzle CLI が依存する `@esbuild-kit/core-utils` に限り�
 ## 構成と埋め込み
 
 - `decks/welcome/deck.mdx`: スライドの内容。Vite プラグインが開発時に変更を監視します。
-- `hono-decks.config.ts`: マウントパス、コンパイル先、埋め込み設定。
-- `lib/decks.ts`: 生成済みデッキと Hono ルーターを接続。
+- `hono-decks.config.ts`: ビルド専用のマウントパスとコンパイル先。
+- `lib/decks.ts`: 仮想モジュールのcreateDecks()で埋め込み・ページ設定を指定し、Honoルーターを接続。
 - `routes/slides/[...path].ts`: Void の catch-all から Hono ルーターへリクエストを渡す。
 - `routes/index.ts`: `decks.paths()` で取得した相対 URL を iframe に指定。
 
-`npm run typecheck` は `void prepare` で `.void/tsconfig.json` を用意し、デッキを `lib/generated` へ生成してから型検査します。開発・ビルド時は `hono-decks/vite` が仮想モジュールを生成します。生成物は直接編集しません。
+`npm run typecheck` は `void prepare` で `.void/tsconfig.json` を用意し、仮想モジュールの型を使って型検査します。開発・ビルド時は `hono-decks/vite` が仮想モジュールを生成します。生成物は直接編集しません。
 
 埋め込み用の `/slides/welcome/embed` は CSP の `frame-ancestors` で自サイトと `https://hono-decks.com` だけを許可します。他のサブドメインや任意の外部サイトは許可しません。CSP はブラウザの埋め込み制限であり、公開スライドへのアクセス認証ではありません。プレゼンター、印刷、プレゼンテーション、エクスポートは提供しません。
 
