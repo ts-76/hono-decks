@@ -3,6 +3,8 @@ import { defineConfig } from "vite-plus";
 export default defineConfig({
   fmt: {
     ignorePatterns: [
+      // Byte-pinned release inputs; formatting changes invalidate their policy hashes.
+      "scripts/release/npm-publisher-lock.json",
       ".agents/**",
       ".beads/**",
       ".claude/**",

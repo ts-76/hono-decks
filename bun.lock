@@ -112,7 +112,7 @@
       "name": "hono-decks",
       "version": "0.5.0",
       "bin": {
-        "hono-decks": "dist/bin.js",
+        "hono-decks": "bin/hono-decks.js",
       },
       "dependencies": {
         "@babel/parser": "^8.1.0",
