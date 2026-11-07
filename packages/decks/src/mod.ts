@@ -8,7 +8,7 @@ export type {
 } from "./server/define-decks";
 export { createDeckPaths } from "./server/paths";
 export type { DeckPaths } from "./server/paths";
-export { createDeckViewerEmbed } from "./server/router";
+export { createDeckViewerEmbed, X_PLAYER_FRAME_ANCESTORS } from "./server/router";
 export type {
   DeckBrowserRunBinding,
   DeckBrowserRunPdfOptions,
@@ -60,6 +60,7 @@ export type {
   DeckViewerParts,
   DeckViewerRenderControlItem,
   DeckViewerRenderInput,
+  DeckViewerTwitterPlayerOptions,
   DecksClientOptions,
   DecksRouterExtension,
   DecksRouterPagesOptions,

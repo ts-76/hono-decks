@@ -192,7 +192,7 @@ function renderPrintPreviewScript(nonce?: string): string {
   </script>`;
 }
 
-function mergeComponentInputs(
+export function mergeComponentInputs(
   base: Record<string, SlideComponentInput> | undefined,
   overrides: SlideComponentRegistry | Record<string, SlideComponentInput> | undefined,
 ): Record<string, SlideComponentInput> | SlideComponentRegistry | undefined {

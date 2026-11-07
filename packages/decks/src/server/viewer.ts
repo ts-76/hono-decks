@@ -30,6 +30,39 @@ export interface DeckViewerOptions<E extends Env = any> {
 export interface DeckViewerOpenGraphOptions {
   /** Public image URL. Defaults to `paths.ogImage` when Open Graph metadata is enabled. */
   imagePath?: string | ((input: DeckViewerOpenGraphInput) => MaybePromise<string | undefined>);
+  /**
+   * Emit an X (Twitter) Player Card that plays the deck's `embed` route inside
+   * posts. Requires the router `embed` option and HTTPS. X plays player cards
+   * inline only for domains it has approved; elsewhere it shows the image.
+   */
+  twitterPlayer?: boolean | DeckViewerTwitterPlayerOptions;
+}
+
+export interface DeckViewerTwitterPlayerOptions {
+  /** Player width in pixels. X uses width and height for the aspect ratio. @default 1280 */
+  width?: number;
+  /** Player height in pixels. @default 720 */
+  height?: number;
+}
+
+/** Origins X uses to frame player cards on the web and in its apps. */
+export const X_PLAYER_FRAME_ANCESTORS = [
+  "https://x.com",
+  "https://twitter.com",
+  "https://mobile.x.com",
+  "https://mobile.twitter.com",
+] as const;
+
+export function resolveTwitterPlayerOptions(
+  openGraph: boolean | DeckViewerOpenGraphOptions | undefined,
+): Required<DeckViewerTwitterPlayerOptions> | undefined {
+  if (!openGraph || openGraph === true || !openGraph.twitterPlayer) return undefined;
+  const options = openGraph.twitterPlayer === true ? {} : openGraph.twitterPlayer;
+  return { width: positiveSize(options.width, 1280), height: positiveSize(options.height, 720) };
+}
+
+function positiveSize(value: number | undefined, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? Math.round(value) : fallback;
 }
 
 export interface DeckViewerOpenGraphInput {
@@ -43,6 +76,7 @@ export type DeckViewerControlKey =
   | "position"
   | "next"
   | "fullscreen"
+  | "overview"
   | "print"
   | "exportPdf"
   | "exportPng";
@@ -85,6 +119,7 @@ export interface DeckViewerControlDefaults {
   position: DeckViewerDefaultControlItem;
   next: DeckViewerDefaultControlItem;
   fullscreen: DeckViewerDefaultControlItem;
+  overview: DeckViewerDefaultControlItem | null;
   print: DeckViewerDefaultControlItem | null;
   exportPdf: DeckViewerDefaultControlItem | null;
   exportPng: DeckViewerDefaultControlItem | null;
@@ -92,6 +127,7 @@ export interface DeckViewerControlDefaults {
 
 export interface DeckViewerAvailablePages {
   print: boolean;
+  overview: boolean;
 }
 
 export interface DeckViewerControlsContext {
@@ -212,7 +248,10 @@ export async function createDeckViewerParts(input: {
     title,
     description: input.deck.meta.description,
     paths,
-    availablePages: { print: input.availablePages?.print !== false },
+    availablePages: {
+      print: input.availablePages?.print !== false,
+      overview: input.availablePages?.overview !== false,
+    },
     availableExports: input.exportPaths ?? {},
     ...(imagePath ? { imagePath } : {}),
   };
@@ -272,6 +311,8 @@ export async function renderDeckViewerPage<E extends Env = any>(input: {
   availablePages?: Partial<DeckViewerAvailablePages>;
   exportOptions?: false | DeckExportOptions<E>;
   document?: DeckDocumentOptions<E>;
+  /** False when the embed route that a Player Card points to is unavailable. */
+  twitterPlayer?: boolean;
 }): Promise<string> {
   const parts = await createDeckViewerParts({
     deck: input.deck,
@@ -330,7 +371,11 @@ export async function renderDeckViewerPage<E extends Env = any>(input: {
     { head: viewerHead, lang: viewerLang, nonce: viewerNonce },
   );
   const nonceAttribute = documentNonceAttribute(document.nonce);
-  const socialHead = renderViewerSocialHead(input.c, parts.meta);
+  const socialHead = renderViewerSocialHead(
+    input.c,
+    parts.meta,
+    input.twitterPlayer === false ? undefined : resolveTwitterPlayerOptions(input.viewer?.openGraph),
+  );
 
   return `<!doctype html>
 <html lang="${escapeHtml(document.lang)}">
@@ -359,7 +404,11 @@ async function resolveOpenGraphImagePath(
   return options.imagePath ?? input.paths.ogImage;
 }
 
-function renderViewerSocialHead<E extends Env>(c: Context<E>, meta: DeckPageMeta): string {
+function renderViewerSocialHead<E extends Env>(
+  c: Context<E>,
+  meta: DeckPageMeta,
+  player?: Required<DeckViewerTwitterPlayerOptions>,
+): string {
   if (!meta.imagePath) return "";
   const pageUrl = new URL(meta.paths.viewer, c.req.url).href;
   const imageUrl = new URL(meta.imagePath, c.req.url).href;
@@ -374,9 +423,16 @@ function renderViewerSocialHead<E extends Env>(c: Context<E>, meta: DeckPageMeta
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="${escapeHtml(meta.title)}" />
-  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:card" content="${player ? "player" : "summary_large_image"}" />
   <meta name="twitter:title" content="${escapeHtml(meta.title)}" />
-  <meta name="twitter:image" content="${escapeHtml(imageUrl)}" />`;
+  <meta name="twitter:image" content="${escapeHtml(imageUrl)}" />${
+    player
+      ? `
+  <meta name="twitter:player" content="${escapeHtml(new URL(meta.paths.embed, c.req.url).href)}" />
+  <meta name="twitter:player:width" content="${player.width}" />
+  <meta name="twitter:player:height" content="${player.height}" />`
+      : ""
+  }`;
 }
 
 function createDeckToc(deck: CompiledDeck): DeckTocItem[] {
@@ -492,6 +548,7 @@ function buildViewerControlDefaults(context: DeckViewerControlsContext): DeckVie
     position: { type: "default", key: "position" },
     next: { type: "default", key: "next" },
     fullscreen: { type: "default", key: "fullscreen" },
+    overview: context.meta.availablePages.overview ? { type: "default", key: "overview" } : null,
     print: context.meta.availablePages.print ? { type: "default", key: "print" } : null,
     exportPdf: context.meta.availableExports.pdf ? { type: "default", key: "exportPdf" } : null,
     exportPng: context.meta.availableExports.png ? { type: "default", key: "exportPng" } : null,
@@ -509,6 +566,7 @@ function resolveViewerControlItems(
     defaults.position,
     defaults.next,
     defaults.fullscreen,
+    defaults.overview,
     defaults.print,
     defaults.exportPdf,
     defaults.exportPng,
@@ -592,6 +650,16 @@ function renderDefaultViewerControlItem(
       return renderIconButton("next", item, itemProps);
     case "fullscreen":
       return renderIconButton("fullscreen", item, itemProps);
+    case "overview":
+      return jsx("a", {
+        ...itemProps,
+        href: context.meta.paths.overview,
+        "data-hono-decks-overview-link": true,
+        ...(item.label === undefined
+          ? { "aria-label": controlIconLabel("overview"), title: controlIconLabel("overview") }
+          : {}),
+        children: item.label ?? renderControlIcon("overview"),
+      });
     case "print":
       return jsx("a", {
         ...itemProps,
@@ -654,6 +722,8 @@ function controlIconNameForKey(key: DeckViewerControlKey): DeckControlIconName {
       return "next";
     case "fullscreen":
       return "fullscreen";
+    case "overview":
+      return "overview";
     case "print":
       return "print";
     case "exportPdf":

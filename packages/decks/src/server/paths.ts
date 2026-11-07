@@ -3,6 +3,7 @@ export interface DeckPaths {
   viewer: string;
   render: string;
   print: string;
+  overview: string;
   presentation: string;
   presenter: string;
   embed: string;
@@ -20,6 +21,7 @@ export function createDeckPaths(mountPath: string, slug: string): DeckPaths {
     viewer,
     render: `${viewer}/render`,
     print: `${viewer}/print`,
+    overview: `${viewer}/overview`,
     presentation: `${viewer}/presentation`,
     presenter: `${viewer}/presenter`,
     embed: `${viewer}/embed`,

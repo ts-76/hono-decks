@@ -4,6 +4,7 @@ import { raw } from "hono/html";
 import { renderCompiledDeckPageAsync } from "../renderer/compiled-render";
 import type { DeckRenderable, MaybePromise } from "../renderer/compiled-render";
 import { renderJsxValue } from "../renderer/jsx-renderer";
+import { renderDeckOverviewPageAsync } from "../renderer/overview-page";
 import { renderPresenterPageAsync } from "../renderer/presentation-page";
 import { RenderError } from "../deck/model";
 import type { CompiledDeck, DeckEntry, DeckSource } from "../deck/model";
@@ -19,6 +20,8 @@ import {
 import {
   createDeckViewerParts,
   renderDeckViewerPage,
+  resolveTwitterPlayerOptions,
+  X_PLAYER_FRAME_ANCESTORS,
   type DeckViewerAvailablePages,
   type DeckViewerControlItem,
   type DeckViewerControlSlotItems,
@@ -61,7 +64,7 @@ export type {
   DeckExternalEmbedRenderInput,
   DeckExternalEmbedViewerOptions,
 } from "./external-embed";
-export { createDeckViewerEmbed, createDeckViewerParts } from "./viewer";
+export { createDeckViewerEmbed, createDeckViewerParts, X_PLAYER_FRAME_ANCESTORS } from "./viewer";
 export type {
   DeckViewerEmbed,
   DeckViewerEmbedOptions,
@@ -86,6 +89,7 @@ export type {
   DeckViewerParts,
   DeckViewerRenderControlItem,
   DeckViewerRenderInput,
+  DeckViewerTwitterPlayerOptions,
 } from "./viewer";
 
 export interface DecksRouterExtension<E extends Env = any> {
@@ -131,7 +135,7 @@ export interface DecksClientOptions {
   bundle?: string;
 }
 
-export type DeckRouteSurface = "index" | "viewer" | "render" | "print" | "presentation" | "presenter";
+export type DeckRouteSurface = "index" | "viewer" | "render" | "print" | "overview" | "presentation" | "presenter";
 
 export interface DeckRouteSurfaceInput<E extends Env = any> {
   c: Context<E>;
@@ -168,6 +172,8 @@ export interface DecksRouterPagesOptions<E extends Env = any> {
   viewer?: DeckRouteEnabled<E>;
   render?: DeckRouteEnabled<E>;
   print?: DeckRouteEnabled<E>;
+  /** Grid of slide thumbnails at `/:slug/overview`. */
+  overview?: DeckRouteEnabled<E>;
   presentation?: DeckRouteEnabled<E>;
   presenter?: DeckRouteEnabled<E>;
 }
@@ -218,12 +224,18 @@ export interface DeckContextOptions<E extends Env = any> {
   source: DeckSource<E>;
   dev?: boolean | DeckDevResolver<E>;
   mountPath?: string;
-  pages?: Pick<DecksRouterPagesOptions<E>, "print">;
+  pages?: Pick<DecksRouterPagesOptions<E>, "print" | "overview">;
   viewer?: Pick<DeckViewerOptions<E>, "controls" | "openGraph">;
 }
 
 export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>): Hono<E> {
   const router = new Hono<E>();
+  const twitterPlayer = resolveTwitterPlayerOptions(options.viewer?.openGraph);
+  if (twitterPlayer && !options.embed) {
+    throw new Error(
+      "hono-decks: viewer.openGraph.twitterPlayer needs the embed option, because the X Player Card frames /:slug/embed. Add embed: {} to the router options.",
+    );
+  }
   const configuredMount = options.mountPath === undefined ? undefined : normalizeMountPath(options.mountPath);
 
   if (configuredMount !== undefined) {
@@ -363,6 +375,36 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
     }
   });
 
+  router.get("/:slug/overview", async (c) => {
+    const slug = c.req.param("slug");
+    const deck = await options.source.getCompiledDeck(c, slug);
+    const dev = await isDevEnabled(c, options);
+    if (!deck || (!dev && deck.meta.draft)) return c.notFound();
+    const mountPath = resolveMountPath(c.req.path, `/${slug}/overview`);
+    if (!(await isPageSurfaceEnabled(options, { c, surface: "overview", mountPath, dev, deck, slug }))) {
+      return c.notFound();
+    }
+    try {
+      const document = await resolveRouterDocument(c, options, "overview", mountPath, deck);
+      return c.html(
+        await renderDeckOverviewPageAsync({
+          deck,
+          viewerPath: createDeckPaths(mountPath, slug).viewer,
+          currentSlide: positiveIntegerParam(c.req.query("slide") ?? null),
+          style: options.style,
+          components: options.components,
+          document,
+        }),
+      );
+    } catch (error) {
+      const message =
+        error instanceof RenderError
+          ? error.message
+          : `Render failed in ${deck.sourcePath}: ${formatErrorMessage(error)}`;
+      return c.text(message, 500);
+    }
+  });
+
   if (isPdfExportEnabled(options.export)) {
     router.get("/:slug/export.pdf", async (c) =>
       renderDeckBrowserExport(c, { ...options, dev: await isDevEnabled(c, options) }, "pdf"),
@@ -391,6 +433,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
         options: embedOptions,
         document: options.document,
         availablePages,
+        additionalFrameAncestors: twitterPlayer ? X_PLAYER_FRAME_ANCESTORS : undefined,
       });
     });
   }
@@ -486,6 +529,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
         availablePages,
         exportOptions: options.export,
         document: options.document,
+        twitterPlayer: Boolean(options.embed),
       }),
     );
   });
@@ -554,6 +598,7 @@ async function resolveViewerAvailablePages<E extends Env>(
 ): Promise<DeckViewerAvailablePages> {
   return {
     print: await isPageSurfaceEnabled(options, { c, surface: "print", mountPath, dev, deck, slug }),
+    overview: await isPageSurfaceEnabled(options, { c, surface: "overview", mountPath, dev, deck, slug }),
   };
 }
 

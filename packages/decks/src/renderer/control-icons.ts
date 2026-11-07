@@ -12,6 +12,7 @@ export type DeckControlIconName =
   | "fullscreen"
   | "external-link"
   | "print"
+  | "overview"
   | "details"
   | "export-pdf"
   | "export-png";
@@ -57,6 +58,8 @@ export function controlIconLabel(name: DeckControlIconName): string {
       return "Open link in new tab";
     case "print":
       return "Print view";
+    case "overview":
+      return "Slide overview";
     case "details":
       return "Details";
     case "export-pdf":
@@ -88,6 +91,8 @@ function controlIconPathHtml(name: DeckControlIconName): string {
       return '<path d="M15 3h6v6" /><path d="M10 14 21 3" /><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />';
     case "print":
       return '<path d="M6 9V3h12v6" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><path d="M6 14h12v7H6z" />';
+    case "overview":
+      return '<rect x="3" y="4" width="8" height="6" rx="1" /><rect x="13" y="4" width="8" height="6" rx="1" /><rect x="3" y="14" width="8" height="6" rx="1" /><rect x="13" y="14" width="8" height="6" rx="1" />';
     case "details":
       return '<circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 8h.01" />';
     case "export-pdf":
@@ -138,6 +143,13 @@ function controlIconPaths(name: DeckControlIconName): DeckRenderable[] {
         jsx("path", { d: "M6 9V3h12v6" }),
         jsx("path", { d: "M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" }),
         jsx("path", { d: "M6 14h12v7H6z" }),
+      ];
+    case "overview":
+      return [
+        jsx("rect", { x: "3", y: "4", width: "8", height: "6", rx: "1" }),
+        jsx("rect", { x: "13", y: "4", width: "8", height: "6", rx: "1" }),
+        jsx("rect", { x: "3", y: "14", width: "8", height: "6", rx: "1" }),
+        jsx("rect", { x: "13", y: "14", width: "8", height: "6", rx: "1" }),
       ];
     case "details":
       return [

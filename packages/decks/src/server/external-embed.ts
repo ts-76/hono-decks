@@ -51,6 +51,8 @@ export async function renderDeckExternalEmbedResponse<E extends Env>(input: {
   options: DeckExternalEmbedOptions<E>;
   document?: DeckDocumentOptions<E>;
   availablePages?: Partial<DeckViewerAvailablePages>;
+  /** Origins added to `frameAncestors`, such as X when a Player Card is enabled. */
+  additionalFrameAncestors?: readonly string[];
 }): Promise<Response> {
   const { c, deck, slug, mountPath } = input.context;
   const enabled = input.options.enabled;
@@ -118,7 +120,10 @@ export async function renderDeckExternalEmbedResponse<E extends Env>(input: {
   headers.delete("x-frame-options");
   headers.set(
     "content-security-policy",
-    withFrameAncestors(headers.get("content-security-policy"), normalizeFrameAncestors(frameAncestorsValue)),
+    withFrameAncestors(
+      headers.get("content-security-policy"),
+      normalizeFrameAncestors(frameAncestorsValue, input.additionalFrameAncestors),
+    ),
   );
   return new Response(response.body, {
     status: response.status,
@@ -151,8 +156,8 @@ async function renderExternalEmbedDocument(input: {
 </html>`;
 }
 
-function normalizeFrameAncestors(value: string | string[] | undefined): string[] {
-  const values = Array.isArray(value) ? value : (value?.split(/[\s,]+/) ?? []);
+function normalizeFrameAncestors(value: string | string[] | undefined, additional: readonly string[] = []): string[] {
+  const values = [...(Array.isArray(value) ? value : (value?.split(/[\s,]+/) ?? [])), ...additional];
   const ancestors = new Set<string>(["'self'"]);
 
   for (const candidate of values) {

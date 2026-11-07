@@ -18,6 +18,7 @@ export function renderViewerScript(nonce?: string): string {
     const frameOrigin = iframe?.src ? new URL(iframe.src, window.location.href).origin : window.location.origin;
     const position = root.querySelector("[data-slide-position]");
     const viewerLinks = Array.from(root.querySelectorAll("[data-hono-decks-viewer-link]"));
+    const overviewLinks = Array.from(root.querySelectorAll("[data-hono-decks-overview-link]"));
     const printPath = root.getAttribute("data-hono-decks-print-path") || "";
 
     if (position && viewport) viewport.append(position);
@@ -80,6 +81,13 @@ export function renderViewerScript(nonce?: string): string {
         viewerUrl.searchParams.set("slide", params.get("slide"));
         viewerUrl.searchParams.set("step", params.get("step"));
         link.setAttribute("href", viewerUrl.href);
+      }
+      for (const link of overviewLinks) {
+        const href = link.getAttribute("href");
+        if (!href) continue;
+        const overviewUrl = new URL(href, window.location.href);
+        overviewUrl.searchParams.set("slide", params.get("slide"));
+        link.setAttribute("href", overviewUrl.pathname + overviewUrl.search);
       }
     }
 
