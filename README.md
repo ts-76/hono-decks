@@ -282,7 +282,7 @@ createDecks({
 });
 ```
 
-X plays player cards inline only for domains it has approved, and it no longer offers a self-serve approval form or card validator. Until your domain is approved, posts show the share image instead, so keep `ogImage` meaningful. X caches cards per URL; after changing tags, share a new URL (for example with a query string) to see the update.
+X no longer publishes Player Card documentation, so behavior can change. In a [public test from October 2026](https://thehouse.game/updates/2026-10-22-interactive-x-embeds), regular posts played the embed inline on the web without any approval step, X's mobile apps opened the embed URL in a web view instead, and X Articles did not run the player. Keep `ogImage` meaningful for clients that show only the image. X caches cards per URL; after changing tags, share a new URL (for example with a query string) to see the update.
 
 ## Public entries
 

@@ -165,10 +165,17 @@ function normalizeFrameAncestors(value: string | string[] | undefined, additiona
     if (!token || token === "'self'") continue;
     if (token === "*") return ["*"];
     if (token === "'none'") return ["'none'"];
+    // CSP host wildcards (https://*.example.com) cover wrapper frames on subdomains.
+    if (/^https:\/\/\*\.(?:[a-z0-9-]+\.)+[a-z]{2,}$/i.test(token)) {
+      ancestors.add(token.toLowerCase());
+      continue;
+    }
 
     try {
       const url = new URL(token);
-      if ((url.protocol === "https:" || url.protocol === "http:") && !url.username && !url.password) {
+      // A literal "*" host (https://*) would allow every site; only the explicit wildcard form above widens.
+      const literalHost = !url.hostname.includes("*");
+      if ((url.protocol === "https:" || url.protocol === "http:") && !url.username && !url.password && literalHost) {
         ancestors.add(url.origin);
       }
     } catch {

@@ -18,7 +18,7 @@ Generate an SVG with Satori and a 1200×630 PNG with resvg from the manifest ret
 
 Enabling `viewer.openGraph` emits absolute Open Graph and Twitter Card tags from `decks.paths(slug).ogImage`, which defaults to `/decks/:slug/og.png`. Save the PNG under Wrangler Static Assets.
 
-To let X posts play the deck inline, set `viewer.openGraph.twitterPlayer` and enable `embed`. The Player Card frames `/:slug/embed`, and hono-decks adds X's origins to its `frame-ancestors`. X plays player cards only for domains it has approved and offers no self-serve approval today; other domains show the image above, so keep generating it.
+To let X posts play the deck inline, set `viewer.openGraph.twitterPlayer` and enable `embed`. The Player Card frames `/:slug/embed`, and hono-decks adds X's origins to its `frame-ancestors`. X no longer documents Player Cards. In a [public test from October 2026](https://thehouse.game/updates/2026-10-22-interactive-x-embeds), web posts played inline without approval, the mobile apps opened the embed in a web view, and the player did not work in X Articles, so keep generating it.
 
 ```ts
 export const decks = createDecks({

@@ -50,6 +50,13 @@ describe("X Player Card", () => {
     );
   });
 
+  it("keeps CSP host wildcards so X's wrapper frames on subdomains are allowed", async () => {
+    const app = appFor({ embed: { frameAncestors: ["https://*.blog.example", "https://*", "javascript:*"] } });
+    const csp = (await app.request("/slides/deck1/embed")).headers.get("content-security-policy");
+    expect(csp).toBe("frame-ancestors 'self' https://*.blog.example");
+    expect(X_PLAYER_FRAME_ANCESTORS).toEqual(expect.arrayContaining(["https://*.x.com", "https://*.twitter.com"]));
+  });
+
   it("fails fast when the embed route the card needs is disabled", () => {
     expect(() => appFor({ viewer: { openGraph: { twitterPlayer: true } } })).toThrow(
       "viewer.openGraph.twitterPlayer needs the embed option",

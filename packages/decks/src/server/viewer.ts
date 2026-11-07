@@ -32,8 +32,9 @@ export interface DeckViewerOpenGraphOptions {
   imagePath?: string | ((input: DeckViewerOpenGraphInput) => MaybePromise<string | undefined>);
   /**
    * Emit an X (Twitter) Player Card that plays the deck's `embed` route inside
-   * posts. Requires the router `embed` option and HTTPS. X plays player cards
-   * inline only for domains it has approved; elsewhere it shows the image.
+   * posts. Requires the router `embed` option and HTTPS. X documents no current
+   * contract: on the web it plays inline, its mobile apps open the embed URL in a
+   * web view, and the player does not run in X Articles.
    */
   twitterPlayer?: boolean | DeckViewerTwitterPlayerOptions;
 }
@@ -45,12 +46,15 @@ export interface DeckViewerTwitterPlayerOptions {
   height?: number;
 }
 
-/** Origins X uses to frame player cards on the web and in its apps. */
+/**
+ * Origins allowed to frame a Player Card. X wraps the player in its own frame on
+ * a subdomain, and CSP checks every ancestor, so the subdomain wildcards matter.
+ */
 export const X_PLAYER_FRAME_ANCESTORS = [
   "https://x.com",
+  "https://*.x.com",
   "https://twitter.com",
-  "https://mobile.x.com",
-  "https://mobile.twitter.com",
+  "https://*.twitter.com",
 ] as const;
 
 export function resolveTwitterPlayerOptions(
