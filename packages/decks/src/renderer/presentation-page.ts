@@ -1,5 +1,6 @@
 import { parseDuration } from "../deck/duration";
 import { renderOverflowChecker } from "./overflow-checker";
+import { renderRemoteScript, remoteIndicator, remoteStyle, REMOTE_MESSAGES } from "../server/remote/ui";
 import type { CompiledDeck } from "../deck/model";
 import type { SlideComponentInput, SlideComponentRegistry } from "./jsx-renderer";
 import { renderCompiledDeck, renderCompiledDeckAsync, renderCompiledSlideAsync } from "./compiled-render";
@@ -155,6 +156,7 @@ export async function renderPresenterPageAsync(input: {
   mountPath: string;
   presenterStateQuery?: string;
   duration?: number | string;
+  remote?: boolean;
   style?: string;
   components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
   document?: ResolvedDeckDocument;
@@ -197,6 +199,7 @@ export async function renderPresenterPageAsync(input: {
         <span data-hono-decks-presenter-position>1 / ${deck.slides.length}</span>
         <button type="button" data-action="next" title="Next slide" aria-label="Next slide">${renderControlIconHtml("next")}</button>
         <span data-hono-decks-presenter-connection>Connected</span>
+        ${input.remote ? `<a href="${escapeHtml(`${deckPath}/remote`)}">${REMOTE_MESSAGES.title}</a>` : ""}
       </nav>
       <iframe title="${escapeHtml(presentationPageTitle(deck))}" src="${escapeHtml(projectionPath)}"></iframe>
     </section>
@@ -233,6 +236,7 @@ export async function renderPresenterPageAsync(input: {
       </section>
     </aside>
   </main>
+  ${input.remote ? `${remoteStyle(document.nonce)}${remoteIndicator(false)}${renderRemoteScript("presenter", document.nonce)}` : ""}
   ${renderPresenterScript(deck.slides.length, deck.slug, duration, document.nonce)}
 </body>
 </html>`;

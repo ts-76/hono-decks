@@ -51,7 +51,7 @@ describe("source layering", () => {
   });
 
   it("keeps the root and advanced entries on the runtime side", async () => {
-    for (const entry of ["mod.ts", "advanced.ts", "client.ts"]) {
+    for (const entry of ["mod.ts", "advanced.ts", "client.ts", "remote.ts"]) {
       const source = await readFile(join(srcRoot, entry), "utf8");
       for (const specifier of importSpecifiers(source)) {
         expect(buildOnlyPackages.test(specifier), `${entry} -> ${specifier}`).toBe(false);

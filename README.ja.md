@@ -463,3 +463,9 @@ layout: two-cols
 ~~~
 
 画像レイアウトでは `image: ./assets/photo.jpg` または画像 URL を指定し、必要なら `image-alt: 画像の説明` を追加します。省略時は装飾画像として扱います。`section` は見出しと副題、`quote` は引用と出典に使えます。`center` は上下左右を中央揃えにし、`statement` は上下のみ中央揃えにします。テーマの `--hono-decks-column-gap`、`--hono-decks-image-width`、`--hono-decks-image-radius` で調整できます。列の区切りは MDX で利用できます。
+
+## 別の端末からの操作と追従
+
+Cloudflare Workers では `hono-decks/remote` を使ってライブ同期を有効にできます。Worker から `DeckRemoteRoom` をエクスポートし、Durable Object の binding と `remote.namespace`、`remote.authorize` を設定します。ルーム名の初期値はデッキの slug です。`session` で変更でき、`follow: false` にすると閲覧者は追従を停止した状態で開始します。発表者画面と `/:slug/remote` から操作でき、許可された閲覧者は発表位置への追従を停止・再開できます。Next と Previous の処理には発表者画面を開いておいてください。
+
+WebSocket の接続ごとに認可します。presenter は操作でき、follower が受け取るのは位置情報だけです。リモコン画面には発表者だけに許可するノートが含まれ、ソケットには位置とコマンドだけを送ります。メッセージは検証し、1 KB と接続ごとの送信頻度を制限します。異なるオリジンからのブラウザー接続は拒否します。remote の認可はデッキ全体の保護ではありません。発表者画面などノートを含む経路も別途保護してください。HTTPS と安全なセッション Cookie を使い、認証済みコンテンツをキャッシュしないようにします。CSP の `connect-src` には必要に応じて `wss:` または `ws:` を許可してください。同一オリジンはブラウザーによっては `'self'` で許可されます。binding、migration、認可の例はレシピを参照してください。
