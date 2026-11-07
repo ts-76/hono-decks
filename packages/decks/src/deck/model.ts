@@ -41,6 +41,8 @@ export interface SlideFrontmatter {
   className?: string;
   notes?: string;
   background?: string;
+  image?: string;
+  imageAlt?: string;
   transition?: SlideTransition;
   transitionDuration?: string;
   transitionEasing?: string;

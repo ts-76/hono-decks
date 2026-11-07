@@ -76,15 +76,17 @@ title: Interactive slide
 ファイル先頭のフロントマターはデッキ全体に適用されます。区切り線の直後に置いたフロントマターは、そのスライドだけに適用されます。未定義のキーはmetaに残り、コンパイル時に警告が表示されます。
 
 <DefinitionList items={[{term: <>{"デッキ"}</>, description: <><code>{"title"}</code>{", "}<code>{"description"}</code>{", "}<code>{"author"}</code>{", "}<code>{"tags"}</code>{", "}<code>{"date"}</code>{", "}<code>{"theme"}</code>{", "}<code>{"transition"}</code>{", "}<code>{"transitionDuration"}</code>{", "}<code>{"transitionEasing"}</code>{", "}<code>{"draft"}</code>{", "}<code>{"assets"}</code>{", "}<code>{"presenter"}</code>{", "}<code>{"duration"}</code></>},
-{term: <>{"スライド"}</>, description: <><code>{"title"}</code>{", "}<code>{"layout"}</code>{", "}<code>{"class"}</code>{", "}<code>{"notes"}</code>{", "}<code>{"background"}</code>{", "}<code>{"transition"}</code>{", "}<code>{"transitionDuration"}</code>{", "}<code>{"transitionEasing"}</code></>},
+{term: <>{"スライド"}</>, description: <><code>{"title"}</code>{", "}<code>{"layout"}</code>{", "}<code>{"class"}</code>{", "}<code>{"notes"}</code>{", "}<code>{"background"}</code>{", "}<code>{"image"}</code>{", "}<code>{"image-alt"}</code>{", "}<code>{"transition"}</code>{", "}<code>{"transitionDuration"}</code>{", "}<code>{"transitionEasing"}</code></>},
 {term: <>{"トランジション"}</>, description: <><code>{"none"}</code>{", "}<code>{"fade"}</code>{", "}<code>{"fade-out"}</code>{", "}<code>{"slide-left"}</code>{", "}<code>{"slide-right"}</code>{", "}<code>{"slide-up"}</code>{", "}<code>{"slide-down"}</code>{", "}<code>{"view-transition"}</code></>},
-{term: <>{"レイアウト"}</>, description: <><code>{"default"}</code>{"、中央配置の"}<code>{"cover"}</code>{"と"}<code>{"statement"}</code>{"が標準です。独自名は"}<code>{"layout-<name>"}</code>{"クラスとして"}<code>{"theme.css"}</code>{"から指定できます。"}</>}]} />
+{term: <>{"レイアウト"}</>, description: <><code>{"default"}</code>{"、中央配置の"}<code>{"cover"}</code>{"と"}<code>{"statement"}</code>{"などが標準です。独自名は"}<code>{"layout-<name>"}</code>{"クラスとして"}<code>{"theme.css"}</code>{"から指定できます。"}</>}]} />
 
 <Callout title={"最初はtitleだけで十分です"}>
 
 本文を書いてから、必要なスライドにだけ`layout`や`transition`を追加すると、設定が増えすぎません。
 
 </Callout>
+
+標準レイアウトには `two-cols`、`image-left`、`image-right`、`section`、`quote`、`center` があります。MDX の2列は `::right::` を空行で囲んだ単独行で区切ります。画像レイアウトには `image` と任意の `image-alt` を指定します。代替テキストを省略すると装飾画像になります。
 
 </section>
 
@@ -170,10 +172,10 @@ hono-decksの既定スタイルは`@layer hono-decks.base`と`@layer hono-decks.
 
 設定済みのViteまたはWranglerの`dev`実行中は、保存したデッキが自動で再コンパイルされます。Viteでは対応する内容の編集時に表示とIslandの状態を維持します。クライアントコードの変更時や安全に更新できない場合は表示用iframeを再読み込みし、Islandの状態をリセットします。viewerは開いたままで、スライドとステップの位置は維持されます。Wranglerを直接使う場合のライブリロードはWranglerの動作に従います。CLIのファイル生成を単独で確認するときは`npx hono-decks compile`を実行します。コンパイルエラーには対象ファイルとスライド番号が表示されます。
 
-表示を確認したら、公開画面を変える場合は[ルートと画面](/docs/routing?lang=ja)、環境変数やR2を使う場合は[設定](/docs/configuration?lang=ja)へ進みます。
-
-</section>
-
 ### 開発中のはみ出し警告
 
 開発時は表示中のスライドを検査し、1920 × 1080 のキャンバスからはみ出す要素や、`overflow: hidden` / `clip` で切れる内容を警告パネルと枠線で示します。スライドの切り替え、画面サイズ変更、画像・フォントの読み込み、ライブ更新後に再検査します。意図的にはみ出す要素に `data-hono-decks-allow-overflow` を付けると、その子要素も検査対象外になります。装飾用の `aria-hidden="true"` の領域も除外します。スクロール可能な領域は切り取り境界として扱い、影などの視覚効果は測定しません。本番・印刷ページには検査処理を含めません。
+
+表示を確認したら、公開画面を変える場合は[ルートと画面](/docs/routing?lang=ja)、環境変数やR2を使う場合は[設定](/docs/configuration?lang=ja)へ進みます。
+
+</section>

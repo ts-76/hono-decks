@@ -28,7 +28,7 @@ import {
 import { emitModuleDecksRouter } from "./mdx/emit";
 import { resolveLinkCardMetadataByUrl } from "./mdx/ogp";
 import type { LinkCardOgpMetadata } from "./mdx/ogp";
-import { remarkCodeHighlight, remarkDeckSyntax } from "./mdx/syntax";
+import { remarkCodeHighlight, remarkDeckSyntax, remarkTwoColumns } from "./mdx/syntax";
 
 export type { LinkCardOgpMetadata } from "./mdx/ogp";
 
@@ -107,6 +107,7 @@ async function compileMdxModuleDeck(
   const assets = [
     ...(await buildAssetRefs(entry.slug, entry.assetPaths, input)),
     ...collectGeneratedExternalAssetRefs(contentBody, deckMeta),
+    ...buildExternalAssetRefs(collectFrontmatterAssetCandidates(firstSlideAttrs.image)),
   ];
   const componentModulePath = componentImportPath(input.outDir, input.componentModulePaths?.[entry.slug]);
   const themeStyle = entry.kind === "directory" ? input.themeStyles?.[entry.slug] : undefined;
@@ -136,7 +137,7 @@ async function compileMdxModuleDeck(
       dirname(entry.sourcePath),
       dirname(slideModulePath),
     );
-    const code = await compileMdxModule(rewrittenSource, entry.sourcePath, index, input.resolveOgp);
+    const code = await compileMdxModule(rewrittenSource, entry.sourcePath, index, input.resolveOgp, slideMeta.layout);
 
     slideModules.push({
       path: slideModulePath,
@@ -198,6 +199,7 @@ async function compileMdxModule(
   sourcePath: string,
   slideIndex: number,
   resolveOgp: CompileMdxModuleDecksInput["resolveOgp"],
+  layout?: string,
 ): Promise<string> {
   try {
     const linkCardMetadata = await resolveLinkCardMetadataByUrl(source, resolveOgp);
@@ -209,7 +211,13 @@ async function compileMdxModule(
           jsxImportSource: "hono/jsx",
           format: "mdx",
           elementAttributeNameCase: "html",
-          remarkPlugins: [remarkGfm, remarkDirective, remarkDeckSyntax({ linkCardMetadata }), remarkCodeHighlight],
+          remarkPlugins: [
+            remarkGfm,
+            remarkDirective,
+            remarkDeckSyntax({ linkCardMetadata }),
+            ...(layout === "two-cols" ? [remarkTwoColumns] : []),
+            remarkCodeHighlight,
+          ],
         },
       ),
     );

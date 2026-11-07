@@ -74,15 +74,17 @@ title: Interactive slide
 Opening frontmatter applies to the deck. Frontmatter immediately after a slide separator applies only to that slide. Unknown keys remain in meta but produce a warning.
 
 <DefinitionList items={[{term: <>{"Deck"}</>, description: <><code>{"title"}</code>{", "}<code>{"description"}</code>{", "}<code>{"author"}</code>{", "}<code>{"tags"}</code>{", "}<code>{"date"}</code>{", "}<code>{"theme"}</code>{", "}<code>{"transition"}</code>{", "}<code>{"transitionDuration"}</code>{", "}<code>{"transitionEasing"}</code>{", "}<code>{"draft"}</code>{", "}<code>{"assets"}</code>{", "}<code>{"presenter"}</code>{", "}<code>{"duration"}</code></>},
-{term: <>{"Slide"}</>, description: <><code>{"title"}</code>{", "}<code>{"layout"}</code>{", "}<code>{"class"}</code>{", "}<code>{"notes"}</code>{", "}<code>{"background"}</code>{", "}<code>{"transition"}</code>{", "}<code>{"transitionDuration"}</code>{", "}<code>{"transitionEasing"}</code></>},
+{term: <>{"Slide"}</>, description: <><code>{"title"}</code>{", "}<code>{"layout"}</code>{", "}<code>{"class"}</code>{", "}<code>{"notes"}</code>{", "}<code>{"background"}</code>{", "}<code>{"image"}</code>{", "}<code>{"image-alt"}</code>{", "}<code>{"transition"}</code>{", "}<code>{"transitionDuration"}</code>{", "}<code>{"transitionEasing"}</code></>},
 {term: <>{"Transitions"}</>, description: <><code>{"none"}</code>{", "}<code>{"fade"}</code>{", "}<code>{"fade-out"}</code>{", "}<code>{"slide-left"}</code>{", "}<code>{"slide-right"}</code>{", "}<code>{"slide-up"}</code>{", "}<code>{"slide-down"}</code>{", "}<code>{"view-transition"}</code></>},
-{term: <>{"Layouts"}</>, description: <><code>{"default"}</code>{", centered "}<code>{"cover"}</code>{", and centered "}<code>{"statement"}</code>{" are built in. A custom name becomes a "}<code>{"layout-<name>"}</code>{" class that can be styled in "}<code>{"theme.css"}</code>{"."}</>}]} />
+{term: <>{"Layouts"}</>, description: <><code>{"default"}</code>{", centered "}<code>{"cover"}</code>{", and centered "}<code>{"statement"}</code>{" are built in alongside two-cols, image-left, image-right, section, quote, and center. A custom name becomes a "}<code>{"layout-<name>"}</code>{" class that can be styled in "}<code>{"theme.css"}</code>{"."}</>}]} />
 
 <Callout title={"Start with title only"}>
 
 Write the content first, then add `layout` or `transition` only where they clarify the presentation.
 
 </Callout>
+
+Built-in layouts include `two-cols`, `image-left`, `image-right`, `section`, `quote`, and `center`. In MDX, separate two columns with a standalone `::right::` paragraph. Image layouts accept `image` and optional `image-alt`; without alt the image is decorative.
 
 </section>
 
@@ -170,10 +172,10 @@ hono-decks keeps its default styles in `@layer hono-decks.base` and `@layer hono
 
 While the configured Vite or Wrangler `dev` command is running, saved deck sources are recompiled automatically. With Vite, supported content edits preserve the presentation and island state; client code edits or unsafe updates reload the presentation iframe and reset island state while retaining the viewer and slide/step. Direct Wrangler live reload follows Wrangler behavior. Use `npx hono-decks compile` when checking the CLI/file compiler separately. Compile errors identify the source file and slide number.
 
-After the deck renders, continue to [routes and UI](/docs/routing?lang=en) for public surfaces or [configuration](/docs/configuration?lang=en) for bindings and R2.
-
-</section>
-
 ### Development overflow warnings
 
 In development, the active slide is checked for elements outside the 1920 × 1080 canvas and for content clipped by `overflow: hidden` or `clip`. Findings appear in a warning panel and the affected elements are outlined. Checks rerun after slide changes, resizing, image and font loading, and live updates. Add `data-hono-decks-allow-overflow` to an intentionally overflowing element to exclude its subtree. Decorative `aria-hidden="true"` subtrees are also ignored. Scrollable containers are treated as clipping boundaries; visual effects such as shadows are not measured. Production and print pages omit the checker.
+
+After the deck renders, continue to [routes and UI](/docs/routing?lang=en) for public surfaces or [configuration](/docs/configuration?lang=en) for bindings and R2.
+
+</section>

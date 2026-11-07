@@ -22,6 +22,16 @@ const PRESENTATION_BASE = `
 :root{color-scheme:light;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:32px;--hono-decks-transition-duration:.24s;--hono-decks-transition-easing:ease;--hono-decks-background:#fff;--hono-decks-color:#172033;--hono-decks-muted-color:#475569;--hono-decks-accent-color:#0369a1;--hono-decks-border-color:#cbd5e1;--hono-decks-inline-code-background:#f1f5f9;--hono-decks-code-background:#f1f5f9;--hono-decks-card-background:#f1f5f9;--hono-decks-card-image-background:#e2e8f0;--hono-decks-warning-background:#fef3c7;--hono-decks-warning-color:#854d0e;background:var(--hono-decks-background);color:var(--hono-decks-color)}
 .slide{box-sizing:border-box;background:var(--hono-decks-background);color:var(--hono-decks-color);padding:1.8rem}
 .hono-decks-slide-content{width:100%;height:100%}
+.slide.layout-two-cols>.hono-decks-slide-content{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--hono-decks-column-gap,2rem);align-content:center}
+.slide.layout-image-left>.hono-decks-slide-content,.slide.layout-image-right>.hono-decks-slide-content{display:grid;grid-template-columns:var(--hono-decks-image-width,45%) minmax(0,1fr);gap:var(--hono-decks-column-gap,2rem);align-items:center;height:100%}
+.slide.layout-image-right>.hono-decks-slide-content{grid-template-columns:minmax(0,1fr) var(--hono-decks-image-width,45%)}
+.slide.layout-image-right .hono-decks-layout-image{order:2}
+.hono-decks-layout-image{height:100%;min-height:0}
+.hono-decks-layout-image img{width:100%;height:100%;object-fit:cover;border-radius:var(--hono-decks-image-radius,.5rem)}
+.slide.layout-section>.hono-decks-slide-content,.slide.layout-quote>.hono-decks-slide-content,.slide.layout-center>.hono-decks-slide-content{display:flex;flex-direction:column;justify-content:center;height:100%}
+.slide.layout-section h1{font-size:var(--hono-decks-section-title-size,3rem);color:var(--hono-decks-accent-color)}
+.slide.layout-quote blockquote{font-size:var(--hono-decks-quote-size,1.8rem);border-left:.16rem solid var(--hono-decks-accent-color);padding-left:1rem;margin-left:0}
+.slide.layout-center>.hono-decks-slide-content{align-items:center;text-align:center}
 .slide.layout-cover,.slide.layout-statement{display:flex;flex-direction:column;justify-content:center}
 .slide.layout-cover>.hono-decks-slide-content,.slide.layout-statement>.hono-decks-slide-content{display:flex;flex-direction:column;justify-content:center}
 .slide code{font-family:"SFMono-Regular","Cascadia Code","Liberation Mono",Menlo,Consolas,monospace;font-size:.9em;line-height:1.45}

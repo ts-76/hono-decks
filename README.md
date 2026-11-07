@@ -453,3 +453,24 @@ Set `duration: 20m` in deck frontmatter for a target (also `1h30m`, `90s`, or a 
 ## Development overflow warnings
 
 In development, the active slide is checked for elements outside the 1920 × 1080 canvas and for content clipped by `overflow: hidden` or `clip`. Findings appear in a warning panel and the affected elements are outlined. Checks rerun after slide changes, resizing, image and font loading, and live updates. Add `data-hono-decks-allow-overflow` to an intentionally overflowing element to exclude its subtree. Decorative `aria-hidden="true"` subtrees are also ignored. Scrollable containers are treated as clipping boundaries; visual effects such as shadows are not measured. Production and print pages omit the checker.
+
+## Built-in layouts
+
+Set `layout` in slide frontmatter to `two-cols`, `image-left`, `image-right`, `section`, `quote`, or `center`, in addition to `default`, `cover`, and `statement`. In an MDX `two-cols` slide, put `::right::` on its own line with blank lines around it. Content before and after it forms the two columns.
+
+~~~mdx
+---
+layout: two-cols
+---
+## Left
+
+First column
+
+::right::
+
+## Right
+
+Second column
+~~~
+
+For image layouts, set `image: ./assets/photo.jpg` or a remote URL and optionally `image-alt: Description`. An omitted alt makes the image decorative. Use a heading and subtitle for `section`, or a Markdown blockquote followed by attribution for `quote`. `center` centers content horizontally and vertically; `statement` only centers vertically. Adjust `--hono-decks-column-gap`, `--hono-decks-image-width`, and `--hono-decks-image-radius` in a theme. The column marker is supported in MDX decks.
