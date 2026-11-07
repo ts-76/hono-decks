@@ -4,7 +4,15 @@ import { renderPresentationScript } from "../src/renderer/presentation-script";
 
 // Run the emitted runtime with a minimal DOM boundary, so the tests exercise
 // the registered listener and navigation state rather than matching source text.
-function presentation() {
+function presentation({ prefetch = false, saveData = false } = {}) {
+  class TestImage {
+    src = "https://slides.example/image.png";
+    srcset = "";
+    sizes = "";
+    loading = "lazy";
+    decode = vi.fn(() => Promise.resolve());
+  }
+  const idle: Array<() => void> = [];
   class Element {
     hidden = false;
     isContentEditable = false;
@@ -26,12 +34,18 @@ function presentation() {
     closest() {
       return this.interactive ? this : null;
     }
-    querySelectorAll() {
-      return [];
+    images: TestImage[] = [];
+    querySelectorAll(selector?: string) {
+      return selector === "img" ? this.images : [];
     }
     addEventListener() {}
   }
-  const slides = [new Element(), new Element()];
+  const slides = [new Element(), new Element(), new Element()];
+  const images = [new TestImage(), new TestImage()];
+  if (prefetch) {
+    slides[1]!.images.push(images[0]!);
+    slides[2]!.images.push(images[1]!);
+  }
   const listeners = new Map<string, (event: object) => void>();
   const body = new Element();
   const location = { href: "https://slides.example/render", search: "", origin: "https://slides.example" };
@@ -57,7 +71,12 @@ function presentation() {
       querySelectorAll: (selector: string) => (selector === ".slide" ? slides : []),
       addEventListener: (type: string, listener: (event: object) => void) => listeners.set(type, listener),
     },
-    getComputedStyle: () => ({ getPropertyValue: () => "" }),
+    getComputedStyle: () => ({ getPropertyValue: () => "", backgroundImage: "none" }),
+    navigator: { connection: { saveData } },
+    setTimeout: (callback: () => void) => {
+      idle.push(callback);
+      return idle.length;
+    },
   });
   return {
     key(key: string, overrides: object = {}) {
@@ -65,6 +84,8 @@ function presentation() {
       listeners.get("keydown")!({ key, target: body, preventDefault, ...overrides });
       return preventDefault;
     },
+    images,
+    flushPreloads: () => idle.splice(0).forEach((callback) => callback()),
     element: () => new Element(),
     slide: () => new URL(location.href).searchParams.get("slide"),
   };
@@ -96,5 +117,30 @@ describe("presentation keyboard navigation", () => {
     const runtime = presentation();
     expect(runtime.key("ArrowRight", { [flag]: true })).not.toHaveBeenCalled();
     expect(runtime.slide()).toBe("1");
+  });
+});
+
+describe("next slide image preparation", () => {
+  it("decodes only the next slide and reuses prepared images on return navigation", () => {
+    const runtime = presentation({ prefetch: true });
+    runtime.flushPreloads();
+    expect(runtime.images[0]!.loading).toBe("eager");
+    expect(runtime.images[0]!.decode).toHaveBeenCalledOnce();
+    expect(runtime.images[1]!.decode).not.toHaveBeenCalled();
+    runtime.key("ArrowRight");
+    runtime.flushPreloads();
+    expect(runtime.images[0]!.decode).toHaveBeenCalledOnce();
+    expect(runtime.images[1]!.decode).toHaveBeenCalledOnce();
+    runtime.key("ArrowLeft");
+    runtime.flushPreloads();
+    expect(runtime.images[0]!.decode).toHaveBeenCalledOnce();
+  });
+
+  it("honors data saver for speculative loads while still preparing requested slides", () => {
+    const runtime = presentation({ prefetch: true, saveData: true });
+    runtime.flushPreloads();
+    expect(runtime.images[0]!.decode).not.toHaveBeenCalled();
+    runtime.key("ArrowRight");
+    expect(runtime.images[0]!.decode).toHaveBeenCalledOnce();
   });
 });

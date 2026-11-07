@@ -545,3 +545,5 @@ requests by default. The client still goes through the application's middleware
 and authorization; override it with `createDecks({ client: { path } })`. For local
 Markdown checks without Void, set `HONO_MARKDOWN_PACKAGE` to the common tarball
 and run `node scripts/verify-vite-init.mjs`.
+
+The presentation prepares images and CSS backgrounds for the next slide, reuses decoded resources within the document, and bounds background-image retention. Data Saver disables speculative preparation. Default embedded local assets use ETag revalidation (`public, max-age=0, must-revalidate`); explicit cache policies remain unchanged. Development asset responses use `no-store`.

@@ -222,6 +222,52 @@ export function renderPresentationScript(nonce?: string): string {
   let transitionToken = 0;
   let touchStart = null;
 
+  // Keep decoded next-slide resources in the browser cache, without mounting embeds.
+  let preparedImages = new WeakMap();
+  let preparedSlides = new WeakSet();
+  const backgroundImages = new Map();
+
+  function prepareSlideAssets(slide) {
+    if (!slide || preparedSlides.has(slide)) return;
+    preparedSlides.add(slide);
+    slide.querySelectorAll("img").forEach((image) => {
+      const signature = [image.src, image.srcset, image.sizes].join("|");
+      if (preparedImages.get(image) === signature) return;
+      preparedImages.set(image, signature);
+      image.loading = "eager";
+      if (typeof image.decode === "function") {
+        image.decode().catch(() => { preparedImages.delete(image); preparedSlides.delete(slide); });
+      }
+    });
+    const elements = [slide, ...slide.querySelectorAll("*")];
+    elements.forEach((element) => {
+      const background = getComputedStyle(element).backgroundImage;
+      for (const match of background.matchAll(/url\\((?:"([^"]*)"|'([^']*)'|([^)]*))\\)/g)) {
+        const url = match[1] ?? match[2] ?? match[3]?.trim();
+        if (!url || backgroundImages.has(url)) continue;
+        const image = new Image();
+        image.src = url;
+        backgroundImages.set(url, image);
+        if (backgroundImages.size > 8) backgroundImages.delete(backgroundImages.keys().next().value);
+        if (typeof image.decode === "function") image.decode().catch(() => {
+          if (backgroundImages.get(url) === image) backgroundImages.delete(url);
+          preparedSlides.delete(slide);
+        });
+      }
+    });
+  }
+
+  let assetPreparationToken = 0;
+  function prepareNextSlide() {
+    const token = ++assetPreparationToken;
+    const prepare = () => {
+      if (token !== assetPreparationToken || navigator.connection?.saveData) return;
+      prepareSlideAssets(slides[index + 1]);
+    };
+    if (typeof requestIdleCallback === "function") requestIdleCallback(prepare, { timeout: 500 });
+    else setTimeout(prepare, 0);
+  }
+
   function fitDeck() {
     if (!(stage instanceof HTMLElement) || !(deck instanceof HTMLElement)) return;
     const bounds = stage.getBoundingClientRect();
@@ -232,6 +278,7 @@ export function renderPresentationScript(nonce?: string): string {
   function publishState() {
     const state = { type: "hono-decks:state", index, stepIndex, stepCount, slideCount: slides.length };
     writePaginationState();
+    prepareNextSlide();
     if (window.parent !== window) window.parent.postMessage(state, "*");
     if (window.opener && window.opener !== window) window.opener.postMessage(state, window.location.origin);
   }
@@ -451,6 +498,7 @@ export function renderPresentationScript(nonce?: string): string {
 
     const outgoing = slides[index];
     const incoming = slides[targetIndex];
+    prepareSlideAssets(incoming);
     const transition = transitionForSlide(incoming);
     const timing = activeTransitionTiming(incoming);
     if (transition === "none" || prefersReducedMotion()) {
@@ -481,6 +529,9 @@ export function renderPresentationScript(nonce?: string): string {
     setSlideState(incoming, "entering", direction, transition, timing);
     updateFires(nextStepIndex);
     publishState();
+    // Commit the incoming slide's entering style before applying its final state.
+    // A previously display:none slide otherwise skips its CSS transition entirely.
+    incoming.getBoundingClientRect();
     requestAnimationFrame(() => {
       if (token !== transitionToken) return;
       setSlideState(outgoing, "leaving", direction, transition, timing);
@@ -603,6 +654,9 @@ export function renderPresentationScript(nonce?: string): string {
   }
 
   function refresh() {
+    preparedImages = new WeakMap();
+    preparedSlides = new WeakSet();
+    backgroundImages.clear();
     transitionToken += 1;
     isTransitioning = false;
     pendingNavigation = null;

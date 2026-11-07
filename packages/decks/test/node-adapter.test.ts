@@ -213,7 +213,7 @@ describe("Node filesystem deck adapter", () => {
     }
   });
 
-  it("serves embedded local assets with content type and short-lived cache headers", async () => {
+  it("serves embedded local assets with content type and revalidation cache headers", async () => {
     const cwd = await createFixture();
 
     try {
@@ -227,7 +227,7 @@ describe("Node filesystem deck adapter", () => {
 
       expect(response?.status).toBe(200);
       expect(response?.headers.get("content-type")).toContain("image/svg+xml");
-      expect(response?.headers.get("cache-control")).toBe("public, max-age=300");
+      expect(response?.headers.get("cache-control")).toBe("public, max-age=0, must-revalidate");
       expect(Array.from(new Uint8Array(await response!.arrayBuffer()))).toEqual([7, 8, 9]);
     } finally {
       await rm(cwd, { recursive: true, force: true });

@@ -199,6 +199,10 @@ async function verifyMotionFireSteps(label) {
     `${label} motion second slide fire state`,
   );
   assertSlideOnlyPosition(secondSlide.position, `${label} motion second slide position`);
+  const transitionProbe = await evalJson(`(() => ({
+    starts: Number(document.querySelector("[data-hono-decks-viewer]")?.getAttribute("data-motion-incoming-transition-starts") ?? 0)
+  }))()`);
+  if (transitionProbe.starts < 1) throw new Error(label + " incoming slide skipped its transition");
 
   await evalJson(clickNavigationLayerScript("next"));
   const secondReveal = await waitForMotionState(
@@ -391,6 +395,14 @@ function installMotionTransitionProbeScript() {
     const fires = Array.from(activeSlide?.querySelectorAll("[data-hono-decks-fire]") ?? []);
     if (!(root instanceof HTMLElement) || fires.length === 0) throw new Error("missing motion fire probe target");
     root.setAttribute("data-motion-visible-opacity-transition-starts", "0");
+    root.setAttribute("data-motion-incoming-transition-starts", "0");
+    const incoming = iframe.contentDocument.querySelectorAll(".slide")[1];
+    incoming.addEventListener("transitionrun", (event) => {
+      if (event.target !== incoming || !["transform", "opacity"].includes(event.propertyName)) return;
+      const current = Number(root.getAttribute("data-motion-incoming-transition-starts") ?? 0);
+      root.setAttribute("data-motion-incoming-transition-starts", String(current + 1));
+    });
+
     fires.forEach((fire) => {
       fire.addEventListener("transitionstart", (event) => {
         if (event.propertyName !== "opacity" || getComputedStyle(fire).visibility !== "visible") return;
