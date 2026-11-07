@@ -25,6 +25,26 @@ export const PRESENTER_TIMER_MESSAGES = {
   shortcut: "Start or pause timer (T)",
 } as const;
 
+/**
+ * Compares elapsed time with the time budget of the current slide. Each slide gets
+ * an equal share of the duration; being anywhere inside the current slide's window
+ * is on pace. Returns the distance to that window in seconds (positive = ahead).
+ * Embedded into the presenter script with Function#toString, so keep it self-contained.
+ */
+export function talkPace(
+  elapsedSeconds: number,
+  durationSeconds: number,
+  slideIndex: number,
+  slideCount: number,
+): { state: "on" | "ahead" | "behind"; seconds: number } {
+  const perSlide = durationSeconds / Math.max(slideCount, 1);
+  const windowStart = perSlide * slideIndex;
+  const windowEnd = windowStart + perSlide;
+  if (elapsedSeconds < windowStart) return { state: "ahead", seconds: windowStart - elapsedSeconds };
+  if (elapsedSeconds > windowEnd) return { state: "behind", seconds: elapsedSeconds - windowEnd };
+  return { state: "on", seconds: 0 };
+}
+
 export function presentationPageTitle(deck: Pick<CompiledDeck, "slug" | "meta">): string {
   return deck.meta.title ?? deck.slug;
 }
@@ -248,7 +268,7 @@ body{margin:0;min-height:100vh;background:#050816;color:#eef2ff;font-family:Inte
 .hono-decks-presenter-controls a *,.hono-decks-presenter-controls button *{pointer-events:none;cursor:pointer}
 .hono-decks-control-icon{width:16px;height:16px;flex:0 0 auto;stroke:currentColor;pointer-events:none}
 .hono-decks-presenter-current iframe{width:100%;aspect-ratio:16/9;border:0;border-radius:8px;background:#000}
-.hono-decks-presenter-panel{display:grid;grid-template-rows:auto 1fr;gap:16px}
+.hono-decks-presenter-panel{display:grid;grid-template-rows:auto auto 1fr;gap:16px}
 .hono-decks-presenter-timer,.hono-decks-presenter-next,.hono-decks-presenter-notes{min-width:0;border:1px solid rgba(148,163,184,.28);border-radius:8px;background:rgba(15,23,42,.78);padding:12px}
 .hono-decks-presenter-timer h2,.hono-decks-presenter-next h2,.hono-decks-presenter-notes h2{margin:0 0 8px;font-size:16px;color:#93c5fd}
 .hono-decks-presenter-timer-values{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:end}
@@ -256,10 +276,10 @@ body{margin:0;min-height:100vh;background:#050816;color:#eef2ff;font-family:Inte
 .hono-decks-presenter-timer-values strong{font-size:22px;font-variant-numeric:tabular-nums;color:var(--hono-decks-presenter-timer-color,#fff)}
 .hono-decks-presenter-timer-values [data-pace="ahead"]{color:var(--hono-decks-presenter-ahead,#86efac)}
 .hono-decks-presenter-timer-values [data-pace="behind"],.hono-decks-presenter-timer-values [data-over="true"]{color:var(--hono-decks-presenter-behind,#fda4af)}
-.hono-decks-presenter-timer-controls{display:flex;gap:8px;margin-top:12px}.hono-decks-presenter-timer-controls button{font:inherit;color:inherit;background:var(--hono-decks-presenter-button-background,#1e293b);border:1px solid var(--hono-decks-presenter-border,#64748b);border-radius:6px;padding:6px 12px;cursor:pointer}
+.hono-decks-presenter-timer-controls{display:flex;gap:8px;margin-top:12px}.hono-decks-presenter-timer-controls button{font:inherit;font-size:14px;color:inherit;background:var(--hono-decks-presenter-button-background,#1e293b);border:1px solid var(--hono-decks-presenter-border,#64748b);border-radius:6px;padding:6px 12px;cursor:pointer}
 .hono-decks-presenter-no-next:not([hidden]){display:grid;place-items:center;aspect-ratio:16/9;margin:0;border-radius:6px;background:#020617;color:#93a4bd;font-size:14px}
 .hono-decks-presenter-notes article{white-space:pre-wrap;font-size:18px;line-height:1.6}
-@media (max-width:900px){.hono-decks-presenter{grid-template-columns:1fr}.hono-decks-presenter-panel{grid-template-rows:auto auto}}`,
+@media (max-width:900px){.hono-decks-presenter{grid-template-columns:1fr}.hono-decks-presenter-panel{grid-template-rows:auto auto auto}}`,
     ),
     layer(
       "runtime",
@@ -281,6 +301,7 @@ function renderPresenterScript(slideCount: number, slug: string, duration: numbe
   const noNext = document.querySelector("[data-hono-decks-presenter-no-next]");
   const position = document.querySelector("[data-hono-decks-presenter-position]");
   const messages = ${JSON.stringify(PRESENTER_TIMER_MESSAGES)};
+  const talkPace = ${talkPace.toString()};
   const duration = ${JSON.stringify(duration ?? null)};
   const storageKey = ${JSON.stringify("hono-decks:timer:")} + ${JSON.stringify(slug).replaceAll("<", "\\u003c")};
   const elapsedNode = document.querySelector("[data-timer-elapsed]");
@@ -309,10 +330,9 @@ function renderPresenterScript(slideCount: number, slug: string, duration: numbe
       const remaining = duration - seconds;
       remainingNode.textContent = remaining < 0 ? messages.over + " " + formatTime(-remaining) : formatTime(remaining);
       remainingNode.dataset.over = String(remaining < 0);
-      const delta = duration * (currentIndex / ${slideCount || 1}) - seconds;
-      const pace = Math.abs(delta) < 1 ? "on" : delta > 0 ? "ahead" : "behind";
-      paceNode.dataset.pace = pace;
-      paceNode.textContent = pace === "on" ? messages.onPace : (pace === "ahead" ? messages.ahead : messages.behind) + " " + formatTime(delta);
+      const pace = talkPace(seconds, duration, currentIndex, ${slideCount || 1});
+      paceNode.dataset.pace = pace.state;
+      paceNode.textContent = pace.state === "on" ? messages.onPace : (pace.state === "ahead" ? messages.ahead : messages.behind) + " " + formatTime(pace.seconds);
     }
   }
   function startTimer() { if (timer.startedAt === null && timer.elapsed === 0) { timer.startedAt = Date.now(); saveTimer(); renderTimer(); } }
