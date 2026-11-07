@@ -284,7 +284,7 @@ describe("HonoX documentation site", () => {
     expect(html).toContain("packages/decks/src/server/define-decks.ts");
     expect(html).toContain("使う場面");
     expect(html).toContain("生成コードを使わず、デッキの取得からルーティングまでを独自に組み立てるとき");
-    expect(html).toContain("まずcreateDecks(config)から始める");
+    expect(html).toContain("まずcreateDecks()から始める");
     expect(html).toContain('class="code-copy-label"');
     expect(html).not.toContain("<table>");
   });
@@ -300,7 +300,7 @@ describe("HonoX documentation site", () => {
     expect(authoring).toContain("保存したデッキが自動で再コンパイル");
     expect(authoring).toContain('id="markdown-adapter"');
     expect(authoring).toContain("Islandの状態をリセット");
-    expect(configuration).toContain("ビルド対象、公開パス、実行時の挙動");
+    expect(configuration).toContain("ビルド設定です。デッキの場所");
     expect(routing).toContain("はビューアー内のiframeが読み込むURL");
     expect(routing).toContain("slide</code>は1から始まるスライド番号");
     expect(routing).toContain("step=0</code>は段階表示がまだ始まっていない状態");

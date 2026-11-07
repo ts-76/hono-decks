@@ -1,19 +1,18 @@
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
-  check: {
-    // Enable after landing a dedicated repository-wide Oxfmt baseline.
-    fmt: false,
-  },
   fmt: {
     ignorePatterns: [
+      // Byte-pinned release inputs; formatting changes invalidate their policy hashes.
+      "scripts/release/npm-publisher-lock.json",
       ".agents/**",
       ".beads/**",
       ".claude/**",
       ".codex/**",
-      ".design-qa/**",
       ".impeccable/**",
       ".captures/**",
+      "examples/void/**",
+      "fixtures/**",
       "**/dist/**",
       "**/dist-dry-run/**",
       "**/generated/**",
@@ -34,7 +33,6 @@ export default defineConfig({
       ".beads/**",
       ".claude/**",
       ".codex/**",
-      ".design-qa/**",
       ".impeccable/**",
       ".captures/**",
       "**/dist/**",

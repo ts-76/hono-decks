@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vite-plus/test";
 import { parseDeck } from "../src/parser/parser";
-import { renderDeck } from "../src/renderer/render";
+import { builtInSlideComponents, renderSlideNodes } from "../src/renderer/jsx-renderer";
+import { renderBlock } from "../src/renderer/render-block";
+import type { SlideDeck } from "../src/shared/types";
+
+const renderDeck = (deck: SlideDeck): string =>
+  deck.slides
+    .map((slide) =>
+      slide.nodes.length > 0
+        ? renderSlideNodes(slide.nodes, { components: builtInSlideComponents })
+        : slide.blocks.map(renderBlock).join("\n"),
+    )
+    .join("\n");
 
 describe("parseDeck", () => {
   it("parses slide attributes, markdown blocks, and MDX-like components", () => {
@@ -84,7 +95,7 @@ https://hono.dev/`);
   });
 });
 
-describe("renderDeck", () => {
+describe("renderBlock", () => {
   it("escapes HTML while preserving inline markdown affordances", () => {
     const html = renderDeck(parseDeck("# <script>alert(1)</script>\n\nUse **bold** and `code`."));
     expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");

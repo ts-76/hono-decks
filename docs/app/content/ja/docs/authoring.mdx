@@ -46,7 +46,7 @@ HonoやHonoXで共通のHono Markdownブリッジを使う場合は、設定フ�
 import { defineDecksConfig } from "hono-decks"
 
 export default defineDecksConfig({
-  mountPath: "/slides",
+  mountPath: "/decks",
   build: { root: "decks", markdown: { adapter: "hono-decks/adapters/hono-markdown" } },
 })
 ```

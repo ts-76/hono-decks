@@ -27,9 +27,17 @@ export function hydrateSlideIslands(input: HydrateSlideIslandsInput): void {
     if (!component) continue;
 
     const props: Record<string, ClientIslandPropValue> = parseIslandProps(island.dataset.honoDecksProps);
-    const live = (window as Window & { __honoDecksLive?: {
-      register(element: HTMLElement, update: (props: Record<string, ClientIslandPropValue>) => void, dispose: () => void): void;
-    } }).__honoDecksLive;
+    const live = (
+      window as Window & {
+        __honoDecksLive?: {
+          register(
+            element: HTMLElement,
+            update: (props: Record<string, ClientIslandPropValue>) => void,
+            dispose: () => void,
+          ): void;
+        };
+      }
+    ).__honoDecksLive;
     if (live) {
       if (island.dataset.honoDecksLiveMounted) continue;
       // The wrapper remains the same component across dev updates. Updating its

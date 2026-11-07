@@ -12,7 +12,7 @@ order: 0
 
 ## アプリを用意する
 
-npm、pnpm、Yarn、Bunのいずれかと、起動できるHono、HonoX、またはVoidアプリが必要です。フレームワーク別の導入では、通常`/slides/welcome`にサンプルを表示します。汎用CLI・ファイル生成方式では`/decks/welcome`を使います。
+npm、pnpm、Yarn、Bunのいずれかと、起動できるHono、HonoX、またはVoidアプリが必要です。フレームワーク別の導入では、通常`/decks/welcome`にサンプルを表示します。汎用CLI・ファイル生成方式では`/decks/welcome`を使います。
 
 <Callout title={"コンパイルと配信は分かれています"}>
 
@@ -37,7 +37,7 @@ npx hono-decks init --framework void --install
 npm run dev
 ```
 
-いずれの方法も既存のスクリプトを維持し、`virtual:hono-decks`を使用します。`dev`と`build`はメモリ内でデッキをコンパイルします。initが表示したサンプルのURL（通常は`/slides/welcome`）を開いてください。HonoとHonoXのサンプルはMDX、Voidのサンプルは操作できるIslandを含むMarkdownです。対応バージョン、任意の依存関係、設定上の制約は[パッケージのREADME](https://github.com/ts-76/hono-decks/blob/main/packages/decks/README.ja.md)を参照してください。
+いずれの方法も既存のスクリプトを維持し、`virtual:hono-decks`を使用します。`dev`と`build`はメモリ内でデッキをコンパイルします。initが表示したサンプルのURL（通常は`/decks/welcome`）を開いてください。HonoとHonoXのサンプルはMDX、Voidのサンプルは操作できるIslandを含むMarkdownです。対応バージョン、任意の依存関係、設定上の制約は[パッケージのREADME](https://github.com/ts-76/hono-decks/blob/main/packages/decks/README.ja.md)を参照してください。
 
 VoidでMDXを使う構成は、[Voidの実例](/docs/examples?lang=ja#void)で確認できます。この実例にはHono Markdownアダプターは必要ありません。
 
@@ -49,7 +49,7 @@ VoidでMDXを使う構成は、[Voidの実例](/docs/examples?lang=ja#void)で�
 
 ## パッケージを追加し、設定ファイルを作る
 
-以下の例ではnpmを使います。`init`を実行すると、CLIと実行時の共通設定`hono-decks.config.ts`と、生成コードをアプリにつなぐ`src/decks.ts`が作られます。既存のファイルは上書きされません。
+以下の例ではnpmを使います。`init`を実行すると、ビルド専用の`hono-decks.config.ts`、実行時の設定を書く`src/decks.ts`、サンプルのデッキが作られ、`.gitignore`に`src/generated/`が追加されます。既存のファイルは上書きされません。
 
 <CodeBlock filename={"Terminal"} language={"bash"} code={"npm install hono-decks\nnpx hono-decks init"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
@@ -93,7 +93,7 @@ MDXをHono JSXモジュールへ変換します。成功すると`src/generated/
   </Folder>
 </FileTree>
 
-`hono-decks.config.ts`はCLIと実行時の共通設定です。アプリ側で管理する`src/decks.ts`と`deck.mdx`は編集してかまいません。一方、`src/generated/`はコンパイルのたびに上書きされるため、直接編集しないでください。
+`hono-decks.config.ts`はCLIだけが読むビルド設定です。アプリ側で管理する`src/decks.ts`と`deck.mdx`は編集してかまいません。一方、`src/generated/`はコンパイルのたびに上書きされるため、直接編集もコミットもしないでください。
 
 </section>
 
@@ -105,7 +105,7 @@ MDXをHono JSXモジュールへ変換します。成功すると`src/generated/
 
 <CodeBlock filename={"TypeScript"} language={"typescript"} code={"// src/index.ts\nimport { Hono } from \"hono\"\nimport { decks } from \"./decks\"\n\nconst app = new Hono()\napp.route(decks.mountPath, decks.router())\n\nexport default app"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
-`decks.mountPath`は設定ファイルの値から生成されるため、コンパイル時と実行時で公開パスがずれません。
+`decks.mountPath`は設定ファイルの値から生成されるため、コンパイル時と実行時で公開パスがずれません。別のパスにルーターを登録すると、分かりやすいエラーになります。
 
 </section>
 
@@ -119,7 +119,7 @@ Viteの開発中はHMRのようなライブ更新で、対応する本文やIsla
 
 <CodeBlock filename={"vite.config.ts"} language={"typescript"} code={"import { honoDecks } from \"hono-decks/vite\"\nimport { defineConfig } from \"vite\"\n\nexport default defineConfig({\n  plugins: [honoDecks()],\n})"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
-<CodeBlock filename={"package.json"} language={"jsonc"} code={"{\n  \"scripts\": {\n    \"decks:compile\": \"hono-decks compile\",\n    \"dev\": \"vite\",\n    \"build\": \"vite build\"\n  }\n}"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+<CodeBlock filename={"package.json"} language={"jsonc"} code={"{\n  \"scripts\": {\n    \"dev\": \"vite\",\n    \"build\": \"vite build\"\n  }\n}"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
 Wranglerを直接使うCloudflare Workerでは、`wrangler.jsonc`のカスタムビルドへ登録します。`--live-reload`を付けると、普段の開発コマンドだけでデッキの変更監視とブラウザ更新まで行えます。
 

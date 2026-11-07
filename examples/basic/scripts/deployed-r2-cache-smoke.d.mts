@@ -23,10 +23,7 @@ export function assertR2AssetSmokeResult(result: R2AssetSmokeResult): {
   };
 };
 
-export function summarizeCloudflareCacheHeaders(input: {
-  cfCacheStatus: string | null;
-  age: string | null;
-}): {
+export function summarizeCloudflareCacheHeaders(input: { cfCacheStatus: string | null; age: string | null }): {
   cfCacheStatus: string;
   age: string;
 };

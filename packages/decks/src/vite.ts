@@ -62,6 +62,7 @@ export function honoDecks(options: HonoDecksViteOptions = {}): Plugin {
       ogpCacheFile: loaded.ogpCacheFile,
       markdown: loaded.config.build?.markdown,
       refreshOgp: options.refreshOgp,
+      liveReloadPath: resolvedConfig?.command === "serve" ? eventsPath : undefined,
     });
     // Publish only an explicitly configured data cache. Generated code stays in
     // memory, and a failed compilation keeps the previous complete module map.
@@ -133,6 +134,7 @@ export function honoDecks(options: HonoDecksViteOptions = {}): Plugin {
     enforce: "pre",
     async resolveId(id, importer) {
       if (id === "virtual:hono-decks") return VIRTUAL_ENTRY;
+      if (id === "virtual:hono-decks/honox") return HONOX_ENTRY;
       if (id.startsWith(PUBLIC_MODULE_PREFIX)) {
         const path = decodeURIComponent(id.slice(PUBLIC_MODULE_PREFIX.length));
         return modules.has(path) ? MODULE_PREFIX + path : null;
@@ -147,30 +149,17 @@ export function honoDecks(options: HonoDecksViteOptions = {}): Plugin {
         }
         return this.resolve(id, resolve(projectRoot, "package.json"), { skipSelf: true });
       }
-      // Existing Vite facades may still import their old generated path. Keep
-      // them working through the virtual graph without requiring files on disk.
-      if (id.startsWith(".") || id.startsWith("/")) {
-        const path = id.startsWith(".") ? resolve(importer ? dirname(importer.split("?")[0]!) : projectRoot, id) : id;
-        const generated = findModule(modules, path);
-        if (generated) return MODULE_PREFIX + generated;
-      }
       return null;
     },
     async load(id) {
       if (id === VIRTUAL_ENTRY) {
-        return `import config from ${JSON.stringify(configPath)};
-import { createDecks } from ${JSON.stringify(PUBLIC_MODULE_PREFIX + encodeURIComponent(routerModulePath))};
-export { createDecks };
-export const decks = createDecks(config);`;
+        return `export * from ${JSON.stringify(PUBLIC_MODULE_PREFIX + encodeURIComponent(routerModulePath))};`;
       }
+      if (id === HONOX_ENTRY) return HONOX_MODULE;
       if (!id.startsWith(MODULE_PREFIX)) return null;
       const path = id.slice(MODULE_PREFIX.length);
-      let code = modules.get(path);
+      const code = modules.get(path);
       if (code === undefined) return null;
-      if (path === routerModulePath && resolvedConfig?.command === "serve") {
-        code = code.replace("const generatedDecks = defineDecks({",
-          `const generatedDecks = defineDecks({\n  liveReloadPath: () => ${JSON.stringify(eventsPath)},`);
-      }
       // Virtual IDs do not have a physical TS file for Vite's normal TS loader.
       // Strip types here; authored TSX and all imports still go through Vite.
       return (await transform(code, { loader: "ts", format: "esm", sourcefile: path, sourcemap: "inline" })).code;
@@ -192,7 +181,11 @@ export const decks = createDecks(config);`;
       server = devServer;
       devServer.middlewares.use((req, res, next) => {
         if (req.url?.split("?")[0] !== eventsPath || req.method !== "GET") return next();
-        res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache, no-transform", Connection: "keep-alive" });
+        res.writeHead(200, {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache, no-transform",
+          Connection: "keep-alive",
+        });
         res.write(": connected\n\n");
         eventClients.add(res);
         res.on("close", () => eventClients.delete(res));
@@ -213,6 +206,32 @@ export const decks = createDecks(config);`;
 }
 
 const VIRTUAL_ENTRY = "\0hono-decks:entry";
+const HONOX_ENTRY = "\0hono-decks:honox";
+/**
+ * HonoX's own route discovery, evaluated in the app's Vite graph so decks can be
+ * inserted into ROUTES and receive app/routes/_middleware like any file route.
+ */
+const HONOX_MODULE = `import { withHonoXDecks as connect } from "hono-decks/honox";
+import { mountPath } from "virtual:hono-decks";
+
+const routes = import.meta.glob(
+  [
+    "/app/routes/**/*.{ts,tsx,md,mdx}",
+    "/app/routes/.well-known/**/*.{ts,tsx,md,mdx}",
+    "!/app/routes/**/_*.{ts,tsx,md,mdx}",
+    "!/app/routes/**/-*.{ts,tsx,md,mdx}",
+    "!/app/routes/**/$*.{ts,tsx,md,mdx}",
+    "!/app/routes/**/*.test.{ts,tsx}",
+    "!/app/routes/**/*.spec.{ts,tsx}",
+    "!/app/routes/**/-*/**/*",
+  ],
+  { eager: true },
+);
+
+export function withHonoXDecks(options, router) {
+  return connect(options ?? {}, { routes, mountPath, router });
+}
+`;
 const PUBLIC_MODULE_PREFIX = "virtual:hono-decks/module/";
 const MODULE_PREFIX = "\0hono-decks:module:";
 

@@ -11,10 +11,13 @@ export function rewriteAssetUrls(source: string, assets: AssetRef[]): string {
 }
 
 export function rewriteRelativeMdxImports(source: string, sourceDir: string, generatedDir: string): string {
-  return source.replace(/(from\s+|import\s+)(["'])(\.[^"']+)\2/g, (_match, prefix: string, quote: string, specifier: string) => {
-    const target = normalizePath(`${sourceDir}/${specifier}`);
-    return `${prefix}${quote}${toRelativeImportPath(generatedDir, target)}${quote}`;
-  });
+  return source.replace(
+    /(from\s+|import\s+)(["'])(\.[^"']+)\2/g,
+    (_match, prefix: string, quote: string, specifier: string) => {
+      const target = normalizePath(`${sourceDir}/${specifier}`);
+      return `${prefix}${quote}${toRelativeImportPath(generatedDir, target)}${quote}`;
+    },
+  );
 }
 
 export function componentImportPath(outDir: string, sourcePath: string | undefined): string | undefined {
@@ -33,11 +36,16 @@ function localAssetRelativePath(sourcePath: string): string {
   const marker = "/assets/";
   const normalized = normalizePath(sourcePath);
   const markerIndex = normalized.indexOf(marker);
-  return markerIndex === -1 ? (normalized.split("/").at(-1) ?? normalized) : normalized.slice(markerIndex + marker.length);
+  return markerIndex === -1
+    ? (normalized.split("/").at(-1) ?? normalized)
+    : normalized.slice(markerIndex + marker.length);
 }
 
 function normalizePath(path: string): string {
-  return path.replaceAll("\\", "/").replace(/^\.\/+/, "").replace(/\/+/g, "/");
+  return path
+    .replaceAll("\\", "/")
+    .replace(/^\.\/+/, "")
+    .replace(/\/+/g, "/");
 }
 
 function toRelativeImportPath(fromDir: string, target: string): string {

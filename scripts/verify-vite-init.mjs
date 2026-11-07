@@ -52,7 +52,7 @@ for (const [framework, devPort, productionPort] of [
   await writeFile(
     configPath,
     'import { mountPath } from "./deck-settings";\n' +
-      (await readFile(configPath, "utf8")).replace('mountPath: "/slides"', "mountPath"),
+      (await readFile(configPath, "utf8")).replace('mountPath: "/decks"', "mountPath"),
   );
   assert.equal(await readFile(join(app, "package.json"), "utf8"), packageBefore);
   assert.equal(await readFile(sourcePath, "utf8"), source);
@@ -284,10 +284,17 @@ export default function Counter() {
           if (mode === "dev") {
             const markdownPath = join(app, "decks/markdown/deck.md");
             const markdownSource = await readFile(markdownPath, "utf8");
-            await page.evaluate(() => { window.__liveUpdateTestMarker = 73; });
+            await page.evaluate(() => {
+              window.__liveUpdateTestMarker = 73;
+            });
             try {
               await writeFile(markdownPath, markdownSource.replace("Independent Markdown", "Updated Markdown"));
-              await page.waitForFunction(() => document.querySelector("[data-neutral-counter]")?.getAttribute("data-title") === "Updated Markdown", null, { timeout: 20000 });
+              await page.waitForFunction(
+                () =>
+                  document.querySelector("[data-neutral-counter]")?.getAttribute("data-title") === "Updated Markdown",
+                null,
+                { timeout: 20000 },
+              );
               assert.equal(await counter.textContent(), "Count: 1");
               assert.equal(await page.evaluate(() => window.__liveUpdateTestMarker), 73);
               await counter.click();
@@ -295,12 +302,19 @@ export default function Counter() {
             } finally {
               await writeFile(markdownPath, markdownSource);
             }
-            await page.waitForFunction(() => document.querySelector("[data-neutral-counter]")?.getAttribute("data-title") === "Independent Markdown", null, { timeout: 20000 });
+            await page.waitForFunction(
+              () =>
+                document.querySelector("[data-neutral-counter]")?.getAttribute("data-title") === "Independent Markdown",
+              null,
+              { timeout: 20000 },
+            );
             const componentPath = join(app, "decks/markdown/Counter.tsx");
             const componentSource = await readFile(componentPath, "utf8");
             const editedComponent = componentSource.replace("Count: {count}", "Updated Count: {count}");
             assert.notEqual(editedComponent, componentSource);
-            await page.evaluate(() => { window.__liveUpdateTestMarker = 74; });
+            await page.evaluate(() => {
+              window.__liveUpdateTestMarker = 74;
+            });
             try {
               await writeFile(componentPath, editedComponent);
               await page.getByText("Updated Count: 0", { exact: true }).waitFor({ timeout: 20000 });

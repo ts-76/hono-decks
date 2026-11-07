@@ -5,10 +5,7 @@ export interface ServeDecksClientEntryOptions {
   contentType?: string;
 }
 
-export function serveDecksClientEntry(
-  clientEntry: string,
-  options: ServeDecksClientEntryOptions = {},
-): Handler {
+export function serveDecksClientEntry(clientEntry: string, options: ServeDecksClientEntryOptions = {}): Handler {
   return (c) => {
     const headers: Record<string, string> = {
       "content-type": options.contentType ?? "text/javascript; charset=utf-8",

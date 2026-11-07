@@ -59,8 +59,8 @@ The repository's manual `Browser Run smoke` workflow reads the origin and token 
 
 ## What to inspect
 
-- `hono-decks.config.ts` — one config shared by compilation and runtime routing
-- `src/decks.ts` — the application-owned generated-module facade
+- `hono-decks.config.ts` — build-only settings (mount path, deck root, output directory)
+- `src/decks.ts` — runtime options passed to the generated `createDecks()`
 - `src/index.ts` — normal Hono routes alongside `app.route(decks.mountPath, decks.router())`
 - `decks/*/components` — server components and browser islands
 - `test/worker-sample.test.ts` — route, security, R2, embed, presenter, locale, and export expectations

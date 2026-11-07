@@ -99,22 +99,23 @@ for (const entrypoint of entrypoints) {
   DeckViewerOpenGraphInput,
   DeckViewerOpenGraphOptions,
   DecksConfig,
+  DecksOptions,
 } from "hono-decks";
 import type { DecksRouterOptions } from "hono-decks/advanced";
 import type { HydrateSlideIslandsInput } from "hono-decks/client";
-import type { CompileDeckInput, DeckMiddlewareOptions } from "hono-decks/node";
+import type { CompileDeckInput } from "hono-decks/node";
 import type { HonoDecksViteOptions } from "hono-decks/vite";
 import type { RunHonoDecksCliInput, RunHonoDecksCliResult } from "hono-decks/cli";
 
 type PublicApiSmoke = {
   config: DecksConfig;
+  options: DecksOptions;
   source: DeckSource;
   openGraphInput: DeckViewerOpenGraphInput;
   openGraphOptions: DeckViewerOpenGraphOptions;
   router: DecksRouterOptions;
   client: HydrateSlideIslandsInput;
   compile: CompileDeckInput;
-  middleware: DeckMiddlewareOptions;
   vite: HonoDecksViteOptions;
   cliInput: RunHonoDecksCliInput;
   cliResult: RunHonoDecksCliResult;

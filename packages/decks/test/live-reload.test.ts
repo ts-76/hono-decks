@@ -2,20 +2,52 @@ import { runInNewContext } from "node:vm";
 import { describe, expect, it, vi } from "vite-plus/test";
 import { renderLiveReloadScript } from "../src/renderer/presentation-script";
 
-function setup(options: { failFetch?: boolean; invalidHtml?: boolean; changedProps?: boolean; changedClient?: boolean; pending?: boolean; changedContext?: boolean; markdownMounted?: boolean; registered?: boolean } = {}) {
+function setup(
+  options: {
+    failFetch?: boolean;
+    invalidHtml?: boolean;
+    changedProps?: boolean;
+    changedClient?: boolean;
+    pending?: boolean;
+    changedContext?: boolean;
+    markdownMounted?: boolean;
+    registered?: boolean;
+  } = {},
+) {
   let listener: (() => Promise<void>) | undefined;
-  const oldIsland = island("counter", "1", Boolean(options.pending || options.markdownMounted), '{"headings":["old"]}', Boolean(options.markdownMounted));
-  const newIsland = island("counter", options.changedProps ? "2" : "1", Boolean(options.pending || options.markdownMounted), options.changedContext ? '{"headings":["new"]}' : '{"headings":["old"]}', Boolean(options.markdownMounted));
+  const oldIsland = island(
+    "counter",
+    "1",
+    Boolean(options.pending || options.markdownMounted),
+    '{"headings":["old"]}',
+    Boolean(options.markdownMounted),
+  );
+  const newIsland = island(
+    "counter",
+    options.changedProps ? "2" : "1",
+    Boolean(options.pending || options.markdownMounted),
+    options.changedContext ? '{"headings":["new"]}' : '{"headings":["old"]}',
+    Boolean(options.markdownMounted),
+  );
   const oldSlide = {
-    querySelectorAll: () => [oldIsland], attributes: [{ name: "old" }],
-    removeAttribute: vi.fn(), setAttribute: vi.fn(), replaceChildren: vi.fn(),
+    querySelectorAll: () => [oldIsland],
+    attributes: [{ name: "old" }],
+    removeAttribute: vi.fn(),
+    setAttribute: vi.fn(),
+    replaceChildren: vi.fn(),
   };
   const newSlide = {
-    querySelectorAll: () => [newIsland], attributes: [{ name: "class", value: "slide" }],
-    childNodes: [newIsland], replaceWith: vi.fn(),
+    querySelectorAll: () => [newIsland],
+    attributes: [{ name: "class", value: "slide" }],
+    childNodes: [newIsland],
+    replaceWith: vi.fn(),
   };
   const oldDeck = { querySelectorAll: () => [oldSlide], querySelector: () => null, replaceChildren: vi.fn() };
-  const newDeck = { querySelectorAll: () => [newSlide], querySelector: (selector: string) => selector === "script" ? null : newIsland, childNodes: [newSlide] };
+  const newDeck = {
+    querySelectorAll: () => [newSlide],
+    querySelector: (selector: string) => (selector === "script" ? null : newIsland),
+    childNodes: [newSlide],
+  };
   const style = { textContent: "old style" };
   const refresh = vi.fn();
   const reload = vi.fn();
@@ -29,7 +61,8 @@ function setup(options: { failFetch?: boolean; invalidHtml?: boolean; changedPro
     },
   };
   const document = {
-    readyState: "complete", title: "Original",
+    readyState: "complete",
+    title: "Original",
     querySelector(selector: string) {
       if (selector === "[data-hono-decks-deck]") return oldDeck;
       if (selector === "[data-hono-decks-presentation-style]") return style;
@@ -38,32 +71,66 @@ function setup(options: { failFetch?: boolean; invalidHtml?: boolean; changedPro
     },
   };
   class EventSource {
-    addEventListener(_event: string, callback: () => Promise<void>) { listener = callback; }
+    addEventListener(_event: string, callback: () => Promise<void>) {
+      listener = callback;
+    }
   }
-  class DOMParser { parseFromString() { return next; } }
+  class DOMParser {
+    parseFromString() {
+      return next;
+    }
+  }
   let clientRequests = 0;
   const fetch = vi.fn(async (url: string) => ({
     ok: !options.failFetch,
     headers: { get: () => "text/html" },
-    text: async () => url === "/entry.js" ? (options.changedClient ? `client ${++clientRequests}` : "client") : "new html",
+    text: async () =>
+      url === "/entry.js" ? (options.changedClient ? `client ${++clientRequests}` : "client") : "new html",
   }));
-  const runtimeWindow: { __honoDecksPresentationRuntime: { refresh: typeof refresh }; __honoDecksLive?: { register(element: object, update: (value: unknown) => void): void } } = {
+  const runtimeWindow: {
+    __honoDecksPresentationRuntime: { refresh: typeof refresh };
+    __honoDecksLive?: { register(element: object, update: (value: unknown) => void): void };
+  } = {
     __honoDecksPresentationRuntime: { refresh },
   };
   const updateProps = vi.fn();
   runInNewContext(renderLiveReloadScript("/events").replace(/^<script>\s*|\s*<\/script>$/gi, ""), {
-    EventSource, DOMParser, fetch, document, location: { href: "https://example.test/render", reload },
-    window: runtimeWindow, console,
+    EventSource,
+    DOMParser,
+    fetch,
+    document,
+    location: { href: "https://example.test/render", reload },
+    window: runtimeWindow,
+    console,
   });
   if (options.registered) runtimeWindow.__honoDecksLive!.register(oldIsland, updateProps);
-  return { updateProps, update: () => listener!(), newIsland, oldIsland, oldSlide, newSlide, oldDeck, style, document, refresh, reload };
+  return {
+    updateProps,
+    update: () => listener!(),
+    newIsland,
+    oldIsland,
+    oldSlide,
+    newSlide,
+    oldDeck,
+    style,
+    document,
+    refresh,
+    reload,
+  };
 }
 
 function island(id: string, props: string, markdown = false, context = "old", mounted = false) {
   return {
-    hasAttribute: (name: string) => name === (markdown ? "data-hono-md-island" : "data-hono-decks-island") || (mounted && name === "data-hono-md-mounted"),
-    getAttribute: (name: string) => name === (markdown ? "data-hono-md-island" : "data-hono-decks-island") ? id : name === (markdown ? "data-hono-md-props" : "data-hono-decks-props") ? props : null,
-    closest: () => markdown ? { getAttribute: () => context } : null,
+    hasAttribute: (name: string) =>
+      name === (markdown ? "data-hono-md-island" : "data-hono-decks-island") ||
+      (mounted && name === "data-hono-md-mounted"),
+    getAttribute: (name: string) =>
+      name === (markdown ? "data-hono-md-island" : "data-hono-decks-island")
+        ? id
+        : name === (markdown ? "data-hono-md-props" : "data-hono-decks-props")
+          ? props
+          : null,
+    closest: () => (markdown ? { getAttribute: () => context } : null),
     replaceWith: vi.fn(),
     setAttribute: vi.fn(),
   };
@@ -106,7 +173,13 @@ describe("live deck updates", () => {
     expect(test.reload).not.toHaveBeenCalled();
   });
 
-  it.each([{ failFetch: true }, { invalidHtml: true }, { changedProps: true }, { changedClient: true }, { markdownMounted: true, changedContext: true }])("reloads without replacing the deck when an update cannot be safely applied: %o", async (options) => {
+  it.each([
+    { failFetch: true },
+    { invalidHtml: true },
+    { changedProps: true },
+    { changedClient: true },
+    { markdownMounted: true, changedContext: true },
+  ])("reloads without replacing the deck when an update cannot be safely applied: %o", async (options) => {
     const test = setup(options);
     await test.update();
     expect(test.oldDeck.replaceChildren).not.toHaveBeenCalled();
@@ -115,17 +188,29 @@ describe("live deck updates", () => {
   });
 });
 
-function structure(before: string[], after: string[], options: { failHydrate?: boolean; removeEntry?: boolean; unsupportedAdapter?: boolean } = {}) {
+function structure(
+  before: string[],
+  after: string[],
+  options: { failHydrate?: boolean; removeEntry?: boolean; unsupportedAdapter?: boolean } = {},
+) {
   let listener: (() => Promise<void>) | undefined;
   function makeIsland(label: string) {
     let mounted = false;
     return {
       label,
-      hasAttribute: (name: string) => name === "data-hono-decks-island" || (name === "data-hono-decks-live-mounted" && mounted),
-      getAttribute: (name: string) => name === "data-hono-decks-island" ? "Counter" : name === "data-hono-decks-props" ? JSON.stringify({ label }) : null,
+      hasAttribute: (name: string) =>
+        name === "data-hono-decks-island" || (name === "data-hono-decks-live-mounted" && mounted),
+      getAttribute: (name: string) =>
+        name === "data-hono-decks-island"
+          ? "Counter"
+          : name === "data-hono-decks-props"
+            ? JSON.stringify({ label })
+            : null,
       closest: () => null,
       replaceWith: vi.fn(),
-      mount: () => { mounted = true; },
+      mount: () => {
+        mounted = true;
+      },
     };
   }
   const oldIslands = before.map(makeIsland);
@@ -137,22 +222,62 @@ function structure(before: string[], after: string[], options: { failHydrate?: b
   const client = { src: "/entry.js", getAttribute: () => "/entry.js" };
   const style = { textContent: "style" };
   const document = {
-    readyState: "complete", title: "Deck",
-    querySelector: (selector: string) => selector === "[data-hono-decks-deck]" ? oldDeck : selector === "[data-hono-decks-presentation-style]" ? style : client,
-
+    readyState: "complete",
+    title: "Deck",
+    querySelector: (selector: string) =>
+      selector === "[data-hono-decks-deck]"
+        ? oldDeck
+        : selector === "[data-hono-decks-presentation-style]"
+          ? style
+          : client,
   };
-  const next = { title: "Deck", querySelector: (selector: string) => selector === "[data-hono-decks-deck]" ? newDeck : selector === "[data-hono-decks-presentation-style]" ? style : options.removeEntry ? null : client };
+  const next = {
+    title: "Deck",
+    querySelector: (selector: string) =>
+      selector === "[data-hono-decks-deck]"
+        ? newDeck
+        : selector === "[data-hono-decks-presentation-style]"
+          ? style
+          : options.removeEntry
+            ? null
+            : client,
+  };
   const reload = vi.fn();
   const refresh = vi.fn();
-  const window: { __honoDecksPresentationRuntime: { refresh: typeof refresh }; __honoDecksLive?: { register(element: object, update: () => void, dispose: () => void): void; registerHydrator(hydrate: () => void): void } } = { __honoDecksPresentationRuntime: { refresh } };
-  class EventSource { addEventListener(_name: string, callback: () => Promise<void>) { listener = callback; } }
-  class DOMParser { parseFromString() { return next; } }
-  class Event { constructor(public type: string) {} }
+  const window: {
+    __honoDecksPresentationRuntime: { refresh: typeof refresh };
+    __honoDecksLive?: {
+      register(element: object, update: () => void, dispose: () => void): void;
+      registerHydrator(hydrate: () => void): void;
+    };
+  } = { __honoDecksPresentationRuntime: { refresh } };
+  class EventSource {
+    addEventListener(_name: string, callback: () => Promise<void>) {
+      listener = callback;
+    }
+  }
+  class DOMParser {
+    parseFromString() {
+      return next;
+    }
+  }
+  class Event {
+    constructor(public type: string) {}
+  }
   const fetch = async () => ({ ok: true, headers: { get: () => "text/html" }, text: async () => "same client" });
   runInNewContext(renderLiveReloadScript("/events").replace(/^<script>\s*|\s*<\/script>$/gi, ""), {
-    EventSource, DOMParser, Event, fetch, document, window, location: { href: "https://example.test/render", reload }, console,
+    EventSource,
+    DOMParser,
+    Event,
+    fetch,
+    document,
+    window,
+    location: { href: "https://example.test/render", reload },
+    console,
   });
-  const hydrate = vi.fn(() => { if (!options.failHydrate) newIslands.forEach((item) => item.mount()); });
+  const hydrate = vi.fn(() => {
+    if (!options.failHydrate) newIslands.forEach((item) => item.mount());
+  });
   if (!options.unsupportedAdapter) window.__honoDecksLive!.registerHydrator(hydrate);
   const disposers = oldIslands.map(() => vi.fn());
   oldIslands.forEach((element, index) => window.__honoDecksLive!.register(element, vi.fn(), disposers[index]!));

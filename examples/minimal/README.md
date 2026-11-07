@@ -30,6 +30,6 @@ bun run --cwd examples/minimal dev
 - `/decks/welcome` — viewer
 - `/decks/welcome/render` — slide renderer
 
-`hono-decks.config.ts`がcompileとmount pathの共通設定です。`src/decks.ts`は編集可能なfacade、`src/generated`以下は自動生成です。`bun run dev`を起動するとWrangler custom buildが初回compileとMDX変更を監視し、live reloadでブラウザを自動更新します。
+`hono-decks.config.ts`はcompile専用の設定(mount path・デッキの場所・出力先)です。`src/decks.ts`で生成された`createDecks()`にランタイムのオプションを渡します。`src/generated`以下は自動生成でGit管理しません。`bun run dev`を起動するとWrangler custom buildが初回compileとMDX変更を監視し、live reloadでブラウザを自動更新します。
 
 `package.json`はnpmで公開されている`hono-decks`を参照します。リポジトリ内のパッケージソースには依存しないため、このディレクトリをCloudflareへ直接デプロイできます。

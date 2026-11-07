@@ -23,7 +23,11 @@ describe("Hono and HonoX init", () => {
       expect(source).toContain(original.replace("export default app;", ""));
       const config = await readFile(join(cwd, "hono-decks.config.ts"), "utf8");
       expect(config).not.toContain('markdown: "void"');
-      expect(config).toContain('clientEntryAssetPath: "/_assets/client"');
+      expect(config).not.toContain("router");
+      expect(source).toContain("app.route(_honoDecks.mountPath, _honoDecks.router());");
+      const facade = await readFile(join(cwd, "src/decks.ts"), "utf8");
+      expect(facade).toContain('import { createDecks } from "virtual:hono-decks";');
+      expect(facade).toContain("export const decks = createDecks(");
       expect(await readFile(join(cwd, "decks/welcome/deck.mdx"), "utf8")).toContain("# Welcome");
     } finally {
       await rm(cwd, { recursive: true, force: true });
@@ -39,10 +43,12 @@ describe("Hono and HonoX init", () => {
         'import { createApp } from "honox/server";\nexport default createApp({ init(app) { app.get("/health", (c) => c.text("existing")); } });\n';
       await writeFile(join(cwd, "app/server.ts"), server);
       expect((await runHonoDecksCli({ cwd, argv: ["init", "--framework", "honox"] })).exitCode).toBe(0);
-      expect(await readFile(join(cwd, "app/routes/slides/index.ts"), "utf8").catch(() => null)).toBe(null);
-      expect(await readFile(join(cwd, "src/honox-decks.ts"), "utf8")).toContain("mountPath: decks.mountPath");
-      expect(await readFile(join(cwd, "app/server.ts"), "utf8")).toContain(
-        'createApp(withHonoXDecks({ init(app) { app.get("/health", (c) => c.text("existing")); } }))',
+      expect(await readFile(join(cwd, "app/routes/decks/index.ts"), "utf8").catch(() => null)).toBe(null);
+      expect(await readFile(join(cwd, "src/honox-decks.ts"), "utf8").catch(() => null)).toBe(null);
+      const connected = await readFile(join(cwd, "app/server.ts"), "utf8");
+      expect(connected).toContain('import { withHonoXDecks as withHonoXDecks } from "virtual:hono-decks/honox";');
+      expect(connected).toContain(
+        'createApp(withHonoXDecks({ init(app) { app.get("/health", (c) => c.text("existing")); } }, _honoDecks.router()))',
       );
       expect(await readFile(join(cwd, "app/routes/_middleware.ts"), "utf8")).toBe("// app auth");
     } finally {
@@ -59,8 +65,9 @@ describe("Hono and HonoX init", () => {
         'import { createApp } from "honox/server"; export default createApp();',
       );
       expect((await runHonoDecksCli({ cwd, argv: ["init", "--framework", "honox"] })).exitCode).toBe(0);
-      const source = await readFile(join(cwd, "src/honox-decks.ts"), "utf8");
-      expect(source).toContain('from "hono-decks/honox"');
+      expect(await readFile(join(cwd, "app/server.ts"), "utf8")).toContain(
+        "createApp(withHonoXDecks({}, _honoDecks.router()))",
+      );
       const connect = (options: { ROUTES: Record<string, object> }) =>
         withHonoXDecks(options, {
           routes: {},
@@ -83,11 +90,11 @@ describe("Hono and HonoX init", () => {
       );
       expect(transformed).toContain("withHonoXDecks(");
       if (expression.includes("keep")) expect(transformed).toContain("/* keep */");
-      if (expression.includes("options")) expect(transformed).toContain("withHonoXDecks(options)");
+      if (expression.includes("options")) expect(transformed).toContain("withHonoXDecks(options, _honoDecks.router())");
     }
     expect(
       connectHonoXApp('import { createApp as makeApp } from "honox/server"; export default makeApp({});'),
-    ).toContain("makeApp(withHonoXDecks({}))");
+    ).toContain("makeApp(withHonoXDecks({}, _honoDecks.router()))");
     expect(() => connectHonoXApp("export default unknownApp();")).toThrow("No files were changed");
   });
 
@@ -146,13 +153,13 @@ describe("Hono and HonoX init", () => {
     }
   });
 
-  it("does not replace an existing HonoX slides route", async () => {
+  it("does not replace an existing HonoX decks route", async () => {
     const cwd = await fixture("honox");
     try {
       await mkdir(join(cwd, "app/routes"), { recursive: true });
-      await writeFile(join(cwd, "app/routes/slides.tsx"), "// existing route");
+      await writeFile(join(cwd, "app/routes/decks.tsx"), "// existing route");
       expect((await runHonoDecksCli({ cwd, argv: ["init", "--framework", "honox"] })).exitCode).toBe(1);
-      expect(await readFile(join(cwd, "app/routes/slides.tsx"), "utf8")).toBe("// existing route");
+      expect(await readFile(join(cwd, "app/routes/decks.tsx"), "utf8")).toBe("// existing route");
       expect(await readFile(join(cwd, "hono-decks.config.ts"), "utf8").catch(() => null)).toBe(null);
     } finally {
       await rm(cwd, { recursive: true, force: true });

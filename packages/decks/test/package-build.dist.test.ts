@@ -106,11 +106,17 @@ describe("package build metadata", () => {
       "./honox": { types: "./dist/honox.d.ts", import: "./dist/honox.js" },
       "./vite-env": { types: "./vite-env.d.ts" },
     });
-    expect(packageJson.bin).toEqual({ "hono-decks": "dist/bin.js" });
-    expect(packageJson.files).toEqual(expect.arrayContaining(["dist", "README.md", "README.ja.md"]));
+    expect(packageJson.bin).toEqual({ "hono-decks": "bin/hono-decks.js" });
+    expect(packageJson.files).toEqual(expect.arrayContaining(["bin", "dist", "README.md", "README.ja.md"]));
     expect(packageJson.scripts.build).toBe("tsdown");
     expect(packageJson.scripts.prepack).toBe("bun run build");
-    expect(packageJson.scripts.typecheck).toContain("bun run build");
+    // Typecheck and unit tests run against src; only the dist suite builds first.
+    expect(packageJson.scripts.typecheck).not.toContain("bun run build");
+    expect(packageJson.scripts.test).not.toContain("bun run build");
+    expect(packageJson.scripts["test:dist"]).toContain("bun run build");
+    const shim = await readFile(join(packageRoot, "bin", "hono-decks.js"), "utf8");
+    expect(shim.startsWith("#!/usr/bin/env node\n")).toBe(true);
+    expect(shim).toContain('import("../dist/bin.js")');
     expect(packageJson.repository).toEqual({
       type: "git",
       url: "git+https://github.com/ts-76/hono-decks.git",
@@ -144,8 +150,9 @@ describe("package build metadata", () => {
     expect(runtime).not.toContain("node_modules/acorn-jsx/");
     expect(node).toContain('from "unified"');
     expect(node).toContain('from "remark-parse"');
-    expect(node).toContain("deckMiddleware");
-    expect(runtime).not.toContain("deckMiddleware");
+    expect(node).toContain("function compileMarkdown");
+    expect(advanced).not.toMatch(/from "(?:@mdx-js\/mdx|esbuild|remark-mdx|remark-parse|shiki|unified|node:[a-z/]+)"/);
+    expect(advanced).not.toContain("function loadDecksConfig");
     expect(runtime).not.toContain("function decksRouter");
     expect(advanced).toContain("function decksRouter");
     expect(vite).toContain("function honoDecks");
@@ -172,8 +179,8 @@ describe("package build metadata", () => {
       expect(runtimeTypes, name).toContain(name);
     }
     expect(runtimeTypes).toContain("SLIDE_TRANSITIONS");
-    expect(nodeTypes).toContain("DeckMiddlewareOptions");
-    expect(nodeTypes).toContain("deckMiddleware");
+    expect(nodeTypes).toContain("compileMarkdown");
+    expect(nodeTypes).not.toContain("deckMiddleware");
   });
 
   it("ships self-contained English and Japanese documentation", async () => {
@@ -192,8 +199,8 @@ describe("package build metadata", () => {
     expect(readme).toContain("frame-ancestors");
     expect(readme).toContain('allow="fullscreen"');
     expect(readme).toContain("Iframe navigation does not require CORS");
-    expect(readme).toContain("defineDecksConfig<AppEnv>");
-    expect(readme).toContain("createDecks(config)");
+    expect(readme).toContain("createDecks<AppEnv>");
+    expect(readme).not.toContain("createDecks(config)");
     expect(readme).toContain("hono-decks/vite");
     expect(readme).toContain("viewer.render");
     expect(japaneseReadme).toContain("createDeckViewerEmbed()");

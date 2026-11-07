@@ -7,19 +7,12 @@ hono-decks exposes OGP paths and metadata but intentionally does not bundle an i
 ## Enable viewer metadata
 
 ```ts
-// hono-decks.config.ts
-import { defineDecksConfig } from "hono-decks";
+import { createDecks } from "./generated/decks";
+// src/decks.ts
 
-export default defineDecksConfig({
-  mountPath: "/decks",
-  build: {
-    root: "decks",
-    outDir: "src/generated",
-  },
-  router: {
-    viewer: {
-      openGraph: true,
-    },
+export const decks = createDecks({
+  viewer: {
+    openGraph: true,
   },
 });
 ```
@@ -68,7 +61,7 @@ Satori accepts TTF, OTF, and WOFF fonts, but not WOFF2. Bundle fonts that cover 
 
 ## Separate concepts
 
-- `router.viewer.openGraph`: emits social metadata for the viewer
+- `viewer.openGraph`: emits social metadata for the viewer
 - `decks.paths(slug).ogImage`: canonical image output/serving path
 - `build.ogpCacheFile`: caches external page metadata for `@[card](...)`; it does not generate the deck share image
 

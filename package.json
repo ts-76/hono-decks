@@ -12,6 +12,7 @@
   "type": "module",
   "scripts": {
     "build": "bun run --cwd packages/decks build",
+    "generate": "bun run --filter '@hono-decks/example-*' decks:compile",
     "dev": "bun run --cwd examples/basic dev",
     "dev:minimal": "bun run --cwd examples/minimal dev",
     "dev:honox": "bun run --cwd examples/honox dev",
@@ -21,7 +22,6 @@
     "deploy:basic": "bun run --cwd examples/basic deploy:production",
     "deploy:honox": "bun run --cwd examples/honox deploy:production",
     "deploy:ogp": "bun run --cwd examples/ogp deploy:production",
-    "decks:compile": "bun run --cwd packages/decks decks:compile",
     "smoke:package": "bun run build && node scripts/smoke-package.mjs",
     "smoke:package:compat": "bun run build && node scripts/smoke-package-matrix.mjs",
     "smoke:browser-run": "bun run --cwd examples/basic smoke:browser-run",
@@ -30,9 +30,9 @@
     "release": "node scripts/verify-release-baseline.mjs && semantic-release",
     "format": "vp fmt",
     "lint": "vp lint",
-    "typecheck": "bun run --cwd packages/decks typecheck && bun run --cwd examples/basic typecheck && bun run --cwd examples/minimal typecheck && bun run --cwd examples/honox typecheck && bun run --cwd examples/ogp typecheck && bun run --cwd docs typecheck",
-    "test": "bun run --cwd packages/decks test && bun run --cwd examples/basic test && bun run --cwd examples/minimal test && bun run --cwd examples/honox test && bun run --cwd examples/ogp test && bun run --cwd docs test",
-    "check": "vp check && bun run typecheck && bun run test && bun run build:ogp && bun run build:docs && node --test scripts/release-notes.test.mjs",
+    "typecheck": "bun run --filter hono-decks --filter '@hono-decks/*' typecheck",
+    "test": "bun run --filter hono-decks --filter '@hono-decks/*' test",
+    "check": "bun run build && bun run generate && vp check && bun run typecheck && bun run test && bun run --cwd packages/decks test:dist && bun run build:ogp && bun run build:docs && node --test scripts/release-notes.test.mjs",
     "dev:docs": "bun run --cwd docs dev",
     "build:docs": "bun run --cwd docs build",
     "deploy:docs": "bun run --cwd docs deploy"
@@ -49,7 +49,6 @@
     "semver": "^7.8.5",
     "tsdown": "^0.23.4",
     "typescript": "^7.0.2",
-    "typescript-parser": "npm:typescript@6.0.3",
     "vite": "catalog:",
     "vite-plus": "catalog:",
     "wrangler": "^4.156.2"

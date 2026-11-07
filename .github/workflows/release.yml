@@ -53,8 +53,6 @@ jobs:
             echo "::notice::Skipping npm publish until hono-decks@${package_version} is published and tagged as ${baseline_tag}."
           fi
       - run: bun install --frozen-lockfile
-      - run: bun run build
-      - run: bun install --frozen-lockfile
       - run: bun run check
       - run: bun run smoke:package:compat
       - name: Install the fixed publisher and lock the tested package contents

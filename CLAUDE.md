@@ -53,18 +53,30 @@ bd close <id>         # Complete work
 
 ## Build & Test
 
-_Add your build and test commands here_
+Requires Bun 1.3 and Node.js 22.3+ (the Vite+ managed Node from `vp env` works).
 
 ```bash
-# Example:
-# npm install
-# npm test
+bun install                                 # one install; the CLI bin works before the first build
+bun run --cwd packages/decks test           # unit tests against src (no build needed)
+bun run --cwd packages/decks typecheck      # tsc against src
+bun run --cwd examples/basic test           # an example (compiles its decks first)
+bun run check                               # full gate: build, generate, lint+fmt, typecheck, tests, dist tests, builds
+bun run format                              # apply formatting (enforced by `vp check`)
 ```
+
+`bun run check` builds the package once, compiles the Wrangler examples (`bun run generate`), then runs every workspace's typecheck and tests in parallel. `*.dist.test.ts` files inspect the published build and run only through `bun run --cwd packages/decks test:dist`.
 
 ## Architecture Overview
 
-_Add a brief overview of your project architecture_
+- `packages/decks` is the published `hono-decks` package. MDX decks are compiled at build time; Workers only load generated modules.
+  - Worker-safe runtime: `src/server`, `src/renderer`, `src/source`, `src/deck`, `src/client`, `src/shared` (entries `hono-decks`, `hono-decks/advanced`, `hono-decks/client`).
+  - Node-only build side: `src/node`, `src/generator`, `src/compiler`, `src/parser`, `src/routing`, `src/adapters` (entries `hono-decks/node`, `hono-decks/vite`, `hono-decks/cli`). `test/source-structure.test.ts` enforces this boundary.
+- `hono-decks.config.ts` is build-only (`mountPath` + `build`). The compiler embeds `mountPath` in the generated module, whose `createDecks(options)` takes all runtime options.
+- Two integrations: the CLI writes `src/generated/` for Wrangler apps (gitignored), and the Vite plugin serves the same modules virtually as `virtual:hono-decks` (plus `virtual:hono-decks/honox`).
+- `examples/*` and `docs` consume the workspace package like an app would. `examples/void` and `fixtures/*` install published or packed builds and are verified by `scripts/verify-*.mjs`.
 
 ## Conventions & Patterns
 
-_Add your project-specific conventions here_
+- Conventional Commits drive semantic-release; PRs are squash-merged, so the final squash message decides the release (`feat!:` / `BREAKING CHANGE:` for majors).
+- Router options merge with one rule: objects merge recursively, arrays concatenate, other values (including `false` and functions) replace.
+- HTML routes defer missing decks and disabled surfaces to the host app's `notFound` handler.

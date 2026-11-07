@@ -1,9 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
-const packageJson = JSON.parse(
-  readFileSync(new URL("../packages/decks/package.json", import.meta.url), "utf8"),
-);
+const packageJson = JSON.parse(readFileSync(new URL("../packages/decks/package.json", import.meta.url), "utf8"));
 const baselineTag = `v${packageJson.version}`;
 
 try {

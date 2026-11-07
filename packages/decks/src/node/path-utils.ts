@@ -11,7 +11,10 @@ export function normalizeMountPath(value: string): string {
 }
 
 export function normalizePath(path: string): string {
-  return path.replaceAll("\\", "/").replace(/^\.\/+/, "").replace(/\/+/g, "/");
+  return path
+    .replaceAll("\\", "/")
+    .replace(/^\.\/+/, "")
+    .replace(/\/+/g, "/");
 }
 
 export function normalizeDeckRoot(root: string): string {
@@ -28,12 +31,7 @@ export function normalizeRelativePath(path: string, label: string): string {
   const normalized = normalizePath(path).replace(/\/$/, "");
   const segments = normalized.split("/");
 
-  if (
-    normalized === "" ||
-    normalized.startsWith("/") ||
-    /^[A-Za-z]:\//.test(normalized) ||
-    segments.includes("..")
-  ) {
+  if (normalized === "" || normalized.startsWith("/") || /^[A-Za-z]:\//.test(normalized) || segments.includes("..")) {
     throw new Error(`${label} must be a relative path inside the current working directory`);
   }
 

@@ -30,8 +30,6 @@ SRC: https://cdn.example.com/hero.webp
   });
 
   it("normalizes slash-heavy mount paths deterministically", () => {
-    expect(createDeckPaths(`${"/".repeat(20_000)}slides${"/".repeat(20_000)}`, "intro").viewer).toBe(
-      "/slides/intro",
-    );
+    expect(createDeckPaths(`${"/".repeat(20_000)}slides${"/".repeat(20_000)}`, "intro").viewer).toBe("/slides/intro");
   });
 });

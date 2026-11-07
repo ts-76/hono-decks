@@ -1,12 +1,11 @@
 import { Hono } from "hono";
 import { languageDetector, type LanguageVariables } from "hono/language";
 import type { DeckContextVariables } from "hono-decks";
-import type { DecksConfigEnv } from "../hono-decks.config";
-import { decks } from "./decks";
+import { decks, type DecksEnv } from "./decks";
 import { getLocale } from "./i18n";
 import { renderDeckDetailsPage, renderDeckIndexHead, renderDeckIndexPage, renderHomePage } from "./pages";
 
-interface Env extends DecksConfigEnv {
+interface Env extends DecksEnv {
   Variables: DeckContextVariables & LanguageVariables;
 }
 

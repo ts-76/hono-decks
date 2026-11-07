@@ -16,10 +16,10 @@ bunx hono-decks init
 bunx hono-decks compile
 ```
 
-`init` は `hono-decks.config.ts` と `src/decks.ts` を作ります。
+`init` は次の 3 ファイルを作り、`.gitignore` に `/src/generated/` を追加します。
 
 ```ts
-// hono-decks.config.ts
+// hono-decks.config.ts — CLI と Vite plugin だけが読むビルド設定
 import { defineDecksConfig } from "hono-decks";
 
 export default defineDecksConfig({
@@ -32,12 +32,21 @@ export default defineDecksConfig({
 ```
 
 ```ts
-// src/decks.ts
-import config from "../hono-decks.config";
+// src/decks.ts — ランタイムのオプションはここに書く
 import { createDecks } from "./generated/decks";
 
-export const decks = createDecks(config);
+export const decks = createDecks();
 ```
+
+```mdx
+---
+title: Welcome
+---
+
+# Welcome
+```
+
+アプリに router を mount すると `/decks/welcome` で表示できます。
 
 ```ts
 // src/index.ts
@@ -50,13 +59,13 @@ app.route(decks.mountPath, decks.router());
 export default app;
 ```
 
-`decks/welcome/deck.mdx` を追加すると `/decks/welcome` で表示できます。
+1.x から移行する場合は [MIGRATION.md](MIGRATION.md#日本語) を参照してください。
 
 ## API の考え方
 
-`hono-decks.config.ts` は CLI と runtime の single source of truth です。compile 時の asset URL と `app.route()` に別々の mount path を書く必要はありません。
+`hono-decks.config.ts` はビルド専用です。CLI と Vite plugin だけが読み、Worker は import しません。compiler は `mountPath` を asset URL と生成モジュールに埋め込むため、`decks.mountPath` は常にコンパイル時の値です。別のパスに mount すると、壊れたリンクを返す代わりに明示的なエラーになります。
 
-generated module が返す configured kit には、アプリで必要な操作がまとまっています。
+生成された `createDecks(options)` は、アプリで必要な操作をまとめた API を返します。
 
 ```ts
 decks.mountPath;
@@ -86,7 +95,7 @@ decks.paths("welcome");
 custom viewer や route では文字列を連結せず、この path map または `DeckPageMeta.paths` を使います。
 
 ```ts
-router: {
+createDecks({
   viewer: {
     controls: {
       after: ({ meta }) => [
@@ -94,7 +103,7 @@ router: {
       ],
     },
   },
-}
+});
 ```
 
 ## Dev integration
@@ -111,9 +120,12 @@ router: {
 }
 ```
 
-これでdeck変更時に自動compileされます。ブラウザも自動更新するため、dev scriptでは`wrangler dev --live-reload`を使います。HonoXやViteを使う場合は同じVite configへpluginを追加します。
+これでdeck変更時に自動compileされます。ブラウザも自動更新するため、dev scriptでは`wrangler dev --live-reload`を使います。生成ファイルは dev・build・typecheck のたびに作り直されるため、`src/generated/` はGitで管理しません。
+
+HonoXやViteを使う場合は `hono-decks init --framework hono`(または `honox`、`void`)を実行するか、pluginを追加します。pluginは生成モジュールをメモリ上に保持して `virtual:hono-decks` として公開し、ディスクには書き出しません。
 
 ```ts
+// vite.config.ts
 import { honoDecks } from "hono-decks/vite";
 import { defineConfig } from "vite";
 
@@ -122,19 +134,26 @@ export default defineConfig({
 });
 ```
 
+```ts
+// src/decks.ts
+/// <reference types="hono-decks/vite-env" />
+import { createDecks } from "virtual:hono-decks";
+
+export const decks = createDecks();
+```
+
 Vite pluginはcompile成功後にfull reloadを通知します。どちらも利用者が実行するコマンドは既存の `bun run dev` だけです。`hono-decks compile --watch` は独自ツールへ組み込む場合の低レベルな選択肢として残しています。
 
-config を別名にした場合だけ `hono-decks compile --config path/to/config.ts` を使います。`root`、`outDir`、`mountPath` は config の `build` と top-level に置きます。
+config を別名にした場合だけ `hono-decks compile --config path/to/config.ts` を使います。
 
 ## Runtime config
 
-resolver はすべて object argument を1個受け取ります。
+ランタイムのオプションは `createDecks()` に渡します。resolver はすべて object argument を1個受け取り、型パラメーターで Worker の binding を `c.env` に反映できます。
 
 ```ts
-import {
-  defineDecksConfig,
-  type DeckBrowserRunBinding,
-} from "hono-decks";
+// src/decks.ts
+import type { DeckBrowserRunBinding } from "hono-decks";
+import { createDecks } from "./generated/decks";
 
 interface AppEnv {
   Bindings: {
@@ -143,28 +162,36 @@ interface AppEnv {
   };
 }
 
-export default defineDecksConfig<AppEnv>({
-  mountPath: "/decks",
-  build: { root: "decks", outDir: "src/generated" },
-  router: {
-    presenter: {
-      enabled: ({ dev }) => dev,
-      viewerControl: true,
-    },
-    export: {
-      authorize: ({ c }) =>
-        c.req.header("authorization") === `Bearer ${c.env.DECK_EXPORT_TOKEN}`,
-      browser: ({ c }) => c.env.BROWSER,
-      pdf: true,
-      png: true,
-    },
+export const decks = createDecks<AppEnv>({
+  presenter: {
+    enabled: ({ dev }) => dev,
+    viewerControl: true,
+  },
+  export: {
+    authorize: ({ c }) =>
+      c.req.header("authorization") === `Bearer ${c.env.DECK_EXPORT_TOKEN}`,
+    browser: ({ c }) => c.env.BROWSER,
+    pdf: true,
+    png: true,
   },
 });
 ```
 
 `dev`を省略すると、ViteとWranglerが設定する`NODE_ENV`から判定します。標準設定では、`vite`と`wrangler dev`は開発モード、プロダクションビルドと`wrangler deploy`は本番モードになります。`dev: false`やresolverを指定した場合は明示値が優先され、判定できない環境では本番モードとして扱われます。
 
-`decks.router(overrides)` は config を保ったまま nested options を合成します。機能を明示的に止める場合は `export: false`、`embed: false`、`presenter: false` を指定できます。
+`decks.router(overrides)` のマージ規則は一つです。オブジェクトは再帰的にマージ、配列は連結し、それ以外の値(`false` や関数を含む)は置き換えます。機能を明示的に止める場合は `export: false`、`embed: false`、`presenter: false` を指定できます。
+
+デッキが無い場合・本番での下書き・無効にしたページは、アプリの `notFound` ハンドラーに任せます。404 ページは `app.notFound()` で決められます。
+
+`source` で生成済みの source を拡張できます。たとえば asset を R2 から配信する場合です。
+
+```ts
+import { withR2Assets } from "hono-decks";
+
+export const decks = createDecks<AppEnv>({
+  source: (source) => withR2Assets(source, { bucket: (c) => c.env.DECK_ASSETS }),
+});
+```
 
 ## Custom route
 
@@ -208,15 +235,15 @@ decks/product/
 
 ## Embed / export / print
 
-外部 iframe は `router.embed` で明示的に有効化し、`frameAncestors` に埋め込み元 origin を列挙します。
+外部 iframe は `embed` オプションで明示的に有効化し、`frameAncestors` に埋め込み元 origin を列挙します。
 
 ```ts
-router: {
+createDecks({
   embed: {
     frameAncestors: ["https://blog.example.com"],
     robots: false,
   },
-}
+});
 ```
 
 PDF/PNG は Cloudflare Browser Rendering binding を `browser: ({ c }) => c.env.BROWSER` で返します。export control は `authorize` が通った request にだけ表示されます。
@@ -225,25 +252,27 @@ Viewer 上の `Cmd + P` / `Ctrl + P` は print route へ移動し、すべての
 
 ## Build-time OGP images
 
-`router.viewer.openGraph` を有効にすると、viewer は `decks.paths(slug).ogImage` を使って Open Graph / Twitter Card の絶対URLを出力します。画像生成ライブラリは core へ含めていません。
+`viewer.openGraph` を有効にすると、viewer は `decks.paths(slug).ogImage` を使って Open Graph / Twitter Card の絶対URLを出力します。画像生成ライブラリは core へ含めていません。
 
 ```ts
-router: {
+createDecks({
   viewer: { openGraph: true },
-}
+});
 ```
 
 `examples/ogp` は Satori と resvg を example だけの依存として追加し、frontmatter から 1200×630 PNG をビルド時に生成して Workers Static Assets で配信するレシピです。Browser Rendering binding は不要です。`build.ogpCacheFile` はスライド内 LinkCard 用の外部メタデータキャッシュであり、この share image 生成とは別機能です。
 
 ## Public entries
 
-- `hono-decks`: `defineDecksConfig`、configured kit の型、customization、deck authoring
-- `hono-decks/advanced`: raw router/source/renderer を組み立てる低レベル API
+- `hono-decks`: `defineDecksConfig`、ランタイムのオプションの型、customization、deck authoring
+- `hono-decks/advanced`: raw router/source/renderer を組み立てる Worker-safe な低レベル API
 - `hono-decks/client`: client island hydration
-- `hono-decks/node`: compiler / local filesystem adapter
+- `hono-decks/node`: Node 専用の compiler、config loader、local filesystem adapter
+- `hono-decks/vite`: 開発中にデッキをcompile・監視する Vite integration
+- `hono-decks/honox`: HonoX のルート連携(`virtual:hono-decks/honox` が使用)
 - `hono-decks/cli`: programmatic CLI
 
-通常は root entry と generated `createDecks(config)` を使ってください。
+通常は root entry と生成された `createDecks()` を使ってください。
 
 ```ts
 import { decksRouter, manifestDeckSource } from "hono-decks/advanced";
@@ -258,11 +287,21 @@ advanced entry は独自 source や独自 pipeline を作る場合に限定し�
 
 - `examples/minimal`: standalone Worker の最小構成
 - `examples/basic`: R2 assets、Browser Rendering、custom page、client components
-- `examples/honox`: HonoX route への mount
+- `examples/honox`: `virtual:hono-decks/honox` で HonoX の file route に router を追加
 - `docs`: ドキュメントサイトと埋め込みデモ
 - `examples/ogp`: Satori による browserless な build-time OGP 生成
 
-各 example は同じ `hono-decks.config.ts` contract を使います。`decks:compile`、`typecheck`、`test`、`deploy` の前に generated modules を更新します。
+各 example は、ビルド設定を `hono-decks.config.ts`、ランタイムのオプションをアプリのdecksモジュールに置く同じ構成です。Wrangler の example は `typecheck`・`test`・`dev`・`deploy` の前にデッキをcompileします。ルートで `bun run generate` を実行するとまとめてcompileできます。
+
+## 開発への参加
+
+```bash
+bun install
+bun run --cwd packages/decks test   # src に対する単体テスト(ビルド不要)
+bun run check                       # 全体の検証(build、generate、lint＋format、typecheck、test)
+```
+
+各ワークスペースの typecheck と test は並列で実行します。公開ビルドを検査する `*.dist.test.ts` は `bun run --cwd packages/decks test:dist` で実行します。
 
 ## Cloudflare
 
@@ -320,8 +359,7 @@ bun run release
 
 ```ts
 export default defineDecksConfig({
-  mountPath: "/slides",
-  router: { clientEntryAssetPath: "/_assets/client" },
+  mountPath: "/decks",
   build: {
     root: "decks",
     markdown: { adapter: "hono-decks/adapters/hono-markdown" },
@@ -337,7 +375,7 @@ export default defineDecksConfig({
 既存の `markdown: "void"` は、既に導入したVoidアダプターの公開コンパイラーAPIでも引き続き動作します。
 `init --framework void --install` の導入手順、既存のdev／buildコマンドは変わりません。
 
-設定はサーバー実行時にも読み込むため、アダプターは文字列で指定し、Node用のfactoryを設定ファイルへimportしません。
+アダプターはビルド時にだけ読み込まれます。設定ファイル自体もWorkerのバンドルには含まれません。
 Hono＋Vite・HonoXは引き続きMDXが標準で、VoidやMarkdown用パーサーの追加は不要です。
 これらでMarkdownを使う場合は、共通パッケージとコンパイラー用peer dependenciesを導入し、上記ブリッジを選択します。
 Viteは仮想モジュールを利用し、既存の `hono-decks compile` はファイル出力を維持します。
@@ -347,7 +385,7 @@ Viteは仮想モジュールを利用し、既存の `hono-decks compile` はフ
 スライド分割・メタデータ・アセット・ルーティング・表示中スライドの判定はhono-decksが担当し、Markdownの変換とislandのスケジュールはアダプターが担当します。
 同じVoidアプリにhonoxpressを組み込んでも、ドキュメントとスライドが互いの内部実装に依存する必要はありません。
 
-Hono＋Vite・HonoXのinitは、dev serverが標準で`.js`を除外するため、拡張子なしの
-`/_assets/client`を設定します。配信は既存アプリのミドルウェア・認可を通ります。
-既存CLI構成の標準パス`/_assets/client.js`は維持します。VoidなしのMarkdown実アプリ検証は、
+生成されたクライアントのバンドルは、mount path配下の拡張子なしの`/_assets/client`で配信します。
+`@hono/vite-dev-server`が標準で`.js`を除外するためです。配信は既存アプリのミドルウェア・認可を通り、
+`createDecks({ client: { path } })`で変更できます。VoidなしのMarkdown実アプリ検証は、
 `HONO_MARKDOWN_PACKAGE`に共通パッケージのtarballを指定し、`node scripts/verify-vite-init.mjs`で実行できます。

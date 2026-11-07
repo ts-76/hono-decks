@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { jsx } from "hono/jsx/jsx-runtime";
 import { describe, expect, it } from "vite-plus/test";
 import type { CompiledDeck } from "../src/deck/model";
-import { configureDecks, defineDecks, defineDecksConfig } from "../src/server/define-decks";
+import { configureDecks, defineDecksConfig } from "../src/server/define-decks";
 import { manifestDeckSource } from "../src/source/manifest-source";
 import { withR2Assets } from "../src/source/r2-assets";
 import { createDeckViewerEmbed, createDeckViewerParts, deckContext, decksRouter } from "../src/server/router";
@@ -698,10 +698,7 @@ describe("decksRouter", () => {
       ...deck,
       meta: { ...deck.meta, description: 'Share <this> & "that"' },
     };
-    const configured = configureDecks(
-      defineDecks({ manifest: { decks: [describedDeck] } }),
-      defineDecksConfig({ mountPath: "/slides", router: { viewer: { openGraph: {} } } }),
-    );
+    const configured = configureDecks({ mountPath: "/slides", decks: [describedDeck] }, { viewer: { openGraph: {} } });
     app.get("/slides/:slug/meta", configured.context(), (c) => c.json(c.var.deckMeta));
     app.route(configured.mountPath, configured.router());
 
@@ -1165,11 +1162,11 @@ describe("decksRouter", () => {
     expect(html).not.toContain('type="submit"');
   });
 
-  it("creates a router from a generated manifest with defineDecks", async () => {
-    const decks = defineDecks({ manifest: { decks: [deck] } });
+  it("creates a router from a generated manifest with configureDecks", async () => {
+    const decks = configureDecks({ mountPath: "/decks", manifest: { decks: [deck] } });
     const app = new Hono();
 
-    app.route("/decks", decks.router());
+    app.route(decks.mountPath, decks.router());
 
     const response = await app.request("/decks/deck1/render");
     expect(response.status).toBe(200);
@@ -1178,11 +1175,8 @@ describe("decksRouter", () => {
 
   it("creates one configured kit for routes, context, source, and paths", async () => {
     const configured = configureDecks(
-      defineDecks({ manifest: { decks: [deck] } }),
-      defineDecksConfig({
-        mountPath: "/slides/",
-        router: { pages: { index: false, print: false } },
-      }),
+      { mountPath: "/slides/", decks: [deck] },
+      { pages: { index: false, print: false } },
     );
     const app = new Hono<{ Variables: DeckContextVariables }>();
     app.get(`${configured.mountPath}/:slug/about`, configured.context(), (c) =>
@@ -1217,40 +1211,39 @@ describe("decksRouter", () => {
   });
 
   it("keeps root-mounted paths canonical", () => {
-    const configured = configureDecks(
-      defineDecks({ manifest: { decks: [deck] } }),
-      defineDecksConfig({ mountPath: "/" }),
-    );
+    const configured = configureDecks({ mountPath: "/", decks: [deck] });
     expect(configured.mountPath).toBe("/");
     expect(configured.paths("deck1").viewer).toBe("/deck1");
   });
 
   it("deeply composes nested router overrides without dropping unrelated defaults", async () => {
-    const decks = defineDecks({
-      manifest: { decks: [deck] },
-      viewer: {
-        lang: "en",
-        style: ".base-viewer { color: red; }",
-        openGraph: { imagePath: "/base-social.png" },
-        controls: {
-          className: "base-controls",
-          hidden: ["fullscreen"],
-          labels: { previous: "Back" },
-          before: [{ type: "link", href: "/base", label: "Base" }],
+    const decks = configureDecks(
+      { mountPath: "/decks", decks: [deck] },
+      {
+        viewer: {
+          lang: "en",
+          style: ".base-viewer { color: red; }",
+          openGraph: { imagePath: "/base-social.png" },
+          controls: {
+            className: "base-controls",
+            hidden: ["fullscreen"],
+            labels: { previous: "Back" },
+            before: [{ type: "link", href: "/base", label: "Base" }],
+          },
+        },
+        presenter: {
+          enabled: true,
+          viewerControl: { label: "Speaker", icon: "presenter" },
+        },
+        document: {
+          lang: "ja",
+          head: jsx("meta", { name: "document-base", content: "base" }),
+          surfaces: {
+            render: { lang: "fr" },
+          },
         },
       },
-      presenter: {
-        enabled: true,
-        viewerControl: { label: "Speaker", icon: "presenter" },
-      },
-      document: {
-        lang: "ja",
-        head: jsx("meta", { name: "document-base", content: "base" }),
-        surfaces: {
-          render: { lang: "fr" },
-        },
-      },
-    });
+    );
     const app = new Hono();
     app.route(
       "/decks",
@@ -1296,20 +1289,50 @@ describe("decksRouter", () => {
     expect(renderHtml).toContain('<style data-hono-decks-presentation-style nonce="merged-nonce">');
   });
 
-  it("defines typed deck runtime config without changing the object", () => {
-    const config = defineDecksConfig({
-      mountPath: "/slides",
-      source: (source) => source,
-      router: {
-        dev: true,
+  it("defines the build-only config without changing the object", () => {
+    const config = defineDecksConfig({ mountPath: "/slides", build: { root: "talks" } });
+    expect(config).toEqual({ mountPath: "/slides", build: { root: "talks" } });
+  });
+
+  it("decorates the generated source through createDecks options", async () => {
+    const configured = configureDecks(
+      { mountPath: "/slides", decks: [deck, { ...deck, slug: "hidden" }] },
+      {
+        source: (source) => ({
+          listDecks: async (c) => (await source.listDecks(c)).filter((entry) => entry.slug !== "hidden"),
+          getCompiledDeck: (c, slug) => (slug === "hidden" ? Promise.resolve(null) : source.getCompiledDeck(c, slug)),
+        }),
       },
+    );
+    const app = new Hono();
+    app.route(configured.mountPath, configured.router());
+    expect((await app.request("/slides/deck1")).status).toBe(200);
+    expect((await app.request("/slides/hidden")).status).toBe(404);
+  });
+
+  it("fails loudly when the router is mounted away from the compiled mountPath", async () => {
+    const configured = configureDecks({ mountPath: "/slides", decks: [deck] });
+    const app = new Hono();
+    app.route("/talks", configured.router());
+    app.onError((error, c) => c.text(error.message, 500));
+    const response = await app.request("/talks/deck1");
+    expect(response.status).toBe(500);
+    expect(await response.text()).toContain('compiled for mountPath "/slides"');
+  });
+
+  it("restores deck transition defaults omitted from generated slide metadata", async () => {
+    const configured = configureDecks({
+      mountPath: "/slides",
+      decks: [
+        {
+          ...deck,
+          meta: { ...deck.meta, transition: "fade" },
+          slides: deck.slides.map((slide) => ({ ...slide, meta: { meta: {} } })),
+        },
+      ],
     });
-
-    const source = manifestDeckSource({ decks: [deck] });
-
-    expect(config.mountPath).toBe("/slides");
-    expect(config.source?.(source)).toBe(source);
-    expect(config.router?.dev).toBe(true);
+    const compiled = await configured.source.getCompiledDeck({} as never, "deck1");
+    expect(compiled?.slides[0]?.meta.transition).toBe("fade");
   });
 
   it("serves the compiled deck on a fixed 1920x1080 render route", async () => {
@@ -1589,7 +1612,7 @@ describe("decksRouter", () => {
       "/slides",
       decksRouter({
         source: manifestDeckSource({ decks: [componentDeck] }),
-        clientEntry: "/assets/slides.client.js",
+        client: { url: "/assets/slides.client.js" },
         components: {
           Badge: (props) => jsx("strong", { class: "badge", children: String(props.label) }),
         },
@@ -1626,10 +1649,10 @@ describe("decksRouter", () => {
   it("omits the generated client entry on explicitly static decks while preserving app overrides", async () => {
     const source = manifestDeckSource({ decks: [{ ...deck, clientEntryRequired: false }] });
     const app = new Hono();
-    app.route("/slides", decksRouter({ source, clientEntryAsset: "console.log('islands');" }));
-    expect(await (await app.request("/slides/deck1/render")).text()).not.toContain("/_assets/client.js");
+    app.route("/slides", decksRouter({ source, client: { bundle: "console.log('islands');" } }));
+    expect(await (await app.request("/slides/deck1/render")).text()).not.toContain("/_assets/client");
     const custom = new Hono();
-    custom.route("/slides", decksRouter({ source, clientEntry: "/custom.js", clientEntryAsset: "unused" }));
+    custom.route("/slides", decksRouter({ source, client: { url: "/custom.js", bundle: "unused" } }));
     expect(await (await custom.request("/slides/deck1/render")).text()).toContain('src="/custom.js"');
   });
 
@@ -1639,15 +1662,15 @@ describe("decksRouter", () => {
       "/slides",
       decksRouter({
         source: manifestDeckSource({ decks: [deck] }),
-        clientEntryAsset: "console.log('deck client');",
+        client: { bundle: "console.log('deck client');" },
       }),
     );
 
     const renderHtml = await (await app.request("/slides/deck1/render")).text();
-    const asset = await app.request("/slides/_assets/client.js");
+    const asset = await app.request("/slides/_assets/client");
 
     expect(renderHtml).toContain(
-      '<script data-hono-decks-client-entry type="module" src="/slides/_assets/client.js"></script>',
+      '<script data-hono-decks-client-entry type="module" src="/slides/_assets/client"></script>',
     );
     expect(asset.status).toBe(200);
     expect(asset.headers.get("content-type")).toContain("text/javascript");
@@ -1681,14 +1704,13 @@ describe("decksRouter", () => {
     expect(Array.from(new Uint8Array(await response.arrayBuffer()))).toEqual([4, 5, 6]);
   });
 
-  it("lets an explicit clientEntry URL override the generated asset URL", async () => {
+  it("lets an explicit client URL override the generated asset URL", async () => {
     const app = new Hono();
     app.route(
       "/slides",
       decksRouter({
         source: manifestDeckSource({ decks: [deck] }),
-        clientEntry: "/assets/slides.client.js",
-        clientEntryAsset: "console.log('deck client');",
+        client: { url: "/assets/slides.client.js", bundle: "console.log('deck client');" },
       }),
     );
 
@@ -1697,7 +1719,7 @@ describe("decksRouter", () => {
     expect(renderHtml).toContain(
       '<script data-hono-decks-client-entry type="module" src="/assets/slides.client.js"></script>',
     );
-    expect(renderHtml).not.toContain("/slides/_assets/client.js");
+    expect(renderHtml).not.toContain("/slides/_assets/client");
   });
 
   it("lets callers mount future feature routers without coupling viewer routes to edit code", async () => {
@@ -1739,7 +1761,7 @@ describe("decksRouter", () => {
       decksRouter({
         source: manifestDeckSource({ decks: [deck] }),
         dev: true,
-        liveReloadPath: (slug, mountPath) => `${mountPath}/${encodeURIComponent(slug)}/events`,
+        liveReloadPath: "/decks/events",
       }),
     );
 
@@ -1748,7 +1770,7 @@ describe("decksRouter", () => {
 
     expect(wrapperHtml).not.toContain("new EventSource");
     expect(renderHtml).toContain("new EventSource");
-    expect(renderHtml).toContain('new EventSource("/decks/deck1/events")');
+    expect(renderHtml).toContain('new EventSource("/decks/events")');
 
     const production = new Hono();
     production.route(
@@ -1756,7 +1778,7 @@ describe("decksRouter", () => {
       decksRouter({
         source: manifestDeckSource({ decks: [deck] }),
         dev: false,
-        liveReloadPath: () => "/events",
+        liveReloadPath: "/events",
       }),
     );
     expect(await (await production.request("/decks/deck1/render")).text()).not.toContain("new EventSource");
@@ -1772,7 +1794,7 @@ describe("decksRouter", () => {
 
     const missing = await app.request("/decks/missing");
     expect(missing.status).toBe(404);
-    expect(await missing.json()).toEqual({ error: "Deck not found", slug: "missing" });
+    expect(await missing.text()).toBe("404 Not Found");
   });
 
   it("provides deck-aware context variables for custom routes", async () => {
@@ -1934,7 +1956,7 @@ describe("decksRouter", () => {
     const dev = await app.request("/dev/draft/embed");
 
     expect(production.status).toBe(404);
-    expect(await production.json()).toEqual({ error: "Deck not found", slug: "draft" });
+    expect(await production.text()).toBe("404 Not Found");
     expect(dev.status).toBe(200);
     expect(await dev.text()).toBe("draft");
   });
@@ -1953,7 +1975,7 @@ describe("decksRouter", () => {
 
     const response = await app.request("/slides/draft");
     expect(response.status).toBe(404);
-    expect(await response.json()).toEqual({ error: "Deck not found", slug: "draft" });
+    expect(await response.text()).toBe("404 Not Found");
   });
 
   it("shows draft decks in development mode", async () => {

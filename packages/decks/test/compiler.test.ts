@@ -2,6 +2,55 @@ import { describe, expect, it } from "vite-plus/test";
 import { compileMarkdown } from "../src/compiler/compiler";
 
 describe("compileMarkdown", () => {
+  it("applies slide-only keys in the opening frontmatter to the first slide", async () => {
+    const deck = await compileMarkdown({
+      slug: "cover",
+      sourcePath: "decks/cover/deck.mdx",
+      kind: "directory",
+      markdown: `---
+title: Launch
+layout: cover
+class: hero
+notes: Welcome everyone.
+transition: fade
+---
+
+# Launch
+
+---
+
+## Agenda`,
+    });
+
+    expect(deck.meta.title).toBe("Launch");
+    expect(deck.meta.meta).toEqual({});
+    expect(deck.warnings.filter((warning) => warning.code === "unknown-frontmatter-key")).toEqual([]);
+    expect(deck.slides[0]?.meta).toMatchObject({ layout: "cover", className: "hero", notes: "Welcome everyone." });
+    expect(deck.slides[1]?.meta.layout).toBe("default");
+    expect(deck.slides[1]?.meta.transition).toBe("fade");
+  });
+
+  it("lets the first slide's own frontmatter override opening slide keys", async () => {
+    const deck = await compileMarkdown({
+      slug: "cover",
+      sourcePath: "decks/cover/deck.mdx",
+      kind: "directory",
+      markdown: `---
+title: Launch
+layout: cover
+---
+
+---
+layout: statement
+---
+
+# Launch`,
+    });
+
+    expect(deck.slides).toHaveLength(1);
+    expect(deck.slides[0]?.meta.layout).toBe("statement");
+  });
+
   it("compiles deck and slide frontmatter into a CompiledDeck", async () => {
     const deck = await compileMarkdown({
       slug: "deck1",

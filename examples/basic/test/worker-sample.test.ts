@@ -24,7 +24,7 @@ describe("sample Worker app", () => {
     const packageSource = await readFile(new URL("../package.json", import.meta.url), "utf8");
     const pagesSource = await readFile(new URL("../src/pages.tsx", import.meta.url), "utf8");
 
-    for (const source of [entrySource, configSource, pagesSource]) {
+    for (const source of [entrySource, facadeSource, configSource, pagesSource]) {
       expect(source).toContain('from "hono-decks"');
       expect(source).not.toContain("hono-decks/runtime");
     }
@@ -32,35 +32,25 @@ describe("sample Worker app", () => {
     expect(entrySource).not.toContain("./generated/decks");
     expect(entrySource).not.toContain("DeckBrowserRunBinding");
     expect(entrySource).not.toContain("pdf: true");
-    expect(entrySource).not.toContain("data-sample-control");
-    expect(entrySource).not.toContain("renderSampleViewerHead");
     expect(entrySource).toContain("decks.mountPath");
-    expect(facadeSource).toContain("./generated/decks");
-    expect(facadeSource).toContain('import config from "../hono-decks.config"');
-    expect(facadeSource).toContain("export const decks = createDecks(config)");
-    expect(configSource).toContain("defineDecksConfig");
-    expect(configSource).toContain("defineDecksConfig<DecksConfigEnv>");
-    expect(configSource).not.toContain("as DecksConfigBindings");
-    expect(configSource).not.toContain("c.env as");
+    expect(facadeSource).toContain('import { createDecks } from "./generated/decks"');
+    expect(facadeSource).toContain("export const decks = createDecks<DecksEnv>({");
+    expect(facadeSource).not.toContain("hono-decks.config");
+    expect(facadeSource).not.toContain("c.env as");
+    for (const runtimeOption of [
+      "DeckBrowserRunBinding",
+      "DECK_PRESENTER_ENABLED",
+      "renderSampleViewerHead",
+      "pdf: true",
+    ]) {
+      expect(facadeSource).toContain(runtimeOption);
+      expect(configSource).not.toContain(runtimeOption);
+    }
+    expect(configSource).toContain("defineDecksConfig({");
+    expect(configSource).not.toMatch(/from "\.\/src\//);
     expect(configSource).toContain('mountPath: "/decks"');
     expect(configSource).toContain('ogpCacheFile: "decks/ogp-cache.json"');
-    expect(configSource).toContain("DeckBrowserRunBinding");
-    expect(configSource).toContain("DECK_PRESENTER_ENABLED");
-    expect(configSource).not.toContain("DECK_RUNTIME_DEV");
     expect(packageSource).not.toContain("DECK_RUNTIME_DEV");
-    expect(configSource).toContain("renderSampleViewerHead");
-    expect(configSource).toContain("pdf: true");
-    expect(configSource).toContain("data-sample-control");
-    expect(configSource).toContain("presenter: {");
-    expect(configSource).toContain("viewerControl: {");
-    expect(configSource).toContain('className: "sample-viewer-controls"');
-    expect(configSource).toContain('itemClassName: "sample-viewer-control"');
-    expect(configSource).not.toContain('hidden: ["fullscreen"]');
-    expect(configSource).toContain('icon: "home"');
-    expect(configSource).toContain('icon: "details"');
-    expect(configSource).toContain('icon: "presenter"');
-    expect(configSource).toContain("before: [");
-    expect(configSource).toContain("after: (context)");
   });
 
   it("uses a generated module-backed deck source", async () => {
@@ -451,7 +441,7 @@ describe("sample Worker app", () => {
     expect(html).toContain("data-hono-decks-deck");
     expect(html).toContain("function fitDeck()");
     expect(html).toContain('deck.style.transform = "scale(" + scale + ")"');
-    expect(html).toContain('<script data-hono-decks-client-entry type="module" src="/decks/_assets/client.js"></script>');
+    expect(html).toContain('<script data-hono-decks-client-entry type="module" src="/decks/_assets/client"></script>');
     expect(html).not.toContain('MDX component "Hero" is rendered as a placeholder.');
     expect(html).not.toContain("mdx-component");
   });
@@ -552,7 +542,7 @@ describe("sample Worker app", () => {
     expect(html).toMatch(/data-hono-decks-island="MotionMeter__motion_[a-z0-9]+"/);
     expect(html).toContain("data-motion-meter");
     expect(html).toContain("Animation island");
-    expect(html).toContain('<script data-hono-decks-client-entry type="module" src="/decks/_assets/client.js"></script>');
+    expect(html).toContain('<script data-hono-decks-client-entry type="module" src="/decks/_assets/client"></script>');
   });
 
   it("serves generated local assets for the media deck", async () => {
@@ -593,7 +583,7 @@ describe("sample Worker app", () => {
 
   it("serves the sample client entry for interactive islands", async () => {
     const app = await sampleApp();
-    const response = await app.request("/decks/_assets/client.js");
+    const response = await app.request("/decks/_assets/client");
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/javascript");

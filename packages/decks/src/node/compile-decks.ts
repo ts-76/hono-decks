@@ -11,7 +11,6 @@ import { compileMdxModuleDecks } from "../generator/mdx-module-generator";
 import type { DeckThemeStyleEntry, LinkCardOgpMetadata } from "../generator/mdx-module-generator";
 import { emitDeckComponentRegistryModule } from "../generator/component-registry";
 import type { ResolvedDeckComponentExport } from "../generator/component-registry";
-import { emitDecksRouterModule } from "../generator/router-generator";
 import { discoverClientComponentIds, emitClientEntryModule } from "./client-entry";
 import type { ClientEntryModule } from "./client-entry";
 import { listFiles } from "./local-deck-io";
@@ -35,14 +34,10 @@ export interface WriteDeckComponentRegistryModuleInput {
   outFile: string;
 }
 
-export interface WriteDecksRouterModuleInput {
-  manifestModulePath: string;
-  componentRegistryModulePath?: string;
-  outFile: string;
-}
-
 export interface CompileDecksInput extends BuildDeckManifestFromFileSystemInput {
   markdown?: DecksBuildConfig["markdown"];
+  /** Development live-reload stream embedded in the generated module (Vite dev server only). */
+  liveReloadPath?: string;
   out: string;
   ogpCacheFile?: string;
   refreshOgp?: boolean;
@@ -138,13 +133,17 @@ export async function compileDeckModules(input: CompileDecksInput): Promise<Deck
       if (deck.deck.clientEntryRequired || Object.keys(deck.clientComponentIds ?? {}).length)
         deck.deck.themeStyle = [deck.deck.themeStyle, clientCss].filter(Boolean).join("\n");
     }
-    generated.routerModule = emitModuleDecksRouter({ decks: generated.decks });
   }
+  const routerModule = emitModuleDecksRouter({
+    decks: generated.decks,
+    mountPath: input.mountPath ?? `/${root}`,
+    liveReloadPath: input.liveReloadPath,
+  });
   const files: GeneratedFile[] = generated.decks.flatMap((deck) =>
     deck.slideModules.map((slide) => ({ path: join(input.cwd, slide.path), content: slide.code })),
   );
   files.push(
-    { path: join(input.cwd, out, "decks.ts"), content: generated.routerModule },
+    { path: join(input.cwd, out, "decks.ts"), content: routerModule },
     { path: join(input.cwd, out, "client-entry.ts"), content: clientEntry },
   );
   const cacheFile = ogpCache.output();
@@ -263,11 +262,6 @@ export async function writeDeckManifestModule(input: WriteDeckManifestModuleInpu
 export async function writeDeckComponentRegistryModule(input: WriteDeckComponentRegistryModuleInput): Promise<void> {
   await mkdir(dirname(input.outFile), { recursive: true });
   await writeFile(input.outFile, emitDeckComponentRegistryModule(input.components), "utf8");
-}
-
-export async function writeDecksRouterModule(input: WriteDecksRouterModuleInput): Promise<void> {
-  await mkdir(dirname(input.outFile), { recursive: true });
-  await writeFile(input.outFile, emitDecksRouterModule(input), "utf8");
 }
 
 async function buildDeckManifestFromPaths(input: {

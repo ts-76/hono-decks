@@ -75,14 +75,20 @@ async function main() {
     const result = assertR2AssetSmokeResult(second);
 
     console.log("Deployed R2 cache smoke: ok");
-    console.log(JSON.stringify({
-      url: url.toString(),
-      first: {
-        status: first.status,
-        cloudflareCache: summarizeCloudflareCacheHeaders(first),
-      },
-      second: result.observed,
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          url: url.toString(),
+          first: {
+            status: first.status,
+            cloudflareCache: summarizeCloudflareCacheHeaders(first),
+          },
+          second: result.observed,
+        },
+        null,
+        2,
+      ),
+    );
   } catch (error) {
     console.error(formatSmokeError(error));
     process.exitCode = 1;

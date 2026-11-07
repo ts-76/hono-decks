@@ -16,7 +16,10 @@ export function rewriteLocalAssetUrls(html: string, assets: AssetRef[]): string 
 }
 
 export function backgroundStyle(value: string, assets: AssetRef[]): string {
-  const asset = findAssetForHtmlUrl(assets.filter((candidate) => candidate.type === "local"), value);
+  const asset = findAssetForHtmlUrl(
+    assets.filter((candidate) => candidate.type === "local"),
+    value,
+  );
   const url = asset?.publicPath ?? value;
   return `background-image:url("${escapeCssUrl(url)}")`;
 }
@@ -33,7 +36,9 @@ function localAssetRelativePath(asset: AssetRef): string {
   const marker = "/assets/";
   const normalized = asset.sourcePath.replaceAll("\\", "/");
   const markerIndex = normalized.indexOf(marker);
-  return markerIndex === -1 ? (normalized.split("/").at(-1) ?? normalized) : normalized.slice(markerIndex + marker.length);
+  return markerIndex === -1
+    ? (normalized.split("/").at(-1) ?? normalized)
+    : normalized.slice(markerIndex + marker.length);
 }
 
 function escapeCssUrl(value: string): string {

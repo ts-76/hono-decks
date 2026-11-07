@@ -61,42 +61,33 @@ export async function initializeVite(
       path: configFile,
       content: `import { defineDecksConfig } from "hono-decks";
 
+// Build-only settings. Runtime options belong in src/decks.ts.
 export default defineDecksConfig({
-  mountPath: "/slides",
-  build: { root: "decks"${framework === "void" ? ', markdown: "void"' : ""} },${vitePresets[framework].clientEntryAssetPath ? `\n  router: { clientEntryAssetPath: ${JSON.stringify(vitePresets[framework].clientEntryAssetPath)} },` : ""}
+  mountPath: "/decks",
+  build: { root: "decks"${framework === "void" ? ', markdown: "void"' : ""} },
 });
 `,
     },
     {
       path: "src/decks.ts",
-      content: `/// <reference types="hono-decks/vite-env" />
+      content:
+        framework === "void"
+          ? `/// <reference types="hono-decks/vite-env" />
+import { createDecks } from "virtual:hono-decks";
+
+export const decks = createDecks();
+`
+          : `/// <reference types="hono-decks/vite-env" />
 /// <reference types="vite/client" />
-import { decks } from "virtual:hono-decks";
-
-export { decks };
-`,
-    },
-    {
-      path: "middleware/hono-decks.ts",
-      content: `import { Hono } from "hono";
 import { raw } from "hono/html";
-import { defineMiddleware } from "void";
-import markdownStyle from "void-plugin-hono-jsx/theme-content.css?inline";
-import { decks } from "../src/decks";
+import { createDecks } from "virtual:hono-decks";
 
-const app = new Hono();
-const devClient = import.meta.env.DEV ? '<script type="module" src="' + import.meta.env.BASE_URL + '@vite/client"></script>' : "";
-app.route(decks.mountPath, decks.router({
-  document: { head: raw(\`<style>\${markdownStyle}</style>\${devClient}\`) },
-}));
+// Load Vite's client in development so deck edits refresh open pages.
+const viteClient = import.meta.env.DEV
+  ? '<script type="module" src="' + import.meta.env.BASE_URL + '@vite/client"></script>'
+  : "";
 
-export default defineMiddleware(async (c, next) => {
-  const mount = decks.mountPath.replace(/\\/$/, "");
-  if (c.req.path === mount || c.req.path.startsWith(mount + "/")) {
-    return app.fetch(c.req.raw, c.env, c.executionCtx);
-  }
-  await next();
-});
+export const decks = createDecks({ document: { head: raw(viteClient) } });
 `,
     },
     {
@@ -117,53 +108,65 @@ ${framework === "void" ? "\n<Counter />\n" : ""}
 `,
     },
   ];
-  if (framework === "void")
-    files.push({
-      path: `decks/${sampleSlug}/Counter.tsx`,
-      content: `import { useState } from "hono/jsx";
+  const edits: { path: string; content: string }[] = [];
+  if (framework === "void") {
+    files.push(
+      {
+        path: "middleware/hono-decks.ts",
+        content: `import { Hono } from "hono";
+import { raw } from "hono/html";
+import { defineMiddleware } from "void";
+import markdownStyle from "void-plugin-hono-jsx/theme-content.css?inline";
+import { decks } from "../src/decks";
+
+const app = new Hono();
+const devClient = import.meta.env.DEV ? '<script type="module" src="' + import.meta.env.BASE_URL + '@vite/client"></script>' : "";
+app.route(decks.mountPath, decks.router({
+  document: { head: raw(\`<style>\${markdownStyle}</style>\${devClient}\`) },
+}));
+
+export default defineMiddleware(async (c, next) => {
+  const mount = decks.mountPath.replace(/\\/$/, "");
+  if (c.req.path === mount || c.req.path.startsWith(mount + "/")) {
+    return app.fetch(c.req.raw, c.env, c.executionCtx);
+  }
+  await next();
+});
+`,
+      },
+      {
+        path: `decks/${sampleSlug}/Counter.tsx`,
+        content: `import { useState } from "hono/jsx";
 
 export default function Counter() {
   const [count, setCount] = useState(0);
   return <button type="button" onClick={() => setCount(count + 1)}>Count: {count}</button>;
 }
 `,
-    });
-  const edits: { path: string; content: string }[] = [];
-  if (framework !== "void") {
-    files.splice(2, 1);
-    files[1]!.content =
-      files[1]!.content +
-      `
-import { raw } from "hono/html";
-
-export const deckRouter = decks.router({
-  document: { head: raw(import.meta.env.DEV ? '<script type="module" src="' + import.meta.env.BASE_URL + '@vite/client"></script>' : "") },
-});
-`;
-    if (framework === "hono") {
-      const entryFile = selectHonoEntry(cwd, entry);
-      const appSource = await readFile(join(cwd, entryFile), "utf8");
-      edits.push({ path: entryFile, content: connectHonoApp(appSource, relativeModule(entryFile, "src/decks.ts")) });
-    } else {
-      if (!existsSync(join(cwd, "app/routes"))) {
-        throw new Error(
-          "HonoX init expects app/routes. Custom app directories require manual integration. No files were changed.",
-        );
-      }
-      for (const path of [
-        "app/routes/slides",
-        "app/routes/slides.ts",
-        "app/routes/slides.tsx",
-        "app/routes/slides.jsx",
-        "app/routes/slides.js",
-      ]) {
-        if (existsSync(join(cwd, path))) throw new Error(`Refusing to replace existing HonoX route: ${path}`);
-      }
-      const serverFile = "app/server.ts";
-      const appSource = await readFile(join(cwd, serverFile), "utf8");
-      edits.push({ path: serverFile, content: connectHonoXApp(appSource) });
-      files.push({ path: "src/honox-decks.ts", content: emitHonoXIntegration() });
+      },
+    );
+  } else if (framework === "hono") {
+    const entryFile = selectHonoEntry(cwd, entry);
+    const appSource = await readFile(join(cwd, entryFile), "utf8");
+    edits.push({ path: entryFile, content: connectHonoApp(appSource, relativeModule(entryFile, "src/decks.ts")) });
+  } else {
+    if (!existsSync(join(cwd, "app/routes"))) {
+      throw new Error(
+        "HonoX init expects app/routes. Custom app directories require manual integration. No files were changed.",
+      );
     }
+    for (const path of [
+      "app/routes/decks",
+      "app/routes/decks.ts",
+      "app/routes/decks.tsx",
+      "app/routes/decks.jsx",
+      "app/routes/decks.js",
+    ]) {
+      if (existsSync(join(cwd, path))) throw new Error(`Refusing to replace existing HonoX route: ${path}`);
+    }
+    const serverFile = "app/server.ts";
+    const appSource = await readFile(join(cwd, serverFile), "utf8");
+    edits.push({ path: serverFile, content: connectHonoXApp(appSource) });
   }
   for (const file of files) {
     if (existsSync(join(cwd, file.path))) throw new Error(`Refusing to overwrite existing file: ${file.path}`);
@@ -182,38 +185,12 @@ export const deckRouter = decks.router({
   return sampleSlug;
 }
 
-function emitHonoXIntegration(): string {
-  return `/// <reference types="vite/client" />
-import type { Env } from "hono";
-import type { ServerOptions } from "honox/server";
-import { withHonoXDecks as connectHonoXDecks } from "hono-decks/honox";
-import { decks, deckRouter } from "./decks";
-
-// Same route discovery convention as HonoX. Keep this outside app/routes to
-// avoid importing the integration itself through the route glob.
-const fileRoutes = import.meta.glob([
-  "/app/routes/**/*.{ts,tsx,md,mdx}",
-  "/app/routes/.well-known/**/*.{ts,tsx,md,mdx}",
-  "!/app/routes/**/_*.{ts,tsx,md,mdx}",
-  "!/app/routes/**/-*.{ts,tsx,md,mdx}",
-  "!/app/routes/**/$*.{ts,tsx,md,mdx}",
-  "!/app/routes/**/*.test.{ts,tsx}",
-  "!/app/routes/**/*.spec.{ts,tsx}",
-  "!/app/routes/**/-*/**/*",
-], { eager: true }) as NonNullable<ServerOptions["ROUTES"]>;
-
-export function withHonoXDecks<E extends Env>(options: ServerOptions<E> = {}): ServerOptions<E> {
-  return connectHonoXDecks(options, { routes: fileRoutes, mountPath: decks.mountPath, router: deckRouter });
-}
-`;
-}
-
 /** Preserve createApp options while adding a config-driven route to HonoX. */
 export function connectHonoXApp(source: string): string {
   const ast = parse(source, { sourceType: "module", plugins: ["typescript", "jsx"] });
   const unsupported = () =>
     new Error(
-      "Cannot safely connect this HonoX server. Wrap createApp options with withHonoXDecks from src/honox-decks. No files were changed.",
+      "Cannot safely connect this HonoX server. Wrap createApp options with withHonoXDecks from virtual:hono-decks/honox. No files were changed.",
     );
   if (ast.program.interpreter) throw unsupported();
   const constructors = ast.program.body.flatMap((node) =>
@@ -243,13 +220,17 @@ export function connectHonoXApp(source: string): string {
   const start = arg?.start ?? call.end - 1;
   const end = arg?.end ?? start;
   if (start == null || end == null) throw unsupported();
+  let decksAlias = "_honoDecks";
+  while (source.includes(decksAlias)) decksAlias = "_" + decksAlias;
   return (
-    `import { withHonoXDecks as ${alias} } from "../src/honox-decks";\n` +
+    `/// <reference types="hono-decks/vite-env" />\n` +
+    `import { withHonoXDecks as ${alias} } from "virtual:hono-decks/honox";\n` +
+    `import { decks as ${decksAlias} } from "../src/decks";\n` +
     source.slice(0, start) +
     alias +
     "(" +
-    source.slice(start, end) +
-    ")" +
+    (arg ? source.slice(start, end) : "{}") +
+    `, ${decksAlias}.router())` +
     source.slice(end)
   );
 }
@@ -331,7 +312,7 @@ function relativeModule(from: string, to: string): string {
   return path.startsWith(".") ? path : "./" + path;
 }
 
-/** Append after app middleware; refuse earlier routes that could consume /slides. */
+/** Append after app middleware; refuse earlier routes that could consume /decks. */
 export function connectHonoApp(source: string, facadeImport: string): string {
   const ast = parse(source, { sourceType: "module", plugins: ["typescript", "jsx"] });
   const unsupported = () =>
@@ -412,8 +393,8 @@ export function connectHonoApp(source: string, facadeImport: string): string {
             path.value === "*" ||
             path.value === "/*" ||
             (method === "route" && path.value === "/") ||
-            path.value.startsWith("/slides") ||
-            (path.value.includes("*") && "/slides/".startsWith(path.value.split("*")[0]!))
+            path.value.startsWith("/decks") ||
+            (path.value.includes("*") && "/decks/".startsWith(path.value.split("*")[0]!))
           )
             throw unsupported();
         }
@@ -427,11 +408,10 @@ export function connectHonoApp(source: string, facadeImport: string): string {
   checkRoutes(ast.program);
   let alias = "_honoDecks";
   while (source.includes(alias)) alias = "_" + alias;
-  const routerAlias = alias + "Router";
   return (
-    `import { decks as ${alias}, deckRouter as ${routerAlias} } from ${JSON.stringify(facadeImport)};\n` +
+    `import { decks as ${alias} } from ${JSON.stringify(facadeImport)};\n` +
     source.slice(0, exported.start) +
-    `${appName}.route(${alias}.mountPath, ${routerAlias});\n\n` +
+    `${appName}.route(${alias}.mountPath, ${alias}.router());\n\n` +
     source.slice(exported.start)
   );
 }

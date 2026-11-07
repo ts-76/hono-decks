@@ -14,7 +14,7 @@ Satoriによるビルド時のOGP画像生成と、Cloudflare Browser Runによ�
 
 Browser Renderingを使わず、`compileDecks()`が返すデッキ情報からSatoriでSVGを、resvgで1200×630のPNGを生成できます。画像生成はNode.js側のビルドスクリプトに置くため、Workerの実行時コードやhono-decks本体に依存を追加する必要はありません。
 
-<CodeBlock filename={"hono-decks.config.ts"} language={"typescript"} code={"export default defineDecksConfig({\n  mountPath: \"/decks\",\n  router: {\n    viewer: { openGraph: true },\n  },\n})"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+<CodeBlock filename={"src/decks.ts"} language={"typescript"} code={"// src/decks.ts\nexport const decks = createDecks({\n  viewer: { openGraph: true },\n})"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
 `viewer.openGraph`を有効にすると、`decks.paths(slug).ogImage`（既定では`/decks/:slug/og.png`）の絶対URLを使ったOpen Graph / Twitter Cardタグを生成します。PNGはWrangler Static Assetsへ保存します。
 
@@ -46,7 +46,7 @@ Cloudflare Browser RunのQuick Actionsをブラウザバインディングから
 
 次の例では、先に登録したセッションまたはCloudflare Access検証ミドルウェアが`deckExportAllowed`を設定済みとします。
 
-<CodeBlock filename={"hono-decks.config.ts"} language={"typescript"} code={"// hono-decks.config.ts\nimport {\n  defineDecksConfig,\n  type DeckBrowserRunBinding,\n} from \"hono-decks\"\n\ntype AppEnv = {\n  Bindings: {\n    BROWSER: DeckBrowserRunBinding\n  }\n  Variables: {\n    deckExportAllowed: boolean\n  }\n}\n\nexport default defineDecksConfig<AppEnv>({\n  mountPath: \"/decks\",\n  router: {\n    export: {\n      browser: ({ c }) => c.env.BROWSER,\n      authorize: ({ c }) => c.get(\"deckExportAllowed\") === true,\n      pdf: true,\n      png: true,\n    },\n  },\n})"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
+<CodeBlock filename={"src/decks.ts"} language={"typescript"} code={"// src/decks.ts\nimport type { DeckBrowserRunBinding } from \"hono-decks\"\nimport { createDecks } from \"./generated/decks\"\n\ntype AppEnv = {\n  Bindings: {\n    BROWSER: DeckBrowserRunBinding\n  }\n  Variables: {\n    deckExportAllowed: boolean\n  }\n}\n\nexport const decks = createDecks<AppEnv>({\n  export: {\n    browser: ({ c }) => c.env.BROWSER,\n    authorize: ({ c }) => c.get(\"deckExportAllowed\") === true,\n    pdf: true,\n    png: true,\n  },\n})"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
 | ルート / API | 役割 |
 | --- | --- |

@@ -1,5 +1,5 @@
 import { existsSync, watch } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { compileDecks } from "./index";
 import { DEFAULT_DECKS_CONFIG_FILE, loadDecksConfig } from "./config";
@@ -33,7 +33,6 @@ interface CompileCommandOptions {
 interface InitCommandOptions {
   configFile?: string;
   out?: string;
-  generated?: string;
   framework?: "void" | "hono" | "honox";
   entry?: string;
   install?: boolean;
@@ -41,23 +40,26 @@ interface InitCommandOptions {
 }
 
 const USAGE = `Usage:
-  hono-decks init [--config hono-decks.config.ts] [--out src/decks.ts]
-  hono-decks compile [--config hono-decks.config.ts] [--watch] [--refresh-ogp]
+  hono-decks init [--config <file>] [--out <file>]
+  hono-decks init --framework <hono|honox|void> [--config <file>] [--entry <file>] [--install [--adapter <spec>]]
+  hono-decks compile [--config <file>] [--watch] [--refresh-ogp]
 
 Commands:
-  init             Create a shared config and app-owned decks facade.
-  compile, build   Compile decks using the shared config.
+  init      Create hono-decks.config.ts, the app-owned src/decks.ts, and a sample deck.
+            Without --framework, decks are compiled to files by \`hono-decks compile\`
+            (wire it into Wrangler's build.command). With --framework, the existing
+            Vite config gets the honoDecks() plugin and no compile step is needed.
+  compile   Compile decks to the build.outDir from the config. Alias: build.
 
 Options:
-  --install                Install missing dependencies for --framework void.
-  --adapter <specifier>    Compatible Hono Markdown adapter version or tarball; requires --install.
-  --framework <name>       Vite integration: hono, honox, or void.
-  --entry <path>           Hono app entry for --framework hono; otherwise auto-detect.
-  --config <path>          Config file. Default: hono-decks.config.ts
-  --out <path>             Facade output for init. Default: src/decks.ts
-  --generated <path>       Generated module import for init. Default: ./generated/decks
-  --watch                  Recompile when deck files change.
-  --refresh-ogp            Refresh OGP cache entries from the network.
+  --config <file>          Config file. Default: hono-decks.config.ts
+  --out <file>             init: app-owned decks module. Default: src/decks.ts
+  --framework <name>       init: integrate with an existing Vite app (hono, honox, or void).
+  --entry <file>           init --framework hono: Hono app entry. Default: auto-detect.
+  --install                init --framework void: install missing dependencies.
+  --adapter <spec>         init --framework void --install: Hono Markdown adapter version or tarball.
+  --watch                  compile: recompile when decks or the config change.
+  --refresh-ogp            compile: refresh link card metadata from the network.
   -h, --help               Show this help.`;
 
 export async function runHonoDecksCli(input: RunHonoDecksCliInput): Promise<RunHonoDecksCliResult> {
@@ -196,7 +198,7 @@ async function runInitCommand(
         parsed.options.install ? { adapter: parsed.options.adapter } : undefined,
       );
       stdout(
-        `Initialized ${parsed.options.framework} decks at /slides/${sampleSlug}. Run your usual dev or build command; no manual compile is needed.`,
+        `Initialized ${parsed.options.framework} decks at /decks/${sampleSlug}. Run your usual dev or build command; no manual compile is needed.`,
       );
       return { exitCode: 0 };
     } catch (error) {
@@ -208,13 +210,9 @@ async function runInitCommand(
   const configFile = normalizeOutputFile(parsed.options.configFile ?? DEFAULT_DECKS_CONFIG_FILE);
   const out = normalizeOutputFile(parsed.options.out ?? "src/decks.ts");
   try {
-    await writeInitialFiles({
-      cwd: input.cwd,
-      configFile,
-      out,
-      generated: parsed.options.generated ?? "./generated/decks",
-    });
-    stdout(`Initialized ${configFile} and ${out}`);
+    const created = await writeInitialFiles({ cwd: input.cwd, configFile, out });
+    stdout(`Created ${created.join(", ")}.`);
+    stdout("Next: run `hono-decks compile`, then mount it with app.route(decks.mountPath, decks.router()).");
     return { exitCode: 0 };
   } catch (error) {
     stderr(error instanceof Error ? error.message : String(error));
@@ -256,14 +254,7 @@ function parseInitArgs(args: string[]): { options: InitCommandOptions; error?: s
       options.install = true;
       continue;
     }
-    if (
-      arg === "--adapter" ||
-      arg === "--config" ||
-      arg === "--out" ||
-      arg === "--generated" ||
-      arg === "--framework" ||
-      arg === "--entry"
-    ) {
+    if (arg === "--adapter" || arg === "--config" || arg === "--out" || arg === "--framework" || arg === "--entry") {
       const value = args[index + 1];
       if (!value || value.startsWith("--")) return { options, error: `Missing value for ${arg}` };
       if (arg === "--framework") {
@@ -275,7 +266,6 @@ function parseInitArgs(args: string[]): { options: InitCommandOptions; error?: s
       if (arg === "--config") options.configFile = value;
       if (arg === "--entry") options.entry = value;
       if (arg === "--out") options.out = value;
-      if (arg === "--generated") options.generated = value;
       index += 1;
       continue;
     }
@@ -286,53 +276,78 @@ function parseInitArgs(args: string[]): { options: InitCommandOptions; error?: s
   if (options.entry && options.framework !== "hono") {
     return { options, error: "--entry requires --framework hono." };
   }
-  if (options.framework && (options.out || options.generated)) {
-    return {
-      options,
-      error: "Framework init uses virtual modules; --out and --generated are only supported by generic init.",
-    };
+  if (options.framework && options.out) {
+    return { options, error: "Framework init uses virtual modules; --out is only supported by generic init." };
   }
   return { options };
 }
 
-async function writeInitialFiles(input: {
-  cwd: string;
-  configFile: string;
-  out: string;
-  generated: string;
-}): Promise<void> {
+const GENERATED_DIR = "src/generated";
+
+async function writeInitialFiles(input: { cwd: string; configFile: string; out: string }): Promise<string[]> {
   for (const path of [input.configFile, input.out]) {
     if (existsSync(join(input.cwd, path))) throw new Error(`Refusing to overwrite existing file: ${path}`);
   }
-  const configPath = join(input.cwd, input.configFile);
-  const facadePath = join(input.cwd, input.out);
-  await mkdir(dirname(configPath), { recursive: true });
-  await mkdir(dirname(facadePath), { recursive: true });
-  await writeFile(configPath, emitDecksConfig(), "utf8");
-  await writeFile(facadePath, emitDecksFacade(input.generated, relativeImport(input.out, input.configFile)), "utf8");
+  const files = [
+    { path: input.configFile, content: emitDecksConfig() },
+    { path: input.out, content: emitDecksFacade(relativeImport(input.out, `${GENERATED_DIR}/decks.ts`)) },
+  ];
+  if (!existsSync(join(input.cwd, "decks"))) files.push({ path: "decks/welcome/deck.mdx", content: SAMPLE_DECK });
+  for (const file of files) {
+    await mkdir(join(input.cwd, dirname(file.path)), { recursive: true });
+    await writeFile(join(input.cwd, file.path), file.content, "utf8");
+  }
+  const created = files.map((file) => file.path);
+  if (await ignoreGeneratedDirectory(input.cwd)) created.push(".gitignore");
+  return created;
+}
+
+/** Generated modules are rebuilt by every dev/build command, so keep them out of version control. */
+async function ignoreGeneratedDirectory(cwd: string): Promise<boolean> {
+  const path = join(cwd, ".gitignore");
+  const current = existsSync(path) ? await readFile(path, "utf8") : "";
+  const entry = `/${GENERATED_DIR}/`;
+  if (current.split(/\r?\n/).some((line) => line.trim() === entry || line.trim() === `${GENERATED_DIR}/`)) return false;
+  await writeFile(path, `${current}${current && !current.endsWith("\n") ? "\n" : ""}${entry}\n`, "utf8");
+  return true;
 }
 
 function emitDecksConfig(): string {
   return `import { defineDecksConfig } from "hono-decks";
 
+// Build-only settings read by \`hono-decks compile\`. Runtime options belong in src/decks.ts.
 export default defineDecksConfig({
   mountPath: "/decks",
   build: {
     root: "decks",
-    outDir: "src/generated",
+    outDir: "${GENERATED_DIR}",
   },
 });
 `;
 }
 
-function emitDecksFacade(generated: string, configImport: string): string {
-  return `// App-owned facade. Files under the generated directory are overwritten.
-import config from ${JSON.stringify(configImport)};
-import { createDecks } from ${JSON.stringify(generated)};
+function emitDecksFacade(generated: string): string {
+  return `import { createDecks } from ${JSON.stringify(generated)};
 
-export const decks = createDecks(config);
+// Runtime options (viewer, presenter, export, source, ...) go here.
+export const decks = createDecks();
 `;
 }
+
+const SAMPLE_DECK = `---
+title: Welcome
+---
+
+# Welcome
+
+Edit decks/welcome/deck.mdx to write your slides.
+
+---
+
+# Next slide
+
+Separate slides with a line containing only three dashes.
+`;
 
 function relativeImport(fromFile: string, toFile: string): string {
   const path = normalizePath(relative(dirname(fromFile), toFile)).replace(/\.(?:[cm]?[jt]sx?)$/, "");
@@ -358,24 +373,4 @@ function normalizePath(path: string): string {
 function dirname(path: string): string {
   const normalized = normalizePath(path);
   return normalized.includes("/") ? normalized.slice(0, normalized.lastIndexOf("/")) : ".";
-}
-
-declare const process:
-  | {
-      argv: string[];
-      cwd(): string;
-      stdout: { write(value: string): void };
-      stderr: { write(value: string): void };
-      exitCode?: number;
-    }
-  | undefined;
-
-if (typeof process !== "undefined" && process.argv[1]?.endsWith("/node/cli.ts")) {
-  const result = await runHonoDecksCli({
-    argv: process.argv.slice(2),
-    cwd: process.cwd(),
-    stdout: (line) => process.stdout.write(`${line}\n`),
-    stderr: (line) => process.stderr.write(`${line}\n`),
-  });
-  process.exitCode = result.exitCode;
 }

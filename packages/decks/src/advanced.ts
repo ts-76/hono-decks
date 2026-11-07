@@ -1,9 +1,13 @@
-/** Low-level building blocks for custom sources, routers, and rendering pipelines. */
+/**
+ * Worker-safe building blocks for custom sources, routers, and rendering
+ * pipelines. Node-only build APIs live in `hono-decks/node`.
+ */
 export * from "./mod";
-export { configureDecks, defineDecks, mergeDecksRouterOptions } from "./server/define-decks";
-export type { DefinedDecks, DecksOptions, DecksRouterOverrides } from "./server/define-decks";
+export { configureDecks, mergeDecksRouterOptions } from "./server/define-decks";
+export type { GeneratedDecks } from "./server/define-decks";
+export { inheritDeckDefaults, withClientComponentIds } from "./server/generated";
 export { createDeckViewerParts, deckContext, decksRouter } from "./server/router";
-export type { DeckContextOptions } from "./server/router";
+export type { DeckContextOptions, DecksRouterOptions } from "./server/router";
 export { serveDecksClientEntry } from "./server/client-entry";
 export type { ServeDecksClientEntryOptions } from "./server/client-entry";
 export { manifestDeckSource } from "./source/manifest-source";

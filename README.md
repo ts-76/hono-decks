@@ -16,10 +16,10 @@ bunx hono-decks init
 bunx hono-decks compile
 ```
 
-`init` creates `hono-decks.config.ts` and `src/decks.ts`.
+`init` creates three files and adds `/src/generated/` to `.gitignore`:
 
 ```ts
-// hono-decks.config.ts
+// hono-decks.config.ts — build-only settings read by the CLI and the Vite plugin
 import { defineDecksConfig } from "hono-decks";
 
 export default defineDecksConfig({
@@ -32,12 +32,21 @@ export default defineDecksConfig({
 ```
 
 ```ts
-// src/decks.ts
-import config from "../hono-decks.config";
+// src/decks.ts — runtime options live here
 import { createDecks } from "./generated/decks";
 
-export const decks = createDecks(config);
+export const decks = createDecks();
 ```
+
+```mdx
+---
+title: Welcome
+---
+
+# Welcome
+```
+
+Mount the router in your app, then open `/decks/welcome`.
 
 ```ts
 // src/index.ts
@@ -50,13 +59,13 @@ app.route(decks.mountPath, decks.router());
 export default app;
 ```
 
-Add `decks/welcome/deck.mdx`, then open `/decks/welcome` to view the deck.
+Upgrading from 1.x? See [MIGRATION.md](MIGRATION.md).
 
 ## API model
 
-`hono-decks.config.ts` is the single source of truth for the CLI and runtime. You do not need to specify separate mount paths for compiled asset URLs and `app.route()`.
+`hono-decks.config.ts` is build-only: the CLI and the Vite plugin read it, and the Worker never imports it. The compiler bakes `mountPath` into asset URLs and into the generated module, so `decks.mountPath` is always the path the decks were compiled for. Mounting the router anywhere else fails with an explicit error instead of serving broken links.
 
-The generated module returns a configured kit containing the operations your application needs.
+The generated `createDecks(options)` returns the API your application needs.
 
 ```ts
 decks.mountPath;
@@ -86,7 +95,7 @@ decks.paths("welcome");
 Use this path map or `DeckPageMeta.paths` in custom viewers and routes instead of concatenating strings.
 
 ```ts
-router: {
+createDecks({
   viewer: {
     controls: {
       after: ({ meta }) => [
@@ -94,7 +103,7 @@ router: {
       ],
     },
   },
-}
+});
 ```
 
 ## Dev integration
@@ -111,9 +120,12 @@ Integrate generation into the existing `dev` command. For Cloudflare Workers, us
 }
 ```
 
-This automatically recompiles decks when they change. Use `wrangler dev --live-reload` in the dev script to refresh the browser as well. For HonoX or Vite applications, add the plugin to the existing Vite config.
+This automatically recompiles decks when they change. Use `wrangler dev --live-reload` in the dev script to refresh the browser as well. Generated files are rebuilt by every dev, build, and typecheck run, so keep `src/generated/` out of version control.
+
+For HonoX or Vite applications, run `hono-decks init --framework hono` (or `honox`, `void`), or add the plugin yourself. The plugin keeps the compiled modules in memory and exposes them as `virtual:hono-decks`; nothing is written to disk.
 
 ```ts
+// vite.config.ts
 import { honoDecks } from "hono-decks/vite";
 import { defineConfig } from "vite";
 
@@ -122,19 +134,26 @@ export default defineConfig({
 });
 ```
 
+```ts
+// src/decks.ts
+/// <reference types="hono-decks/vite-env" />
+import { createDecks } from "virtual:hono-decks";
+
+export const decks = createDecks();
+```
+
 The Vite plugin triggers a full reload after a successful compile. With either integration, users only need to run the existing `bun run dev` command. `hono-decks compile --watch` remains available as a lower-level option for custom tooling.
 
-Use `hono-decks compile --config path/to/config.ts` only when the config file has a custom name. Put `root` and `outDir` under `build`, and put `mountPath` at the top level of the config.
+Use `hono-decks compile --config path/to/config.ts` only when the config file has a custom name.
 
 ## Runtime configuration
 
-Every resolver accepts a single object argument.
+Pass runtime options to `createDecks()`. Every resolver accepts a single object argument, and the type parameter carries your Worker bindings into `c.env`.
 
 ```ts
-import {
-  defineDecksConfig,
-  type DeckBrowserRunBinding,
-} from "hono-decks";
+// src/decks.ts
+import type { DeckBrowserRunBinding } from "hono-decks";
+import { createDecks } from "./generated/decks";
 
 interface AppEnv {
   Bindings: {
@@ -143,28 +162,36 @@ interface AppEnv {
   };
 }
 
-export default defineDecksConfig<AppEnv>({
-  mountPath: "/decks",
-  build: { root: "decks", outDir: "src/generated" },
-  router: {
-    presenter: {
-      enabled: ({ dev }) => dev,
-      viewerControl: true,
-    },
-    export: {
-      authorize: ({ c }) =>
-        c.req.header("authorization") === `Bearer ${c.env.DECK_EXPORT_TOKEN}`,
-      browser: ({ c }) => c.env.BROWSER,
-      pdf: true,
-      png: true,
-    },
+export const decks = createDecks<AppEnv>({
+  presenter: {
+    enabled: ({ dev }) => dev,
+    viewerControl: true,
+  },
+  export: {
+    authorize: ({ c }) =>
+      c.req.header("authorization") === `Bearer ${c.env.DECK_EXPORT_TOKEN}`,
+    browser: ({ c }) => c.env.BROWSER,
+    pdf: true,
+    png: true,
   },
 });
 ```
 
 When `dev` is omitted, hono-decks infers it from the `NODE_ENV` set by Vite or Wrangler. With the standard setup, `vite` and `wrangler dev` run in development mode, while production builds and `wrangler deploy` run in production mode. An explicit value such as `dev: false`, or a resolver, takes precedence. Environments that cannot be identified default to production mode.
 
-`decks.router(overrides)` merges nested options while preserving the config. Set `export: false`, `embed: false`, or `presenter: false` to disable a feature explicitly.
+`decks.router(overrides)` merges overrides with one rule: objects merge recursively, arrays concatenate, and every other value — including `false` and functions — replaces the base. Set `export: false`, `embed: false`, or `presenter: false` to disable a feature explicitly.
+
+Missing decks, drafts in production, and disabled pages fall through to your application's `notFound` handler, so `app.notFound()` controls the 404 page.
+
+Decorate the compiled source with `source`, for example to serve assets from R2:
+
+```ts
+import { withR2Assets } from "hono-decks";
+
+export const decks = createDecks<AppEnv>({
+  source: (source) => withR2Assets(source, { bucket: (c) => c.env.DECK_ASSETS }),
+});
+```
 
 ## Custom routes
 
@@ -208,15 +235,15 @@ decks/product/
 
 ## Embed / export / print
 
-Enable external iframes explicitly with `router.embed`, and list every allowed embedding origin in `frameAncestors`.
+Enable external iframes explicitly with the `embed` option, and list every allowed embedding origin in `frameAncestors`.
 
 ```ts
-router: {
+createDecks({
   embed: {
     frameAncestors: ["https://blog.example.com"],
     robots: false,
   },
-}
+});
 ```
 
 For PDF and PNG exports, return the Cloudflare Browser Rendering binding from `browser: ({ c }) => c.env.BROWSER`. Export controls appear only for requests accepted by `authorize`.
@@ -225,26 +252,27 @@ In the viewer, `Cmd + P` or `Ctrl + P` opens the print route and includes every 
 
 ## Build-time OGP images
 
-When `router.viewer.openGraph` is enabled, the viewer uses `decks.paths(slug).ogImage` to emit absolute Open Graph and Twitter Card image URLs. The core package does not include an image-generation library.
+When `viewer.openGraph` is enabled, the viewer uses `decks.paths(slug).ogImage` to emit absolute Open Graph and Twitter Card image URLs. The core package does not include an image-generation library.
 
 ```ts
-router: {
+createDecks({
   viewer: { openGraph: true },
-}
+});
 ```
 
 `examples/ogp` provides a recipe that installs Satori and resvg only in the example, generates 1200×630 PNG files from frontmatter at build time, and serves them through Workers Static Assets. It does not require a Browser Rendering binding. `build.ogpCacheFile` is an external metadata cache for LinkCards inside slides and is separate from this share-image generation.
 
 ## Public entries
 
-- `hono-decks`: `defineDecksConfig`, configured-kit types, customization, and deck authoring
-- `hono-decks/advanced`: low-level APIs for assembling raw routers, sources, and renderers
+- `hono-decks`: `defineDecksConfig`, runtime option types, customization, and deck authoring
+- `hono-decks/advanced`: Worker-safe low-level APIs for assembling raw routers, sources, and renderers
 - `hono-decks/client`: client-island hydration
-- `hono-decks/node`: compiler and local-filesystem adapters
+- `hono-decks/node`: Node-only compiler, config loader, and local-filesystem adapters
 - `hono-decks/vite`: Vite integration for compiling and watching decks during development
+- `hono-decks/honox`: HonoX route integration (used by `virtual:hono-decks/honox`)
 - `hono-decks/cli`: programmatic CLI
 
-Most applications should use the root entry and the generated `createDecks(config)` function.
+Most applications should use the root entry and the generated `createDecks()` function.
 
 ```ts
 import { decksRouter, manifestDeckSource } from "hono-decks/advanced";
@@ -259,12 +287,22 @@ Use the advanced entry only when building a custom source or pipeline.
 
 - `examples/minimal`: minimal standalone Worker
 - `examples/basic`: R2 assets, Browser Rendering, custom pages, and client components
-- `examples/honox`: mounting the router in a HonoX route
+- `examples/honox`: inserting the router into HonoX file routes with `virtual:hono-decks/honox`
 - `docs`: documentation site and embedded demo
 - `examples/ogp`: browserless build-time OGP generation with Satori
 - [`examples/void`](examples/void): deployed Void integration and same-origin iframe; an independent npm example pinned to published `hono-decks@1.4.6` (run `npm ci`, `npm run typecheck`, and `npm run build` inside that directory). It is excluded from the Bun workspace and checked by its own CI job. The Bun examples are listed explicitly in the root `workspaces`; add future Bun examples to that list.
 
-Every example uses the same `hono-decks.config.ts` contract. The example scripts update generated modules before `decks:compile`, `typecheck`, `test`, and `deploy`.
+Every example uses the same split: build settings in `hono-decks.config.ts`, runtime options in the app's decks module. The Wrangler examples compile decks before `typecheck`, `test`, `dev`, and `deploy`; run `bun run generate` at the root to compile them all.
+
+## Contributing
+
+```bash
+bun install
+bun run --cwd packages/decks test   # unit tests against src, no build needed
+bun run check                       # full gate (build, generate, lint+format, typecheck, tests)
+```
+
+Workspace typechecks and tests run in parallel. `*.dist.test.ts` files inspect the published build and run through `bun run --cwd packages/decks test:dist`.
 
 ## Cloudflare
 
@@ -324,8 +362,7 @@ The deck compiler accepts a build-only module reference as well as the existing
 
 ```ts
 export default defineDecksConfig({
-  mountPath: "/slides",
-  router: { clientEntryAssetPath: "/_assets/client" },
+  mountPath: "/decks",
   build: {
     root: "decks",
     markdown: { adapter: "hono-decks/adapters/hono-markdown" },
@@ -343,12 +380,11 @@ Void configurations continue to work with the adapter's public compiler API,
 including compatible earlier adapter versions. `init --framework void
 --install` retains the one-command setup and unchanged dev/build scripts.
 
-Keep the adapter reference in config as a string: config is also imported by the
-server runtime. The compiler loads adapters only during builds. Hono+Vite and
-HonoX continue to default to MDX without installing Void or Markdown peers.
-For Markdown in these hosts, install the common package and its compiler peers
-and select the bridge above. Vite uses virtual modules; `hono-decks compile`
-continues to emit files.
+The compiler loads adapters only during builds; the config file is never part
+of the Worker bundle. Hono+Vite and HonoX continue to default to MDX without
+installing Void or Markdown peers. For Markdown in these hosts, install the
+common package and its compiler peers and select the bridge above. Vite uses
+virtual modules; `hono-decks compile` continues to emit files.
 
 Custom build adapters export `createMarkdownAdapter({ cwd, options })`, returning
 `read(source)`, asynchronous `compile(source, { sourcePath })`, and
@@ -358,9 +394,9 @@ hydration gate; Markdown compilation and island scheduling belong to the adapter
 Document adapters such as honoxpress can use the same Markdown package in a Void
 app without importing deck internals or changing their route ownership.
 
-Hono+Vite/HonoX init selects the extensionless `/_assets/client` route because
-`@hono/vite-dev-server` excludes `.js` requests by default. The client still goes
-through the application's middleware and authorization. Existing standalone CLI
-configurations retain their default `/_assets/client.js` route. For local
+The generated client bundle is served at the extensionless `/_assets/client`
+route under the mount path, because `@hono/vite-dev-server` excludes `.js`
+requests by default. The client still goes through the application's middleware
+and authorization; override it with `createDecks({ client: { path } })`. For local
 Markdown checks without Void, set `HONO_MARKDOWN_PACKAGE` to the common tarball
 and run `node scripts/verify-vite-init.mjs`.

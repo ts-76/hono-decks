@@ -5,6 +5,7 @@ import { CompileError } from "../deck/model";
 import {
   addUnknownFrontmatterWarnings,
   readFrontmatter,
+  splitOpeningFrontmatter,
   splitSlideSources,
   toDeckFrontmatter,
   toSlideFrontmatter,
@@ -75,7 +76,7 @@ export async function compileMdxModuleDecks(input: CompileMdxModuleDecksInput): 
   const decks = await Promise.all(input.decks.map((entry) => compileMdxModuleDeck(input, entry)));
   return {
     decks,
-    routerModule: emitModuleDecksRouter({ decks }),
+    routerModule: emitModuleDecksRouter({ decks, mountPath: input.mountPath }),
   };
 }
 
@@ -84,7 +85,8 @@ async function compileMdxModuleDeck(
   entry: ResolvedDeckFile,
 ): Promise<GeneratedModuleDeck> {
   const source = await input.readText(entry.sourcePath);
-  const { attrs, body } = readFrontmatter(source);
+  const { attrs: openingAttrs, body } = readFrontmatter(source);
+  const { deck: attrs, firstSlide: firstSlideAttrs } = splitOpeningFrontmatter(openingAttrs);
   const { prelude, body: contentBody } = extractDeckPrelude(body);
   const slideSources = splitSlideSources(contentBody);
   let warnings: CompiledDeck["warnings"] = [];
@@ -102,11 +104,11 @@ async function compileMdxModuleDeck(
   for (let index = 0; index < slideSources.length; index += 1) {
     const { attrs: slideAttrs, body: slideBody } = readFrontmatter(slideSources[index]);
     const speakerNotes = extractMdxCommentSpeakerNotes(slideBody);
-    const parsed = parseDeckWithWarnings(speakerNotes.body);
+    const parsed = parseDeckWithWarnings(speakerNotes.body, { firstSlideIndex: index });
     warnings = warnings.concat(toGeneratedParserCompileWarnings(parsed.warnings, index));
     const firstParsedSlide = parsed.slides[0];
     const slideModulePath = `${input.outDir}/decks/${entry.slug}/slide-${index}.ts`;
-    const slideMeta = toSlideFrontmatter(slideAttrs, warnings, {
+    const slideMeta = toSlideFrontmatter(index === 0 ? { ...firstSlideAttrs, ...slideAttrs } : slideAttrs, warnings, {
       slideIndex: index,
       fallbackTransition: deckMeta.transition,
       fallbackTransitionDuration: deckMeta.transitionDuration,
@@ -117,7 +119,11 @@ async function compileMdxModuleDeck(
     });
     addUnknownFrontmatterWarnings(warnings, slideMeta.meta, "slide", index);
     const moduleSource = [prelude, rewriteAssetUrls(speakerNotes.body, assets)].filter(Boolean).join("\n\n");
-    const rewrittenSource = rewriteRelativeMdxImports(moduleSource, dirname(entry.sourcePath), dirname(slideModulePath));
+    const rewrittenSource = rewriteRelativeMdxImports(
+      moduleSource,
+      dirname(entry.sourcePath),
+      dirname(slideModulePath),
+    );
     const code = await compileMdxModule(rewrittenSource, entry.sourcePath, index, input.resolveOgp);
 
     slideModules.push({
@@ -153,7 +159,10 @@ async function compileMdxModuleDeck(
   };
 }
 
-function collectGeneratedExternalAssetRefs(contentBody: string, deckMeta: Pick<CompiledDeck["meta"], "assets">): AssetRef[] {
+function collectGeneratedExternalAssetRefs(
+  contentBody: string,
+  deckMeta: Pick<CompiledDeck["meta"], "assets">,
+): AssetRef[] {
   return buildExternalAssetRefs([
     ...collectMarkdownAssetCandidates(contentBody),
     ...collectFrontmatterAssetCandidates(deckMeta.assets),
@@ -164,10 +173,7 @@ function generatedMdxParserWarnings(warnings: ParserWarning[]): ParserWarning[] 
   return warnings.filter((warning) => warning.code === "code-fence-unclosed");
 }
 
-function toGeneratedParserCompileWarnings(
-  warnings: ParserWarning[],
-  slideIndex: number,
-): CompiledDeck["warnings"] {
+function toGeneratedParserCompileWarnings(warnings: ParserWarning[], slideIndex: number): CompiledDeck["warnings"] {
   return generatedMdxParserWarnings(warnings).map((warning) => ({
     code: "parse-warning",
     message: warning.message,
@@ -191,12 +197,7 @@ async function compileMdxModule(
           jsxImportSource: "hono/jsx",
           format: "mdx",
           elementAttributeNameCase: "html",
-          remarkPlugins: [
-            remarkGfm,
-            remarkDirective,
-            remarkDeckSyntax({ linkCardMetadata }),
-            remarkCodeHighlight,
-          ],
+          remarkPlugins: [remarkGfm, remarkDirective, remarkDeckSyntax({ linkCardMetadata }), remarkCodeHighlight],
         },
       ),
     );
