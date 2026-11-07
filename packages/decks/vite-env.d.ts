@@ -8,3 +8,11 @@ declare module "virtual:hono-decks" {
     options?: import("hono-decks").DecksOptions<E>,
   ): import("hono-decks").ConfiguredDecks<E>;
 }
+
+/** HonoX integration: inserts the decks router into HonoX's file routes. */
+declare module "virtual:hono-decks/honox" {
+  export function withHonoXDecks<T extends { root?: string; ROUTES?: Record<string, object> }>(
+    options: T | undefined,
+    router: import("hono").Hono<any>,
+  ): T;
+}

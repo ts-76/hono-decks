@@ -130,7 +130,7 @@ export default defineConfig(async ({ command }) => ({
       ).toBe(0);
       expect(await readFile(join(cwd, "decks/welcome.mdx"), "utf8")).toBe("# Existing MDX");
       expect(await readFile(join(cwd, "decks/welcome-3/deck.md"), "utf8")).toContain("decks/welcome-3/deck.md");
-      expect(output.join("\n")).toContain("/slides/welcome-3");
+      expect(output.join("\n")).toContain("/decks/welcome-3");
     } finally {
       await rm(cwd, { recursive: true, force: true });
     }

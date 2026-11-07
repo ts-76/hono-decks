@@ -156,16 +156,22 @@ describe("hono-decks CLI", () => {
       });
 
       expect(result.exitCode).toBe(0);
-      expect(stdout.join("\n")).toContain("Initialized hono-decks.config.ts and src/decks.ts");
+      expect(stdout.join("\n")).toContain(
+        "Created hono-decks.config.ts, src/decks.ts, decks/welcome/deck.mdx, .gitignore.",
+      );
 
       const facade = await readFile(join(cwd, "src", "decks.ts"), "utf8");
-      expect(facade).toContain("App-owned facade.");
-      expect(facade).toContain('import config from "../hono-decks.config";');
+      expect(facade).not.toContain("hono-decks.config");
       expect(facade).toContain('import { createDecks } from "./generated/decks";');
-      expect(facade).toContain("export const decks = createDecks(config);");
+      expect(facade).toContain("export const decks = createDecks();");
       const config = await readFile(join(cwd, "hono-decks.config.ts"), "utf8");
       expect(config).toContain('mountPath: "/decks"');
       expect(config).toContain('outDir: "src/generated"');
+      expect(await readFile(join(cwd, ".gitignore"), "utf8")).toBe("/src/generated/\n");
+      expect(await readFile(join(cwd, "decks", "welcome", "deck.mdx"), "utf8")).toContain("# Welcome");
+
+      const compiled = await runHonoDecksCli({ argv: ["compile"], cwd });
+      expect(compiled.exitCode).toBe(0);
 
       const second = await runHonoDecksCli({
         argv: ["init", "--out", "src/decks.ts"],
@@ -181,19 +187,18 @@ describe("hono-decks CLI", () => {
     }
   });
 
-  it("initializes a decks facade with a custom generated module path", async () => {
+  it("derives the facade import from its location and keeps an existing .gitignore entry", async () => {
     const cwd = await createEmptyFixture();
 
     try {
-      const result = await runHonoDecksCli({
-        argv: ["init", "--out", "src/slides.ts", "--generated", "./generated/hono-decks"],
-        cwd,
-      });
+      await writeFile(join(cwd, ".gitignore"), "node_modules/\nsrc/generated/");
+      const result = await runHonoDecksCli({ argv: ["init", "--out", "app/slides.ts"], cwd });
 
       expect(result.exitCode).toBe(0);
-
-      const facade = await readFile(join(cwd, "src", "slides.ts"), "utf8");
-      expect(facade).toContain('import { createDecks } from "./generated/hono-decks";');
+      const facade = await readFile(join(cwd, "app", "slides.ts"), "utf8");
+      expect(facade).toContain('import { createDecks } from "../src/generated/decks";');
+      expect(await readFile(join(cwd, ".gitignore"), "utf8")).toBe("node_modules/\nsrc/generated/");
+      expect((await runHonoDecksCli({ argv: ["init", "--generated", "x"], cwd })).exitCode).toBe(1);
     } finally {
       await rm(cwd, { recursive: true, force: true });
     }
@@ -276,9 +281,13 @@ title: Broken
     });
 
     expect(result.exitCode).toBe(0);
-    expect(stdout.join("\n")).toContain("hono-decks compile [--config hono-decks.config.ts] [--watch]");
-    expect(stdout.join("\n")).toContain("hono-decks init [--config hono-decks.config.ts]");
-    expect(stdout.join("\n")).toContain("Recompile when deck files change.");
+    const help = stdout.join("\n");
+    expect(help).toContain("hono-decks compile [--config <file>] [--watch] [--refresh-ogp]");
+    expect(help).toContain("hono-decks init --framework <hono|honox|void>");
+    for (const option of ["--framework", "--entry", "--install", "--adapter", "--out", "--refresh-ogp"]) {
+      expect(help).toContain(option);
+    }
+    expect(help).toContain("Alias: build.");
   });
 });
 

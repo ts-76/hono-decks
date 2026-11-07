@@ -134,6 +134,7 @@ export function honoDecks(options: HonoDecksViteOptions = {}): Plugin {
     enforce: "pre",
     async resolveId(id, importer) {
       if (id === "virtual:hono-decks") return VIRTUAL_ENTRY;
+      if (id === "virtual:hono-decks/honox") return HONOX_ENTRY;
       if (id.startsWith(PUBLIC_MODULE_PREFIX)) {
         const path = decodeURIComponent(id.slice(PUBLIC_MODULE_PREFIX.length));
         return modules.has(path) ? MODULE_PREFIX + path : null;
@@ -154,6 +155,7 @@ export function honoDecks(options: HonoDecksViteOptions = {}): Plugin {
       if (id === VIRTUAL_ENTRY) {
         return `export * from ${JSON.stringify(PUBLIC_MODULE_PREFIX + encodeURIComponent(routerModulePath))};`;
       }
+      if (id === HONOX_ENTRY) return HONOX_MODULE;
       if (!id.startsWith(MODULE_PREFIX)) return null;
       const path = id.slice(MODULE_PREFIX.length);
       const code = modules.get(path);
@@ -200,6 +202,32 @@ export function honoDecks(options: HonoDecksViteOptions = {}): Plugin {
 }
 
 const VIRTUAL_ENTRY = "\0hono-decks:entry";
+const HONOX_ENTRY = "\0hono-decks:honox";
+/**
+ * HonoX's own route discovery, evaluated in the app's Vite graph so decks can be
+ * inserted into ROUTES and receive app/routes/_middleware like any file route.
+ */
+const HONOX_MODULE = `import { withHonoXDecks as connect } from "hono-decks/honox";
+import { mountPath } from "virtual:hono-decks";
+
+const routes = import.meta.glob(
+  [
+    "/app/routes/**/*.{ts,tsx,md,mdx}",
+    "/app/routes/.well-known/**/*.{ts,tsx,md,mdx}",
+    "!/app/routes/**/_*.{ts,tsx,md,mdx}",
+    "!/app/routes/**/-*.{ts,tsx,md,mdx}",
+    "!/app/routes/**/$*.{ts,tsx,md,mdx}",
+    "!/app/routes/**/*.test.{ts,tsx}",
+    "!/app/routes/**/*.spec.{ts,tsx}",
+    "!/app/routes/**/-*/**/*",
+  ],
+  { eager: true },
+);
+
+export function withHonoXDecks(options, router) {
+  return connect(options ?? {}, { routes, mountPath, router });
+}
+`;
 const PUBLIC_MODULE_PREFIX = "virtual:hono-decks/module/";
 const MODULE_PREFIX = "\0hono-decks:module:";
 
