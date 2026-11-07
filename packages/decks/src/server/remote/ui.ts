@@ -1,23 +1,10 @@
+import { enMessages } from "../../shared/messages";
+import { resolveMessages, remoteMessages, formatMessage, type DeckMessageOverrides } from "../../shared/messages";
 import type { CompiledDeck } from "../../deck/model";
 import { composeStylesheet, layer } from "../../renderer/style-layers";
 import { documentNonceAttribute, type ResolvedDeckDocument } from "../document";
 
-export const REMOTE_MESSAGES = {
-  title: "Remote control",
-  previous: "Previous",
-  next: "Next",
-  current: "Current slide",
-  nextSlide: "Next slide",
-  noNext: "No next slide",
-  notes: "Speaker notes",
-  noNotes: "No speaker notes",
-  live: "Live",
-  follow: "Follow",
-  stop: "Stop following",
-  connecting: "Connecting",
-  connected: "Connected",
-  disconnected: "Disconnected",
-} as const;
+export const REMOTE_MESSAGES = remoteMessages(enMessages);
 
 const style = layer(
   "components",
@@ -52,16 +39,25 @@ function json(value: unknown): string {
 export function remoteStyle(nonce?: string): string {
   return `<style${documentNonceAttribute(nonce)}>${style}</style>`;
 }
-export function remoteIndicator(follower = true): string {
-  return `<aside class="hono-decks-live" data-remote-live><span>${REMOTE_MESSAGES.live}</span><span data-remote-status role="status">${REMOTE_MESSAGES.connecting}</span>${follower ? `<button type="button" data-remote-follow>${REMOTE_MESSAGES.stop}</button>` : ""}</aside>`;
+export function remoteIndicator(
+  follower = true,
+  messages: ReturnType<typeof remoteMessages> = REMOTE_MESSAGES,
+): string {
+  return `<aside class="hono-decks-live" data-remote-live><span>${escape(messages.live)}</span><span data-remote-status role="status">${escape(messages.connecting)}</span>${follower ? `<button type="button" data-remote-follow>${escape(messages.stop)}</button>` : ""}</aside>`;
 }
 
-export function renderRemotePage(deck: CompiledDeck, document: ResolvedDeckDocument): string {
+export function renderRemotePage(
+  deck: CompiledDeck,
+  document: ResolvedDeckDocument,
+  overrides?: DeckMessageOverrides,
+): string {
+  const catalog = resolveMessages(document.lang, overrides);
+  const messages = remoteMessages(catalog);
   const slides = deck.slides.map((slide, i) => ({
     title: slide.meta.title || String(i + 1),
     notes: slide.notes ?? slide.meta.notes ?? "",
   }));
-  return `<!doctype html><html lang="${escape(document.lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${REMOTE_MESSAGES.title}</title><style${documentNonceAttribute(document.nonce)}>${composeStylesheet({ layers: style })}</style>${document.head}</head><body class="hono-decks-remote"><main><h1>${REMOTE_MESSAGES.title}</h1><p data-remote-status role="status">${REMOTE_MESSAGES.connecting}</p><p data-remote-position>1 / ${slides.length}</p><section><h2>${REMOTE_MESSAGES.current}</h2><p data-remote-current>${escape(slides[0]?.title ?? "")}</p></section><section><h2>${REMOTE_MESSAGES.nextSlide}</h2><p data-remote-next>${escape(slides[1]?.title ?? REMOTE_MESSAGES.noNext)}</p></section><nav class="hono-decks-remote-nav"><button type="button" data-remote-command="previous">${REMOTE_MESSAGES.previous}</button><button type="button" data-remote-command="next">${REMOTE_MESSAGES.next}</button></nav><details><summary>${REMOTE_MESSAGES.notes}</summary><p data-remote-notes>${escape(slides[0]?.notes || REMOTE_MESSAGES.noNotes)}</p></details></main>${renderRemoteScript("remote", document.nonce, true, slides)}</body></html>`;
+  return `<!doctype html><html lang="${escape(document.lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(messages.title)}</title><style${documentNonceAttribute(document.nonce)}>${composeStylesheet({ layers: style })}</style>${document.head}</head><body class="hono-decks-remote"><main><h1>${escape(messages.title)}</h1><p data-remote-status role="status">${escape(messages.connecting)}</p><p data-remote-position>${escape(formatMessage(catalog.progressText, { current: 1, total: slides.length }))}</p><section><h2>${escape(messages.current)}</h2><p data-remote-current>${escape(slides[0]?.title ?? "")}</p></section><section><h2>${escape(messages.nextSlide)}</h2><p data-remote-next>${escape(slides[1]?.title ?? messages.noNext)}</p></section><nav class="hono-decks-remote-nav"><button type="button" data-remote-command="previous">${escape(messages.previous)}</button><button type="button" data-remote-command="next">${escape(messages.next)}</button></nav><details><summary>${escape(messages.notes)}</summary><p data-remote-notes>${escape(slides[0]?.notes || messages.noNotes)}</p></details></main>${renderRemoteScript("remote", document.nonce, true, slides, messages, catalog.progressText)}</body></html>`;
 }
 
 export function renderRemoteScript(
@@ -69,10 +65,12 @@ export function renderRemoteScript(
   nonce?: string,
   follow = true,
   slides: Array<{ title: string; notes: string }> = [],
+  messages: ReturnType<typeof remoteMessages> = REMOTE_MESSAGES,
+  progressText = "{current} / {total}",
 ): string {
   return `<script data-hono-decks-remote-runtime${documentNonceAttribute(nonce)}>
 (() => {
-  const mode = ${json(mode)}, messages = ${json(REMOTE_MESSAGES)}, slides = ${json(slides)};
+  const mode = ${json(mode)}, messages = ${json(messages)}, slides = ${json(slides)}, progressText = ${json(progressText)};
   const status = document.querySelector('[data-remote-status]'), toggle = document.querySelector('[data-remote-follow]');
   const frame = document.querySelector(mode === 'presenter' ? '[data-hono-decks-presenter-current] iframe' : '[data-hono-decks-viewer] iframe');
   const base = location.pathname.replace(/\\/(?:presenter|remote)\\/?$/, '');
@@ -87,7 +85,7 @@ export function renderRemoteScript(
   function showPosition(position) {
     const current = slides[position.index], next = slides[position.index + 1];
     const set = (selector, value) => { const node = document.querySelector(selector); if (node) node.textContent = value; };
-    set('[data-remote-position]', (position.index + 1) + ' / ' + slides.length);
+    set('[data-remote-position]', progressText.replaceAll('{current}', String(position.index + 1)).replaceAll('{total}', String(slides.length)));
     set('[data-remote-current]', current?.title || ''); set('[data-remote-next]', next?.title || messages.noNext);
     set('[data-remote-notes]', current?.notes || messages.noNotes);
   }

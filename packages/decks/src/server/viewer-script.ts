@@ -37,9 +37,9 @@ export function renderViewerScript(nonce?: string): string {
       const current = Math.min(Math.max(index + 1, 1), total);
       position.setAttribute("aria-valuenow", String(current));
       position.setAttribute("aria-valuemax", String(total));
-      position.setAttribute("aria-valuetext", "Slide " + current + " of " + total);
+      position.setAttribute("aria-valuetext", (root.getAttribute("data-hono-decks-slide-position-template") || "Slide {current} of {total}").replaceAll("{current}", String(current)).replaceAll("{total}", String(total)));
       position.style.setProperty("--hono-decks-progress", String(current / total));
-      if (positionText) positionText.textContent = current + " / " + total;
+      if (positionText) positionText.textContent = (root.getAttribute("data-hono-decks-progress-text-template") || "{current} / {total}").replaceAll("{current}", String(current)).replaceAll("{total}", String(total));
     }
 
     if (position && viewport) viewport.append(position);

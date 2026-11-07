@@ -98,12 +98,12 @@ describe("decksRouter page surfaces", () => {
     expect(html).toContain('data-action="fullscreen"');
     expect(html).toContain('href="/slides/deck1/print"');
     expect(html).toContain('data-hono-decks-print="true"');
-    expect(html).toContain('aria-label="Print view"');
+    expect(html).toContain('aria-label="印刷画面"');
     expect(html).toContain("data-hono-decks-control-icon");
     expect(html).toContain("pointer-events:none");
-    expect(html).toContain('aria-label="Previous slide"');
-    expect(html).toContain('aria-label="Next slide"');
-    expect(html).toContain('aria-label="Toggle fullscreen"');
+    expect(html).toContain('aria-label="前のスライド"');
+    expect(html).toContain('aria-label="次のスライド"');
+    expect(html).toContain('aria-label="全画面表示を切り替え"');
     expect(html).toContain('href="/slides"');
     expect(html).toContain("data-hono-decks-back-link");
     expect(html).toContain("message.stepCount");

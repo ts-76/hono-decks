@@ -85,7 +85,7 @@ describe("decksRouter external embeds and browser export", () => {
       ".hono-decks-embedded-viewer .hono-decks-viewer-shell{position:relative;height:100%;grid-template-rows:minmax(0,1fr);overflow:hidden}",
     );
     expect(html).toContain('data-hono-decks-viewer-link="true"');
-    expect(html).toContain('aria-label="Open full viewer in new tab"');
+    expect(html).toContain('aria-label="ビューアーを新しいタブで開く"');
     expect(html).toContain('href="/slides/deck1"');
     expect(html).not.toContain('data-action="previous"');
     expect(html).not.toContain('data-action="next"');

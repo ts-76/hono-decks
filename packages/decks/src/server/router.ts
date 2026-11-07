@@ -1,4 +1,5 @@
 import { renderRemotePage } from "./remote/ui";
+import { resolveMessages, type DeckMessageOverrides } from "../shared/messages";
 import { Hono } from "hono";
 import type { Context, Env, MiddlewareHandler } from "hono";
 import { raw } from "hono/html";
@@ -120,6 +121,7 @@ export interface DecksRouterOptions<E extends Env = any> {
   components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
   client?: DecksClientOptions;
   document?: DeckDocumentOptions<E>;
+  messages?: DeckMessageOverrides;
   pages?: DecksRouterPagesOptions<E>;
   embed?: false | DeckExternalEmbedOptions<E>;
   viewer?: DeckViewerOptions<E>;
@@ -288,9 +290,10 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
       return c.notFound();
     }
     const indexOptions = options.pages?.index === false ? undefined : options.pages?.index;
-    const title = await resolveIndexTitle(indexOptions?.title, pageInput);
+    let title = await resolveIndexTitle(indexOptions?.title, pageInput);
     const document = await resolveRouterDocument(c, options, "index", mountPath, undefined, title);
-    const defaultContentHtml = renderDeckIndexContent(decks, mountPath);
+    if (!indexOptions?.title) title = resolveMessages(document.lang, options.messages).indexTitle;
+    const defaultContentHtml = renderDeckIndexContent(decks, mountPath, title);
     const defaultContent = raw(defaultContentHtml);
     const content = indexOptions?.render
       ? await renderJsxValue(indexOptions.render({ ...pageInput, title, document, defaultContent }))
@@ -355,6 +358,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
           liveReloadPath: dev ? options.liveReloadPath : undefined,
           speakerNotes: options.remote ? false : undefined,
           document,
+          messages: options.messages,
         }),
       );
     } catch (error) {
@@ -385,6 +389,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
           components: options.components,
           printPreview: true,
           document,
+          messages: options.messages,
         }),
       );
     } catch (error) {
@@ -415,6 +420,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
           style: options.style,
           components: options.components,
           document,
+          messages: options.messages,
         }),
       );
     } catch (error) {
@@ -453,6 +459,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
         context: { c, deck, slug, mountPath },
         options: embedOptions,
         document: options.document,
+        messages: options.messages,
         availablePages,
         additionalFrameAncestors: twitterPlayer ? X_PLAYER_FRAME_ANCESTORS : undefined,
       });
@@ -470,7 +477,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
     const mountPath = resolveMountPath(c.req.path, `/${slug}/remote`);
     const document = await resolveRouterDocument(c, options, "presenter", mountPath, deck);
     c.header("Cache-Control", "private, no-store");
-    return c.html(renderRemotePage(deck, document));
+    return c.html(renderRemotePage(deck, document, options.messages));
   });
 
   router.get("/:slug/remote/socket", async (c) => {
@@ -519,6 +526,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
           dev,
           liveReloadPath: dev ? options.liveReloadPath : undefined,
           document,
+          messages: options.messages,
         }),
       );
     } catch (error) {
@@ -557,6 +565,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
           style: options.style,
           components: options.components,
           document,
+          messages: options.messages,
         }),
       );
     } catch (error) {
@@ -595,6 +604,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
         availablePages,
         exportOptions: options.export,
         document: options.document,
+        messages: options.messages,
         twitterPlayer: Boolean(options.embed),
       }),
     );
@@ -728,7 +738,7 @@ async function resolvePresenterViewerControl<E extends Env>(
       type: "link",
       key: control.key ?? "presenter",
       href: presenterPath,
-      label: control.label ?? "Presenter",
+      label: control.label ?? "",
       icon: control.icon ?? "presenter",
       className: control.className,
       attributes: control.attributes,
@@ -742,11 +752,10 @@ function mergeControlSlotItems(
   item: Exclude<DeckViewerControlItem, null | false | undefined>,
   placement: "before" | "after",
 ): DeckViewerControlSlotItems {
-  if (!slot) return [item];
-  if (Array.isArray(slot)) return placement === "before" ? [item, ...slot] : [...slot, item];
   return (context) => {
-    const items = slot(context);
-    return placement === "before" ? [item, ...items] : [...items, item];
+    const items = !slot ? [] : Array.isArray(slot) ? slot : slot(context);
+    const localized = item.type === "link" && item.label === "" ? { ...item, label: context.messages.presenter } : item;
+    return placement === "before" ? [localized, ...items] : [...items, localized];
   };
 }
 
@@ -777,7 +786,11 @@ async function isPresenterEnabled<E extends Env>(
   );
 }
 
-function renderDeckIndexContent(decks: Awaited<ReturnType<DeckSource["listDecks"]>>, mountPath: string): string {
+function renderDeckIndexContent(
+  decks: Awaited<ReturnType<DeckSource["listDecks"]>>,
+  mountPath: string,
+  title: string,
+): string {
   const basePath = mountPath.replace(/\/$/, "");
   const items = decks
     .map((deck) => {
@@ -789,7 +802,7 @@ function renderDeckIndexContent(decks: Awaited<ReturnType<DeckSource["listDecks"
     .join("");
 
   return `<main>
-    <h1>Hono Decks</h1>
+    <h1>${escapeHtml(title)}</h1>
     <ul>${items}</ul>
   </main>`;
 }

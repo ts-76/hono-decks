@@ -1,3 +1,4 @@
+import { formatMessage, resolveMessages, type DeckMessages } from "../shared/messages";
 import { Fragment, jsx } from "hono/jsx/jsx-runtime";
 import { HtmlEscapedCallbackPhase, resolveCallback } from "hono/utils/html";
 import type { Child } from "hono/jsx";
@@ -97,7 +98,7 @@ export const builtInSlideComponents = defineSlideComponents({
   EmbedFrame: (props) => {
     const src = stringProp(props.src);
     const provider = stringProp(props.provider)?.trim().toLowerCase();
-    const title = stringProp(props.title) ?? "Embedded content";
+    const title = stringProp(props.title) ?? componentMessages(props).embeddedContent;
     const aspectRatio = stringProp(props.aspectRatio) ?? "16 / 9";
     const loading = stringProp(props.loading) ?? "lazy";
     const allow = stringProp(props.allow) ?? "fullscreen; picture-in-picture";
@@ -108,7 +109,7 @@ export const builtInSlideComponents = defineSlideComponents({
     const referrerPolicy =
       stringProp(props.referrerPolicy ?? props.referrerpolicy) ?? "strict-origin-when-cross-origin";
     const fallbackHref = stringProp(props.fallbackHref ?? props.fallbackUrl ?? props.href) ?? src;
-    const fallback = codeBlockText(props.children) || "Open embed";
+    const fallback = codeBlockText(props.children) || componentMessages(props).openEmbed;
     const printPoster = provider === "youtube" ? youtubePrintPoster(src) : undefined;
 
     return jsx("figure", {
@@ -162,7 +163,11 @@ export const builtInSlideComponents = defineSlideComponents({
     const href = stringProp(props.href ?? props.url);
     const provider = stringProp(props.provider ?? props.service);
     const author = stringProp(props.author);
-    const label = stringProp(props.label) ?? (provider ? `Open on ${provider}` : "Open social post");
+    const label =
+      stringProp(props.label) ??
+      (provider
+        ? formatMessage(componentMessages(props).openProvider, { provider })
+        : componentMessages(props).openSocial);
     const quote = codeBlockText(props.children);
 
     return jsx("figure", {
@@ -193,7 +198,7 @@ export const builtInSlideComponents = defineSlideComponents({
   },
   TweetEmbed: (props) => {
     const href = stringProp(props.href ?? props.url);
-    const label = stringProp(props.label) ?? "Open post on X";
+    const label = stringProp(props.label) ?? componentMessages(props).openX;
 
     return jsx("figure", {
       class: "hono-decks-tweet-embed",
@@ -213,6 +218,7 @@ export const builtInSlideComponents = defineSlideComponents({
         }),
         href
           ? jsx("script", {
+              ...(typeof props.__honoDecksNonce === "string" ? { nonce: props.__honoDecksNonce } : {}),
               async: true,
               src: "https://platform.twitter.com/widgets.js",
               charset: "utf-8",
@@ -230,11 +236,11 @@ export const builtInSlideComponents = defineSlideComponents({
   },
   LinkCard: (props) => {
     const href = stringProp(props.href ?? props.url);
-    const title = stringProp(props.title) ?? href ?? "Link";
+    const title = stringProp(props.title) ?? href ?? componentMessages(props).link;
     const description = stringProp(props.description);
     const image = stringProp(props.image ?? props.imageUrl);
     const siteName = stringProp(props.siteName ?? props.site);
-    const label = codeBlockText(props.children) || "Open link";
+    const label = codeBlockText(props.children) || componentMessages(props).openLink;
 
     return jsx("figure", {
       class: "hono-decks-link-card",
@@ -267,6 +273,23 @@ export const builtInSlideComponents = defineSlideComponents({
     });
   },
 });
+
+function componentMessages(props: SlideComponentProps): DeckMessages {
+  return (props.__honoDecksMessages as DeckMessages | undefined) ?? resolveMessages("en");
+}
+
+export function localizedSlideComponents(messages: DeckMessages, nonce?: string): SlideComponentRegistry {
+  return Object.fromEntries(
+    Object.entries(builtInSlideComponents).map(([name, definition]) => [
+      name,
+      {
+        ...definition,
+        component: (props: SlideComponentProps) =>
+          definition.component({ ...props, __honoDecksMessages: messages, __honoDecksNonce: nonce }),
+      },
+    ]),
+  );
+}
 
 export function defineSlideComponents(input: Record<string, SlideComponentInput>): SlideComponentRegistry {
   const registry: SlideComponentRegistry = {};
@@ -311,7 +334,7 @@ function heroImage(props: SlideComponentProps): DeckRenderable {
       ? props.alt
       : typeof props.title === "string"
         ? props.title
-        : "Hero image";
+        : componentMessages(props).heroImage;
   return jsx("img", { class: "mdx-hero-image", src: image, alt });
 }
 

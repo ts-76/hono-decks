@@ -96,3 +96,7 @@ Write `mountPath` once in the config and use `decks.mountPath` at runtime. Mount
 [Open the defineDecksConfig API →](/api?lang=en#define-decks-config)
 
 </section>
+
+## UI messages
+
+The resolved `document.lang` selects Japanese for `ja` and tags such as `ja-JP`, and English otherwise. It defaults to `ja`. Override messages per locale with `createDecks({ messages: { ja: { previous: "戻る" }, en: { previous: "Back" } } })`. `viewer.controls.labels` takes precedence for those controls. Templates use named placeholders: `slidePosition` and `progressText` use `{current}` and `{total}`, and `slideCount` / `slideCountOne` use `{count}`.

@@ -1,3 +1,4 @@
+import { resolveMessages, type DeckMessageOverrides } from "../shared/messages";
 import type { Context, Env } from "hono";
 import type { CompiledDeck } from "../deck/model";
 import type { DeckRenderable, MaybePromise } from "../renderer/compiled-render";
@@ -51,6 +52,7 @@ export async function renderDeckExternalEmbedResponse<E extends Env>(input: {
   context: DeckExternalEmbedContext<E>;
   options: DeckExternalEmbedOptions<E>;
   document?: DeckDocumentOptions<E>;
+  messages?: DeckMessageOverrides;
   availablePages?: Partial<DeckViewerAvailablePages>;
   /** Origins added to `frameAncestors`, such as X when a Player Card is enabled. */
   additionalFrameAncestors?: readonly string[];
@@ -73,6 +75,7 @@ export async function renderDeckExternalEmbedResponse<E extends Env>(input: {
     input.document,
     input.options.document,
   );
+  const messages = resolveMessages(document.lang, input.messages);
   const viewerOptions =
     typeof input.options.viewer === "function" ? await input.options.viewer(input.context) : input.options.viewer;
   const controls: false | DeckViewerControlsOptions =
@@ -83,10 +86,10 @@ export async function renderDeckExternalEmbedResponse<E extends Env>(input: {
               type: "link" as const,
               key: "open-viewer",
               href: context.meta.paths.viewer,
-              label: "Open full viewer in new tab",
+              label: messages.openViewer,
               icon: "external-link" as const,
               attributes: {
-                "aria-label": "Open full viewer in new tab",
+                "aria-label": messages.openViewer,
                 "data-hono-decks-viewer-link": true,
                 target: "_blank",
                 rel: "noreferrer",
@@ -102,6 +105,7 @@ export async function renderDeckExternalEmbedResponse<E extends Env>(input: {
     controls,
     availablePages: input.availablePages,
     nonce: document.nonce,
+    messages,
   });
   const renderInput = { ...input.context, viewer, document };
   const body = input.options.render ? await input.options.render(renderInput) : viewer.embed;

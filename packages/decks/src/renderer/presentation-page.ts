@@ -1,8 +1,17 @@
+import { enMessages } from "../shared/messages";
 import { parseDuration } from "../deck/duration";
 import { renderOverflowChecker } from "./overflow-checker";
-import { renderRemoteScript, remoteIndicator, remoteStyle, REMOTE_MESSAGES } from "../server/remote/ui";
+import { renderRemoteScript, remoteIndicator, remoteStyle } from "../server/remote/ui";
+import {
+  resolveMessages,
+  formatMessage,
+  timerMessages as resolveTimerMessages,
+  remoteMessages,
+  type DeckMessageOverrides,
+  type DeckMessages,
+} from "../shared/messages";
 import type { CompiledDeck } from "../deck/model";
-import type { SlideComponentInput, SlideComponentRegistry } from "./jsx-renderer";
+import { localizedSlideComponents, type SlideComponentInput, type SlideComponentRegistry } from "./jsx-renderer";
 import { renderCompiledDeck, renderCompiledDeckAsync, renderCompiledSlideAsync } from "./compiled-render";
 import { renderControlIconHtml } from "./control-icons";
 import { renderClientEntryScript, renderLiveReloadScript, renderPresentationScript } from "./presentation-script";
@@ -11,21 +20,7 @@ import { composeStylesheet, layer } from "./style-layers";
 import { documentNonceAttribute } from "../server/document";
 import type { ResolvedDeckDocument } from "../server/document";
 
-export const PRESENTER_TIMER_MESSAGES = {
-  title: "Talk timer",
-  elapsed: "Elapsed",
-  clock: "Clock",
-  remaining: "Remaining",
-  start: "Start",
-  pause: "Pause",
-  resume: "Resume",
-  reset: "Reset",
-  onPace: "On pace",
-  ahead: "Ahead",
-  behind: "Behind",
-  over: "Over",
-  shortcut: "Start or pause timer (T)",
-} as const;
+export const PRESENTER_TIMER_MESSAGES = resolveTimerMessages(enMessages);
 
 /**
  * Compares elapsed time with the time budget of the current slide. Each slide gets
@@ -72,11 +67,12 @@ export function renderCompiledDeckPage(input: {
   printPreview?: boolean;
   speakerNotes?: boolean;
   document?: ResolvedDeckDocument;
+  messages?: DeckMessageOverrides;
 }): string {
   const { deck } = input;
   const document = input.document ?? { lang: "ja", head: "" };
   const nonceAttribute = documentNonceAttribute(document.nonce);
-  const warnings = renderWarnings(deck);
+  const warnings = renderWarnings(deck, resolveMessages(document.lang, input.messages));
   const htmlAttrs = input.printPreview ? ' data-hono-decks-print-preview="true"' : "";
   const bodyAttrs = [
     input.printPreview ? 'data-hono-decks-print-preview="true"' : "",
@@ -95,7 +91,10 @@ export function renderCompiledDeckPage(input: {
 <body${bodyAttrs.length ? ` ${bodyAttrs.join(" ")}` : ""}>
   ${warnings}
   ${renderCompiledDeck(deck, {
-    components: mergeComponentInputs(deck.componentRegistry, input.components),
+    components: {
+      ...localizedSlideComponents(resolveMessages(document.lang, input.messages), document.nonce),
+      ...mergeComponentInputs(deck.componentRegistry, input.components),
+    },
     speakerNotes: input.speakerNotes,
   })}
   ${input.printPreview ? renderPrintPreviewScript(document.nonce) : renderPresentationScript(document.nonce)}
@@ -117,11 +116,12 @@ export async function renderCompiledDeckPageAsync(input: {
   printPreview?: boolean;
   speakerNotes?: boolean;
   document?: ResolvedDeckDocument;
+  messages?: DeckMessageOverrides;
 }): Promise<string> {
   const { deck } = input;
   const document = input.document ?? { lang: "ja", head: "" };
   const nonceAttribute = documentNonceAttribute(document.nonce);
-  const warnings = renderWarnings(deck);
+  const warnings = renderWarnings(deck, resolveMessages(document.lang, input.messages));
   const htmlAttrs = input.printPreview ? ' data-hono-decks-print-preview="true"' : "";
   const bodyAttrs = [
     input.printPreview ? 'data-hono-decks-print-preview="true"' : "",
@@ -140,7 +140,10 @@ export async function renderCompiledDeckPageAsync(input: {
 <body${bodyAttrs.length ? ` ${bodyAttrs.join(" ")}` : ""}>
   ${warnings}
   ${await renderCompiledDeckAsync(deck, {
-    components: mergeComponentInputs(deck.componentRegistry, input.components),
+    components: {
+      ...localizedSlideComponents(resolveMessages(document.lang, input.messages), document.nonce),
+      ...mergeComponentInputs(deck.componentRegistry, input.components),
+    },
     speakerNotes: input.speakerNotes,
   })}
   ${input.printPreview ? renderPrintPreviewScript(document.nonce) : renderPresentationScript(document.nonce)}
@@ -160,11 +163,16 @@ export async function renderPresenterPageAsync(input: {
   style?: string;
   components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
   document?: ResolvedDeckDocument;
+  messages?: DeckMessageOverrides;
 }): Promise<string> {
   const { deck } = input;
   const document = input.document ?? { lang: "ja", head: "" };
   const nonceAttribute = documentNonceAttribute(document.nonce);
-  const components = mergeComponentInputs(deck.componentRegistry, input.components);
+  const messages = resolveMessages(document.lang, input.messages);
+  const components = {
+    ...localizedSlideComponents(messages, document.nonce),
+    ...mergeComponentInputs(deck.componentRegistry, input.components),
+  };
   const mountPath = input.mountPath.replace(/\/$/, "") || "/";
   const deckPath = `${mountPath === "/" ? "" : mountPath}/${encodeURIComponent(deck.slug)}`;
   const stateQuery = input.presenterStateQuery ?? "";
@@ -176,7 +184,7 @@ export async function renderPresenterPageAsync(input: {
     ),
   );
   const duration = input.duration === undefined ? deck.meta.duration : parseDuration(input.duration, "seconds");
-  const messages = PRESENTER_TIMER_MESSAGES;
+  const timerMessages = resolveTimerMessages(messages);
   const notes = deck.slides.map((slide) => slide.notes ?? slide.meta.notes);
 
   return `<!doctype html>
@@ -184,37 +192,37 @@ export async function renderPresenterPageAsync(input: {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${escapeHtml(presentationPageTitle(deck))} - Presenter</title>
+  <title>${escapeHtml(formatMessage(messages.presenterTitle, { title: presentationPageTitle(deck) }))}</title>
   <style${nonceAttribute}>${composeStylesheet({ layers: basePresenterStyle(), theme: deck.themeStyle, app: input.style })}</style>
   ${document.head}
 </head>
 <body>
   <main class="hono-decks-presenter" data-hono-decks-presenter data-slide-index="0">
-    <section class="hono-decks-presenter-current" data-hono-decks-presenter-current aria-label="Current slide">
-      <nav class="hono-decks-presenter-controls" data-hono-decks-presenter-controls aria-label="Presenter controls">
-        <a href="${escapeHtml(mountPath)}" title="Deck list" aria-label="Deck list">${renderControlIconHtml("home")}</a>
-        <a href="${escapeHtml(deckHref)}" title="Viewer" aria-label="Viewer">${renderControlIconHtml("viewer")}</a>
-        <button type="button" data-action="openProjection" data-projection-url="${escapeHtml(projectionPath)}" title="Projection" aria-label="Projection">${renderControlIconHtml("projection")}</button>
-        <button type="button" data-action="previous" title="Previous slide" aria-label="Previous slide">${renderControlIconHtml("previous")}</button>
-        <span data-hono-decks-presenter-position>1 / ${deck.slides.length}</span>
-        <button type="button" data-action="next" title="Next slide" aria-label="Next slide">${renderControlIconHtml("next")}</button>
-        <span data-hono-decks-presenter-connection>Connected</span>
-        ${input.remote ? `<a class="hono-decks-presenter-remote-link" href="${escapeHtml(`${deckPath}/remote`)}">${REMOTE_MESSAGES.title}</a>` : ""}
+    <section class="hono-decks-presenter-current" data-hono-decks-presenter-current aria-label="${escapeHtml(messages.currentSlide)}">
+      <nav class="hono-decks-presenter-controls" data-hono-decks-presenter-controls aria-label="${escapeHtml(messages.presenterControls)}">
+        <a href="${escapeHtml(mountPath)}" title="${escapeHtml(messages.deckList)}" aria-label="${escapeHtml(messages.deckList)}">${renderControlIconHtml("home")}</a>
+        <a href="${escapeHtml(deckHref)}" title="${escapeHtml(messages.viewer)}" aria-label="${escapeHtml(messages.viewer)}">${renderControlIconHtml("viewer")}</a>
+        <button type="button" data-action="openProjection" data-projection-url="${escapeHtml(projectionPath)}" title="${escapeHtml(messages.projection)}" aria-label="${escapeHtml(messages.projection)}">${renderControlIconHtml("projection")}</button>
+        <button type="button" data-action="previous" title="${escapeHtml(messages.previous)}" aria-label="${escapeHtml(messages.previous)}">${renderControlIconHtml("previous")}</button>
+        <span data-hono-decks-presenter-position>${escapeHtml(formatMessage(messages.progressText, { current: 1, total: deck.slides.length }))}</span>
+        <button type="button" data-action="next" title="${escapeHtml(messages.next)}" aria-label="${escapeHtml(messages.next)}">${renderControlIconHtml("next")}</button>
+        <span data-hono-decks-presenter-connection>${escapeHtml(messages.connected)}</span>
+        ${input.remote ? `<a class="hono-decks-presenter-remote-link" href="${escapeHtml(`${deckPath}/remote`)}">${escapeHtml(remoteMessages(messages).title)}</a>` : ""}
       </nav>
       <iframe title="${escapeHtml(presentationPageTitle(deck))}" src="${escapeHtml(projectionPath)}"></iframe>
     </section>
-    <aside class="hono-decks-presenter-panel" aria-label="Presenter panel">
-      <section class="hono-decks-presenter-timer" aria-label="${messages.title}">
-        <h2>${messages.title}</h2>
+    <aside class="hono-decks-presenter-panel" aria-label="${escapeHtml(messages.presenterPanel)}">
+      <section class="hono-decks-presenter-timer" aria-label="${escapeHtml(timerMessages.title)}">
+        <h2>${escapeHtml(timerMessages.title)}</h2>
         <div class="hono-decks-presenter-timer-values">
-          <div><span>${messages.elapsed}</span><strong role="timer" aria-live="off" aria-label="${messages.elapsed}" data-timer-elapsed>00:00</strong></div>
-          <div><span>${messages.clock}</span><strong role="timer" aria-live="off" aria-label="${messages.clock}" data-timer-clock></strong></div>
-          ${duration ? `<div><span>${messages.remaining}</span><strong role="timer" aria-live="off" aria-label="${messages.remaining}" data-timer-remaining></strong></div><div data-timer-pace></div>` : ""}
+          <div><span>${escapeHtml(timerMessages.elapsed)}</span><strong role="timer" aria-live="off" aria-label="${escapeHtml(timerMessages.elapsed)}" data-timer-elapsed>00:00</strong></div>
+          <div><span>${escapeHtml(timerMessages.clock)}</span><strong role="timer" aria-live="off" aria-label="${escapeHtml(timerMessages.clock)}" data-timer-clock></strong></div>
+          ${duration ? `<div><span>${escapeHtml(timerMessages.remaining)}</span><strong role="timer" aria-live="off" aria-label="${escapeHtml(timerMessages.remaining)}" data-timer-remaining></strong></div><div data-timer-pace></div>` : ""}
         </div>
-        <div class="hono-decks-presenter-timer-controls"><button type="button" data-timer-toggle title="${messages.shortcut}">${messages.start}</button><button type="button" data-timer-reset>${messages.reset}</button></div>
+        <div class="hono-decks-presenter-timer-controls"><button type="button" data-timer-toggle title="${escapeHtml(timerMessages.shortcut)}">${escapeHtml(timerMessages.start)}</button><button type="button" data-timer-reset>${escapeHtml(timerMessages.reset)}</button></div>
       </section>
-      <section class="hono-decks-presenter-next" data-hono-decks-presenter-next aria-label="Next slide preview">
-        <h2>Next slide</h2>
+      <section class="hono-decks-presenter-next" data-hono-decks-presenter-next aria-label="${escapeHtml(messages.nextPreview)}">
+        <h2>${escapeHtml(messages.next)}</h2>
         <div class="hono-decks-presenter-preview-list">
           ${previews
             .map(
@@ -222,30 +230,30 @@ export async function renderPresenterPageAsync(input: {
                 `<div class="hono-decks-presenter-preview" data-hono-decks-presenter-preview data-slide-index="${index}"${index === 1 ? "" : " hidden"}>${preview}</div>`,
             )
             .join("\n")}
-          <p class="hono-decks-presenter-no-next" data-hono-decks-presenter-no-next${deck.slides.length > 1 ? " hidden" : ""}>No next slide</p>
+          <p class="hono-decks-presenter-no-next" data-hono-decks-presenter-no-next${deck.slides.length > 1 ? " hidden" : ""}>${escapeHtml(messages.noNext)}</p>
         </div>
       </section>
-      <section class="hono-decks-presenter-notes" data-hono-decks-presenter-notes aria-label="Speaker notes">
-        <h2>Speaker notes</h2>
+      <section class="hono-decks-presenter-notes" data-hono-decks-presenter-notes aria-label="${escapeHtml(messages.notes)}">
+        <h2>${escapeHtml(messages.notes)}</h2>
         ${notes
           .map(
             (note, index) =>
-              `<article data-hono-decks-presenter-note data-slide-index="${index}"${index === 0 ? "" : " hidden"}>${note ? escapeHtml(note) : "<p>No speaker notes.</p>"}</article>`,
+              `<article data-hono-decks-presenter-note data-slide-index="${index}"${index === 0 ? "" : " hidden"}>${note ? escapeHtml(note) : `<p>${escapeHtml(messages.noNotes)}</p>`}</article>`,
           )
           .join("\n")}
       </section>
     </aside>
   </main>
-  ${input.remote ? `${remoteStyle(document.nonce)}${remoteIndicator(false)}${renderRemoteScript("presenter", document.nonce)}` : ""}
-  ${renderPresenterScript(deck.slides.length, deck.slug, duration, document.nonce)}
+  ${input.remote ? `${remoteStyle(document.nonce)}${remoteIndicator(false, remoteMessages(messages))}${renderRemoteScript("presenter", document.nonce, true, [], remoteMessages(messages))}` : ""}
+  ${renderPresenterScript(deck.slides.length, deck.slug, duration, document.nonce, timerMessages, messages.progressText)}
 </body>
 </html>`;
 }
 
-function renderWarnings(deck: CompiledDeck): string {
+function renderWarnings(deck: CompiledDeck, messages: DeckMessages): string {
   const visibleWarnings = deck.warnings.filter((warning) => warning.code !== "external-asset-unverified");
   return visibleWarnings.length
-    ? `<aside class="hono-decks-warnings" tabindex="0" aria-label="Deck warnings">${visibleWarnings.map((warning) => `<p>${escapeHtml(warning.message)}</p>`).join("")}</aside>`
+    ? `<aside class="hono-decks-warnings" tabindex="0" aria-label="${escapeHtml(messages.warnings)}">${visibleWarnings.map((warning) => `<p>${escapeHtml(warning.message)}</p>`).join("")}</aside>`
     : "";
 }
 
@@ -310,7 +318,14 @@ body:not([data-overview-mode]) .hono-decks-presenter-preview .slide{position:abs
   ].join("\n");
 }
 
-function renderPresenterScript(slideCount: number, slug: string, duration: number | undefined, nonce?: string): string {
+function renderPresenterScript(
+  slideCount: number,
+  slug: string,
+  duration: number | undefined,
+  nonce?: string,
+  messages: ReturnType<typeof resolveTimerMessages> = PRESENTER_TIMER_MESSAGES,
+  progressText = "{current} / {total}",
+): string {
   return `<script${documentNonceAttribute(nonce)}>
 (() => {
   const root = document.querySelector("[data-hono-decks-presenter]");
@@ -319,7 +334,8 @@ function renderPresenterScript(slideCount: number, slug: string, duration: numbe
   const notes = Array.from(document.querySelectorAll("[data-hono-decks-presenter-note]"));
   const noNext = document.querySelector("[data-hono-decks-presenter-no-next]");
   const position = document.querySelector("[data-hono-decks-presenter-position]");
-  const messages = ${JSON.stringify(PRESENTER_TIMER_MESSAGES)};
+  const messages = ${JSON.stringify(messages).replaceAll("<", "\\u003c")};
+  const progressText = ${JSON.stringify(progressText).replaceAll("<", "\\u003c")};
   const talkPace = ${talkPace.toString()};
   const duration = ${JSON.stringify(duration ?? null)};
   const storageKey = ${JSON.stringify("hono-decks:timer:")} + ${JSON.stringify(slug).replaceAll("<", "\\u003c")};
@@ -391,7 +407,7 @@ function renderPresenterScript(slideCount: number, slug: string, duration: numbe
     currentStepIndex = stepIndex;
     writePresenterPaginationState();
     root?.setAttribute("data-slide-index", String(index));
-    if (position) position.textContent = String(index + 1) + " / ${slideCount}";
+    if (position) position.textContent = progressText.replaceAll("{current}", String(index + 1)).replaceAll("{total}", "${slideCount}");
     previews.forEach((preview) => {
       preview.hidden = Number(preview.getAttribute("data-slide-index")) !== nextIndex;
     });

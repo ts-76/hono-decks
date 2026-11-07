@@ -19,10 +19,10 @@ describe("viewer slide progress", () => {
     const element = html.match(/<div[^>]*data-hono-decks-position[^>]*>.*?<\/div>/s)?.[0] ?? "";
 
     expect(element).toContain('role="progressbar"');
-    expect(element).toContain('aria-label="Slide progress"');
+    expect(element).toContain('aria-label="スライドの進行状況"');
     expect(element).toContain('aria-valuemin="1"');
     expect(element).toContain('aria-valuemax="4"');
-    expect(element).toContain('aria-valuetext="Slide 1 of 4"');
+    expect(element).toContain('aria-valuetext="4枚中1枚目"');
     expect(element).toContain('<span class="hono-decks-progress-bar" aria-hidden="true"></span>');
     expect(element).toContain('<span class="hono-decks-progress-text">1 / 4</span>');
     expect(element).not.toContain("style=");
@@ -67,7 +67,7 @@ describe("viewer slide progress", () => {
     app.route("/slides", decksRouter({ source: manifestDeckSource({ decks: [fourSlides] }) }));
     const html = await (await app.request("/slides/deck1")).text();
     expect(html).toContain('position.style.setProperty("--hono-decks-progress", String(current / total))');
-    expect(html).toContain('position.setAttribute("aria-valuetext", "Slide " + current + " of " + total)');
+    expect(html).toContain("data-hono-decks-slide-position-template");
     expect(html).toContain("writeProgress(message.index, message.slideCount)");
   });
 

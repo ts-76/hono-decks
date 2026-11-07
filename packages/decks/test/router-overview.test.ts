@@ -28,18 +28,18 @@ describe("deck overview page", () => {
     expect(response.status).toBe(200);
     const html = await response.text();
 
-    expect(html).toContain("<title>Deck One - Overview</title>");
+    expect(html).toContain("<title>Deck One - スライド一覧</title>");
     expect(html).toContain("data-hono-decks-overview-grid");
     expect(html.match(/class="hono-decks-overview-card"/g)).toHaveLength(3);
     expect(html).toContain('href="/slides/deck1?slide=1"');
     expect(html).toContain('href="/slides/deck1?slide=3"');
     expect(html).toContain("<h1>Intro</h1>");
     expect(html).toContain('<span class="hono-decks-overview-label">Agenda &lt;&amp;&gt;</span>');
-    expect(html).toContain('<span class="hono-decks-overview-label">Slide 3</span>');
+    expect(html).toContain('<span class="hono-decks-overview-label">スライド 3</span>');
     expect(html).toContain(".deck-theme-marker{color:teal}");
     expect(html).toContain('aria-hidden="true" inert');
     expect(html).toContain('href="/slides/deck1"');
-    expect(html).toContain("3 slides");
+    expect(html).toContain("3枚のスライド");
     expect(html).not.toContain("Secret note");
     expect(html).not.toContain(`aria-current="true"`);
   });
@@ -54,7 +54,7 @@ describe("deck overview page", () => {
     const enabled = await (await appFor().request("/slides/deck1")).text();
     expect(enabled).toContain('href="/slides/deck1/overview"');
     expect(enabled).toMatch(/<a[^>]*href="\/slides\/deck1\/overview"[^>]*data-hono-decks-overview-link/);
-    expect(enabled).toContain('aria-label="Slide overview"');
+    expect(enabled).toContain('aria-label="スライドの概要"');
 
     const disabled = appFor({ pages: { overview: false } });
     expect((await disabled.request("/slides/deck1/overview")).status).toBe(404);
