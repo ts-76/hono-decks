@@ -71,10 +71,11 @@ export interface CompileWarning {
 export interface CompiledSlide {
   index: number;
   meta: SlideFrontmatter;
-  html: string;
+  /** Pre-rendered HTML for decks compiled without slide modules. */
+  html?: string;
   nodes?: SlideNode[];
   render?: (props?: { components?: Record<string, unknown> }) => MaybePromise<DeckRenderable>;
-  components: ComponentPlaceholder[];
+  components?: ComponentPlaceholder[];
   notes?: string;
 }
 

@@ -271,12 +271,13 @@ export function Counter() {
       expect(manifest.decks.map((deck) => deck.slug)).toEqual(["deck1", "deck2"]);
 
       const output = await readFile(join(cwd, "src", "generated", "decks.ts"), "utf8");
-      expect(output).toContain('import { configureDecks, defineDecks } from "hono-decks/advanced";');
+      expect(output).toMatch(/import \{ configureDecks(, withClientComponentIds)? \} from "hono-decks\/advanced";/);
       expect(output).not.toContain("hono-decks/runtime");
       expect(output).toContain('import { decksClientEntry } from "./client-entry";');
-      expect(output).toContain("const generatedDecks = defineDecks({");
+      expect(output).toContain("export const compiledDecks: CompiledDeck[] = [");
       expect(output).toContain("export function createDecks");
-      expect(output).toContain("clientEntryAsset: decksClientEntry");
+      expect(output).toContain("clientBundle: decksClientEntry");
+      expect(output).not.toContain("@ts-nocheck");
       expect(output).toContain('"publicPath": "/slides/deck1/assets/my%20image%231.svg"');
       expect(output).toContain('"publicPath": "/slides/deck1/assets/plain.svg"');
       expect(output).toContain('"body": new Uint8Array([1, 2, 3])');
@@ -455,7 +456,7 @@ const generatedWarning = true;
       expect(output).toContain('"presenter": true');
       expect(output).toContain('"assets": [');
       expect(output).toContain('"intent": "demo"');
-      expect(output).toContain('"notes": "Mention the generated module contract."');
+      expect(output).toContain('notes: "Mention the generated module contract."');
       expect(output).toContain('"sourcePath": "https://cdn.example.com/body.png"');
       expect(output).toContain('"code": "external-asset-unverified"');
     } finally {
@@ -529,7 +530,7 @@ Visible generated content.
       expect(manifest.decks[1].themeStyle).toBeUndefined();
 
       const output = await readFile(join(cwd, "src", "generated", "decks.ts"), "utf8");
-      expect(output).toContain('"themeSourcePath": "decks/deck1/theme.css"');
+      expect(output).toContain('themeSourcePath: "decks/deck1/theme.css"');
       expect(output).toContain(".layout-cover { background: #101827; }");
       expect(output).toContain("--hono-decks-accent-color: #38bdf8");
     } finally {
@@ -559,7 +560,7 @@ Visible generated content.
       expect(manifest.decks[0].themeStyle).toContain(".layout-default { background: white; color: black; }");
 
       const output = await readFile(join(cwd, "src", "generated", "decks.ts"), "utf8");
-      expect(output).toContain('"themeSourcePath": "decks/deck1/styles/index.css"');
+      expect(output).toContain('themeSourcePath: "decks/deck1/styles/index.css"');
       expect(output).toContain(".layout-default { background: white; color: black; }");
     } finally {
       await rm(cwd, { recursive: true, force: true });
@@ -1234,7 +1235,6 @@ The slide stays 16:9.
     expect(typeof mod.compileDecks).toBe("function");
     expect(typeof mod.createLocalDeckIO).toBe("function");
     expect(typeof mod.buildDeckManifestFromFileSystem).toBe("function");
-    expect(typeof mod.createLocalDevSlidesApp).toBe("function");
     expect(typeof mod.writeDeckManifestModule).toBe("function");
   });
 

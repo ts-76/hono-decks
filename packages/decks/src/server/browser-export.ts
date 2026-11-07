@@ -52,9 +52,9 @@ export async function renderDeckBrowserExport<E extends Env = any>(
   format: "pdf" | "png",
 ): Promise<Response> {
   const slug = c.req.param("slug");
-  if (!slug) return c.json({ error: "Deck not found", slug: "" }, 404);
+  if (!slug) return c.notFound();
   const deck = await options.source.getCompiledDeck(c, slug);
-  if (!deck || (options.dev !== true && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
+  if (!deck || (options.dev !== true && deck.meta.draft)) return c.notFound();
 
   const exportOptions = options.export;
   if (!exportOptions) return c.json({ error: "Browser export not configured", slug, format }, 503);

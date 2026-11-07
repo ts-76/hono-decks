@@ -63,7 +63,7 @@ function rewriteDeckComponents(
     slides: deck.slides.map((slide) => ({
       ...slide,
       nodes: slide.nodes ? rewriteNodes(slide.nodes, deck.slug, components) : slide.nodes,
-      components: slide.components.map((component) => {
+      components: slide.components?.map((component) => {
         const resolved = components.get(`${deck.slug}:${component.name}`);
         return resolved ? { ...component, name: resolved.internalName } : component;
       }),

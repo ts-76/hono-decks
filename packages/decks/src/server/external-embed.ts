@@ -55,7 +55,7 @@ export async function renderDeckExternalEmbedResponse<E extends Env>(input: {
   const { c, deck, slug, mountPath } = input.context;
   const enabled = input.options.enabled;
   if (enabled === false || (typeof enabled === "function" && !(await enabled(input.context)))) {
-    return c.json({ error: "Embed route not found", slug }, 404);
+    return c.notFound();
   }
 
   const document = await resolveDeckDocument(

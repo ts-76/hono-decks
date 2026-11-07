@@ -6,11 +6,11 @@ import { build } from "vite";
 import { honoDecks } from "../src/vite";
 
 describe("honoDecks Vite plugin", () => {
-  it("builds legacy .js imports without physical generated files", async () => {
+  it("builds the virtual module without physical generated files", async () => {
     const cwd = await createFixture();
     try {
       await mkdir(join(cwd, "src"));
-      await writeFile(join(cwd, "src/entry.ts"), 'export { createDecks } from "./generated/decks.js";');
+      await writeFile(join(cwd, "src/entry.ts"), 'export { createDecks, mountPath } from "virtual:hono-decks";');
       await build({
         configFile: false,
         root: cwd,
@@ -127,12 +127,10 @@ describe("honoDecks Vite plugin", () => {
       expect(await readFile(join(cwd, "src/generated/decks.ts"), "utf8").catch(() => null)).toBe(null);
       const resolveId = plugin.resolveId as Function;
       expect(await resolveId("virtual:hono-decks")).toBe("\0hono-decks:entry");
-      expect(await resolveId("./generated/decks", join(cwd, "src/decks.ts"))).toBe(
-        "\0hono-decks:module:" + join(cwd, "src/generated/decks.ts"),
-      );
-      expect(await (plugin.load as Function)("\0hono-decks:entry")).toContain(
-        "export const decks = createDecks(config)",
-      );
+      expect(await resolveId("./generated/decks", join(cwd, "src/decks.ts"))).toBe(null);
+      const entry = await (plugin.load as Function)("\0hono-decks:entry");
+      expect(entry).toContain("export * from");
+      expect(entry).not.toContain("hono-decks.config");
       expect(info.some((message) => message.includes("Compiled 1 decks"))).toBe(true);
 
       const configureServer = plugin.configureServer;

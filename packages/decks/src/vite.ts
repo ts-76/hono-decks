@@ -62,6 +62,7 @@ export function honoDecks(options: HonoDecksViteOptions = {}): Plugin {
       ogpCacheFile: loaded.ogpCacheFile,
       markdown: loaded.config.build?.markdown,
       refreshOgp: options.refreshOgp,
+      liveReloadPath: resolvedConfig?.command === "serve" ? eventsPath : undefined,
     });
     // Publish only an explicitly configured data cache. Generated code stays in
     // memory, and a failed compilation keeps the previous complete module map.
@@ -147,30 +148,16 @@ export function honoDecks(options: HonoDecksViteOptions = {}): Plugin {
         }
         return this.resolve(id, resolve(projectRoot, "package.json"), { skipSelf: true });
       }
-      // Existing Vite facades may still import their old generated path. Keep
-      // them working through the virtual graph without requiring files on disk.
-      if (id.startsWith(".") || id.startsWith("/")) {
-        const path = id.startsWith(".") ? resolve(importer ? dirname(importer.split("?")[0]!) : projectRoot, id) : id;
-        const generated = findModule(modules, path);
-        if (generated) return MODULE_PREFIX + generated;
-      }
       return null;
     },
     async load(id) {
       if (id === VIRTUAL_ENTRY) {
-        return `import config from ${JSON.stringify(configPath)};
-import { createDecks } from ${JSON.stringify(PUBLIC_MODULE_PREFIX + encodeURIComponent(routerModulePath))};
-export { createDecks };
-export const decks = createDecks(config);`;
+        return `export * from ${JSON.stringify(PUBLIC_MODULE_PREFIX + encodeURIComponent(routerModulePath))};`;
       }
       if (!id.startsWith(MODULE_PREFIX)) return null;
       const path = id.slice(MODULE_PREFIX.length);
-      let code = modules.get(path);
+      const code = modules.get(path);
       if (code === undefined) return null;
-      if (path === routerModulePath && resolvedConfig?.command === "serve") {
-        code = code.replace("const generatedDecks = defineDecks({",
-          `const generatedDecks = defineDecks({\n  liveReloadPath: () => ${JSON.stringify(eventsPath)},`);
-      }
       // Virtual IDs do not have a physical TS file for Vite's normal TS loader.
       // Strip types here; authored TSX and all imports still go through Vite.
       return (await transform(code, { loader: "ts", format: "esm", sourcefile: path, sourcemap: "inline" })).code;

@@ -127,7 +127,7 @@ export async function compileMarkdownDecks(
   decks.sort((a, b) => a.deck.slug.localeCompare(b.deck.slug));
   return {
     decks,
-    routerModule: emitModuleDecksRouter({ decks }),
+    routerModule: emitModuleDecksRouter({ decks, mountPath: input.mountPath }),
     clientCode: [...clients].join("\n"),
     clientModules: [adapter.client([...markdownIslands.values()])].filter(Boolean),
     markdownIslands: [...markdownIslands.values()],

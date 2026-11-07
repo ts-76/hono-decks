@@ -75,7 +75,7 @@ export async function compileMdxModuleDecks(input: CompileMdxModuleDecksInput): 
   const decks = await Promise.all(input.decks.map((entry) => compileMdxModuleDeck(input, entry)));
   return {
     decks,
-    routerModule: emitModuleDecksRouter({ decks }),
+    routerModule: emitModuleDecksRouter({ decks, mountPath: input.mountPath }),
   };
 }
 

@@ -3,10 +3,9 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
-import { describe, expect, expectTypeOf, it } from "vite-plus/test";
+import { Hono } from "hono";
+import { describe, expect, it } from "vite-plus/test";
 import { compileDecks } from "../src/node/compile-decks";
-import type { CompileDecksResult } from "../src/node/compile-decks";
-import type { DeckManifest } from "../src/deck/model";
 import { publishGeneratedFiles } from "../src/node/file-transaction";
 
 async function snapshot(root: string): Promise<Record<string, string>> {
@@ -23,7 +22,6 @@ async function snapshot(root: string): Promise<Record<string, string>> {
 
 describe("generated build consistency", () => {
   it("returns build information with module paths, distinct from a renderable manifest", async () => {
-    expectTypeOf<CompileDecksResult>().not.toMatchTypeOf<DeckManifest>();
     const cwd = await mkdtemp(join(tmpdir(), "decks-build-result-"));
     try {
       await mkdir(join(cwd, "decks"));
@@ -37,6 +35,7 @@ describe("generated build consistency", () => {
         modulePath: "generated/decks/demo/slide-0.ts",
       });
       expect(result.decks[0].slides[0]).not.toHaveProperty("html");
+      expect(result.decks[0].slides[0]).not.toHaveProperty("render");
     } finally {
       await rm(cwd, { recursive: true, force: true });
     }
@@ -145,9 +144,10 @@ describe("generated build consistency", () => {
       const module = await import(
         `data:text/javascript;base64,${Buffer.from(bundled.outputFiles[0].text).toString("base64")}`
       );
-      const router = module.createDecks({ mountPath: "/slides" }).router();
+      const decks = module.createDecks();
+      const app = new Hono().route(decks.mountPath, decks.router());
       for (const [index, slug] of slugs.entries()) {
-        const response = await router.request(`http://localhost/${encodeURIComponent(slug)}/render`);
+        const response = await app.request(`http://localhost${decks.paths(slug).render}`);
         const html = await response.text();
         expect(response.status).toBe(200);
         expect(html).toContain(`Body ${index}`);

@@ -31,11 +31,12 @@ import {
 import {
   extractAssetPath,
   inferMountPath,
+  isWithinMount,
   normalizeClientEntryAssetPath,
   resolveGeneratedClientEntryUrl,
   stripPathSuffix,
 } from "./path-utils";
-import { createDeckPaths } from "./paths";
+import { createDeckPaths, normalizeMountPath } from "./paths";
 import { resolveDeckDocument, type DeckDocumentOptions, type ResolvedDeckDocument } from "./document";
 import { renderDeckExternalEmbedResponse, type DeckExternalEmbedOptions } from "./external-embed";
 
@@ -101,18 +102,33 @@ export interface DecksRouterOptions<E extends Env = any> {
    */
   dev?: boolean | DeckDevResolver<E>;
   extensions?: DecksRouterExtension<E>[];
-  liveReloadPath?(slug: string, mountPath: string): string | undefined;
+  /**
+   * Public mount path. When set, the router refuses requests outside it so a
+   * mount that disagrees with compiled asset URLs fails loudly instead of
+   * rendering broken links. Generated decks always set it.
+   */
+  mountPath?: string;
+  /** Development live-reload event stream (Server-Sent Events) URL. */
+  liveReloadPath?: string;
   style?: string;
   components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
-  clientEntry?: string;
-  clientEntryAsset?: string;
-  clientEntryAssetPath?: string;
+  client?: DecksClientOptions;
   document?: DeckDocumentOptions<E>;
   pages?: DecksRouterPagesOptions<E>;
   embed?: false | DeckExternalEmbedOptions<E>;
   viewer?: DeckViewerOptions<E>;
   presenter?: false | DecksRouterPresenterOptions<E>;
   export?: false | DeckExportOptions<E>;
+}
+
+/** Client island script delivery. */
+export interface DecksClientOptions {
+  /** Route, relative to the mount, that serves `bundle`. @default "/_assets/client" */
+  path?: string;
+  /** Use this script URL instead of the served bundle. */
+  url?: string;
+  /** Generated client bundle source. Set by the compiler. */
+  bundle?: string;
 }
 
 export type DeckRouteSurface = "index" | "viewer" | "render" | "print" | "presentation" | "presenter";
@@ -208,12 +224,24 @@ export interface DeckContextOptions<E extends Env = any> {
 
 export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>): Hono<E> {
   const router = new Hono<E>();
+  const configuredMount = options.mountPath === undefined ? undefined : normalizeMountPath(options.mountPath);
 
-  if (options.clientEntryAsset) {
-    router.get(
-      normalizeClientEntryAssetPath(options.clientEntryAssetPath),
-      serveDecksClientEntry(options.clientEntryAsset),
-    );
+  if (configuredMount !== undefined) {
+    router.use("*", async (c, next) => {
+      if (!isWithinMount(c.req.path, configuredMount)) {
+        throw new Error(
+          `hono-decks: this router was compiled for mountPath "${configuredMount}" but received "${c.req.path}". ` +
+            `Mount it with app.route(decks.mountPath, decks.router()), or change mountPath in hono-decks.config.ts and recompile.`,
+        );
+      }
+      await next();
+    });
+  }
+  const resolveMountPath = (path: string, suffix: string): string =>
+    configuredMount === undefined ? stripPathSuffix(path, suffix) : configuredMount === "/" ? "" : configuredMount;
+
+  if (options.client?.bundle) {
+    router.get(normalizeClientEntryAssetPath(options.client.path), serveDecksClientEntry(options.client.bundle));
   }
 
   for (const extension of options.extensions ?? []) {
@@ -223,10 +251,11 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
   router.get("/", async (c) => {
     const dev = await isDevEnabled(c, options);
     const decks = (await options.source.listDecks(c)).filter((deck) => dev || !deck.draft);
-    const mountPath = c.req.path.replace(/\/$/, "");
+    const mountPath =
+      configuredMount === undefined ? c.req.path.replace(/\/$/, "") : resolveMountPath(c.req.path, "");
     const pageInput: DeckIndexPageInput<E> = { c, surface: "index", mountPath, dev, decks };
     if (!(await isPageSurfaceEnabled(options, pageInput))) {
-      return c.json({ error: "Deck index not found" }, 404);
+      return c.notFound();
     }
     const indexOptions = options.pages?.index === false ? undefined : options.pages?.index;
     const title = await resolveIndexTitle(indexOptions?.title, pageInput);
@@ -244,10 +273,10 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
     const assetPath = extractAssetPath(c.req.path, slug);
     const deck = await options.source.getCompiledDeck(c, slug);
     if (!deck || (!(await isDevEnabled(c, options)) && deck.meta.draft)) {
-      return c.json({ error: "Asset not found", slug, assetPath }, 404);
+      return c.notFound();
     }
     const response = await options.source.getAsset?.(c, slug, assetPath);
-    if (!response) return c.json({ error: "Asset not found", slug, assetPath }, 404);
+    if (!response) return c.notFound();
     return response;
   });
 
@@ -255,14 +284,14 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
     const slug = c.req.param("slug");
     const deck = await options.source.getCompiledDeck(c, slug);
     const dev = await isDevEnabled(c, options);
-    if (!deck || (!dev && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
-    const mountPath = stripPathSuffix(c.req.path, `/${slug}/render`);
+    if (!deck || (!dev && deck.meta.draft)) return c.notFound();
+    const mountPath = resolveMountPath(c.req.path, `/${slug}/render`);
     if (!(await isPageSurfaceEnabled(options, { c, surface: "render", mountPath, dev, deck, slug }))) {
-      return c.json({ error: "Deck route not found", slug, surface: "render" }, 404);
+      return c.notFound();
     }
     const clientEntry =
-      options.clientEntry ??
-      (deck.clientEntryRequired === false ? undefined : resolveGeneratedClientEntryUrl(options, mountPath));
+      options.client?.url ??
+      (deck.clientEntryRequired === false ? undefined : resolveGeneratedClientEntryUrl(options.client, mountPath));
     try {
       const document = await resolveRouterDocument(c, options, "render", mountPath, deck);
       return c.html(
@@ -272,7 +301,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
           style: options.style,
           components: options.components,
           clientEntry,
-          liveReloadPath: dev ? options.liveReloadPath?.(slug, mountPath) : undefined,
+          liveReloadPath: dev ? options.liveReloadPath : undefined,
           document,
         }),
       );
@@ -289,10 +318,10 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
     const slug = c.req.param("slug");
     const deck = await options.source.getCompiledDeck(c, slug);
     const dev = await isDevEnabled(c, options);
-    if (!deck || (!dev && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
-    const mountPath = stripPathSuffix(c.req.path, `/${slug}/print`);
+    if (!deck || (!dev && deck.meta.draft)) return c.notFound();
+    const mountPath = resolveMountPath(c.req.path, `/${slug}/print`);
     if (!(await isPageSurfaceEnabled(options, { c, surface: "print", mountPath, dev, deck, slug }))) {
-      return c.json({ error: "Deck route not found", slug, surface: "print" }, 404);
+      return c.notFound();
     }
     try {
       const document = await resolveRouterDocument(c, options, "print", mountPath, deck);
@@ -334,9 +363,9 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
       const deck = await options.source.getCompiledDeck(c, slug);
       const dev = await isDevEnabled(c, options);
       if (!deck || (!dev && deck.meta.draft)) {
-        return c.json({ error: "Deck not found", slug }, 404);
+        return c.notFound();
       }
-      const mountPath = stripPathSuffix(c.req.path, `/${slug}/embed`);
+      const mountPath = resolveMountPath(c.req.path, `/${slug}/embed`);
       const availablePages = await resolveViewerAvailablePages(c, options, deck, slug, mountPath, dev);
       return renderDeckExternalEmbedResponse({
         context: { c, deck, slug, mountPath },
@@ -351,14 +380,14 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
     const slug = c.req.param("slug");
     const deck = await options.source.getCompiledDeck(c, slug);
     const dev = await isDevEnabled(c, options);
-    if (!deck || (!dev && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
-    const mountPath = stripPathSuffix(c.req.path, `/${slug}/presentation`);
+    if (!deck || (!dev && deck.meta.draft)) return c.notFound();
+    const mountPath = resolveMountPath(c.req.path, `/${slug}/presentation`);
     if (!(await isPageSurfaceEnabled(options, { c, surface: "presentation", mountPath, dev, deck, slug }))) {
-      return c.json({ error: "Deck route not found", slug, surface: "presentation" }, 404);
+      return c.notFound();
     }
     const clientEntry =
-      options.clientEntry ??
-      (deck.clientEntryRequired === false ? undefined : resolveGeneratedClientEntryUrl(options, mountPath));
+      options.client?.url ??
+      (deck.clientEntryRequired === false ? undefined : resolveGeneratedClientEntryUrl(options.client, mountPath));
     try {
       const document = await resolveRouterDocument(c, options, "presentation", mountPath, deck);
       return c.html(
@@ -369,7 +398,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
           components: options.components,
           clientEntry,
           speakerNotes: false,
-          liveReloadPath: dev ? options.liveReloadPath?.(slug, mountPath) : undefined,
+          liveReloadPath: dev ? options.liveReloadPath : undefined,
           document,
         }),
       );
@@ -386,13 +415,13 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
     const slug = c.req.param("slug");
     const deck = await options.source.getCompiledDeck(c, slug);
     const dev = await isDevEnabled(c, options);
-    if (!deck || (!dev && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
-    const mountPath = stripPathSuffix(c.req.path, `/${slug}/presenter`);
+    if (!deck || (!dev && deck.meta.draft)) return c.notFound();
+    const mountPath = resolveMountPath(c.req.path, `/${slug}/presenter`);
     if (!(await isPageSurfaceEnabled(options, { c, surface: "presenter", mountPath, dev, deck, slug }))) {
-      return c.json({ error: "Presenter route not found", slug }, 404);
+      return c.notFound();
     }
     if (!(await isPresenterEnabled(c, options, deck, slug, mountPath))) {
-      return c.json({ error: "Presenter route not found", slug }, 404);
+      return c.notFound();
     }
     try {
       const document = await resolveRouterDocument(c, options, "presenter", mountPath, deck);
@@ -419,10 +448,10 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
     const slug = c.req.param("slug");
     const deck = await options.source.getCompiledDeck(c, slug);
     const dev = await isDevEnabled(c, options);
-    if (!deck || (!dev && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
-    const mountPath = stripPathSuffix(c.req.path, `/${slug}`);
+    if (!deck || (!dev && deck.meta.draft)) return c.notFound();
+    const mountPath = resolveMountPath(c.req.path, `/${slug}`);
     if (!(await isPageSurfaceEnabled(options, { c, surface: "viewer", mountPath, dev, deck, slug }))) {
-      return c.json({ error: "Deck route not found", slug, surface: "viewer" }, 404);
+      return c.notFound();
     }
     const availablePages = await resolveViewerAvailablePages(c, options, deck, slug, mountPath, dev);
     return c.html(
@@ -473,11 +502,11 @@ export function deckContext<E extends Env = any>(
 ): MiddlewareHandler<E & { Variables: DeckContextVariables }> {
   return async (c, next) => {
     const slug = c.req.param("slug");
-    if (!slug) return c.json({ error: "Deck not found", slug: "" }, 404);
+    if (!slug) return c.notFound();
     const sourceContext = c as unknown as Context<E>;
     const deck = await options.source.getCompiledDeck(sourceContext, slug);
     const dev = await isDevEnabled(sourceContext, options);
-    if (!deck || (!dev && deck.meta.draft)) return c.json({ error: "Deck not found", slug }, 404);
+    if (!deck || (!dev && deck.meta.draft)) return c.notFound();
     const mountPath = options.mountPath ?? inferMountPath(c.req.path, slug);
     const availablePages = await resolveViewerAvailablePages(sourceContext, options, deck, slug, mountPath, dev);
     const viewer = await createDeckViewerParts({

@@ -144,8 +144,9 @@ describe("package build metadata", () => {
     expect(runtime).not.toContain("node_modules/acorn-jsx/");
     expect(node).toContain('from "unified"');
     expect(node).toContain('from "remark-parse"');
-    expect(node).toContain("deckMiddleware");
-    expect(runtime).not.toContain("deckMiddleware");
+    expect(node).toContain("function compileMarkdown");
+    expect(advanced).not.toMatch(/from "(?:@mdx-js\/mdx|esbuild|remark-mdx|remark-parse|shiki|unified|node:[a-z/]+)"/);
+    expect(advanced).not.toContain("function loadDecksConfig");
     expect(runtime).not.toContain("function decksRouter");
     expect(advanced).toContain("function decksRouter");
     expect(vite).toContain("function honoDecks");
@@ -172,8 +173,8 @@ describe("package build metadata", () => {
       expect(runtimeTypes, name).toContain(name);
     }
     expect(runtimeTypes).toContain("SLIDE_TRANSITIONS");
-    expect(nodeTypes).toContain("DeckMiddlewareOptions");
-    expect(nodeTypes).toContain("deckMiddleware");
+    expect(nodeTypes).toContain("compileMarkdown");
+    expect(nodeTypes).not.toContain("deckMiddleware");
   });
 
   it("ships self-contained English and Japanese documentation", async () => {
@@ -192,8 +193,8 @@ describe("package build metadata", () => {
     expect(readme).toContain("frame-ancestors");
     expect(readme).toContain('allow="fullscreen"');
     expect(readme).toContain("Iframe navigation does not require CORS");
-    expect(readme).toContain("defineDecksConfig<AppEnv>");
-    expect(readme).toContain("createDecks(config)");
+    expect(readme).toContain("createDecks<AppEnv>");
+    expect(readme).not.toContain("createDecks(config)");
     expect(readme).toContain("hono-decks/vite");
     expect(readme).toContain("viewer.render");
     expect(japaneseReadme).toContain("createDeckViewerEmbed()");

@@ -20,12 +20,13 @@ describe("hono-decks CLI", () => {
       expect(stdout.join("\n")).toContain("Compiled 2 decks");
 
       const output = await readFile(join(cwd, "src", "generated", "decks.ts"), "utf8");
-      expect(output).toContain('import { configureDecks, defineDecks } from "hono-decks/advanced";');
+      expect(output).toMatch(/import \{ configureDecks(, withClientComponentIds)? \} from "hono-decks\/advanced";/);
       expect(output).not.toContain("hono-decks/runtime");
       expect(output).toContain('import { decksClientEntry } from "./client-entry";');
-      expect(output).toContain("const generatedDecks = defineDecks({");
+      expect(output).toContain("export const compiledDecks: CompiledDeck[] = [");
       expect(output).toContain("export function createDecks");
-      expect(output).toContain("clientEntryAsset: decksClientEntry");
+      expect(output).toContain("clientBundle: decksClientEntry");
+      expect(output).not.toContain("@ts-nocheck");
       expect(output).toContain('slug: "intro"');
       expect(output).toContain('"publicPath": "/slides/intro/assets/hero.png"');
       expect(output).toContain('import Slide_1_0 from "./decks/intro/slide-0";');
@@ -72,8 +73,8 @@ describe("hono-decks CLI", () => {
       expect(stdout.join("\n")).toContain("Compiled 2 decks");
 
       const routerOutput = await readFile(join(cwd, "src", "generated", "decks.ts"), "utf8");
-      expect(routerOutput).toContain('import { configureDecks, defineDecks } from "hono-decks/advanced";');
-      expect(routerOutput).toContain('import type { ConfiguredDecks, DecksConfig } from "hono-decks";');
+      expect(routerOutput).toContain('import { configureDecks, withClientComponentIds } from "hono-decks/advanced";');
+      expect(routerOutput).toContain('import type { CompiledDeck, ConfiguredDecks, DecksOptions } from "hono-decks";');
       expect(routerOutput).toContain('import * as Components_1 from "../../decks/intro/components";');
       expect(routerOutput).toContain("componentRegistry: withClientComponentIds(Components_1, {})");
       expect(routerOutput).toContain("export function createDecks");

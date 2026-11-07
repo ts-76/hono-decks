@@ -2,14 +2,13 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
-import type { Env } from "hono";
 import type { DecksConfig } from "../server/define-decks";
 
 export const DEFAULT_DECKS_CONFIG_FILE = "hono-decks.config.ts";
 
-export interface LoadedDecksConfig<E extends Env = any> {
+export interface LoadedDecksConfig {
   path: string;
-  config: DecksConfig<E>;
+  config: DecksConfig;
   /** Absolute config inputs, including imported local settings. */
   dependencies: string[];
   root: string;
@@ -17,10 +16,7 @@ export interface LoadedDecksConfig<E extends Env = any> {
   ogpCacheFile?: string;
 }
 
-export async function loadDecksConfig<E extends Env = any>(input: {
-  cwd: string;
-  configFile?: string;
-}): Promise<LoadedDecksConfig<E>> {
+export async function loadDecksConfig(input: { cwd: string; configFile?: string }): Promise<LoadedDecksConfig> {
   const path = resolve(input.cwd, input.configFile ?? DEFAULT_DECKS_CONFIG_FILE);
   if (!existsSync(path)) {
     throw new Error(
@@ -46,11 +42,18 @@ export async function loadDecksConfig<E extends Env = any>(input: {
   if (!source) throw new Error(`Could not load config file: ${path}`);
 
   const module = (await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(source)}#${Date.now()}`)) as {
-    default?: DecksConfig<E>;
+    default?: DecksConfig;
   };
   const config = module.default;
   if (!config || typeof config !== "object") throw new Error(`Config must have a default export: ${path}`);
   if (typeof config.mountPath !== "string") throw new Error(`Config mountPath must be a string: ${path}`);
+  const runtimeKeys = ["router", "source"].filter((key) => key in config);
+  if (runtimeKeys.length > 0) {
+    throw new Error(
+      `Config ${runtimeKeys.join(" and ")} moved out of ${DEFAULT_DECKS_CONFIG_FILE} in hono-decks 1.0. ` +
+        `The config file is build-only; pass runtime options to createDecks({ source, ...routerOptions }) instead.`,
+    );
+  }
 
   if (
     config.build?.markdown !== undefined &&
