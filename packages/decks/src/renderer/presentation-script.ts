@@ -273,6 +273,11 @@ export function renderPresentationScript(nonce?: string): string {
     const bounds = stage.getBoundingClientRect();
     const scale = Math.min(bounds.width / DESIGN_WIDTH, bounds.height / DESIGN_HEIGHT);
     deck.style.transform = "scale(" + scale + ")";
+    // Adjacent transformed layers can expose the stage at fractional pixel edges.
+    // Overlap by one physical pixel, independent of canvas scale and display DPR.
+    if (scale > 0) {
+      deck.style.setProperty("--hono-decks-transition-overlap", (1 / (scale * (window.devicePixelRatio || 1))) + "px");
+    }
   }
 
   function publishState() {
