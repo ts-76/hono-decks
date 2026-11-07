@@ -21,9 +21,10 @@
     "directory": "packages/decks"
   },
   "bin": {
-    "hono-decks": "dist/bin.js"
+    "hono-decks": "bin/hono-decks.js"
   },
   "files": [
+    "bin",
     "dist",
     "README.md",
     "README.ja.md",
@@ -75,12 +76,12 @@
   "scripts": {
     "build": "tsdown",
     "prepack": "bun run build",
-    "decks:compile": "bun run build && node dist/bin.js compile",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.worker.json",
+    "test": "vp test run",
+    "test:dist": "bun run build && vp test run --config vitest.dist.config.ts",
     "skills:validate": "intent validate skills",
     "skills:stale": "intent stale .",
-    "typecheck": "bun run build && tsc --noEmit && tsc --noEmit -p tsconfig.worker.json",
-    "test": "bun run build && vp test run",
-    "check": "bun run typecheck && bun run test && bun run skills:validate"
+    "check": "bun run typecheck && bun run test && bun run test:dist && bun run skills:validate"
   },
   "dependencies": {
     "@babel/parser": "^8.1.0",

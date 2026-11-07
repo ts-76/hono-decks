@@ -2,6 +2,7 @@ import { CompileError } from "../deck/model";
 import {
   addUnknownFrontmatterWarnings,
   readFrontmatter,
+  splitOpeningFrontmatter,
   splitSlideSources,
   toDeckFrontmatter,
   toSlideFrontmatter,
@@ -33,10 +34,20 @@ export async function compileMarkdown(input: CompileDeckInput): Promise<Compiled
 
   const slideSources = splitSlideSources(body);
   const warnings: CompiledDeck["warnings"] = [];
-  const meta = toDeckFrontmatter(deckAttrs, warnings);
+  const opening = splitOpeningFrontmatter(deckAttrs);
+  const meta = toDeckFrontmatter(opening.deck, warnings);
   addUnknownFrontmatterWarnings(warnings, meta.meta, "deck");
   const slides: CompiledSlide[] = slideSources.map((source, index) =>
-    compileSlide(input.slug, source, index, warnings, meta.transition, meta.transitionDuration, meta.transitionEasing),
+    compileSlide(
+      input.slug,
+      source,
+      index,
+      warnings,
+      meta.transition,
+      meta.transitionDuration,
+      meta.transitionEasing,
+      index === 0 ? opening.firstSlide : {},
+    ),
   );
   const assets = collectExternalAssetRefs(input.markdown, deckAttrsForAssets);
   addExternalAssetWarnings(warnings, assets);
@@ -60,10 +71,12 @@ function compileSlide(
   fallbackTransition: SlideTransition | undefined,
   fallbackTransitionDuration: string | undefined,
   fallbackTransitionEasing: string | undefined,
+  inheritedAttrs: Record<string, unknown>,
 ): CompiledSlide {
-  const { attrs, body } = readFrontmatter(source);
+  const { attrs: ownAttrs, body } = readFrontmatter(source);
+  const attrs = { ...inheritedAttrs, ...ownAttrs };
   const speakerNotes = extractMdxCommentSpeakerNotes(body);
-  const parsed = parseDeck(speakerNotes.body);
+  const parsed = parseDeck(speakerNotes.body, { firstSlideIndex: index });
   for (const warning of parsed.warnings) {
     warnings.push({ code: "parse-warning", message: warning, slideIndex: index });
   }

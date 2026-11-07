@@ -5,6 +5,7 @@ import { CompileError } from "../deck/model";
 import {
   addUnknownFrontmatterWarnings,
   readFrontmatter,
+  splitOpeningFrontmatter,
   splitSlideSources,
   toDeckFrontmatter,
   toSlideFrontmatter,
@@ -84,7 +85,8 @@ async function compileMdxModuleDeck(
   entry: ResolvedDeckFile,
 ): Promise<GeneratedModuleDeck> {
   const source = await input.readText(entry.sourcePath);
-  const { attrs, body } = readFrontmatter(source);
+  const { attrs: openingAttrs, body } = readFrontmatter(source);
+  const { deck: attrs, firstSlide: firstSlideAttrs } = splitOpeningFrontmatter(openingAttrs);
   const { prelude, body: contentBody } = extractDeckPrelude(body);
   const slideSources = splitSlideSources(contentBody);
   let warnings: CompiledDeck["warnings"] = [];
@@ -102,11 +104,11 @@ async function compileMdxModuleDeck(
   for (let index = 0; index < slideSources.length; index += 1) {
     const { attrs: slideAttrs, body: slideBody } = readFrontmatter(slideSources[index]);
     const speakerNotes = extractMdxCommentSpeakerNotes(slideBody);
-    const parsed = parseDeckWithWarnings(speakerNotes.body);
+    const parsed = parseDeckWithWarnings(speakerNotes.body, { firstSlideIndex: index });
     warnings = warnings.concat(toGeneratedParserCompileWarnings(parsed.warnings, index));
     const firstParsedSlide = parsed.slides[0];
     const slideModulePath = `${input.outDir}/decks/${entry.slug}/slide-${index}.ts`;
-    const slideMeta = toSlideFrontmatter(slideAttrs, warnings, {
+    const slideMeta = toSlideFrontmatter(index === 0 ? { ...firstSlideAttrs, ...slideAttrs } : slideAttrs, warnings, {
       slideIndex: index,
       fallbackTransition: deckMeta.transition,
       fallbackTransitionDuration: deckMeta.transitionDuration,

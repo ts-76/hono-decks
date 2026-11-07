@@ -106,11 +106,17 @@ describe("package build metadata", () => {
       "./honox": { types: "./dist/honox.d.ts", import: "./dist/honox.js" },
       "./vite-env": { types: "./vite-env.d.ts" },
     });
-    expect(packageJson.bin).toEqual({ "hono-decks": "dist/bin.js" });
-    expect(packageJson.files).toEqual(expect.arrayContaining(["dist", "README.md", "README.ja.md"]));
+    expect(packageJson.bin).toEqual({ "hono-decks": "bin/hono-decks.js" });
+    expect(packageJson.files).toEqual(expect.arrayContaining(["bin", "dist", "README.md", "README.ja.md"]));
     expect(packageJson.scripts.build).toBe("tsdown");
     expect(packageJson.scripts.prepack).toBe("bun run build");
-    expect(packageJson.scripts.typecheck).toContain("bun run build");
+    // Typecheck and unit tests run against src; only the dist suite builds first.
+    expect(packageJson.scripts.typecheck).not.toContain("bun run build");
+    expect(packageJson.scripts.test).not.toContain("bun run build");
+    expect(packageJson.scripts["test:dist"]).toContain("bun run build");
+    const shim = await readFile(join(packageRoot, "bin", "hono-decks.js"), "utf8");
+    expect(shim.startsWith("#!/usr/bin/env node\n")).toBe(true);
+    expect(shim).toContain('import("../dist/bin.js")');
     expect(packageJson.repository).toEqual({
       type: "git",
       url: "git+https://github.com/ts-76/hono-decks.git",

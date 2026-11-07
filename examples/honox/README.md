@@ -13,9 +13,9 @@ bun run --cwd examples/honox dev
 - `/decks/honox` — viewer
 - `/decks/honox/render` — slide renderer
 
-`hono-decks.config.ts`がcompileとmount pathの共通設定です。`app/decks.ts`は編集可能なfacade、`app/generated`以下は自動生成です。`bun run dev`を起動するとVite pluginが初回compileとMDX変更の監視を行い、成功後にブラウザを自動更新します。
+`hono-decks.config.ts`はcompile専用の設定(mount path・デッキの場所)です。`app/decks.ts`で`virtual:hono-decks`の`createDecks()`にランタイムのオプションを渡します。`bun run dev`を起動するとVite pluginが初回compileとMDX変更の監視を行い、成功後にブラウザを自動更新します。
 
 公開パスは `hono-decks.config.ts` の `mountPath` 一か所で変更できます。
-`app/honox-decks.ts` がルート探索を行い、`hono-decks/honox` の共通ヘルパーが
-HonoX の公開 ROUTES API にデッキを追加するため、
-ルート用ディレクトリの作成・改名は不要です。既存のページとミドルウェアは保持します。
+`app/server.ts` で `virtual:hono-decks/honox` の `withHonoXDecks()` を使うと、
+Vite プラグインが HonoX と同じ規則でルートを探索し、HonoX の公開 ROUTES API にデッキを追加します。
+ルート用ディレクトリの作成・改名や glob のコピーは不要で、既存のページと `_middleware.ts` も保持されます。

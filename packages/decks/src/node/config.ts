@@ -50,7 +50,7 @@ export async function loadDecksConfig(input: { cwd: string; configFile?: string 
   const runtimeKeys = ["router", "source"].filter((key) => key in config);
   if (runtimeKeys.length > 0) {
     throw new Error(
-      `Config ${runtimeKeys.join(" and ")} moved out of ${DEFAULT_DECKS_CONFIG_FILE} in hono-decks 1.0. ` +
+      `Config ${runtimeKeys.join(" and ")} moved out of ${DEFAULT_DECKS_CONFIG_FILE} in hono-decks 2.0. ` +
         `The config file is build-only; pass runtime options to createDecks({ source, ...routerOptions }) instead.`,
     );
   }

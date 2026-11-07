@@ -81,8 +81,17 @@ interface ParsedProps {
   warnings: ParserWarning[];
 }
 
-export function parseDeck(markdown: string): SlideDeck {
-  const parsed = parseDeckWithWarnings(markdown);
+export interface ParseDeckOptions {
+  /**
+   * Position of the first parsed slide within the whole deck. Only the deck's
+   * first slide defaults to the cover layout; compilers that parse one slide at a
+   * time pass its index here.
+   */
+  firstSlideIndex?: number;
+}
+
+export function parseDeck(markdown: string, options: ParseDeckOptions = {}): SlideDeck {
+  const parsed = parseDeckWithWarnings(markdown, options);
 
   return {
     slides: parsed.slides,
@@ -90,11 +99,11 @@ export function parseDeck(markdown: string): SlideDeck {
   };
 }
 
-export function parseDeckWithWarnings(markdown: string): ParsedDeckWithWarnings {
+export function parseDeckWithWarnings(markdown: string, options: ParseDeckOptions = {}): ParsedDeckWithWarnings {
   const normalized = markdown.replace(/\r\n/g, "\n").trim();
   const chunks = normalized.length > 0 ? normalized.split(slideSeparator) : [""];
   const parsedSlides = chunks
-    .map((chunk, index) => parseSlide(chunk.trim(), index))
+    .map((chunk, index) => parseSlide(chunk.trim(), index, (options.firstSlideIndex ?? 0) + index))
     .filter(({ slide }) => slide.raw.length > 0 || slide.blocks.length > 0 || slide.nodes.length > 0);
 
   return {
@@ -103,7 +112,7 @@ export function parseDeckWithWarnings(markdown: string): ParsedDeckWithWarnings 
   };
 }
 
-function parseSlide(source: string, index: number): ParsedSlide {
+function parseSlide(source: string, index: number, deckIndex: number): ParsedSlide {
   const { attrs, body } = readSlideAttributes(source);
   const parsed = parseContent(body, index);
   const firstHeading = parsed.blocks.find((block) => block.type === "heading") as
@@ -114,7 +123,7 @@ function parseSlide(source: string, index: number): ParsedSlide {
     slide: {
       index,
       title: stringAttr(attrs.title) ?? firstHeading?.text,
-      layout: stringAttr(attrs.layout) ?? (index === 0 ? "cover" : "default"),
+      layout: stringAttr(attrs.layout) ?? (deckIndex === 0 ? "cover" : "default"),
       className: stringAttr(attrs.class),
       blocks: parsed.blocks,
       nodes: parsed.nodes,

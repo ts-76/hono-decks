@@ -10,7 +10,11 @@
     "skipLibCheck": true,
     "noEmit": true,
     "allowJs": false,
-    "verbatimModuleSyntax": true
+    "verbatimModuleSyntax": true,
+    "paths": {
+      "hono-decks": ["./src/mod.ts"],
+      "hono-decks/*": ["./src/*.ts"]
+    }
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "test/**/*.ts", "worker-configuration.d.ts", "vitest.config.ts"]
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "test/**/*.ts", "worker-configuration.d.ts", "vitest.config.ts", "vitest.dist.config.ts"]
 }

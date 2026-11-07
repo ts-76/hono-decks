@@ -1,19 +1,16 @@
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
-  check: {
-    // Enable after landing a dedicated repository-wide Oxfmt baseline.
-    fmt: false,
-  },
   fmt: {
     ignorePatterns: [
       ".agents/**",
       ".beads/**",
       ".claude/**",
       ".codex/**",
-      ".design-qa/**",
       ".impeccable/**",
       ".captures/**",
+      "examples/void/**",
+      "fixtures/**",
       "**/dist/**",
       "**/dist-dry-run/**",
       "**/generated/**",
@@ -34,7 +31,6 @@ export default defineConfig({
       ".beads/**",
       ".claude/**",
       ".codex/**",
-      ".design-qa/**",
       ".impeccable/**",
       ".captures/**",
       "**/dist/**",

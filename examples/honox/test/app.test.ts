@@ -30,9 +30,9 @@ describe("HonoX example", () => {
     expect(viteConfig).toContain('from "hono-decks/vite"');
     expect(viteConfig).toContain("honoDecks()");
     expect(packageJson.dependencies["hono-decks"]).toBe(publishedPackage.version);
-    expect(packageJson.scripts["decks:compile"]).toBe("hono-decks compile");
-    expect(packageJson.scripts.dev).toBe("node ../../scripts/run-with-typescript-parser.cjs vp dev");
-    expect(packageJson.scripts.build).toBe("node ../../scripts/run-with-typescript-parser.cjs vp build");
+    expect(packageJson.scripts["decks:compile"]).toBeUndefined();
+    expect(packageJson.scripts.dev).toBe("vp dev");
+    expect(packageJson.scripts.build).toBe("vp build");
     expect(packageJson.scripts.dev).not.toContain("decks:compile");
     expect(packageJson.scripts.dev).not.toContain("../../packages/decks");
     expect(packageJson.scripts["decks:watch"]).toBeUndefined();

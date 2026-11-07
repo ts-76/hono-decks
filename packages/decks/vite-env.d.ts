@@ -9,10 +9,10 @@ declare module "virtual:hono-decks" {
   ): import("hono-decks").ConfiguredDecks<E>;
 }
 
-/** HonoX integration: inserts the decks router into HonoX's file routes. */
+/** HonoX integration: inserts the decks router into HonoX's file routes (requires honox). */
 declare module "virtual:hono-decks/honox" {
-  export function withHonoXDecks<T extends { root?: string; ROUTES?: Record<string, object> }>(
-    options: T | undefined,
+  export function withHonoXDecks<E extends import("hono").Env = any>(
+    options: import("honox/server").ServerOptions<E> | undefined,
     router: import("hono").Hono<any>,
-  ): T;
+  ): import("honox/server").ServerOptions<E>;
 }

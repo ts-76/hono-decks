@@ -5,6 +5,7 @@ import type { CompiledDeck } from "../deck/model";
 import {
   addUnknownFrontmatterWarnings,
   splitSlideSources,
+  splitOpeningFrontmatter,
   toDeckFrontmatter,
   toSlideFrontmatter,
 } from "../deck/frontmatter";
@@ -51,7 +52,8 @@ export async function compileMarkdownDecks(
         );
       }
       const warnings: CompiledDeck["warnings"] = [];
-      const meta = toDeckFrontmatter(parsed.frontmatter, warnings);
+      const opening = splitOpeningFrontmatter(parsed.frontmatter);
+      const meta = toDeckFrontmatter(opening.deck, warnings);
       addUnknownFrontmatterWarnings(warnings, meta.meta, "deck");
       const assets = [
         ...(await buildAssetRefs(entry.slug, entry.assetPaths, input)),
@@ -85,13 +87,17 @@ export async function compileMarkdownDecks(
         clientEntryRequired ||= Boolean(result.clientCode || result.islands?.length);
         if (result.clientCode) clients.add(result.clientCode);
         for (const island of result.islands ?? []) markdownIslands.set(island.id, island);
-        const slideMeta = toSlideFrontmatter(slide.frontmatter, warnings, {
+        const slideMeta = toSlideFrontmatter(
+          index === 0 ? { ...opening.firstSlide, ...slide.frontmatter } : slide.frontmatter,
+          warnings,
+          {
           slideIndex: index,
           fallbackTitle: result.headings[0]?.text,
           fallbackTransition: meta.transition,
           fallbackTransitionDuration: meta.transitionDuration,
           fallbackTransitionEasing: meta.transitionEasing,
-        });
+          },
+        );
         addUnknownFrontmatterWarnings(warnings, slideMeta.meta, "slide", index);
         slideModules.push({
           path,

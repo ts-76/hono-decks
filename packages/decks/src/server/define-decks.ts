@@ -34,7 +34,7 @@ export type DecksRouterConfig<E extends Env = any> = Omit<DecksRouterOptions<E>,
 /** Runtime options passed to the generated `createDecks()`. */
 export interface DecksOptions<E extends Env = any> extends DecksRouterConfig<E> {
   /** Decorate or replace the generated deck source (R2 assets, filtering, caching). */
-  source?(source: DeckSource<E>): DeckSource<E>;
+  source?: (source: DeckSource<E>) => DeckSource<E>;
 }
 
 /** Compiler output handed to `configureDecks()` by the generated module. */

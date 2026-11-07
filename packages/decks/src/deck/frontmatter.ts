@@ -18,6 +18,29 @@ export function readFrontmatter(source: string): FrontmatterParseResult {
   return { attrs: parseFrontmatterAttrs(rawAttrs), body };
 }
 
+/** Slide-only keys allowed in the opening frontmatter; they apply to the first slide. */
+export const FIRST_SLIDE_FRONTMATTER_KEYS = ["layout", "class", "notes", "background"] as const;
+
+/**
+ * Splits the opening frontmatter into deck metadata and first-slide metadata, so
+ * a cover slide needs only one frontmatter block. The first slide's own
+ * frontmatter still wins when both are present.
+ */
+export function splitOpeningFrontmatter(attrs: Record<string, unknown>): {
+  deck: Record<string, unknown>;
+  firstSlide: Record<string, unknown>;
+} {
+  const deck = { ...attrs };
+  const firstSlide: Record<string, unknown> = {};
+  for (const key of FIRST_SLIDE_FRONTMATTER_KEYS) {
+    if (key in deck) {
+      firstSlide[key] = deck[key];
+      delete deck[key];
+    }
+  }
+  return { deck, firstSlide };
+}
+
 export function toDeckFrontmatter(attrs: Record<string, unknown>, warnings: CompiledDeck["warnings"]): DeckFrontmatter {
   const meta = { ...attrs };
   const deck: DeckFrontmatter = { meta };

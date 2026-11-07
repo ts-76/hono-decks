@@ -8,6 +8,9 @@ dist-dry-run/
 .superpowers/
 .impeccable/config.local.json
 
-/examples/honox/app/generated/
+# Compiled decks are rebuilt by every dev, build, typecheck, and test command.
+**/src/generated/
+**/app/generated/
+**/lib/generated/
 
-/docs/app/generated/
+.beads.gate.lock
