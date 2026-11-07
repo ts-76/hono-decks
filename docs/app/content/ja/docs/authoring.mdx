@@ -156,6 +156,8 @@ URLだけの行は通常のリンクになります。外部iframeを公開す�
 
 <CodeBlock filename={"decks/welcome/theme.css"} language={"css"} code={"/* decks/welcome/theme.css */\n:root {\n  --hono-decks-accent-color: #ff5b1a;\n}\n\n.slide h1 {\n  text-wrap: balance;\n}"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
+hono-decksの既定スタイルは`@layer hono-decks.base`と`@layer hono-decks.components`に入っており、セレクターはすべて`:where()`で包んでいます。そのため`theme.css`の単純なセレクターで、`!important`なしに上書きできます。スライドの重ね合わせ・切り替え・段階表示・印刷レイアウトはレイヤーの外に置いているため、テーマで壊れることはありません。これらは`--hono-decks-transition-duration`や`--fire-*`などの変数で調整します。
+
 </section>
 
 <section id={"verify"}>

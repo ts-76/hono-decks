@@ -238,6 +238,25 @@ decks/product/
 - `components/index.tsx`: server component
 - `components/client/index.tsx`: browser で hydrate する island component
 
+## 既定スタイルを拡張する
+
+hono-decks の既定の見た目は、2つのカスケードレイヤーにまとめています。`@layer hono-decks.base` はトークン・ページの既定値・スライド内の文字組み、`@layer hono-decks.components` は組み込みコンポーネントとビューアー・発表者画面・オーバービューの見た目です。レイヤー内のセレクターはすべて `:where()` で包んでいるため、詳細度は0です。`theme.css`、デッキのコンポーネントが出力する CSS、ルーターの `style` オプション、`viewer.style`、埋め込み先ページの CSS など、レイヤー外のルールであれば、`!important` やセレクターの追加なしに既定値を上書きできます。
+
+```css
+/* decks/product/theme.css: 単純なセレクターで十分です */
+code {
+  border-radius: 999px;
+}
+```
+
+スライドの重ね合わせ・切り替え・段階表示・キャンバスの拡大縮小・印刷レイアウトなど、動作に必要なルールはレイヤーに入れず、従来の詳細度のまま出力します。そのため、テーマに `.slide { position: relative; }` のような指定があっても表示の仕組みは壊れません。これらは `--hono-decks-transition-duration`、`--hono-decks-transition-easing`、`[data-fire-effect]` の `--fire-*` などのカスタムプロパティで調整します。
+
+アプリ側の CSS もレイヤーを使っている場合(Tailwind CSS v4 など)は、hono-decks のスタイルより前にレイヤーの順序を宣言し、アプリのレイヤーを後ろに置いてください。
+
+```css
+@layer hono-decks, theme, base, components, utilities;
+```
+
 ## Embed / export / print
 
 外部 iframe は `embed` オプションで明示的に有効化し、`frameAncestors` に埋め込み元 origin を列挙します。

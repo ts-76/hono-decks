@@ -4,6 +4,7 @@ import { renderCompiledDeck, renderCompiledDeckAsync, renderCompiledSlideAsync }
 import { renderControlIconHtml } from "./control-icons";
 import { renderClientEntryScript, renderLiveReloadScript, renderPresentationScript } from "./presentation-script";
 import { basePresentationStyle } from "./presentation-style";
+import { composeStylesheet, layer } from "./style-layers";
 import { documentNonceAttribute } from "../server/document";
 import type { ResolvedDeckDocument } from "../server/document";
 
@@ -38,7 +39,7 @@ export function renderCompiledDeckPage(input: {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapeHtml(presentationPageTitle(deck))}</title>
-  <style data-hono-decks-presentation-style${nonceAttribute}>${basePresentationStyle()}${deck.themeStyle ?? ""}${input.style ?? ""}</style>
+  <style data-hono-decks-presentation-style${nonceAttribute}>${composeStylesheet({ layers: basePresentationStyle(), theme: deck.themeStyle, app: input.style })}</style>
   ${document.head}
 </head>
 <body${bodyAttrs.length ? ` ${bodyAttrs.join(" ")}` : ""}>
@@ -81,7 +82,7 @@ export async function renderCompiledDeckPageAsync(input: {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapeHtml(presentationPageTitle(deck))}</title>
-  <style data-hono-decks-presentation-style${nonceAttribute}>${basePresentationStyle()}${deck.themeStyle ?? ""}${input.style ?? ""}</style>
+  <style data-hono-decks-presentation-style${nonceAttribute}>${composeStylesheet({ layers: basePresentationStyle(), theme: deck.themeStyle, app: input.style })}</style>
   ${document.head}
 </head>
 <body${bodyAttrs.length ? ` ${bodyAttrs.join(" ")}` : ""}>
@@ -127,7 +128,7 @@ export async function renderPresenterPageAsync(input: {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapeHtml(presentationPageTitle(deck))} - Presenter</title>
-  <style${nonceAttribute}>${basePresenterStyle()}${deck.themeStyle ?? ""}${input.style ?? ""}</style>
+  <style${nonceAttribute}>${composeStylesheet({ layers: basePresenterStyle(), theme: deck.themeStyle, app: input.style })}</style>
   ${document.head}
 </head>
 <body>
@@ -201,8 +202,13 @@ export function mergeComponentInputs(
   return { ...base, ...overrides };
 }
 
+/** Presenter chrome on top of the presentation layers. */
 function basePresenterStyle(): string {
-  return `${basePresentationStyle()}
+  return [
+    basePresentationStyle(),
+    layer(
+      "components",
+      `
 body{margin:0;min-height:100vh;background:#050816;color:#eef2ff;font-family:Inter,ui-sans-serif,system-ui,sans-serif}
 .hono-decks-presenter{box-sizing:border-box;display:grid;grid-template-columns:minmax(0,2fr) minmax(320px,1fr);gap:16px;min-height:100vh;padding:16px}
 .hono-decks-presenter-current,.hono-decks-presenter-panel{min-width:0}
@@ -216,12 +222,18 @@ body{margin:0;min-height:100vh;background:#050816;color:#eef2ff;font-family:Inte
 .hono-decks-presenter-panel{display:grid;grid-template-rows:auto 1fr;gap:16px}
 .hono-decks-presenter-next,.hono-decks-presenter-notes{min-width:0;border:1px solid rgba(148,163,184,.28);border-radius:8px;background:rgba(15,23,42,.78);padding:12px}
 .hono-decks-presenter-next h2,.hono-decks-presenter-notes h2{margin:0 0 8px;font-size:16px;color:#93c5fd}
-.hono-decks-presenter-preview{position:relative;aspect-ratio:16/9;overflow:hidden;border-radius:6px;background:#020617}
-body:not([data-overview-mode]) .hono-decks-presenter-preview .slide{position:absolute;inset:0 auto auto 0;width:var(--hono-decks-width);height:var(--hono-decks-height);aspect-ratio:16/9;max-width:none;transform-origin:left top;transition:none!important}
-.hono-decks-presenter-preview .hono-decks-slide-content{transform-origin:top left}
 .hono-decks-presenter-no-next:not([hidden]){display:grid;place-items:center;aspect-ratio:16/9;margin:0;border-radius:6px;background:#020617;color:#93a4bd;font-size:14px}
 .hono-decks-presenter-notes article{white-space:pre-wrap;font-size:18px;line-height:1.6}
-@media (max-width:900px){.hono-decks-presenter{grid-template-columns:1fr}.hono-decks-presenter-panel{grid-template-rows:auto auto}}`;
+@media (max-width:900px){.hono-decks-presenter{grid-template-columns:1fr}.hono-decks-presenter-panel{grid-template-rows:auto auto}}`,
+    ),
+    layer(
+      "runtime",
+      `
+.hono-decks-presenter-preview{position:relative;aspect-ratio:16/9;overflow:hidden;border-radius:6px;background:#020617}
+body:not([data-overview-mode]) .hono-decks-presenter-preview .slide{position:absolute;inset:0 auto auto 0;width:var(--hono-decks-width);height:var(--hono-decks-height);aspect-ratio:16/9;max-width:none;transform-origin:left top;transition:none!important}
+.hono-decks-presenter-preview .hono-decks-slide-content{transform-origin:top left}`,
+    ),
+  ].join("\n");
 }
 
 function renderPresenterScript(slideCount: number, nonce?: string): string {

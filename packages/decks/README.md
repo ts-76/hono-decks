@@ -383,6 +383,25 @@ decks/product/
 
 <code>components/index.tsx</code> contains server-side JSX components. <code>components/client/index.tsx</code> contains components hydrated in the browser. <code>theme.css</code> applies only to that deck. Without a theme, slides use a white background and dark text. Customize `--hono-decks-background` and `--hono-decks-color` together in `theme.css`. Use `px` or `rem` within the fixed 1920 × 1080 canvas; viewport units change the composition when browser zoom changes. Local images are detected during compilation and rewritten to public URLs based on the mount path and deck slug.
 
+## Extending the default styles
+
+hono-decks keeps its default look in two cascade layers, `@layer hono-decks.base` (tokens, page defaults, slide typography) and `@layer hono-decks.components` (built-in components, viewer, presenter, and overview chrome). Every selector in them is wrapped in `:where()`, so it has zero specificity. Any unlayered rule overrides the defaults without `!important` or longer selectors: your `theme.css`, CSS emitted by deck components, the router `style` option, `viewer.style`, or host page styles.
+
+~~~css
+/* decks/product/theme.css: a plain selector is enough */
+code {
+  border-radius: 999px;
+}
+~~~
+
+Runtime rules stay unlayered with their usual specificity: slide stacking, transitions, step reveals, fitting the canvas, and print layout. A theme rule such as `.slide { position: relative; }` therefore cannot break presentation mechanics. Tune them through custom properties instead, such as `--hono-decks-transition-duration`, `--hono-decks-transition-easing`, and the `--fire-*` variables on `[data-fire-effect]`.
+
+If your own styles are also layered (for example Tailwind CSS v4), declare the order before any hono-decks styles load so your layers come after it:
+
+~~~css
+@layer hono-decks, theme, base, components, utilities;
+~~~
+
 ## Embedding
 
 Use <code>createDeckViewerEmbed()</code> to embed multiple decks into the same document. This high-level helper builds an iframe viewer, controls, and a table of contents from a <code>CompiledDeck</code> already loaded by the application.

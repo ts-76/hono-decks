@@ -195,7 +195,7 @@ describe("decksRouter presenter and presentation surfaces", () => {
     expect(presenter.status).toBe(200);
     const presenterHtml = await presenter.text();
     expect(presenterHtml).toContain(
-      ".hono-decks-presenter-no-next:not([hidden]){display:grid;place-items:center;aspect-ratio:16/9;",
+      ":where(.hono-decks-presenter-no-next:not([hidden])){display:grid;place-items:center;aspect-ratio:16/9;",
     );
     expect(presenterHtml).toContain(
       '<p class="hono-decks-presenter-no-next" data-hono-decks-presenter-no-next>No next slide</p>',

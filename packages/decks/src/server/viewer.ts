@@ -14,6 +14,7 @@ import type { DeckExportOptions, DeckViewerExportPaths } from "./browser-export"
 import { resolveAuthorizedExportPaths } from "./browser-export";
 import { renderViewerScript } from "./viewer-script";
 import { baseViewerStyle, embeddedViewerStyle } from "./viewer-style";
+import { composeStylesheet } from "../renderer/style-layers";
 import { createDeckPaths, type DeckPaths } from "./paths";
 import { documentNonceAttribute, resolveDeckDocument, type DeckDocumentOptions } from "./document";
 
@@ -298,7 +299,7 @@ export async function createDeckViewerEmbed(input: DeckViewerEmbedOptions): Prom
   });
   const rootHtml = await renderJsxValue(root);
   const nonceAttribute = input.nonce ? ` nonce="${escapeHtml(input.nonce)}"` : "";
-  const embedHtml = `<style data-hono-decks-embed-style${nonceAttribute}>${embeddedViewerStyle()}${input.style ?? ""}</style>${rootHtml}${renderViewerScript(input.nonce)}`;
+  const embedHtml = `<style data-hono-decks-embed-style${nonceAttribute}>${composeStylesheet({ layers: embeddedViewerStyle(), app: input.style })}</style>${rootHtml}${renderViewerScript(input.nonce)}`;
   return {
     ...parts,
     embed: raw(embedHtml),
@@ -388,7 +389,7 @@ export async function renderDeckViewerPage<E extends Env = any>(input: {
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>${escapeHtml(parts.title)}</title>
   ${socialHead}
-  <style${nonceAttribute}>${baseViewerStyle()}${input.viewer?.style ?? ""}</style>
+  <style${nonceAttribute}>${composeStylesheet({ layers: baseViewerStyle(), app: input.viewer?.style })}</style>
   ${document.head}
 </head>
 <body>

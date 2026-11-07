@@ -156,6 +156,8 @@ Place `theme.css` beside `deck.mdx` to style only that deck. Start with the prov
 
 <CodeBlock filename={"decks/welcome/theme.css"} language={"css"} code={"/* decks/welcome/theme.css */\n:root {\n  --hono-decks-accent-color: #ff5b1a;\n}\n\n.slide h1 {\n  text-wrap: balance;\n}"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
 
+hono-decks keeps its default styles in `@layer hono-decks.base` and `@layer hono-decks.components`, with every selector wrapped in `:where()`. Plain selectors in `theme.css` therefore override them without `!important`. Slide stacking, transitions, step reveals, and print layout stay outside the layers so a theme cannot break them; adjust those through variables such as `--hono-decks-transition-duration` and `--fire-*`.
+
 </section>
 
 <section id={"verify"}>

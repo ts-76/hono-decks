@@ -111,10 +111,10 @@ describe("decksRouter viewer page, controls, and social metadata", () => {
     expect(html).toContain("data-hono-decks-embed-style");
     expect(html).not.toMatch(/\.hono-decks-viewer-shell\{[^}]*gap:12px/);
     expect(first.embedHtml).toMatch(
-      /\[data-hono-decks-viewer\]\[data-hono-decks-embed\] \.hono-decks-viewer-controls\{[^}]*z-index:4/,
+      /:where\(\[data-hono-decks-viewer\]\[data-hono-decks-embed\] \.hono-decks-viewer-controls\)\{[^}]*z-index:4/,
     );
     expect(html).toContain(
-      "[data-hono-decks-viewer][data-hono-decks-embed] *:focus-visible{outline:2px solid currentColor;outline-offset:2px}",
+      ":where([data-hono-decks-viewer][data-hono-decks-embed] *:focus-visible){outline:2px solid currentColor;outline-offset:2px}",
     );
     expect(html).toContain("data-hono-decks-viewer-runtime");
     expect(html).toContain('root.querySelectorAll("[data-hono-decks-viewer-link]")');

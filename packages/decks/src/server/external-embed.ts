@@ -1,6 +1,7 @@
 import type { Context, Env } from "hono";
 import type { CompiledDeck } from "../deck/model";
 import type { DeckRenderable, MaybePromise } from "../renderer/compiled-render";
+import { composeStylesheet, layer } from "../renderer/style-layers";
 import { renderJsxValue } from "../renderer/jsx-renderer";
 import {
   documentNonceAttribute,
@@ -149,7 +150,7 @@ async function renderExternalEmbedDocument(input: {
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   ${robots}
   <title>${escapeHtml(input.title)}</title>
-  <style id="hono-decks-external-embed-css"${nonceAttribute}>${externalEmbedPageStyle()}${input.pageStyle ?? ""}</style>
+  <style id="hono-decks-external-embed-css"${nonceAttribute}>${composeStylesheet({ layers: externalEmbedPageStyle(), app: input.pageStyle })}</style>
   ${input.document.head}
 </head>
 <body>${input.body}</body>
@@ -196,8 +197,10 @@ function withFrameAncestors(currentPolicy: string | null, ancestors: string[]): 
 }
 
 function externalEmbedPageStyle(): string {
-  return `:root{color-scheme:dark;background:#050816}html,body{width:100%;height:100%;margin:0;overflow:hidden}body{min-height:100vh}@supports (height:100dvh){body{min-height:100dvh}}.hono-decks-embedded-viewer{width:100%;height:100%;min-height:0;overflow:hidden}.hono-decks-embedded-viewer .hono-decks-viewer-shell{position:relative;height:100%;grid-template-rows:minmax(0,1fr);overflow:hidden}.hono-decks-embedded-viewer .hono-decks-viewport{width:min(100%,calc(100vh * 16 / 9));max-height:100%}@supports (height:100dvh){.hono-decks-embedded-viewer .hono-decks-viewport{width:min(100%,calc(100dvh * 16 / 9))}}.hono-decks-embedded-viewer .hono-decks-viewer-controls{bottom:max(.25rem,env(safe-area-inset-bottom,0px));z-index:4}`;
+  return `${layer("base", ":root{color-scheme:dark;background:#050816}")}${layer("runtime", EXTERNAL_EMBED_PAGE_RUNTIME)}`;
 }
+
+const EXTERNAL_EMBED_PAGE_RUNTIME = `html,body{width:100%;height:100%;margin:0;overflow:hidden}body{min-height:100vh}@supports (height:100dvh){body{min-height:100dvh}}.hono-decks-embedded-viewer{width:100%;height:100%;min-height:0;overflow:hidden}.hono-decks-embedded-viewer .hono-decks-viewer-shell{position:relative;height:100%;grid-template-rows:minmax(0,1fr);overflow:hidden}.hono-decks-embedded-viewer .hono-decks-viewport{width:min(100%,calc(100vh * 16 / 9));max-height:100%}@supports (height:100dvh){.hono-decks-embedded-viewer .hono-decks-viewport{width:min(100%,calc(100dvh * 16 / 9))}}.hono-decks-embedded-viewer .hono-decks-viewer-controls{bottom:max(.25rem,env(safe-area-inset-bottom,0px));z-index:4}`;
 
 function escapeHtml(value: string): string {
   return value

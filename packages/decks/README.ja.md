@@ -381,6 +381,25 @@ decks/product/
 
 `components/index.tsx` は server-side JSX component、`components/client/index.tsx` は browser で hydrate する component です。`theme.css` はその deck だけに適用されます。 テーマ未指定時は白背景と濃い文字色を使います。配色を変える場合は `theme.css` で `--hono-decks-background` と `--hono-decks-color` を合わせて指定してください。1920 × 1080 の固定キャンバス内では `px` や `rem` を使います。`vw` / `vh` はブラウザのズームに応じて内容の配置も変えてしまいます。画像は compile 時に検出され、`mountPath` と slug を使った public URL に書き換えられます。
 
+## 既定スタイルを拡張する
+
+hono-decks の既定の見た目は、2つのカスケードレイヤーにまとめています。`@layer hono-decks.base` はトークン・ページの既定値・スライド内の文字組み、`@layer hono-decks.components` は組み込みコンポーネントとビューアー・発表者画面・オーバービューの見た目です。レイヤー内のセレクターはすべて `:where()` で包んでいるため、詳細度は0です。`theme.css`、デッキのコンポーネントが出力する CSS、ルーターの `style` オプション、`viewer.style`、埋め込み先ページの CSS など、レイヤー外のルールであれば、`!important` やセレクターの追加なしに既定値を上書きできます。
+
+~~~css
+/* decks/product/theme.css: 単純なセレクターで十分です */
+code {
+  border-radius: 999px;
+}
+~~~
+
+スライドの重ね合わせ・切り替え・段階表示・キャンバスの拡大縮小・印刷レイアウトなど、動作に必要なルールはレイヤーに入れず、従来の詳細度のまま出力します。そのため、テーマに `.slide { position: relative; }` のような指定があっても表示の仕組みは壊れません。これらは `--hono-decks-transition-duration`、`--hono-decks-transition-easing`、`[data-fire-effect]` の `--fire-*` などのカスタムプロパティで調整します。
+
+アプリ側の CSS もレイヤーを使っている場合(Tailwind CSS v4 など)は、hono-decks のスタイルより前にレイヤーの順序を宣言し、アプリのレイヤーを後ろに置いてください。
+
+~~~css
+@layer hono-decks, theme, base, components, utilities;
+~~~
+
 ## Embedding
 
 同じdocumentへ複数配置する場合は `createDeckViewerEmbed()` を使えます。これは app が取得済みの `CompiledDeck` から iframe viewer、controls、TOC を組み立てる high-level helper です。

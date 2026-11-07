@@ -48,7 +48,7 @@ describe("decksRouter page surfaces", () => {
     expect(html).toContain('title="Deck One"');
     expect(html).toContain(".hono-decks-viewport{width:min(100%,calc((100vh - 58px) * 16 / 9));aspect-ratio:16/9");
     expect(html).toContain(".hono-decks-viewport:focus-visible");
-    expect(html).toContain("*:focus-visible{outline:2px solid currentColor;outline-offset:2px}");
+    expect(html).toContain(":where(*:focus-visible){outline:2px solid currentColor;outline-offset:2px}");
     expect(html).toContain(".hono-decks-frame-stage{width:100%;height:100%");
     expect(html).toContain(".hono-decks-frame-stage iframe{width:100%;height:100%");
     expect(html).not.toContain(
@@ -66,20 +66,20 @@ describe("decksRouter page surfaces", () => {
     expect(html).toContain('data-hono-decks-mobile-navigation="next"');
     expect(html).toContain("[data-hono-decks-mobile-action='previous']");
     expect(html).toContain("[data-hono-decks-mobile-action='next']");
-    expect(html).toContain(".hono-decks-mobile-navigation{position:absolute;top:25%;bottom:25%;display:none");
+    expect(html).toContain(":where(.hono-decks-mobile-navigation){position:absolute;top:25%;bottom:25%;display:none");
     expect(html).toContain("width:clamp(2.25rem,6%,2.75rem)");
     expect(html).toContain("background:transparent;color:transparent");
     expect(html).toContain("appearance:none;pointer-events:none");
-    expect(html).toContain(".hono-decks-mobile-navigation{display:inline-flex;pointer-events:auto}");
-    expect(html).toContain(".hono-decks-viewport>[data-hono-decks-position]{position:absolute;left:50%");
+    expect(html).toContain(".hono-decks-mobile-navigation){display:inline-flex;pointer-events:auto}");
+    expect(html).toContain(":where(.hono-decks-viewport>[data-hono-decks-position]){position:absolute;left:50%");
     expect(html).toContain("@media (orientation:landscape) and (max-height:600px)");
     expect(html).toContain("bottom:auto;flex-direction:column");
     expect(html).toContain("@media (pointer:coarse)");
     expect(html).toContain(
-      '.hono-decks-viewer-controls [data-hono-decks-navigation-control="fullscreen"],.hono-decks-viewer-controls [data-hono-decks-print]{display:none}',
+      ':where(.hono-decks-viewer-controls [data-hono-decks-navigation-control="fullscreen"]),:where(.hono-decks-viewer-controls [data-hono-decks-print]){display:none}',
     );
     expect(html).toContain(
-      '.hono-decks-viewer-controls [data-hono-decks-navigation-control="previous"],.hono-decks-viewer-controls [data-hono-decks-navigation-control="next"]',
+      ':where(.hono-decks-viewer-controls [data-hono-decks-navigation-control="previous"]),:where(.hono-decks-viewer-controls [data-hono-decks-navigation-control="next"])',
     );
     expect(html).toContain('data-action="previous"');
     expect(html).toContain('data-action="next"');
