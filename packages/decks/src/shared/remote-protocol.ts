@@ -4,8 +4,15 @@ export interface RemotePosition {
   stepIndex: number;
 }
 
+/** The presenter's talk timer. `elapsed` is in milliseconds as of sending. */
+export interface RemoteTimer {
+  elapsed: number;
+  running: boolean;
+}
+
 export type RemoteMessage =
   | ({ type: "state" } & RemotePosition)
+  | ({ type: "timer" } & RemoteTimer)
   | { type: "command"; command: "previous" | "next" }
   | ({ type: "command"; command: "goTo" } & RemotePosition);
 
@@ -21,6 +28,12 @@ export function parseRemoteMessage(input: unknown, slideCount: number): RemoteMe
   }
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const message = value as Record<string, unknown>;
+  if (message.type === "timer") {
+    const { elapsed, running } = message;
+    if (typeof running !== "boolean" || typeof elapsed !== "number" || !Number.isFinite(elapsed)) return null;
+    if (elapsed < 0 || elapsed > 7 * 24 * 60 * 60 * 1000) return null;
+    return { type: "timer", elapsed: Math.floor(elapsed), running };
+  }
   if (message.type === "command" && (message.command === "next" || message.command === "previous")) {
     return { type: "command", command: message.command };
   }

@@ -1,3 +1,4 @@
+import { formatTalkTime, talkPace } from "../shared/talk-time";
 import { enMessages } from "../shared/messages";
 import { parseDuration } from "../deck/duration";
 import { renderOverflowChecker } from "./overflow-checker";
@@ -22,35 +23,7 @@ import type { ResolvedDeckDocument } from "../server/document";
 
 export const PRESENTER_TIMER_MESSAGES = resolveTimerMessages(enMessages);
 
-/**
- * Compares elapsed time with the time budget of the current slide. Each slide gets
- * an equal share of the duration; being anywhere inside the current slide's window
- * is on pace. Returns the distance to that window in seconds (positive = ahead).
- * Embedded into the presenter script with Function#toString, so keep it self-contained.
- */
-export function talkPace(
-  elapsedSeconds: number,
-  durationSeconds: number,
-  slideIndex: number,
-  slideCount: number,
-): { state: "on" | "ahead" | "behind"; seconds: number } {
-  const perSlide = durationSeconds / Math.max(slideCount, 1);
-  const windowStart = perSlide * slideIndex;
-  const windowEnd = windowStart + perSlide;
-  if (elapsedSeconds < windowStart) return { state: "ahead", seconds: windowStart - elapsedSeconds };
-  if (elapsedSeconds > windowEnd) return { state: "behind", seconds: elapsedSeconds - windowEnd };
-  return { state: "on", seconds: 0 };
-}
-
-/** Formats seconds as mm:ss, or h:mm:ss from one hour. Embedded into the presenter script. */
-export function formatTalkTime(totalSeconds: number): string {
-  const seconds = Math.floor(Math.abs(totalSeconds));
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const rest = seconds % 60;
-  const head = hours ? `${hours}:${String(minutes).padStart(2, "0")}` : String(minutes).padStart(2, "0");
-  return `${head}:${String(rest).padStart(2, "0")}`;
-}
+export { formatTalkTime, talkPace };
 
 export function presentationPageTitle(deck: Pick<CompiledDeck, "slug" | "meta">): string {
   return deck.meta.title ?? deck.slug;
@@ -351,8 +324,11 @@ function renderPresenterScript(
     const saved = JSON.parse(sessionStorage.getItem(storageKey) || "null");
     if (saved && Number.isFinite(saved.elapsed) && saved.elapsed >= 0 && (saved.startedAt === null || Number.isFinite(saved.startedAt))) timer = saved;
   } catch (_) {}
-  function saveTimer() { try { sessionStorage.setItem(storageKey, JSON.stringify(timer)); } catch (_) {} }
+  // The remote runtime relays this event so phones show the same timer.
+  function announceTimer() { document.dispatchEvent(new CustomEvent("hono-decks:timer", { detail: { elapsed: elapsed(), running: timer.startedAt !== null } })); }
+  function saveTimer() { try { sessionStorage.setItem(storageKey, JSON.stringify(timer)); } catch (_) {} announceTimer(); }
   function elapsed() { return timer.elapsed + (timer.startedAt === null ? 0 : Math.max(0, Date.now() - timer.startedAt)); }
+  announceTimer();
   const formatTime = ${formatTalkTime.toString()};
   function renderTimer() {
     const seconds = elapsed() / 1000;

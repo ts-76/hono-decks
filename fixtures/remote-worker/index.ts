@@ -11,7 +11,7 @@ const deck = {
   slides: ["First", "Second", "Third"].map((title, index) => ({ index, meta: { title, layout: "default", meta: {} }, html: `<h1>${title}</h1>`, notes: `Private note ${index + 1}`, components: [] })),
   assets: [], warnings: [],
 };
-app.route("/decks", decksRouter({ source: manifestDeckSource({ decks: [deck] }), remote: {
+app.route("/decks", decksRouter({ source: manifestDeckSource({ decks: [deck] }), presenter: { duration: "3m" }, remote: {
   namespace: ({ c }) => c.env.ROOMS,
   authorize: () => true,
   // Behind a tunnel the Worker sees http; encode the public https URL in the QR code.
