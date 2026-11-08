@@ -442,3 +442,24 @@ Viteは仮想モジュールを利用し、既存の `hono-decks compile` はフ
 ## 開発中のはみ出し警告
 
 開発時は表示中のスライドを検査し、1920 × 1080 のキャンバスからはみ出す要素や、`overflow: hidden` / `clip` で切れる内容を警告パネルと枠線で示します。スライドの切り替え、画面サイズ変更、画像・フォントの読み込み、ライブ更新後に再検査します。意図的にはみ出す要素に `data-hono-decks-allow-overflow` を付けると、その子要素も検査対象外になります。装飾用の `aria-hidden="true"` の領域も除外します。スクロール可能な領域は切り取り境界として扱い、影などの視覚効果は測定しません。本番・印刷ページには検査処理を含めません。
+
+## 標準レイアウト
+
+スライドの `layout` には `default`、`cover`、`statement` に加えて `two-cols`、`image-left`、`image-right`、`section`、`quote`、`center` を指定できます。MDX の `two-cols` では、空行で囲んだ `::right::` を単独行に書くと、前後が左右の列になります。
+
+~~~mdx
+---
+layout: two-cols
+---
+## 左
+
+左の内容
+
+::right::
+
+## 右
+
+右の内容
+~~~
+
+画像レイアウトでは `image: ./assets/photo.jpg` または画像 URL を指定し、必要なら `image-alt: 画像の説明` を追加します。省略時は装飾画像として扱います。`section` は見出しと副題、`quote` は引用と出典に使えます。`center` は上下左右を中央揃えにし、`statement` は上下のみ中央揃えにします。テーマの `--hono-decks-column-gap`、`--hono-decks-image-width`、`--hono-decks-image-radius` で調整できます。列の区切りは MDX で利用できます。

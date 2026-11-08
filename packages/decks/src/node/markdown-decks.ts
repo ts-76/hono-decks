@@ -62,6 +62,7 @@ export async function compileMarkdownDecks(
           ...collectMarkdownAssetCandidates(parsed.content),
           ...collectFrontmatterAssetCandidates(meta.assets),
           ...collectFrontmatterAssetCandidates(parsed.frontmatter.background),
+          ...collectFrontmatterAssetCandidates(parsed.frontmatter.image),
         ]),
       ];
       // Keep the established single-file asset restriction.
@@ -69,6 +70,7 @@ export async function compileMarkdownDecks(
         ...collectMarkdownAssetCandidates(parsed.content),
         ...collectFrontmatterAssetCandidates(parsed.frontmatter.assets),
         ...collectFrontmatterAssetCandidates(parsed.frontmatter.background),
+        ...collectFrontmatterAssetCandidates(parsed.frontmatter.image),
       ];
       if (entry.kind === "single-file" && candidates.some(isLocalRelativeAssetCandidate)) {
         throw new Error("Single-file Markdown decks cannot reference local relative assets; use a directory deck.");

@@ -23,7 +23,7 @@ export function readFrontmatter(source: string): FrontmatterParseResult {
 }
 
 /** Slide-only keys allowed in the opening frontmatter; they apply to the first slide. */
-export const FIRST_SLIDE_FRONTMATTER_KEYS = ["layout", "class", "notes", "background"] as const;
+export const FIRST_SLIDE_FRONTMATTER_KEYS = ["layout", "class", "notes", "background", "image", "image-alt"] as const;
 
 /**
  * Splits the opening frontmatter into deck metadata and first-slide metadata, so
@@ -106,6 +106,8 @@ export function toSlideFrontmatter(
     className: takeString(meta, "class") ?? input.fallbackClassName,
     notes: takeString(meta, "notes"),
     background: takeString(meta, "background"),
+    image: takeString(meta, "image"),
+    imageAlt: takeString(meta, "image-alt"),
     transition:
       takeKnownStringWithWarning(
         meta,

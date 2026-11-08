@@ -1,6 +1,6 @@
 import { RenderError } from "../deck/model";
 import type { AssetRef, CompiledDeck, CompiledSlide } from "../deck/model";
-import { backgroundStyle, rewriteLocalAssetUrls } from "./asset-rewrite";
+import { backgroundStyle, resolveAssetUrl, rewriteLocalAssetUrls } from "./asset-rewrite";
 import {
   builtInSlideComponents,
   createMdxComponents,
@@ -80,7 +80,7 @@ export function renderCompiledSlide(
   const style = slideStyleAttribute(slide, assets);
   const transition = slide.meta.transition ? ` data-transition="${escapeHtml(safeClass(slide.meta.transition))}"` : "";
 
-  return `<section class="${classes}" data-slide-index="${slide.index}" data-slide-state="${slideState}"${slide.meta.title ? ` aria-label="${escapeHtml(slide.meta.title)}"` : ""}${transition}${style}><div class="hono-decks-slide-content">${html}</div>${notesHtml}</section>`;
+  return `<section class="${classes}" data-slide-index="${slide.index}" data-slide-state="${slideState}"${slide.meta.title ? ` aria-label="${escapeHtml(slide.meta.title)}"` : ""}${transition}${style}><div class="hono-decks-slide-content">${layoutBody(slide, html, assets)}</div>${notesHtml}</section>`;
 }
 
 export async function renderCompiledSlideAsync(
@@ -106,7 +106,16 @@ export async function renderCompiledSlideAsync(
   const style = slideStyleAttribute(slide, assets);
   const transition = slide.meta.transition ? ` data-transition="${escapeHtml(safeClass(slide.meta.transition))}"` : "";
 
-  return `<section class="${classes}" data-slide-index="${slide.index}" data-slide-state="${slideState}"${slide.meta.title ? ` aria-label="${escapeHtml(slide.meta.title)}"` : ""}${transition}${style}><div class="hono-decks-slide-content">${html}</div>${notesHtml}</section>`;
+  return `<section class="${classes}" data-slide-index="${slide.index}" data-slide-state="${slideState}"${slide.meta.title ? ` aria-label="${escapeHtml(slide.meta.title)}"` : ""}${transition}${style}><div class="hono-decks-slide-content">${layoutBody(slide, html, assets)}</div>${notesHtml}</section>`;
+}
+
+function layoutBody(slide: CompiledSlide, html: string, assets: AssetRef[]): string {
+  if ((slide.meta.layout === "image-left" || slide.meta.layout === "image-right") && slide.meta.image) {
+    const src = escapeHtml(resolveAssetUrl(slide.meta.image, assets));
+    const alt = escapeHtml(slide.meta.imageAlt ?? "");
+    return `<div class="hono-decks-layout-image"><img src="${src}" alt="${alt}"></div><div class="hono-decks-layout-body">${html}</div>`;
+  }
+  return html;
 }
 
 function slideStyleAttribute(slide: CompiledSlide, assets: AssetRef[]): string {

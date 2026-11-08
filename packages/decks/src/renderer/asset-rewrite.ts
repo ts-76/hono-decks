@@ -15,6 +15,15 @@ export function rewriteLocalAssetUrls(html: string, assets: AssetRef[]): string 
     });
 }
 
+export function resolveAssetUrl(value: string, assets: AssetRef[]): string {
+  return (
+    findAssetForHtmlUrl(
+      assets.filter((candidate) => candidate.type === "local"),
+      value,
+    )?.publicPath ?? value
+  );
+}
+
 export function backgroundStyle(value: string, assets: AssetRef[]): string {
   const asset = findAssetForHtmlUrl(
     assets.filter((candidate) => candidate.type === "local"),
