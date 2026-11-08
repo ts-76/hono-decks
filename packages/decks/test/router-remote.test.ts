@@ -78,7 +78,9 @@ describe("remote socket route", () => {
     expect(await (await server.request("/slides/deck1/render")).text()).not.toContain("PRIVATE NOTE");
     const presenter = await (await server.request("/slides/deck1/presenter")).text();
     expect(presenter).toContain('data-hono-decks-remote-runtime nonce="test-nonce"');
-    expect(presenter).toContain('href="/slides/deck1/remote"');
+    expect(presenter).toContain('popovertarget="hono-decks-remote-qr"');
+    expect(presenter).toContain('href="http://localhost/slides/deck1/remote"');
+    expect(presenter).not.toContain("hono-decks-presenter-remote-link");
     const followerServer = app({ namespace: () => namespace, authorize: () => true });
     expect(await (await followerServer.request("/slides/deck1")).text()).toContain("data-hono-decks-remote-runtime");
     const remote = await (await server.request("/slides/deck1/remote")).text();

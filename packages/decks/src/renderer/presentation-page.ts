@@ -209,7 +209,7 @@ export async function renderPresenterPageAsync(input: {
         <span data-hono-decks-presenter-position>${escapeHtml(formatMessage(messages.progressText, { current: 1, total: deck.slides.length }))}</span>
         <button type="button" data-action="next" title="${escapeHtml(messages.next)}" aria-label="${escapeHtml(messages.next)}">${renderControlIconHtml("next")}</button>
         <span data-hono-decks-presenter-connection>${escapeHtml(messages.connected)}</span>
-        ${input.remote ? `<a class="hono-decks-presenter-remote-link" href="${escapeHtml(`${deckPath}/remote`)}">${escapeHtml(remoteMessages(messages).title)}</a>${input.remoteUrl ? remoteQrButton(remoteMessages(messages)) : ""}` : ""}
+        ${input.remote && input.remoteUrl ? remoteQrButton(remoteMessages(messages)) : ""}
       </nav>
       <iframe title="${escapeHtml(presentationPageTitle(deck))}" src="${escapeHtml(projectionPath)}"></iframe>
     </section>
