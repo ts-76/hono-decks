@@ -2,7 +2,7 @@
 
 Void のルートから hono-decks を配信し、トップページに同一オリジンの iframe でスライドを埋め込みます。公開先は `https://void.hono-decks.com` です。`https://hono-decks.com` のドキュメントからも埋め込めます。
 
-ソースは [hono-decks の examples/void](https://github.com/ts-76/hono-decks/tree/main/examples/void) で管理します。hono-decks 2.0.0を使用し、既存のWorkerとドメイン、公開URLを維持します。
+ソースは [hono-decks の examples/void](https://github.com/ts-76/hono-decks/tree/main/examples/void) で管理します。hono-decks 2.2.0を使用し、既存のWorkerとドメイン、公開URLを維持します。
 
 ## 起動と確認
 
@@ -30,7 +30,9 @@ Void 1.5.0 の Drizzle CLI が依存する `@esbuild-kit/core-utils` に限り�
 
 `npm run typecheck` は `void prepare` で `.void/tsconfig.json` を用意し、仮想モジュールの型を使って型検査します。開発・ビルド時は `hono-decks/vite` が仮想モジュールを生成します。生成物は直接編集しません。
 
-埋め込み用の `/slides/welcome/embed` は CSP の `frame-ancestors` で自サイトと `https://hono-decks.com` だけを許可します。他のサブドメインや任意の外部サイトは許可しません。CSP はブラウザの埋め込み制限であり、公開スライドへのアクセス認証ではありません。プレゼンター、印刷、プレゼンテーション、エクスポートは提供しません。
+埋め込み用の `/slides/welcome/embed` は CSP の `frame-ancestors` で自サイトと `https://hono-decks.com` に加え、Player Cardに必要なXのオリジンを許可します。X以外の任意の外部サイトは許可しません。CSP はブラウザの埋め込み制限であり、公開スライドへのアクセス認証ではありません。プレゼンター、印刷、プレゼンテーション、エクスポートは提供しません。
+
+`lib/decks.ts`の`viewer.openGraph.twitterPlayer: true`でPlayer Cardを有効にしています。共有するURLは`https://void.hono-decks.com/slides/welcome`です。カード内では`/slides/welcome/embed`を表示し、代替のプレビュー画像には`public/social-card.png`を使います。X上の表示はX側の対応状況やキャッシュにも依存します。
 
 ドキュメント側には次の iframe を置きます。公開先の変更や再デプロイ後は、公開 URL とブラウザでの埋め込みを確認します。
 
@@ -52,7 +54,7 @@ Void 1.5.0 の Drizzle CLI が依存する `@esbuild-kit/core-utils` に限り�
 1. Cloudflare の対象アカウント（既存 docs と同じ運用なら `tsapp`）と既存ルート・ドメインを確認し、`void-hono-decks-example` が別用途の既存 Worker と衝突しないことを確かめます。`void.hono-decks.com` が別の Worker、ルート、DNS レコードで使われていないことも確認します。衝突する場合は公開を止めて所有者と調整します。既存ドキュメント Worker に上書きしません。
 2. このディレクトリで `npm ci`、`npm run typecheck`、`npm run build` を実行し、ローカルプレビューを確認します。
 3. 公開を承認した担当者だけが `npx void deploy --platform cloudflare` を実行します。Void はリソースの準備、ビルド、アップロード、トラフィック更新を行います。初回公開は準備段階で実リソースを作る場合があります。
-4. DNS と TLS の反映後、`https://void.hono-decks.com` で `/`、`/slides/welcome`、`/slides/welcome/embed`、`/slides/welcome/render` と参照する JS/CSS を確認します。`/embed` の CSP が `frame-ancestors 'self' https://hono-decks.com` であることと、無効なサーフェスが 404 になることを確認します。
+4. DNS と TLS の反映後、`https://void.hono-decks.com` で `/`、`/slides/welcome`、`/slides/welcome/embed`、`/slides/welcome/render` と参照する JS/CSS を確認します。`/embed` の CSP の `frame-ancestors` に自サイト・ドキュメントサイト・Xのオリジンが含まれることと、無効なサーフェスが 404 になることを確認します。
 5. 自サイトのトップページと `hono-decks.com` で iframe、左右キー、全画面、モバイル表示を確認し、それ以外のオリジンの iframe がブラウザで拒否されることを確認してからドキュメントに掲載します。
 
 アカウント情報やトークンをコミットしません。`.void/`、`.wrangler/`、`.env*`、`.dev.vars*` は除外しています。`void.lock.json` はリソース ID やマイグレーションを記録した場合も保持し、公開後に変更された内容を確認してコミットします。
