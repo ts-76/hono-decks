@@ -142,6 +142,12 @@ export interface DeckRemoteOptions<E extends Env = any> {
   authorize(input: { c: Context<E>; slug: string; role: "presenter" | "follower" }): MaybePromise<boolean>;
   session?(input: { c: Context<E>; slug: string }): string;
   follow?: boolean;
+  /**
+   * Rewrites the remote control URL shown as a QR code on the presenter page, for
+   * example to use a LAN or tunnel host in development or to append a short-lived
+   * sign-in token. Receives the absolute same-origin URL.
+   */
+  url?(input: { c: Context<E>; slug: string; url: string }): MaybePromise<string>;
 }
 
 /** Client island script delivery. */
@@ -559,9 +565,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
           mountPath,
           presenterStateQuery: paginationQueryFromRequest(c),
           duration: options.presenter === false ? undefined : options.presenter?.duration,
-          remote: Boolean(
-            options.remote?.namespace({ c }) && (await options.remote.authorize({ c, slug, role: "presenter" })),
-          ),
+          ...(await resolvePresenterRemote(c, options.remote, slug)),
           style: options.style,
           components: options.components,
           document,
@@ -873,4 +877,18 @@ function escapeHtml(value: string): string {
 function formatErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   return String(error);
+}
+
+async function resolvePresenterRemote<E extends Env>(
+  c: Context<E>,
+  remote: DeckRemoteOptions<E> | undefined,
+  slug: string,
+): Promise<{ remote: boolean; remoteUrl?: string }> {
+  if (!remote?.namespace({ c }) || !(await remote.authorize({ c, slug, role: "presenter" }))) return { remote: false };
+  const url = new URL(c.req.url);
+  url.pathname = url.pathname.replace(/\/presenter\/?$/, "/remote");
+  url.searchParams.delete("slide");
+  url.searchParams.delete("step");
+  const absolute = url.toString();
+  return { remote: true, remoteUrl: remote.url ? await remote.url({ c, slug, url: absolute }) : absolute };
 }

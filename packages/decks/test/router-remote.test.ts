@@ -89,4 +89,31 @@ describe("remote socket route", () => {
       (await app({ namespace: () => namespace, authorize: () => false }).request("/slides/deck1/remote")).status,
     ).toBe(403);
   });
+
+  it("shows a QR code for the remote page on the presenter page, rewritable by the app", async () => {
+    const namespace = {} as DurableObjectNamespace;
+    const presenter = await (
+      await app({ namespace: () => namespace, authorize: () => true }).request(
+        "https://talk.example/slides/deck1/presenter?lang=ja&slide=2&step=1",
+      )
+    ).text();
+    expect(presenter).toContain('popovertarget="hono-decks-remote-qr"');
+    expect(presenter).toContain('<div id="hono-decks-remote-qr" class="hono-decks-remote-qr" popover><svg role="img"');
+    expect(presenter).toContain('href="https://talk.example/slides/deck1/remote?lang=ja"');
+    expect(presenter).not.toMatch(/<[^>]+ style="/);
+    const rewritten = await (
+      await app({
+        namespace: () => namespace,
+        authorize: () => true,
+        url: ({ url, slug }) => `${url.replace("talk.example", "192.168.0.10:8787")}&room=${slug}`,
+      }).request("https://talk.example/slides/deck1/presenter")
+    ).text();
+    expect(rewritten).toContain('href="https://192.168.0.10:8787/slides/deck1/remote&amp;room=deck1"');
+    const follower = await (
+      await app({ namespace: () => namespace, authorize: ({ role }) => role === "follower" }).request(
+        "/slides/deck1/presenter",
+      )
+    ).text();
+    expect(follower).not.toContain("hono-decks-remote-qr");
+  });
 });
