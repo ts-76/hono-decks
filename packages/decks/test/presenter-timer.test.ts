@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { Hono } from "hono";
 import { toDeckFrontmatter, addUnknownFrontmatterWarnings } from "../src/deck/frontmatter";
 import { formatTalkTime, talkPace } from "../src/renderer/presentation-page";
+import { epochNow, formatClock } from "../src/shared/talk-time";
 import { decksRouter } from "../src/server/router";
 import { manifestDeckSource } from "../src/source/manifest-source";
 import { deck } from "./support/router-fixtures";
@@ -58,5 +59,29 @@ describe("presenter duration", () => {
     const html = await (await new Hono().route("/a", decksRouter({ source })).request("/a/deck1/presenter")).text();
     expect(html).toContain("const talkPace = function talkPace(");
     expect(html).toContain("grid-template-rows:auto auto 1fr");
+  });
+
+  it("reads time from Temporal when available and falls back to Date", () => {
+    vi.stubGlobal("Temporal", {
+      Now: {
+        instant: () => ({ epochMilliseconds: 42 }),
+        plainTimeISO: () => ({ toLocaleString: (_locale?: string, _options?: object) => "12:34:56" }),
+      },
+    });
+    try {
+      expect(epochNow()).toBe(42);
+      expect(formatClock("ja")).toBe("12:34:56");
+      expect(epochNow.toString()).toContain("Temporal");
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(1_000);
+      expect(epochNow()).toBe(1_000);
+      expect(formatClock("en-US")).toMatch(/\d{1,2}:\d{2}:\d{2}/);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

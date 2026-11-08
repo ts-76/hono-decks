@@ -27,3 +27,27 @@ export function formatTalkTime(totalSeconds: number): string {
   const head = hours ? `${hours}:${String(minutes).padStart(2, "0")}` : String(minutes).padStart(2, "0");
   return `${head}:${String(rest).padStart(2, "0")}`;
 }
+
+/**
+ * Current time in epoch milliseconds from the Temporal API when the runtime has it
+ * (browsers, and Workers with the `temporal` compatibility flag), else `Date.now()`.
+ * Both read the same system clock; Temporal is preferred as the standard API.
+ * Embedded into the presenter and remote scripts, so keep it self-contained.
+ */
+export function epochNow(): number {
+  const temporal = (globalThis as { Temporal?: { Now: { instant(): { epochMilliseconds: number } } } }).Temporal;
+  return temporal ? temporal.Now.instant().epochMilliseconds : Date.now();
+}
+
+/** Local wall-clock time for display, via `Temporal.Now.plainTimeISO()` when available. */
+export function formatClock(locale?: string): string {
+  const temporal = (
+    globalThis as {
+      Temporal?: { Now: { plainTimeISO(): { toLocaleString(locale?: string, options?: object): string } } };
+    }
+  ).Temporal;
+  const options = { hour: "2-digit", minute: "2-digit", second: "2-digit" };
+  return temporal
+    ? temporal.Now.plainTimeISO().toLocaleString(locale, options)
+    : new Date().toLocaleTimeString(locale, options as Intl.DateTimeFormatOptions);
+}

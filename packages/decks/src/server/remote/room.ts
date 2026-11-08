@@ -1,3 +1,4 @@
+import { epochNow } from "../../shared/talk-time";
 import { parseRemoteMessage } from "../../shared/remote-protocol";
 
 interface SocketAttachment {
@@ -47,21 +48,21 @@ export class DeckRemoteRoom {
     await this.ctx.storage.deleteAlarm();
     let position = await this.ctx.storage.get<StoredPosition>("position");
     if (position && position.index >= slideCount) {
-      position = { index: 0, stepIndex: 0, updatedAt: Date.now() };
+      position = { index: 0, stepIndex: 0, updatedAt: epochNow() };
       await this.ctx.storage.put("position", position);
     }
     await this.ctx.storage.put("slideCount", slideCount);
     // An empty room adopts the first presenter's position instead of resetting it to slide 1.
     server.send(JSON.stringify(position ? { type: "state", ...position } : { type: "empty" }));
     const timer = role === "presenter" ? await this.ctx.storage.get<StoredTimer>("timer") : undefined;
-    if (timer) server.send(timerMessage(timer, Date.now()));
+    if (timer) server.send(timerMessage(timer, epochNow()));
     return new Response(null, { status: 101, webSocket: client });
   }
 
   async webSocketMessage(socket: WebSocket, input: string | ArrayBuffer): Promise<void> {
     const attachment = socket.deserializeAttachment() as SocketAttachment | null;
     if (!attachment || attachment.role !== "presenter") return;
-    const now = Date.now();
+    const now = epochNow();
     if (now - attachment.windowStart >= 1000) {
       attachment.windowStart = now;
       attachment.messages = 0;
@@ -137,7 +138,7 @@ export class DeckRemoteRoom {
 
   private async scheduleCleanup(closed: WebSocket): Promise<void> {
     if (this.ctx.getWebSockets().some((peer) => peer !== closed)) return;
-    await this.ctx.storage.setAlarm(Date.now() + this.idleTimeoutMs);
+    await this.ctx.storage.setAlarm(epochNow() + this.idleTimeoutMs);
   }
 }
 
