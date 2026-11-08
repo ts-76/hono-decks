@@ -78,3 +78,45 @@ Store bearer tokens as Wrangler secrets rather than plain `vars` values.
 [Open the example with Browser Run configured →](https://github.com/ts-76/hono-decks/tree/main/examples/basic)
 
 </section>
+
+<section id={"remote-control"}>
+
+## Cross-device presentation control
+
+Export `DeckRemoteRoom` from your Worker entry and add a binding and migration. This class must be reachable only through the router; do not expose its trusted internal headers directly.
+
+```ts
+export { DeckRemoteRoom } from "hono-decks/remote";
+```
+
+```jsonc
+{
+  "durable_objects": { "bindings": [{ "name": "ROOMS", "class_name": "DeckRemoteRoom" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["DeckRemoteRoom"] }]
+}
+```
+
+For example, store a random presenter token with `wrangler secret put PRESENTER_TOKEN`. After authentication, your app may issue it as an HttpOnly, Secure, SameSite=Strict cookie named `presenter`; never put the secret in source or `vars`. The following assumes the app has already issued that cookie over HTTPS. Protect presenter and other note-bearing routes separately.
+
+```ts
+import { getCookie } from "hono/cookie";
+import { createDecks } from "#decks";
+
+type AppEnv = { Bindings: { ROOMS: DurableObjectNamespace; PRESENTER_TOKEN: string } };
+const presenterAllowed = (c: import("hono").Context<AppEnv>) => {
+  const actual = new TextEncoder().encode(getCookie(c, "presenter") ?? "");
+  const expected = new TextEncoder().encode(c.env.PRESENTER_TOKEN ?? "");
+  return expected.length > 0 && actual.length === expected.length && crypto.subtle.timingSafeEqual(actual, expected);
+};
+export const decks = createDecks<AppEnv>({
+  presenter: { enabled: ({ c }) => presenterAllowed(c) },
+  remote: {
+    namespace: ({ c }) => c.env.ROOMS,
+    authorize: ({ c, role }) => role === "follower" || presenterAllowed(c),
+  },
+});
+```
+
+Followers may see live positions in this public example. Grant presenter only to trusted users: presenters can control the room, and the remote page contains notes. The socket sends no notes, validates messages, caps them at 1 KB and limits each connection. `remote.authorize` does not secure other routes such as print. Use HTTPS and a strict CSP with `connect-src` permitting same-origin WebSockets (`'self'` or explicit `wss:`/`ws:` as required by browsers). Keep the presenter page open to execute relative commands. The local-only `fixtures/remote-worker` is for testing and deliberately allows everyone.
+
+</section>

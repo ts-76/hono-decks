@@ -95,6 +95,7 @@ describe("package build metadata", () => {
         types: "./dist/client.d.ts",
         import: "./dist/client.js",
       },
+      "./remote": { types: "./dist/remote.d.ts", import: "./dist/remote.js" },
       "./node": {
         types: "./dist/node.d.ts",
         import: "./dist/node.js",

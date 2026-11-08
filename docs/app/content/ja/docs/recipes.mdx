@@ -78,3 +78,45 @@ Bearerトークンを使う場合は`vars`へ直書きせず、Wranglerのsecret
 [Browser Runを組み込んだサンプルを見る →](https://github.com/ts-76/hono-decks/tree/main/examples/basic)
 
 </section>
+
+<section id={"remote-control"}>
+
+## 別の端末からの操作と追従
+
+Worker のエントリから `DeckRemoteRoom` をエクスポートし、binding と migration を追加します。信頼済みヘッダーを外部に公開せず、ルーター経由でアクセスしてください。
+
+```ts
+export { DeckRemoteRoom } from "hono-decks/remote";
+```
+
+```jsonc
+{
+  "durable_objects": { "bindings": [{ "name": "ROOMS", "class_name": "DeckRemoteRoom" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["DeckRemoteRoom"] }]
+}
+```
+
+例えば、ランダムな発表者トークンを `wrangler secret put PRESENTER_TOKEN` で保存します。認証後、アプリから HttpOnly・Secure・SameSite=Strict の `presenter` Cookie を発行できます。秘密値をソースや `vars` に書かないでください。次の例は、HTTPS 経由で Cookie を発行済みであることを前提とします。発表者画面などノートを含む経路も別途保護してください。
+
+```ts
+import { getCookie } from "hono/cookie";
+import { createDecks } from "#decks";
+
+type AppEnv = { Bindings: { ROOMS: DurableObjectNamespace; PRESENTER_TOKEN: string } };
+const presenterAllowed = (c: import("hono").Context<AppEnv>) => {
+  const actual = new TextEncoder().encode(getCookie(c, "presenter") ?? "");
+  const expected = new TextEncoder().encode(c.env.PRESENTER_TOKEN ?? "");
+  return expected.length > 0 && actual.length === expected.length && crypto.subtle.timingSafeEqual(actual, expected);
+};
+export const decks = createDecks<AppEnv>({
+  presenter: { enabled: ({ c }) => presenterAllowed(c) },
+  remote: {
+    namespace: ({ c }) => c.env.ROOMS,
+    authorize: ({ c, role }) => role === "follower" || presenterAllowed(c),
+  },
+});
+```
+
+この例では閲覧者はライブ位置を見ることができます。presenter 権限は信頼できる人だけに付与してください。発表者は操作でき、リモコン画面にはノートが含まれます。ソケットはノートを送信せず、メッセージを検証し、1 KB と接続ごとの頻度を制限します。`remote.authorize` は印刷など他の経路を保護しません。HTTPS を使い、CSP の `connect-src` で同一オリジンの WebSocket を許可してください（ブラウザーに応じて `'self'` または `wss:`/`ws:`）。Next と Previous の処理には発表者画面が必要です。`fixtures/remote-worker` は全員を許可するローカル試験専用です。
+
+</section>

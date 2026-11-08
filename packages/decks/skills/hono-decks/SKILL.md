@@ -17,6 +17,7 @@ Use this skill as a router. Inspect the application and the request, then read o
 | Create or improve `theme.css`, layout, typography, visual quality, overflow | [Styling](references/styling.md) |
 | Add to an existing Hono, HonoX, Vite, Wrangler, or Worker app; configure routes, presenter, or external embed | [Integrating](references/integrating.md) |
 | Serve deck images or other local assets from R2 | [R2 assets](references/r2-assets.md) plus [Integrating](references/integrating.md) |
+| Add cross-device presentation control or audience follow | [Remote control](references/remote-control.md) |
 | Generate PDF or PNG with Cloudflare Browser Rendering | [Browser export](references/browser-export.md) plus [Integrating](references/integrating.md) |
 | Generate OGP/social images | [OGP generation](references/ogp-generation.md) |
 | Use a manifest, database, remote store, custom `DeckSource`, or low-level router | [Custom sources](references/custom-sources.md) |

@@ -1,3 +1,4 @@
+import { renderRemotePage } from "./remote/ui";
 import { Hono } from "hono";
 import type { Context, Env, MiddlewareHandler } from "hono";
 import { raw } from "hono/html";
@@ -124,6 +125,21 @@ export interface DecksRouterOptions<E extends Env = any> {
   viewer?: DeckViewerOptions<E>;
   presenter?: false | DecksRouterPresenterOptions<E>;
   export?: false | DeckExportOptions<E>;
+  remote?: DeckRemoteOptions<E>;
+}
+
+/** Structural binding shape accepted from a Cloudflare Durable Object namespace. */
+export interface DeckRemoteNamespace {
+  idFromName(name: string): any;
+  get(id: any): { fetch(request: Request): Promise<Response> };
+}
+
+/** Application-owned authorization and Durable Object binding for live rooms. */
+export interface DeckRemoteOptions<E extends Env = any> {
+  namespace(input: { c: Context<E> }): DeckRemoteNamespace | undefined;
+  authorize(input: { c: Context<E>; slug: string; role: "presenter" | "follower" }): MaybePromise<boolean>;
+  session?(input: { c: Context<E>; slug: string }): string;
+  follow?: boolean;
 }
 
 /** Client island script delivery. */
@@ -337,6 +353,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
           clientEntry,
           dev,
           liveReloadPath: dev ? options.liveReloadPath : undefined,
+          speakerNotes: options.remote ? false : undefined,
           document,
         }),
       );
@@ -442,6 +459,41 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
     });
   }
 
+  router.get("/:slug/remote", async (c) => {
+    const remote = options.remote;
+    if (!remote || !remote.namespace({ c })) return c.notFound();
+    const slug = c.req.param("slug");
+    const deck = await options.source.getCompiledDeck(c, slug);
+    const dev = await isDevEnabled(c, options);
+    if (!deck || (!dev && deck.meta.draft)) return c.notFound();
+    if (!(await remote.authorize({ c, slug, role: "presenter" }))) return c.text("Forbidden", 403);
+    const mountPath = resolveMountPath(c.req.path, `/${slug}/remote`);
+    const document = await resolveRouterDocument(c, options, "presenter", mountPath, deck);
+    c.header("Cache-Control", "private, no-store");
+    return c.html(renderRemotePage(deck, document));
+  });
+
+  router.get("/:slug/remote/socket", async (c) => {
+    const remote = options.remote;
+    const namespace = remote?.namespace({ c });
+    if (!remote || !namespace) return c.notFound();
+    const slug = c.req.param("slug");
+    const deck = await options.source.getCompiledDeck(c, slug);
+    if (!deck || (!(await isDevEnabled(c, options)) && deck.meta.draft)) return c.notFound();
+    if (c.req.header("upgrade")?.toLowerCase() !== "websocket") return c.text("Upgrade required", 426);
+    const role = c.req.query("role");
+    if (role !== "presenter" && role !== "follower") return c.text("Forbidden", 403);
+    const origin = c.req.header("origin");
+    if ((origin && origin !== new URL(c.req.url).origin) || !(await remote.authorize({ c, slug, role }))) {
+      return c.text("Forbidden", 403);
+    }
+    const headers = new Headers(c.req.raw.headers);
+    headers.set("X-Hono-Decks-Role", role);
+    headers.set("X-Hono-Decks-Slide-Count", String(deck.slides.length));
+    const request = new Request(c.req.raw, { headers });
+    return namespace.get(namespace.idFromName(remote.session?.({ c, slug }) ?? slug)).fetch(request);
+  });
+
   router.get("/:slug/presentation", async (c) => {
     const slug = c.req.param("slug");
     const deck = await options.source.getCompiledDeck(c, slug);
@@ -492,12 +544,16 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
     }
     try {
       const document = await resolveRouterDocument(c, options, "presenter", mountPath, deck);
+      c.header("Cache-Control", "private, no-store");
       return c.html(
         await renderPresenterPageAsync({
           deck,
           mountPath,
           presenterStateQuery: paginationQueryFromRequest(c),
           duration: options.presenter === false ? undefined : options.presenter?.duration,
+          remote: Boolean(
+            options.remote?.namespace({ c }) && (await options.remote.authorize({ c, slug, role: "presenter" })),
+          ),
           style: options.style,
           components: options.components,
           document,
@@ -528,6 +584,10 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
         deck,
         mountPath,
         viewerStateQuery: paginationQueryFromRequest(c),
+        remote:
+          options.remote?.namespace({ c }) && (await options.remote.authorize({ c, slug, role: "follower" }))
+            ? { follow: options.remote.follow !== false }
+            : undefined,
         viewer: {
           ...options.viewer,
           controls: await resolveViewerControls(c, options, deck, slug, mountPath),

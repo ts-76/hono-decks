@@ -12,6 +12,7 @@ import {
 import { renderJsxValue } from "../renderer/jsx-renderer";
 import type { DeckExportOptions, DeckViewerExportPaths } from "./browser-export";
 import { resolveAuthorizedExportPaths } from "./browser-export";
+import { remoteIndicator, remoteStyle, renderRemoteScript } from "./remote/ui";
 import { renderViewerScript } from "./viewer-script";
 import { baseViewerStyle, embeddedViewerStyle } from "./viewer-style";
 import { composeStylesheet } from "../renderer/style-layers";
@@ -319,6 +320,7 @@ export async function renderDeckViewerPage<E extends Env = any>(input: {
   deck: CompiledDeck;
   mountPath: string;
   viewerStateQuery?: string;
+  remote?: { follow: boolean };
   viewer?: DeckViewerOptions<E>;
   availablePages?: Partial<DeckViewerAvailablePages>;
   exportOptions?: false | DeckExportOptions<E>;
@@ -402,6 +404,7 @@ export async function renderDeckViewerPage<E extends Env = any>(input: {
 <body>
   ${await renderJsxValue(content)}
   ${renderViewerScript(document.nonce)}
+  ${input.remote ? `${remoteStyle(document.nonce)}${remoteIndicator()}${renderRemoteScript("viewer", document.nonce, input.remote.follow)}` : ""}
 </body>
 </html>`;
 }

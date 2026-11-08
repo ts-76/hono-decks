@@ -30,6 +30,8 @@ export type {
   DeckIndexPageOptions,
   DeckIndexRenderInput,
   DeckPageMeta,
+  DeckRemoteNamespace,
+  DeckRemoteOptions,
   DeckPresenterEnabledInput,
   DeckPresenterEnabledResolver,
   DeckPresenterViewerControlOptions,

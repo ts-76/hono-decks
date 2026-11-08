@@ -6,6 +6,7 @@ const entries = {
   cli: "src/cli.ts",
   client: "src/client.ts",
   node: "src/node.ts",
+  remote: "src/remote.ts",
   vite: "src/vite.ts",
   "adapters/hono-markdown": "src/adapters/hono-markdown.ts",
   honox: "src/honox.ts",
