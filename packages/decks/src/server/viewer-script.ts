@@ -1,4 +1,5 @@
 export const VIEWER_STATE_MESSAGE_TYPE = "hono-decks:state";
+export const VIEWER_KEY_MESSAGE_TYPE = "hono-decks:key";
 export const VIEWER_COMMAND_MESSAGE_TYPE = "hono-decks:command";
 
 export function renderViewerScript(nonce?: string): string {
@@ -19,7 +20,13 @@ export function renderViewerScript(nonce?: string): string {
     const position = root.querySelector("[data-slide-position]");
     const viewerLinks = Array.from(root.querySelectorAll("[data-hono-decks-viewer-link]"));
     const overviewLinks = Array.from(root.querySelectorAll("[data-hono-decks-overview-link]"));
-    const printPath = root.getAttribute("data-hono-decks-print-path") || "";
+    const panel = root.querySelector("[data-hono-decks-toc-panel]");
+    const tocButton = root.querySelector("[data-action='toc']");
+    const help = root.querySelector("[data-hono-decks-help]");
+    const pendingOutput = root.querySelector("[data-hono-decks-pending-number]");
+    const overviewPath = root.getAttribute("data-hono-decks-overview-path");
+    const autoHideDelay = Number(root.getAttribute("data-hono-decks-autohide"));
+    let currentIndex = 0, slideCount = 1, pending = "", hideTimer, tocRestoreFocus, helpRestoreFocus, pointerOverStage = false;
 
     const positionText = position?.querySelector(".hono-decks-progress-text") ?? position;
 
@@ -109,30 +116,79 @@ export function renderViewerScript(nonce?: string): string {
       if (event.source !== iframe?.contentWindow) return;
       if (event.origin !== frameOrigin) return;
       const message = event.data;
-      if (!message || message.type !== ${JSON.stringify(VIEWER_STATE_MESSAGE_TYPE)}) return;
+      if (!message) return;
+      if (message.type === "hono-decks:activity") { if (message.pointer) pointerOverStage = true; activity(); return; }
+      if (message.type === ${JSON.stringify(VIEWER_KEY_MESSAGE_TYPE)}) {
+        if (document.activeElement !== iframe) return;
+        handleKeydown({ ...message, target: iframe, preventDefault() {} });
+        return;
+      }
+      if (message.type !== ${JSON.stringify(VIEWER_STATE_MESSAGE_TYPE)}) return;
+      currentIndex = message.index; slideCount = message.slideCount;
+      root.querySelectorAll("[data-hono-decks-toc] [data-slide-index]").forEach((button) => {
+        if (Number(button.getAttribute("data-slide-index")) === currentIndex) {
+          button.setAttribute("aria-current", "true");
+          if (panel && !panel.hidden && panel.contains(button)) button.scrollIntoView({ block: "nearest" });
+        } else button.removeAttribute("aria-current");
+      });
       writeViewerPaginationState(message);
       root.setAttribute("data-step-index", String(message.stepIndex ?? 0));
       root.setAttribute("data-step-count", String(message.stepCount ?? 0));
       writeProgress(message.index, message.slideCount);
     }
 
+    function activity() {
+      root.removeAttribute("data-hono-decks-controls-hidden");
+      clearTimeout(hideTimer);
+      if (!autoHideDelay || !pointerOverStage) return;
+      hideTimer = setTimeout(() => {
+        const controls = root.querySelector("[data-hono-decks-viewer-controls]");
+        if (pointerOverStage && (!panel || panel.hidden) && !help?.open && !controls?.matches(":focus-within") && !root.querySelector(".hono-decks-mobile-navigation:focus") && !document.querySelector(".hono-decks-live:focus-within")) root.setAttribute("data-hono-decks-controls-hidden", "true");
+      }, autoHideDelay);
+    }
+    function toggleToc(open = panel?.hidden) {
+      if (!panel) return;
+      if (open) { tocRestoreFocus = document.activeElement; panel.hidden = false; tocButton?.setAttribute("aria-expanded", "true"); panel.querySelector("[aria-current], button")?.focus(); }
+      else { panel.hidden = true; tocButton?.setAttribute("aria-expanded", "false"); tocRestoreFocus?.focus(); }
+      activity();
+    }
     function handleKeydown(event) {
-      if (event.defaultPrevented) return;
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "p" && printPath) {
-        event.preventDefault();
-        const printUrl = new URL(printPath, window.location.href);
-        printUrl.searchParams.set("autoprint", "1");
-        window.location.assign(printUrl);
+      activity();
+      if (event.defaultPrevented || help?.open) return;
+      const target = event.target;
+      if (target instanceof HTMLElement && (target.isContentEditable || target.closest("input,textarea,select,[role=textbox]"))) return;
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.shiftKey && event.key !== " " && event.key !== "?") return;
+      if (target instanceof HTMLElement && target.closest("button,a[href],[role=button],[role=slider]") && event.key === " ") return;
+      if (event.key === "Escape") {
+        if (panel && !panel.hidden) toggleToc(false);
+        pending = ""; if (pendingOutput) pendingOutput.textContent = "";
         return;
       }
-      if (event.metaKey || event.ctrlKey || event.altKey) return;
-      const target = event.target;
-      if (target instanceof HTMLElement && (target.isContentEditable || target.closest("input,textarea,select,button,a[href],[role=textbox],[role=button],[role=slider]"))) return;
-      if (["ArrowRight", "ArrowLeft", " "].includes(event.key)) event.preventDefault();
-      if (event.key === "ArrowRight" || event.key === " ") sendCommand("next");
-      if (event.key === "ArrowLeft") sendCommand("previous");
+      if (/^[0-9]$/.test(event.key)) { pending = (pending + event.key).slice(-6); if (pendingOutput) pendingOutput.textContent = pending; event.preventDefault(); return; }
+      if (event.key === "Enter" && pending) { sendCommand("goTo", Math.min(Math.max(Number(pending) - 1, 0), slideCount - 1)); pending = ""; if (pendingOutput) pendingOutput.textContent = ""; event.preventDefault(); return; }
+      if (["ArrowRight", "ArrowLeft", " ", "PageDown", "PageUp", "Home", "End"].includes(event.key)) event.preventDefault();
+      if (event.key === "ArrowRight" || event.key === "PageDown" || (event.key === " " && !event.shiftKey)) sendCommand("next");
+      if (event.key === "ArrowLeft" || event.key === "PageUp" || (event.key === " " && event.shiftKey)) sendCommand("previous");
+      if (event.key === "Home") sendCommand("goTo", 0);
+      if (event.key === "End") sendCommand("goTo", slideCount - 1);
       if (event.key === "f") void toggleViewerFullscreen();
+      if (event.key === "t" && panel) toggleToc();
+      if (event.key === "o" && overviewPath) { const url = new URL(overviewPath, window.location.href); url.searchParams.set("slide", String(currentIndex + 1)); window.location.assign(url); }
+      if (event.key === "?" && help) { helpRestoreFocus = document.activeElement; help.showModal(); }
     }
+    viewport?.addEventListener("pointerenter", () => { pointerOverStage = true; activity(); });
+    viewport?.addEventListener("pointerleave", () => { pointerOverStage = false; activity(); });
+    root.addEventListener("pointermove", activity);
+    root.addEventListener("touchstart", activity, { passive: true });
+    root.addEventListener("focusin", activity);
+    root.addEventListener("focusout", activity);
+    root.addEventListener("pointerleave", () => { pointerOverStage = false; activity(); });
+    iframe?.addEventListener("load", activity);
+    tocButton?.addEventListener("click", () => toggleToc());
+    root.querySelector("[data-hono-decks-toc-close]")?.addEventListener("click", () => toggleToc(false));
+    root.querySelector("[data-hono-decks-help-close]")?.addEventListener("click", () => help?.close());
+    help?.addEventListener("close", () => { helpRestoreFocus?.focus(); activity(); });
 
     root.querySelectorAll("[data-action='previous']").forEach((control) => {
       control.addEventListener("click", () => sendCommand("previous"));
@@ -153,10 +209,12 @@ export function renderViewerScript(nonce?: string): string {
       control.addEventListener("click", () => {
         const index = Number(control.getAttribute("data-slide-index"));
         if (Number.isFinite(index)) sendCommand("goTo", index);
+        if (panel?.contains(control) && window.matchMedia("(max-width: 700px)").matches) toggleToc(false);
       });
     });
     window.addEventListener("message", handleMessage);
     controllers.set(root, { handleKeydown, unlockViewerOrientation });
+    activity();
   }
 
   if (!runtime.globalInitialized) {

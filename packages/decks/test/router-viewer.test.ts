@@ -134,7 +134,7 @@ describe("decksRouter viewer page, controls, and social metadata", () => {
     expect(html).toContain('root.setAttribute("data-hono-decks-initialized", "true")');
     expect(html).toContain("document.activeElement?.closest?.");
     expect(first.embedHtml).toContain("data-hono-decks-toc");
-    expect(second.embedHtml).not.toContain("data-hono-decks-toc");
+    expect(second.embedHtml).not.toContain('data-hono-decks-toc-panel="true"');
   });
 
   it("passes request context to viewer rendering and supports a request-aware document language and head", async () => {

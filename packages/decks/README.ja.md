@@ -597,3 +597,6 @@ layout: two-cols
 Cloudflare Workers では `hono-decks/remote` を使ってライブ同期を有効にできます。Worker から `DeckRemoteRoom` をエクスポートし、Durable Object の binding と `remote.namespace`、`remote.authorize` を設定します。ルーム名の初期値はデッキの slug です。`session` で変更でき、`follow: false` にすると閲覧者は追従を停止した状態で開始します。発表者画面と `/:slug/remote` から操作でき、許可された閲覧者は発表位置への追従を停止・再開できます。Next と Previous の処理には発表者画面を開いておいてください。
 
 WebSocket の接続ごとに認可します。presenter は操作でき、follower が受け取るのは位置情報だけです。リモコン画面には発表者だけに許可するノートが含まれ、ソケットには位置とコマンドだけを送ります。メッセージは検証し、1 KB と接続ごとの送信頻度を制限します。異なるオリジンからのブラウザー接続は拒否します。remote の認可はデッキ全体の保護ではありません。発表者画面などノートを含む経路も別途保護してください。HTTPS と安全なセッション Cookie を使い、認証済みコンテンツをキャッシュしないようにします。CSP の `connect-src` には必要に応じて `wss:` または `ws:` を許可してください。同一オリジンはブラウザーによっては `'self'` で許可されます。binding、migration、認可の例はレシピを参照してください。
+
+
+ビューアーでは、左右矢印、Page Up / Page Down、Space / Shift + Space、Home、End でスライドを移動できます。`F` で全画面、`O` でオーバービュー（有効な場合）、`T` で目次、`?` でショートカット一覧を開きます。目次ボタンからスライドを選択でき、Esc で目次やヘルプを閉じます。スライド上で約2.5秒操作がないとコントロールが隠れ、操作すると再表示されます。常に表示するには `viewer.controls.autoHide: false` を指定します。

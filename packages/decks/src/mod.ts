@@ -1,3 +1,4 @@
+export { VIEWER_MESSAGES } from "./server/viewer";
 export { defineDecksConfig } from "./server/define-decks";
 export type {
   ConfiguredDecks,
