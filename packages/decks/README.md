@@ -590,3 +590,7 @@ The presentation prepares images and CSS backgrounds for the next slide, reuses 
 ## Presenter timer
 
 Set `duration: 20m` in deck frontmatter for a target (also `1h30m`, `90s`, or a number of minutes). Override it with `createDecks({ presenter: { duration: 1200 } })`, in seconds, or use the same string syntax. The timer starts on navigation or with Start; press `T` to start or pause it. Reset clears it. The presenter tab retains its elapsed and paused state across reloads. With a target, the timer also shows the remaining time and your pace: each slide gets an equal share of the duration, and the timer says whether you are on pace, ahead, or behind that share.
+
+## Development overflow warnings
+
+In development, the active slide is checked for elements outside the 1920 × 1080 canvas and for content clipped by `overflow: hidden` or `clip`. Findings appear in a warning panel and the affected elements are outlined. Checks rerun after slide changes, resizing, image and font loading, and live updates. Add `data-hono-decks-allow-overflow` to an intentionally overflowing element to exclude its subtree. Decorative `aria-hidden="true"` subtrees are also ignored. Scrollable containers are treated as clipping boundaries; visual effects such as shadows are not measured. Production and print pages omit the checker.

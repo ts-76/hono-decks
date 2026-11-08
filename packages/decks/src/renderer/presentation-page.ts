@@ -1,4 +1,5 @@
 import { parseDuration } from "../deck/duration";
+import { renderOverflowChecker } from "./overflow-checker";
 import type { CompiledDeck } from "../deck/model";
 import type { SlideComponentInput, SlideComponentRegistry } from "./jsx-renderer";
 import { renderCompiledDeck, renderCompiledDeckAsync, renderCompiledSlideAsync } from "./compiled-render";
@@ -64,6 +65,7 @@ export function renderCompiledDeckPage(input: {
   mountPath: string;
   style?: string;
   liveReloadPath?: string;
+  dev?: boolean;
   components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
   clientEntry?: string;
   printPreview?: boolean;
@@ -96,6 +98,7 @@ export function renderCompiledDeckPage(input: {
     speakerNotes: input.speakerNotes,
   })}
   ${input.printPreview ? renderPrintPreviewScript(document.nonce) : renderPresentationScript(document.nonce)}
+  ${!input.printPreview && input.dev ? renderOverflowChecker(document.nonce) : ""}
   ${!input.printPreview && input.liveReloadPath ? renderLiveReloadScript(input.liveReloadPath, document.nonce) : ""}
   ${!input.printPreview && input.clientEntry ? renderClientEntryScript(input.clientEntry, document.nonce) : ""}
 </body>
@@ -107,6 +110,7 @@ export async function renderCompiledDeckPageAsync(input: {
   mountPath: string;
   style?: string;
   liveReloadPath?: string;
+  dev?: boolean;
   components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
   clientEntry?: string;
   printPreview?: boolean;
@@ -139,6 +143,7 @@ export async function renderCompiledDeckPageAsync(input: {
     speakerNotes: input.speakerNotes,
   })}
   ${input.printPreview ? renderPrintPreviewScript(document.nonce) : renderPresentationScript(document.nonce)}
+  ${!input.printPreview && input.dev ? renderOverflowChecker(document.nonce) : ""}
   ${!input.printPreview && input.liveReloadPath ? renderLiveReloadScript(input.liveReloadPath, document.nonce) : ""}
   ${!input.printPreview && input.clientEntry ? renderClientEntryScript(input.clientEntry, document.nonce) : ""}
 </body>

@@ -159,3 +159,7 @@ Inspect every slide in the viewer and check:
 - Fire states remain understandable at each reveal step
 - print preview contains every slide and does not depend on live embeds
 - custom motion has a reduced-motion fallback
+
+### Development overflow warnings
+
+In development, the active slide is checked for elements outside the 1920 × 1080 canvas and for content clipped by `overflow: hidden` or `clip`. Findings appear in a warning panel and the affected elements are outlined. Checks rerun after slide changes, resizing, image and font loading, and live updates. Add `data-hono-decks-allow-overflow` to an intentionally overflowing element to exclude its subtree. Decorative `aria-hidden="true"` subtrees are also ignored. Scrollable containers are treated as clipping boundaries; visual effects such as shadows are not measured. Production and print pages omit the checker.
