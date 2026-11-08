@@ -79,7 +79,9 @@ describe("remote socket route", () => {
     const presenter = await (await server.request("/slides/deck1/presenter")).text();
     expect(presenter).toContain('data-hono-decks-remote-runtime nonce="test-nonce"');
     expect(presenter).toContain('popovertarget="hono-decks-remote-qr"');
-    expect(presenter).toContain("<code data-remote-url>http://localhost/slides/deck1/remote</code>");
+    expect(presenter).toContain(
+      'href="http://localhost/slides/deck1/remote" target="_blank" rel="noopener" data-remote-url',
+    );
     expect(presenter).not.toContain("hono-decks-presenter-remote-link");
     const followerServer = app({ namespace: () => namespace, authorize: () => true });
     expect(await (await followerServer.request("/slides/deck1")).text()).toContain("data-hono-decks-remote-runtime");
@@ -103,8 +105,10 @@ describe("remote socket route", () => {
     expect(presenter).toContain('<div id="hono-decks-remote-qr" class="hono-decks-remote-qr" popover role="dialog"');
     expect(presenter).toContain('popovertargetaction="hide"');
     expect(presenter).toContain("data-remote-copy");
-    expect(presenter).not.toMatch(/<a [^>]*remote\?lang=ja/);
-    expect(presenter).toContain("<code data-remote-url>https://talk.example/slides/deck1/remote?lang=ja</code>");
+    expect(presenter).not.toContain(">https://talk.example");
+    expect(presenter).toContain(
+      'href="https://talk.example/slides/deck1/remote?lang=ja" target="_blank" rel="noopener" data-remote-url',
+    );
     expect(presenter).not.toMatch(/<[^>]+ style="/);
     const rewritten = await (
       await app({
@@ -113,9 +117,7 @@ describe("remote socket route", () => {
         url: ({ url, slug }) => `${url.replace("talk.example", "192.168.0.10:8787")}&room=${slug}`,
       }).request("https://talk.example/slides/deck1/presenter")
     ).text();
-    expect(rewritten).toContain(
-      "<code data-remote-url>https://192.168.0.10:8787/slides/deck1/remote&amp;room=deck1</code>",
-    );
+    expect(rewritten).toContain('href="https://192.168.0.10:8787/slides/deck1/remote&amp;room=deck1" target="_blank"');
     const follower = await (
       await app({ namespace: () => namespace, authorize: ({ role }) => role === "follower" }).request(
         "/slides/deck1/presenter",
