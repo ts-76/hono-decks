@@ -6,6 +6,7 @@ import { SiteHeader, SiteFooter, DisclosureButton } from "../site";
 import { ThemeScript } from "./theme-switch";
 import { DocsNavigation, TableOfContents } from "./docs-ui";
 import type { Locale } from "../i18n";
+import { SocialMetadata } from "./social-metadata";
 
 /** Consumer-owned honoxpress shell, integrated with the application's existing header and URLs. */
 export function DocsLayout({
@@ -40,6 +41,12 @@ export function DocsLayout({
           {current.title} — {config.name}
         </title>
         <meta name="description" content={current.description} />
+        <SocialMetadata
+          title={`${current.title} — ${config.name}`}
+          description={current.description ?? ""}
+          path={current.href}
+          locale={locale}
+        />
         <link href="/favicon.ico" rel="icon" sizes="any" />
         <link href="/favicon-32.png" rel="icon" type="image/png" sizes="32x32" />
         <link href="/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180" />

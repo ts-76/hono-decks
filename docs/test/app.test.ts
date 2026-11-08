@@ -15,6 +15,30 @@ import { Callout } from "../app/components/docs-content";
 const withoutSyntaxSpans = (html: string) => html.replace(/<\/?span\b[^>]*>/g, "");
 
 describe("HonoX documentation site", () => {
+  it.each(locales)("serves social metadata for home, guides and API in %s", async (locale) => {
+    for (const path of ["/", "/docs/presenter", "/api"]) {
+      const html = await (await app.request(`${path}?lang=${locale}&utm_source=share`)).text();
+      const meta = new Map(
+        [...html.matchAll(/<meta (?:name|property)="([^"]+)" content="([^"]*)"/g)].map((match) => [match[1], match[2]]),
+      );
+      expect(meta.get("og:title")).toBe(html.match(/<title>([^<]+)<\/title>/)?.[1]);
+      expect(meta.get("og:description")).toBe(meta.get("description"));
+      expect(meta.get("og:description")).toBeTruthy();
+      expect(meta.get("og:url")).toBe(`https://hono-decks.com${path}?lang=${locale}`);
+      expect(html).toContain(`rel="canonical" href="https://hono-decks.com${path}?lang=${locale}"`);
+      expect(meta.get("og:locale")).toBe(locale === "ja" ? "ja_JP" : "en_US");
+      expect(meta.get("og:image")).toBe("https://hono-decks.com/ogp.png");
+      expect(meta.get("og:image:width")).toBe("1200");
+      expect(meta.get("og:image:height")).toBe("630");
+      expect(meta.get("twitter:card")).toBe("summary_large_image");
+      expect(meta.get("twitter:image")).toBe(meta.get("og:image"));
+      expect(html.match(/property="og:image"/g)).toHaveLength(1);
+    }
+    const png = await readFile(new URL("../public/ogp.png", import.meta.url));
+    expect(png.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
+    expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1200, 630]);
+  });
+
   it("keeps every locale catalog aligned with the English source keys", () => {
     const sourceKeys = Object.keys(messages.en).sort();
 
