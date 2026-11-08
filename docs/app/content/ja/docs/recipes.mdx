@@ -83,64 +83,6 @@ Bearerトークンを使う場合は`vars`へ直書きせず、Wranglerのsecret
 
 ## 別の端末からの操作と追従
 
-Worker のエントリから `DeckRemoteRoom` をエクスポートし、binding と migration を追加します。信頼済みヘッダーを外部に公開せず、ルーター経由でアクセスしてください。
-
-```ts
-export { DeckRemoteRoom } from "hono-decks/remote";
-```
-
-```jsonc
-{
-  "durable_objects": { "bindings": [{ "name": "ROOMS", "class_name": "DeckRemoteRoom" }] },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["DeckRemoteRoom"] }]
-}
-```
-
-例えば、ランダムな発表者トークンを `wrangler secret put PRESENTER_TOKEN` で保存します。認証後、アプリから HttpOnly・Secure・SameSite=Strict の `presenter` Cookie を発行できます。
-
-秘密値をソースや `vars` に書かないでください。次の例はHTTPS 経由で Cookie を発行済みであることを前提とします。発表者画面などノートを含む経路も別途保護してください。
-
-```ts
-import { getCookie } from "hono/cookie";
-import { createDecks } from "#decks";
-
-type AppEnv = { Bindings: { ROOMS: DurableObjectNamespace; PRESENTER_TOKEN: string } };
-const presenterAllowed = (c: import("hono").Context<AppEnv>) => {
-  const actual = new TextEncoder().encode(getCookie(c, "presenter") ?? "");
-  const expected = new TextEncoder().encode(c.env.PRESENTER_TOKEN ?? "");
-  return expected.length > 0 && actual.length === expected.length && crypto.subtle.timingSafeEqual(actual, expected);
-};
-export const decks = createDecks<AppEnv>({
-  presenter: { enabled: ({ c }) => presenterAllowed(c) },
-  remote: {
-    namespace: ({ c }) => c.env.ROOMS,
-    authorize: ({ c, role }) => role === "follower" || presenterAllowed(c),
-  },
-});
-```
-
-この例では閲覧者も現在の発表位置を見ることができます。presenter 権限は信頼できる人だけに付与してください。この権限があると発表位置を操作でき、リモコン画面にはノートも表示されます。
-
-ソケットではノートを送信しません。メッセージを検証し、サイズを1 KBに制限するとともに、接続ごとの頻度も制限します。`remote.authorize` は印刷など他の経路を保護しません。
-
-HTTPS を使い、CSP の `connect-src` で同一オリジンの WebSocket を許可してください。ブラウザーに応じて `'self'` または `wss:`/`ws:` を指定してください。Next と Previous の処理には発表者画面が必要です。`fixtures/remote-worker` は全員を許可するローカル試験専用です。
-
-リモート操作の画面はスマートフォンを片手で使うことを想定しています。発表者ノートを画面いっぱいに表示し、親指の届く下部に大きな「次へ」と「前へ」、任意のスライドへ移動できるスライド一覧を置きます。
-
-画面上部には接続状態、発表位置、経過時間を表示します。発表時間を設定していれば、残り時間とペースも表示されます。タイマーは発表者画面の発表タイマーに連動し、開始・一時停止・リセットは発表者画面で行います。
-
-時刻は Temporal API(`Temporal.Now`)が使える環境ではこのAPIから取得し、未対応の環境では `Date.now()` を使います。Workers では `temporal` 互換性フラグで有効になります。互換性日付が2026-12-01以降なら既定で有効です。各端末は自分の時計で経過時間だけを測るため、発表者画面・ルーム・スマートフォンの時計のずれは表示に影響しません。
-
-リモート操作の画面を表示している間は Screen Wake Lock API で画面のスリープを防ぎ、対応端末ではタップ時に短く振動します。
-
-発表者画面の操作バーにある **QR** ボタンを押すと、`/:slug/remote` の絶対 URLを QR コードとリンクで表示します。URLには `lang` などのクエリも引き継がれます。スマートフォンで QR コードを読み取るだけで、リモート操作の画面を開けます。
-
-スマートフォン側も同じ発表者の認可を通る必要があります。Cookie でログインする構成では、`remote.url({ c, slug, url })` で有効期限の短い署名付きリンクを返してください。スマートフォンから `localhost` には接続できないため、開発中はこのフックで LAN のアドレスやトンネルのホストに置き換えられます。
-
-ルームは WebSocket Hibernation API を使うため、通信のないルームはメモリから退避され、実行時間の課金は発生しません。保存するのは現在の発表位置だけです。
-
-最後の接続が閉じるとアラームを設定し、1 時間以内に再接続がなければルームのストレージをすべて削除します。削除後は何も残りません。削除までの時間は`class Room extends DeckRemoteRoom { idleTimeoutMs = 10 * 60 * 1000 }` のようにサブクラスで変更できます。
-
-位置が保存されていないルームでは、スライド 1 に戻さず最初に接続した発表者の位置を引き継ぎます。
+発表者画面、タイマー、Durable Objectの設定、スマートフォンからの接続は[発表者画面とリモート操作](/docs/presenter?lang=ja#remote-control)にまとめています。
 
 </section>

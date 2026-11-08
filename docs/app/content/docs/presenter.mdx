@@ -1,0 +1,107 @@
+---
+title: "Presenter view and remote control"
+description: "Use the presenter view for notes and timing, and control slides from another device on Cloudflare Workers."
+order: 5
+---
+
+# Presenter view and remote control
+
+Use the presenter view for notes and timing, and control slides from another device on Cloudflare Workers.
+
+<section id={"presenter"}>
+
+## Open the presenter view
+
+Open `/:slug/presentation` for projection or screen sharing and `/:slug/presenter` for your own controls. Both URLs sit under the configured `mountPath`. For example, with `mountPath: "/decks"` and slug `launch`, open `/decks/launch/presenter`.
+
+The presenter view shows the next slide and speaker notes. See [authoring notes](/docs/authoring?lang=en#notes) for the syntax. UI labels follow `document.lang`. In apps configured with [language detection](/docs/security?lang=en#language), add `?lang=en` for English or `?lang=ja` for Japanese.
+
+</section>
+
+<section id={"timer"}>
+
+## Use the talk timer
+
+The timer does not start automatically. Use the start button or `T` to start, press `T` to pause, and use Reset to reset it. Elapsed time and the paused state survive a reload of the presenter tab.
+
+### Set a target duration
+
+Set `duration: 20m` in the deck frontmatter. Strings such as `1h30m` and `90s`, and numeric minutes, are also supported. Override it at runtime with `createDecks({ presenter: { duration: 1200 } })`; numeric runtime values are in seconds, and the same string formats work too.
+
+Open Settings below the timer and enter a target in minutes to override the configured duration for that presenter tab. The override survives reloads and appears on the remote page. Clear the field to remove the target, or use Restore defaults to return to the configured value.
+
+### Allocate time and check pace
+
+With a target duration, the timer shows remaining time and pace. Pace compares elapsed time with the current slide's allocation and reports on time, ahead, or behind.
+
+Set `time: 3m` in a slide's frontmatter to allocate time using the same format as `duration`. Slides without an allocation share the remaining time equally. Set `appendix: true` on the first appendix slide to exclude that slide and all following slides from pace calculations.
+
+### Choose what to display
+
+Set defaults with deck frontmatter `timer: { pace: false, remaining: false, overtime: false }`, or runtime `presenter: { timer: { ... } }` in `createDecks()`.
+
+Use Display in the presenter timer settings to override visibility for the tab; the remote page follows these choices. Overtime still appears after the target when enabled, even if remaining time is hidden. With overtime hidden, remaining time stops at 00:00.
+
+</section>
+
+<section id={"remote-control"}>
+
+## Enable remote control
+
+Export `DeckRemoteRoom` from your Worker entry and add a binding and migration. This class must be reachable only through the router; do not expose its trusted internal headers directly.
+
+```ts
+export { DeckRemoteRoom } from "hono-decks/remote";
+```
+
+```jsonc
+{
+  "durable_objects": { "bindings": [{ "name": "ROOMS", "class_name": "DeckRemoteRoom" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["DeckRemoteRoom"] }]
+}
+```
+
+For example, store a random presenter token with `wrangler secret put PRESENTER_TOKEN`. After authentication, your app may issue it as an HttpOnly, Secure, SameSite=Strict cookie named `presenter`; never put the secret in source or `vars`. The following assumes the app has already issued that cookie over HTTPS. Protect presenter and other note-bearing routes separately.
+
+```ts
+import { getCookie } from "hono/cookie";
+import { createDecks } from "#decks";
+
+type AppEnv = { Bindings: { ROOMS: DurableObjectNamespace; PRESENTER_TOKEN: string } };
+const presenterAllowed = (c: import("hono").Context<AppEnv>) => {
+  const actual = new TextEncoder().encode(getCookie(c, "presenter") ?? "");
+  const expected = new TextEncoder().encode(c.env.PRESENTER_TOKEN ?? "");
+  return expected.length > 0 && actual.length === expected.length && crypto.subtle.timingSafeEqual(actual, expected);
+};
+export const decks = createDecks<AppEnv>({
+  presenter: { enabled: ({ c }) => presenterAllowed(c) },
+  remote: {
+    namespace: ({ c }) => c.env.ROOMS,
+    authorize: ({ c, role }) => role === "follower" || presenterAllowed(c),
+  },
+});
+```
+
+Followers may see live positions in this public example. Grant presenter only to trusted users: presenters can control the room, and the remote page contains notes. The socket sends no notes, validates messages, caps them at 1 KB and limits each connection. `remote.authorize` does not secure other routes such as print. Use HTTPS and a strict CSP with `connect-src` permitting same-origin WebSockets (`'self'` or explicit `wss:`/`ws:` as required by browsers). Keep the presenter page open to execute relative commands. The local-only `fixtures/remote-worker` is for testing and deliberately allows everyone.
+
+</section>
+
+<section id={"connect-phone"}>
+
+## Connect from a phone
+
+The presenter toolbar shows a **QR** button. It opens a QR code and a link for the absolute `/:slug/remote` URL (keeping query parameters such as `lang`), so a phone can open the remote control by scanning it. The phone must pass the same presenter authorization; for cookie-based sign-in, return a short-lived signed link from `remote.url({ c, slug, url })`. The same hook can swap the host for a LAN address or tunnel during development, because a phone cannot reach `localhost`.
+
+The remote page is built for one-handed use on a phone: speaker notes fill the screen, a large Next button sits in the thumb zone beside Previous and a slide list for jumping anywhere, and the header shows the connection, position, elapsed time, and, with a talk duration, the remaining time and pace. The timer follows the presenter page's talk timer (start, pause, and reset it there). Time is read through the Temporal API (`Temporal.Now`) where available and falls back to `Date.now()`; in Workers, enable it with the `temporal` compatibility flag (on by default from compatibility date 2026-12-01). Each device only measures durations on its own clock, so clock differences between the presenter, the room, and the phone do not affect the display. While visible, the remote keeps the screen awake with the Screen Wake Lock API and vibrates briefly on taps where supported.
+
+</section>
+
+<section id={"following"}>
+
+## Viewer following and room retention
+
+Authorized viewers can pause and resume following the live position. Set `remote.follow: false` to start with following paused. The room defaults to the deck slug; change it with `remote.session`. Followers receive position data only.
+
+Rooms use the WebSocket Hibernation API, so an idle room is evicted from memory and incurs no duration charges. The only stored data is the current position. When the last connection closes, the room schedules an alarm; if nobody reconnects within an hour, it deletes all of its storage, leaving nothing behind. Change the timeout by subclassing (`class Room extends DeckRemoteRoom { idleTimeoutMs = 10 * 60 * 1000 }`). A room with no stored position adopts the first presenter's slide instead of resetting the talk to slide 1.
+
+</section>

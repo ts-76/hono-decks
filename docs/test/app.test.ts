@@ -155,6 +155,7 @@ describe("HonoX documentation site", () => {
     ["/docs/authoring", "デッキごとにディレクトリを分ける"],
     ["/docs/configuration", "4つのファイルの役割を把握する"],
     ["/docs/recipes", "SatoriでOGP画像をビルド時に保存する"],
+    ["/docs/presenter", "発表者画面を開く"],
     ["/docs/routing", "mountPathをすべてのルートの起点にする"],
     ["/docs/security", "標準で作成されるルートを確認する"],
     ["/api", "実行時API"],
@@ -225,6 +226,27 @@ describe("HonoX documentation site", () => {
     expect(recipesEn).toContain("It does not protect the viewer, presentation, presenter");
   });
 
+  it.each(["ja", "en"])("makes the presenter guide discoverable in %s", async (locale) => {
+    const response = await app.request(`/docs/presenter?lang=${locale}`);
+    const html = await response.text();
+    expect(response.status).toBe(200);
+    for (const anchor of ["presenter", "timer", "remote-control", "connect-phone", "following"]) {
+      expect(html).toContain(`id="${anchor}"`);
+    }
+    expect(html).toContain("new_sqlite_classes");
+    expect(html).toContain("PRESENTER_TOKEN");
+    expect(html).toContain("appendix: true");
+    const recipes = await (await app.request(`/docs/recipes?lang=${locale}`)).text();
+    expect(recipes).toContain('id="remote-control"');
+    expect(recipes).toContain(`href="/docs/presenter?lang=${locale}#remote-control"`);
+    expect(recipes).not.toContain("new_sqlite_classes");
+    for (const slug of ["authoring", "routing"]) {
+      const related = await (await app.request(`/docs/${slug}?lang=${locale}`)).text();
+      expect(related).toContain(`href="/docs/presenter?lang=${locale}#timer"`);
+      expect(related).toContain(`href="/docs/presenter?lang=${locale}"`);
+    }
+  });
+
   it("uses concise Japanese instead of internal architecture jargon", async () => {
     const paths = [
       "/",
@@ -232,6 +254,7 @@ describe("HonoX documentation site", () => {
       "/docs/authoring",
       "/docs/configuration",
       "/docs/recipes",
+      "/docs/presenter",
       "/docs/routing",
       "/docs/security",
       "/api",
@@ -427,9 +450,9 @@ describe("HonoX documentation site", () => {
   });
 
   it("discovers both languages from MDX and keeps the established public URLs", () => {
-    expect(docsCatalog.pages).toHaveLength(16);
+    expect(docsCatalog.pages).toHaveLength(18);
     for (const locale of locales) {
-      expect(docsCatalog.navigation(locale)).toHaveLength(8);
+      expect(docsCatalog.navigation(locale)).toHaveLength(9);
       for (const page of docsCatalog.navigation(locale)) {
         expect(getDocument(page.slug, locale)?.page).toBe(page);
         expect(page.headings[0]?.depth).toBe(1);
