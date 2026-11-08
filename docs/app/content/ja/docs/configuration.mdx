@@ -60,11 +60,13 @@ Viteでは`honoDecks()`を追加し、Wranglerではカスタムビルドに`hon
 
 ## リクエストごとに変わる値を設定する
 
-実行時の設定は`createDecks()`に渡します。型引数を指定すると、HonoのBindingsとVariablesも各関数の型検査の対象になります。`dev`を省略した場合は、ViteとWranglerが設定する`NODE_ENV`から環境を判定します。標準設定では、`vite`と`wrangler dev`は開発モード、プロダクションビルドと`wrangler deploy`は本番モードとして動作します。boolean値または関数を明示すると自動判定より優先されます。環境を判定できない場合は、安全のため本番モードになります。
+実行時の設定は`createDecks()`に渡します。型引数を指定すると、HonoのBindingsとVariablesも各関数の型検査の対象になります。
+
+`dev`を省略すると、ViteとWranglerが設定する`NODE_ENV`から開発・本番モードを判定します。標準設定では`vite`と`wrangler dev`が開発モード、プロダクションビルドと`wrangler deploy`が本番モードです。boolean値または関数を明示すると、自動判定より優先されます。環境を判定できない場合は、安全のため本番モードになります。
 
 <CodeBlock filename={"TypeScript"} language={"typescript"} code={"// src/decks.ts\nimport { createDecks } from \"#decks\"\n\ntype AppEnv = {\n  Bindings: {\n    PRESENTER_ENABLED?: string\n  }\n  Variables: {\n    language: string\n  }\n}\n\nexport const decks = createDecks<AppEnv>({\n  document: {\n    lang: ({ c }) => c.get(\"language\"),\n  },\n  presenter: {\n    enabled: ({ c, dev }) => dev || c.env.PRESENTER_ENABLED === \"true\",\n  },\n})"} copyLabel={"コピー"} copiedLabel={"コピーしました"} errorLabel={"コピーできませんでした"} />
 
-`c.get("language")`を使う例では、Honoの`languageDetector()`を先に登録します。手順は[HTMLとセキュリティ](/docs/security?lang=ja#language)で確認できます。多言語対応が不要なら`lang: "ja"`のように固定値を指定します。
+`c.get("language")`を使う例ではHonoの`languageDetector()`を先に登録します。手順は[HTMLとセキュリティ](/docs/security?lang=ja#language)で確認できます。多言語対応が不要なら`lang: "ja"`のように固定値を指定します。
 
 </section>
 
@@ -99,4 +101,8 @@ Viteでは`honoDecks()`を追加し、Wranglerではカスタムビルドに`hon
 
 ## UIの文言
 
-解決済みの `document.lang` が `ja` や `ja-JP` の場合は日本語、それ以外は英語を使用します。既定値は `ja` です。`createDecks({ messages: { ja: { previous: "戻る" }, en: { previous: "Back" } } })` で言語ごとに文言を上書きできます。ビューアーの操作では `viewer.controls.labels` が優先されます。`slidePosition` と `progressText` には `{current}` と `{total}`、`slideCount` と `slideCountOne` には `{count}` を使います。
+`document.lang` を解決した値が `ja` や `ja-JP` の場合、UIの文言は日本語になります。それ以外は英語を使用します。`document.lang` の既定値は `ja` です。
+
+`createDecks({ messages: { ja: { previous: "戻る" }, en: { previous: "Back" } } })` で言語ごとに文言を上書きできます。ビューアーの操作では `viewer.controls.labels` が優先されます。
+
+文言に値を埋め込むときは、`slidePosition` と `progressText` に `{current}` と `{total}`、`slideCount` と `slideCountOne` に `{count}` を使います。

@@ -201,7 +201,7 @@ describe("HonoX documentation site", () => {
     expect(ja).toContain('href="/docs/recipes?lang=ja"');
     expect(ja).toContain("defineDecksConfig");
     expect(ja).toContain("wrangler dev");
-    expect(ja).toContain("boolean値または関数を明示すると自動判定より優先");
+    expect(ja).toMatch(/boolean値または関数を明示すると、?自動判定より優先/);
     expect(ja).toContain("環境を判定できない場合は、安全のため本番モード");
     expect(ja).toContain("decks.router(overrides)");
     expect(ja).toContain('href="/api?lang=ja#define-decks-config"');
