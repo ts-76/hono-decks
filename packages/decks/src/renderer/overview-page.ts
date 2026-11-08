@@ -1,8 +1,9 @@
+import { resolveMessages, formatMessage, formatSlideCount, type DeckMessageOverrides } from "../shared/messages";
 import type { CompiledDeck } from "../deck/model";
 import { documentNonceAttribute, type ResolvedDeckDocument } from "../server/document";
 import { renderCompiledSlideAsync } from "./compiled-render";
 import { renderControlIconHtml } from "./control-icons";
-import type { SlideComponentInput, SlideComponentRegistry } from "./jsx-renderer";
+import { localizedSlideComponents, type SlideComponentInput, type SlideComponentRegistry } from "./jsx-renderer";
 import { mergeComponentInputs, presentationPageTitle } from "./presentation-page";
 import { basePresentationStyle } from "./presentation-style";
 import { composeStylesheet, layer } from "./style-layers";
@@ -16,6 +17,7 @@ export interface RenderDeckOverviewPageInput {
   style?: string;
   components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
   document?: ResolvedDeckDocument;
+  messages?: DeckMessageOverrides;
 }
 
 /**
@@ -26,15 +28,19 @@ export interface RenderDeckOverviewPageInput {
 export async function renderDeckOverviewPageAsync(input: RenderDeckOverviewPageInput): Promise<string> {
   const { deck } = input;
   const document = input.document ?? { lang: "en", head: "" };
+  const messages = resolveMessages(document.lang, input.messages);
   const nonceAttribute = documentNonceAttribute(document.nonce);
-  const components = mergeComponentInputs(deck.componentRegistry, input.components);
+  const components = {
+    ...localizedSlideComponents(messages, document.nonce),
+    ...mergeComponentInputs(deck.componentRegistry, input.components),
+  };
   const title = presentationPageTitle(deck);
   const count = deck.slides.length;
   const digits = String(count).length;
   const cards = await Promise.all(
     deck.slides.map(async (slide, position) => {
       const number = position + 1;
-      const label = slide.meta.title ?? `Slide ${number}`;
+      const label = slide.meta.title ?? formatMessage(messages.slide, { number });
       const href = `${input.viewerPath}?slide=${number}`;
       const current = input.currentSlide === number;
       const body = await renderCompiledSlideAsync(slide, deck.assets, {
@@ -54,16 +60,16 @@ export async function renderDeckOverviewPageAsync(input: RenderDeckOverviewPageI
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${escapeHtml(`${title} - Overview`)}</title>
+  <title>${escapeHtml(formatMessage(messages.overviewTitle, { title }))}</title>
   <style data-hono-decks-presentation-style${nonceAttribute}>${composeStylesheet({ layers: `${basePresentationStyle()}\n${overviewStyle()}`, theme: deck.themeStyle, app: input.style })}</style>
   ${document.head}
 </head>
 <body data-hono-decks-overview>
   <header class="hono-decks-overview-header">
-    <a class="hono-decks-overview-back" href="${escapeHtml(input.viewerPath)}">${renderControlIconHtml("previous")}<span>Viewer</span></a>
+    <a class="hono-decks-overview-back" href="${escapeHtml(input.viewerPath)}">${renderControlIconHtml("previous")}<span>${escapeHtml(messages.viewer)}</span></a>
     <div class="hono-decks-overview-heading">
       <h1>${escapeHtml(title)}</h1>
-      <p>${count} ${count === 1 ? "slide" : "slides"}</p>
+      <p>${escapeHtml(formatSlideCount(messages, count))}</p>
     </div>
   </header>
   <main class="hono-decks-overview">

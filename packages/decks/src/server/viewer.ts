@@ -1,14 +1,18 @@
+import { enMessages } from "../shared/messages";
+import { viewerMessages, remoteMessages } from "../shared/messages";
+import {
+  resolveMessages,
+  formatMessage,
+  formatSlideCount,
+  type DeckMessages,
+  type DeckMessageOverrides,
+} from "../shared/messages";
 import type { Context, Env } from "hono";
 import { raw } from "hono/html";
 import { jsx } from "hono/jsx/jsx-runtime";
 import type { CompiledDeck } from "../deck/model";
 import type { DeckRenderable, MaybePromise } from "../renderer/compiled-render";
-import {
-  controlIconLabel,
-  renderControlIcon,
-  renderControlIconHtml,
-  type DeckControlIconName,
-} from "../renderer/control-icons";
+import { renderControlIcon, renderControlIconHtml, type DeckControlIconName } from "../renderer/control-icons";
 import { renderJsxValue } from "../renderer/jsx-renderer";
 import type { DeckExportOptions, DeckViewerExportPaths } from "./browser-export";
 import { resolveAuthorizedExportPaths } from "./browser-export";
@@ -19,20 +23,7 @@ import { composeStylesheet } from "../renderer/style-layers";
 import { createDeckPaths, type DeckPaths } from "./paths";
 import { documentNonceAttribute, resolveDeckDocument, type DeckDocumentOptions } from "./document";
 
-export const VIEWER_MESSAGES = {
-  toc: "Table of contents",
-  close: "Close",
-  shortcuts: "Keyboard shortcuts",
-  next: "Next slide: Right arrow, Space, Page Down",
-  previous: "Previous slide: Left arrow, Shift + Space, Page Up",
-  firstLast: "First / last slide: Home / End",
-  jump: "Jump to slide: type a number and press Enter; Escape clears it",
-  overview: "Open overview: O",
-  toggleToc: "Toggle table of contents: T",
-  fullscreen: "Toggle fullscreen: F",
-  print: "Open print view: Ctrl / Cmd + P",
-  help: "Show shortcuts: ?",
-} as const;
+export const VIEWER_MESSAGES = viewerMessages(enMessages);
 
 export interface DeckViewerOptions<E extends Env = any> {
   controls?: false | DeckViewerControlsOptions;
@@ -168,6 +159,7 @@ export interface DeckViewerControlsContext {
   mountPath: string;
   meta: DeckPageMeta;
   slides: DeckTocItem[];
+  messages: DeckMessages;
 }
 
 export type DeckViewerControlItem =
@@ -253,6 +245,7 @@ export interface DeckViewerEmbedOptions {
   toc?: boolean;
   className?: string;
   nonce?: string;
+  messages?: DeckMessages;
 }
 
 export interface DeckViewerEmbed extends DeckViewerParts {
@@ -268,6 +261,7 @@ export async function createDeckViewerParts(input: {
   openGraph?: boolean | DeckViewerOpenGraphOptions;
   availablePages?: Partial<DeckViewerAvailablePages>;
   exportPaths?: DeckViewerExportPaths;
+  messages?: DeckMessages;
 }): Promise<DeckViewerParts> {
   const slug = input.deck.slug;
   const title = input.deck.meta.title ?? slug;
@@ -275,7 +269,9 @@ export async function createDeckViewerParts(input: {
   const paths = createDeckPaths(basePath, slug);
   const imagePath = await resolveOpenGraphImagePath(input.openGraph, { deck: input.deck, paths });
   const renderUrl = `${paths.render}${input.viewerStateQuery ?? ""}`;
-  const slides = createDeckToc(input.deck);
+  const messages = input.messages ?? resolveMessages("en");
+  const frameMessages = input.controls === false ? messages : { ...messages, ...input.controls?.labels };
+  const slides = createDeckToc(input.deck, messages);
   const meta: DeckPageMeta = {
     title,
     description: input.deck.meta.description,
@@ -288,7 +284,7 @@ export async function createDeckViewerParts(input: {
     ...(imagePath ? { imagePath } : {}),
   };
   const controlsInput = input.controls === false ? false : (input.controls ?? {});
-  const controlsContext: DeckViewerControlsContext = { slug, title, mountPath: basePath, meta, slides };
+  const controlsContext: DeckViewerControlsContext = { slug, title, mountPath: basePath, meta, slides, messages };
 
   const controls = controlsInput === false ? null : renderViewerControls(controlsInput, controlsContext);
 
@@ -297,11 +293,11 @@ export async function createDeckViewerParts(input: {
     title,
     renderUrl,
     frame: {
-      content: renderViewerFrame({ title, renderUrl }),
-      html: renderViewerFrameHtml({ title, renderUrl }),
+      content: renderViewerFrame({ title, renderUrl, messages: frameMessages }),
+      html: renderViewerFrameHtml({ title, renderUrl, messages: frameMessages }),
     },
     controls: controls ? { content: controls, html: await renderJsxValue(controls) } : null,
-    toc: { content: renderViewerToc(slides), html: renderViewerTocHtml(slides) },
+    toc: { content: renderViewerToc(slides, messages), html: renderViewerTocHtml(slides, messages) },
     slides,
     meta,
   };
@@ -316,6 +312,8 @@ export async function createDeckViewerEmbed(input: DeckViewerEmbedOptions): Prom
     "data-deck-slug": parts.slug,
     "data-hono-decks-autohide": autoHideDelay(input.controls),
     ...(parts.meta.availablePages.overview ? { "data-hono-decks-overview-path": parts.meta.paths.overview } : {}),
+    "data-hono-decks-slide-position-template": (input.messages ?? resolveMessages("en")).slidePosition,
+    "data-hono-decks-progress-text-template": (input.messages ?? resolveMessages("en")).progressText,
     ...(parts.meta.availablePages.print ? { "data-hono-decks-print-path": parts.meta.paths.print } : {}),
     "aria-label": parts.title,
     children: [
@@ -324,7 +322,7 @@ export async function createDeckViewerEmbed(input: DeckViewerEmbedOptions): Prom
         children: [parts.frame.content, parts.controls?.content],
       }),
       input.toc ? parts.toc.content : null,
-      renderViewerExtras(parts, input.controls),
+      renderViewerExtras(parts, input.controls, input.messages ?? resolveMessages("en")),
     ],
   });
   const rootHtml = await renderJsxValue(root);
@@ -347,10 +345,11 @@ export async function renderDeckViewerPage<E extends Env = any>(input: {
   availablePages?: Partial<DeckViewerAvailablePages>;
   exportOptions?: false | DeckExportOptions<E>;
   document?: DeckDocumentOptions<E>;
+  messages?: DeckMessageOverrides;
   /** False when the embed route that a Player Card points to is unavailable. */
   twitterPlayer?: boolean;
 }): Promise<string> {
-  const parts = await createDeckViewerParts({
+  let parts = await createDeckViewerParts({
     deck: input.deck,
     mountPath: input.mountPath,
     viewerStateQuery: input.viewerStateQuery,
@@ -365,32 +364,6 @@ export async function renderDeckViewerPage<E extends Env = any>(input: {
     deck: input.deck,
     mountPath: input.mountPath,
   };
-  const customContent = input.viewer?.render ? await input.viewer.render(renderInput) : undefined;
-  const content = jsx("main", {
-    "data-hono-decks-viewer": true,
-    "data-deck-slug": parts.slug,
-    "data-hono-decks-autohide": autoHideDelay(input.viewer?.controls),
-    ...(parts.meta.availablePages.overview ? { "data-hono-decks-overview-path": parts.meta.paths.overview } : {}),
-    ...(parts.meta.availablePages.print ? { "data-hono-decks-print-path": parts.meta.paths.print } : {}),
-    ...(customContent ? { "aria-label": parts.title } : { "aria-labelledby": "hono-decks-viewer-title" }),
-    children: customContent ?? [
-      jsx("header", {
-        class: "hono-decks-viewer-header",
-        children: [
-          jsx("h1", { id: "hono-decks-viewer-title", class: "hono-decks-viewer-title", children: parts.title }),
-          jsx("p", {
-            class: "hono-decks-viewer-meta",
-            children: `${parts.slides.length} ${parts.slides.length === 1 ? "slide" : "slides"}`,
-          }),
-        ],
-      }),
-      jsx("div", {
-        class: "hono-decks-viewer-shell",
-        children: [parts.frame.content, parts.controls?.content],
-      }),
-      renderViewerExtras(parts, input.viewer?.controls),
-    ],
-  });
   const viewerHead =
     typeof input.viewer?.head === "function" ? await input.viewer.head(renderInput) : await input.viewer?.head;
   const viewerLang =
@@ -409,6 +382,46 @@ export async function renderDeckViewerPage<E extends Env = any>(input: {
     input.document,
     { head: viewerHead, lang: viewerLang, nonce: viewerNonce },
   );
+  const messages = resolveMessages(document.lang, input.messages);
+  parts = await createDeckViewerParts({
+    deck: input.deck,
+    mountPath: input.mountPath,
+    viewerStateQuery: input.viewerStateQuery,
+    controls: input.viewer?.controls,
+    openGraph: input.viewer?.openGraph,
+    availablePages: input.availablePages,
+    exportPaths: parts.meta.availableExports,
+    messages,
+  });
+  Object.assign(renderInput, parts);
+  const customContent = input.viewer?.render ? await input.viewer.render(renderInput) : undefined;
+  const content = jsx("main", {
+    "data-hono-decks-viewer": true,
+    "data-deck-slug": parts.slug,
+    "data-hono-decks-autohide": autoHideDelay(input.viewer?.controls),
+    ...(parts.meta.availablePages.overview ? { "data-hono-decks-overview-path": parts.meta.paths.overview } : {}),
+    "data-hono-decks-slide-position-template": messages.slidePosition,
+    "data-hono-decks-progress-text-template": messages.progressText,
+    ...(parts.meta.availablePages.print ? { "data-hono-decks-print-path": parts.meta.paths.print } : {}),
+    ...(customContent ? { "aria-label": parts.title } : { "aria-labelledby": "hono-decks-viewer-title" }),
+    children: customContent ?? [
+      jsx("header", {
+        class: "hono-decks-viewer-header",
+        children: [
+          jsx("h1", { id: "hono-decks-viewer-title", class: "hono-decks-viewer-title", children: parts.title }),
+          jsx("p", {
+            class: "hono-decks-viewer-meta",
+            children: formatSlideCount(messages, parts.slides.length),
+          }),
+        ],
+      }),
+      jsx("div", {
+        class: "hono-decks-viewer-shell",
+        children: [parts.frame.content, parts.controls?.content],
+      }),
+      renderViewerExtras(parts, input.viewer?.controls, messages),
+    ],
+  });
   const nonceAttribute = documentNonceAttribute(document.nonce);
   const socialHead = renderViewerSocialHead(
     input.c,
@@ -429,7 +442,7 @@ export async function renderDeckViewerPage<E extends Env = any>(input: {
 <body>
   ${await renderJsxValue(content)}
   ${renderViewerScript(document.nonce)}
-  ${input.remote ? `${remoteStyle(document.nonce)}${remoteIndicator()}${renderRemoteScript("viewer", document.nonce, input.remote.follow)}` : ""}
+  ${input.remote ? `${remoteStyle(document.nonce)}${remoteIndicator(true, remoteMessages(messages))}${renderRemoteScript("viewer", document.nonce, input.remote.follow, [], remoteMessages(messages))}` : ""}
 </body>
 </html>`;
 }
@@ -475,15 +488,15 @@ function renderViewerSocialHead<E extends Env>(
   }`;
 }
 
-function createDeckToc(deck: CompiledDeck): DeckTocItem[] {
+function createDeckToc(deck: CompiledDeck, messages: DeckMessages): DeckTocItem[] {
   return deck.slides.map((slide) => ({
     index: slide.index,
     title: slide.meta.title,
-    label: slide.meta.title ?? `Slide ${slide.index + 1}`,
+    label: slide.meta.title ?? formatMessage(messages.slide, { number: slide.index + 1 }),
   }));
 }
 
-function renderViewerFrame(input: { title: string; renderUrl: string }): DeckRenderable {
+function renderViewerFrame(input: { title: string; renderUrl: string; messages: DeckMessages }): DeckRenderable {
   return jsx("div", {
     class: "hono-decks-viewer-stage",
     "data-hono-decks-frame": true,
@@ -500,31 +513,31 @@ function renderViewerFrame(input: { title: string; renderUrl: string }): DeckRen
             src: input.renderUrl,
           }),
         }),
-        renderMobileNavigationControl("previous"),
-        renderMobileNavigationControl("next"),
+        renderMobileNavigationControl("previous", input.messages),
+        renderMobileNavigationControl("next", input.messages),
       ],
     }),
   });
 }
 
-function renderViewerFrameHtml(input: { title: string; renderUrl: string }): string {
-  return `<div class="hono-decks-viewer-stage" data-hono-decks-frame><div class="hono-decks-viewport" data-viewer-viewport tabindex="0"><div class="hono-decks-frame-stage" data-viewer-stage><iframe title="${escapeHtml(input.title)}" src="${escapeHtml(input.renderUrl)}"></iframe></div>${renderMobileNavigationControlHtml("previous")}${renderMobileNavigationControlHtml("next")}</div></div>`;
+function renderViewerFrameHtml(input: { title: string; renderUrl: string; messages: DeckMessages }): string {
+  return `<div class="hono-decks-viewer-stage" data-hono-decks-frame><div class="hono-decks-viewport" data-viewer-viewport tabindex="0"><div class="hono-decks-frame-stage" data-viewer-stage><iframe title="${escapeHtml(input.title)}" src="${escapeHtml(input.renderUrl)}"></iframe></div>${renderMobileNavigationControlHtml("previous", input.messages)}${renderMobileNavigationControlHtml("next", input.messages)}</div></div>`;
 }
 
-function renderMobileNavigationControl(action: "previous" | "next"): DeckRenderable {
+function renderMobileNavigationControl(action: "previous" | "next", messages: DeckMessages): DeckRenderable {
   return jsx("button", {
     class: `hono-decks-mobile-navigation hono-decks-mobile-navigation-${action}`,
     type: "button",
     "data-hono-decks-mobile-action": action,
     "data-hono-decks-mobile-navigation": action,
-    "aria-label": controlIconLabel(action),
+    "aria-label": messages[action],
     children: renderControlIcon(action),
   });
 }
 
-function renderMobileNavigationControlHtml(action: "previous" | "next"): string {
-  const label = controlIconLabel(action);
-  return `<button class="hono-decks-mobile-navigation hono-decks-mobile-navigation-${action}" type="button" data-hono-decks-mobile-action="${action}" data-hono-decks-mobile-navigation="${action}" aria-label="${label}">${renderControlIconHtml(action)}</button>`;
+function renderMobileNavigationControlHtml(action: "previous" | "next", messages: DeckMessages): string {
+  const label = messages[action];
+  return `<button class="hono-decks-mobile-navigation hono-decks-mobile-navigation-${action}" type="button" data-hono-decks-mobile-action="${action}" data-hono-decks-mobile-navigation="${action}" aria-label="${escapeHtml(label)}">${renderControlIconHtml(action)}</button>`;
 }
 
 function renderViewerControls(options: DeckViewerControlsOptions, context: DeckViewerControlsContext): DeckRenderable {
@@ -532,7 +545,7 @@ function renderViewerControls(options: DeckViewerControlsOptions, context: DeckV
     ...controlAttributes(options.attributes),
     class: controlsClassName(options),
     "data-hono-decks-viewer-controls": true,
-    "aria-label": options.ariaLabel ?? "Viewer controls",
+    "aria-label": options.ariaLabel ?? context.messages.viewerControls,
     children: resolveViewerControlItems(options, context).map((item) =>
       renderViewerControlItem(item, options, context),
     ),
@@ -547,17 +560,19 @@ function autoHideDelay(options: false | DeckViewerControlsOptions | undefined): 
 function renderViewerExtras(
   parts: DeckViewerParts,
   options: false | DeckViewerControlsOptions | undefined,
+  messages: DeckMessages,
 ): DeckRenderable {
+  const labels = viewerMessages(messages);
   const tocEnabled = options !== false && !options?.hidden?.includes("toc");
   return [
     tocEnabled
       ? jsx("aside", {
           class: "hono-decks-toc-panel",
           "data-hono-decks-toc-panel": true,
-          "aria-label": VIEWER_MESSAGES.toc,
+          "aria-label": labels.toc,
           hidden: true,
           children: [
-            jsx("button", { type: "button", "data-hono-decks-toc-close": true, children: VIEWER_MESSAGES.close }),
+            jsx("button", { type: "button", "data-hono-decks-toc-close": true, children: labels.close }),
             parts.toc.content,
           ],
         })
@@ -570,33 +585,33 @@ function renderViewerExtras(
     jsx("dialog", {
       class: "hono-decks-shortcuts",
       "data-hono-decks-help": true,
-      "aria-label": VIEWER_MESSAGES.shortcuts,
+      "aria-label": labels.shortcuts,
       children: [
-        jsx("h2", { children: VIEWER_MESSAGES.shortcuts }),
+        jsx("h2", { children: labels.shortcuts }),
         jsx("ul", {
           children: [
-            VIEWER_MESSAGES.next,
-            VIEWER_MESSAGES.previous,
-            VIEWER_MESSAGES.firstLast,
-            VIEWER_MESSAGES.jump,
-            ...(parts.meta.availablePages.overview ? [VIEWER_MESSAGES.overview] : []),
-            ...(tocEnabled ? [VIEWER_MESSAGES.toggleToc] : []),
-            VIEWER_MESSAGES.fullscreen,
-            ...(parts.meta.availablePages.print ? [VIEWER_MESSAGES.print] : []),
-            VIEWER_MESSAGES.help,
+            labels.next,
+            labels.previous,
+            labels.firstLast,
+            labels.jump,
+            ...(parts.meta.availablePages.overview ? [labels.overview] : []),
+            ...(tocEnabled ? [labels.toggleToc] : []),
+            labels.fullscreen,
+            ...(parts.meta.availablePages.print ? [labels.print] : []),
+            labels.help,
           ].map((message) => jsx("li", { children: message })),
         }),
-        jsx("button", { type: "button", "data-hono-decks-help-close": true, children: VIEWER_MESSAGES.close }),
+        jsx("button", { type: "button", "data-hono-decks-help-close": true, children: labels.close }),
       ],
     }),
   ];
 }
 
-function renderViewerToc(slides: DeckTocItem[]): DeckRenderable {
+function renderViewerToc(slides: DeckTocItem[], messages: DeckMessages): DeckRenderable {
   return jsx("nav", {
     class: "hono-decks-viewer-toc",
     "data-hono-decks-toc": true,
-    "aria-label": "Slide navigation",
+    "aria-label": messages.slideNavigation,
     children: jsx("ol", {
       children: slides.map((slide) =>
         jsx("li", {
@@ -612,14 +627,14 @@ function renderViewerToc(slides: DeckTocItem[]): DeckRenderable {
   });
 }
 
-function renderViewerTocHtml(slides: DeckTocItem[]): string {
+function renderViewerTocHtml(slides: DeckTocItem[], messages: DeckMessages): string {
   const items = slides
     .map(
       (slide) =>
         `<li><button type="button" data-action="goTo" data-slide-index="${slide.index}">${slide.index + 1}. ${escapeHtml(slide.label)}</button></li>`,
     )
     .join("");
-  return `<nav class="hono-decks-viewer-toc" data-hono-decks-toc aria-label="Slide navigation"><ol>${items}</ol></nav>`;
+  return `<nav class="hono-decks-viewer-toc" data-hono-decks-toc aria-label="${escapeHtml(messages.slideNavigation)}"><ol>${items}</ol></nav>`;
 }
 
 function escapeHtml(value: string): string {
@@ -728,12 +743,12 @@ function renderDefaultViewerControlItem(
         href: context.mountPath,
         "data-hono-decks-back-link": true,
         ...(item.label === undefined
-          ? { "aria-label": controlIconLabel("deck-list"), title: controlIconLabel("deck-list") }
+          ? { "aria-label": context.messages.deckList, title: context.messages.deckList }
           : {}),
         children: item.label ?? renderControlIcon("deck-list"),
       });
     case "previous":
-      return renderIconButton("previous", item, itemProps);
+      return renderIconButton("previous", item, itemProps, context.messages);
     case "position": {
       // A progress bar along the bottom edge of the slide. The visually hidden text
       // keeps "n / total" for assistive technology and scripts; the viewer runtime
@@ -745,33 +760,36 @@ function renderDefaultViewerControlItem(
         ...itemProps,
         ...classAttribute("hono-decks-progress", options.itemClassName, item.className),
         role: "progressbar",
-        "aria-label": item.label ?? "Slide progress",
+        "aria-label": item.label ?? context.messages.slideProgress,
         "aria-valuemin": "1",
         "aria-valuemax": String(total),
         "aria-valuenow": "1",
-        "aria-valuetext": `Slide 1 of ${total}`,
+        "aria-valuetext": formatMessage(context.messages.slidePosition, { current: 1, total }),
         "data-slide-position": true,
         "data-hono-decks-position": true,
         "data-hono-decks-progress": progress,
         children: [
           progress === "count" ? null : jsx("span", { class: "hono-decks-progress-bar", "aria-hidden": "true" }),
-          jsx("span", { class: "hono-decks-progress-text", children: `1 / ${total}` }),
+          jsx("span", {
+            class: "hono-decks-progress-text",
+            children: formatMessage(context.messages.progressText, { current: 1, total }),
+          }),
         ],
       });
     }
     case "next":
-      return renderIconButton("next", item, itemProps);
+      return renderIconButton("next", item, itemProps, context.messages);
     case "fullscreen":
-      return renderIconButton("fullscreen", item, itemProps);
+      return renderIconButton("fullscreen", item, itemProps, context.messages);
     case "toc":
-      return renderIconButton("toc", item, itemProps);
+      return renderIconButton("toc", item, itemProps, context.messages);
     case "overview":
       return jsx("a", {
         ...itemProps,
         href: context.meta.paths.overview,
         "data-hono-decks-overview-link": true,
         ...(item.label === undefined
-          ? { "aria-label": controlIconLabel("overview"), title: controlIconLabel("overview") }
+          ? { "aria-label": context.messages.overview, title: context.messages.overview }
           : {}),
         children: item.label ?? renderControlIcon("overview"),
       });
@@ -780,9 +798,7 @@ function renderDefaultViewerControlItem(
         ...itemProps,
         href: context.meta.paths.print,
         "data-hono-decks-print": true,
-        ...(item.label === undefined
-          ? { "aria-label": controlIconLabel("print"), title: controlIconLabel("print") }
-          : {}),
+        ...(item.label === undefined ? { "aria-label": context.messages.print, title: context.messages.print } : {}),
         children: item.label ?? renderControlIcon("print"),
       });
     case "exportPdf":
@@ -792,7 +808,7 @@ function renderDefaultViewerControlItem(
         download: `${safeFilename(context.meta.title)}.pdf`,
         "data-hono-decks-export": "pdf",
         ...(item.label === undefined
-          ? { "aria-label": controlIconLabel("export-pdf"), title: controlIconLabel("export-pdf") }
+          ? { "aria-label": context.messages.exportPdf, title: context.messages.exportPdf }
           : {}),
         children: item.label ?? renderControlIcon("export-pdf"),
       });
@@ -803,7 +819,7 @@ function renderDefaultViewerControlItem(
         download: `${safeFilename(context.meta.title)}.png`,
         "data-hono-decks-export": "png",
         ...(item.label === undefined
-          ? { "aria-label": controlIconLabel("export-png"), title: controlIconLabel("export-png") }
+          ? { "aria-label": context.messages.exportPng, title: context.messages.exportPng }
           : {}),
         children: item.label ?? renderControlIcon("export-png"),
       });
@@ -814,9 +830,10 @@ function renderIconButton(
   action: Extract<DeckViewerControlKey, "previous" | "next" | "fullscreen" | "toc">,
   item: DeckViewerDefaultControlItem,
   itemProps: Record<string, string | boolean>,
+  messages: DeckMessages,
 ): DeckRenderable {
   const iconName = controlIconNameForKey(action);
-  const label = controlIconLabel(iconName);
+  const label = messages[action];
   return jsx("button", {
     ...itemProps,
     type: "button",

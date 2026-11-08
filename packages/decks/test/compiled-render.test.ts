@@ -310,7 +310,7 @@ describe("compiled deck rendering", () => {
       };
       const mixedHtml = await render({ deck: mixed, mountPath: "/decks", printPreview: true });
       expect(mixedHtml).toContain(
-        '<aside class="hono-decks-warnings" tabindex="0" aria-label="Deck warnings"><p>Other warning</p></aside>',
+        '<aside class="hono-decks-warnings" tabindex="0" aria-label="スライドの警告"><p>Other warning</p></aside>',
       );
       expect(mixedHtml).not.toContain("asset existence cannot be verified");
     }

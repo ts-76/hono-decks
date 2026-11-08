@@ -163,3 +163,7 @@ Review any application-wide CSP middleware after mounting: it must preserve the 
 - Check presenter notes are not exposed by an unintended production policy.
 - Test the external embed from an allowed and a disallowed parent origin.
 - Run the deployment dry run so Worker-only bundling errors are caught before publish.
+
+## UI messages
+
+The resolved `document.lang` selects Japanese for `ja` and tags such as `ja-JP`, and English otherwise. It defaults to `ja`. Override messages per locale with `createDecks({ messages: { ja: { previous: "戻る" }, en: { previous: "Back" } } })`. `viewer.controls.labels` takes precedence for those controls. Templates use named placeholders: `slidePosition` and `progressText` use `{current}` and `{total}`, and `slideCount` / `slideCountOne` use `{count}`.

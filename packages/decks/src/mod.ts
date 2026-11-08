@@ -107,3 +107,6 @@ export type {
   SlideComponentRegistry,
 } from "./renderer/compiled-render";
 export type { DeckControlIconName } from "./renderer/control-icons";
+
+export { resolveMessages, formatMessage, enMessages, jaMessages } from "./shared/messages";
+export type { DeckMessages, DeckMessageOverrides } from "./shared/messages";

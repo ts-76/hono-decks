@@ -173,9 +173,9 @@ describe("decksRouter presenter and presentation surfaces", () => {
     expect(presenterHtml).not.toContain("hono-decks-presenter-control-text");
     expect(presenterHtml).toContain('d="M3 11l9-8 9 8"');
     expect(presenterHtml).toContain('d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"');
-    expect(presenterHtml).toContain('aria-label="Deck list"');
-    expect(presenterHtml).toContain('aria-label="Viewer"');
-    expect(presenterHtml).toContain('aria-label="Projection"');
+    expect(presenterHtml).toContain('aria-label="デッキ一覧"');
+    expect(presenterHtml).toContain('aria-label="ビューアー"');
+    expect(presenterHtml).toContain('aria-label="投影画面"');
     expect(presenterHtml).toContain('data-action="previous"');
     expect(presenterHtml).toContain('data-action="next"');
     expect(presenterHtml).toContain("data-hono-decks-presenter-position");
@@ -198,7 +198,7 @@ describe("decksRouter presenter and presentation surfaces", () => {
       ":where(.hono-decks-presenter-no-next:not([hidden])){display:grid;place-items:center;aspect-ratio:16/9;",
     );
     expect(presenterHtml).toContain(
-      '<p class="hono-decks-presenter-no-next" data-hono-decks-presenter-no-next>No next slide</p>',
+      '<p class="hono-decks-presenter-no-next" data-hono-decks-presenter-no-next>次のスライドはありません</p>',
     );
   });
 });

@@ -1,3 +1,4 @@
+import { enMessages, type DeckMessages } from "../shared/messages";
 import { jsx } from "hono/jsx/jsx-runtime";
 import type { DeckRenderable } from "./compiled-render";
 
@@ -37,38 +38,38 @@ export function renderControlIconHtml(name: DeckControlIconName, className = "ho
   return `<svg class="${className}" data-hono-decks-control-icon viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${controlIconPathHtml(name)}</svg>`;
 }
 
-export function controlIconLabel(name: DeckControlIconName): string {
+export function controlIconLabel(name: DeckControlIconName, messages: DeckMessages = enMessages): string {
   switch (name) {
     case "deck-list":
-      return "Deck list";
+      return messages.deckList;
     case "home":
-      return "Home";
+      return messages.home;
     case "viewer":
-      return "Viewer";
+      return messages.viewer;
     case "projection":
-      return "Projection";
+      return messages.projection;
     case "presenter":
-      return "Presenter";
+      return messages.presenter;
     case "previous":
-      return "Previous slide";
+      return messages.previous;
     case "next":
-      return "Next slide";
+      return messages.next;
     case "fullscreen":
-      return "Toggle fullscreen";
+      return messages.fullscreen;
     case "external-link":
-      return "Open link in new tab";
+      return messages.externalLink;
     case "print":
-      return "Print view";
+      return messages.print;
     case "toc":
-      return "Table of contents";
+      return messages.toc;
     case "overview":
-      return "Slide overview";
+      return messages.overview;
     case "details":
-      return "Details";
+      return messages.details;
     case "export-pdf":
-      return "Export PDF";
+      return messages.exportPdf;
     case "export-png":
-      return "Export PNG";
+      return messages.exportPng;
   }
 }
 

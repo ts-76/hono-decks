@@ -600,3 +600,16 @@ WebSocket の接続ごとに認可します。presenter は操作でき、follow
 
 
 ビューアーでは、左右矢印、Page Up / Page Down、Space / Shift + Space、Home、End でスライドを移動できます。`F` で全画面、`O` でオーバービュー（有効な場合）、`T` で目次、`?` でショートカット一覧を開きます。目次ボタンからスライドを選択でき、Esc で目次やヘルプを閉じます。スライド上で約2.5秒操作がないとコントロールが隠れ、操作すると再表示されます。常に表示するには `viewer.controls.autoHide: false` を指定します。
+
+## UIの言語と文言
+
+標準UIの言語は解決済みの `document.lang` に従います（画面別の設定も適用され、既定値は `ja`）。`ja-JP` などは日本語、それ以外は英語を使用します。実行時オプションで言語ごとに文言を上書きできます。
+
+```ts
+createDecks({
+  document: { lang: "ja" },
+  messages: { ja: { previous: "戻る" }, en: { previous: "Back" } },
+});
+```
+
+`slidePosition` と `progressText` には `{current}` と `{total}`、`slideCount` と `slideCountOne` には `{count}` を指定できます。ビューアーの操作では既存の `viewer.controls.labels` が優先されます。独自画面向けに `DeckMessages`、`resolveMessages`、`formatMessage` も公開しています。

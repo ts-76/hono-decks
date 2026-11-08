@@ -624,3 +624,16 @@ Authorization is required on every WebSocket connection. Presenter access grants
 
 
 The viewer supports Left / Right, Page Up / Page Down, Space / Shift + Space, Home, and End for navigation. Press `F` for fullscreen, `O` for the overview when enabled, `T` for the table of contents, and `?` for shortcut help. The table of contents button opens a slide list; Escape closes the panel or help. Controls hide after about 2.5 seconds of inactivity over the slide and reappear on activity. Set `viewer.controls.autoHide: false` to keep them visible.
+
+## UI language and messages
+
+Built-in UI uses the resolved document language (`document.lang`, including surface overrides; the default is `ja`). Japanese language tags such as `ja-JP` use Japanese; other languages use English. Override individual messages per locale in runtime options:
+
+```ts
+createDecks({
+  document: { lang: "ja" },
+  messages: { ja: { previous: "戻る" }, en: { previous: "Back" } },
+});
+```
+
+Templates such as `slidePosition` and `progressText` accept `{current}` and `{total}`; `slideCount` and `slideCountOne` accept `{count}`. Existing `viewer.controls.labels` take precedence for viewer controls. `DeckMessages`, `resolveMessages`, and `formatMessage` are exported for custom surfaces.
