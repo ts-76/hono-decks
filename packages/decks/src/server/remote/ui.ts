@@ -57,11 +57,18 @@ const style = layer(
 .hono-decks-live > span:first-child { font-weight:700 }
 .hono-decks-live:not(:has(button)) { padding-right:.7rem }
 .hono-decks-live button { font:inherit;color:inherit;background:transparent;border:1px solid rgba(148,163,184,.45);border-radius:999px;padding:.25rem .65rem;cursor:pointer }
-.hono-decks-remote-qr { margin:auto;padding:20px;border:0;border-radius:12px;background:#fff;color:#0f172a;text-align:center;max-width:min(360px,calc(100vw - 32px));font:14px/1.5 system-ui }
+.hono-decks-remote-qr { box-sizing:border-box;width:min(340px,calc(100vw - 32px));margin:auto;padding:16px 20px 20px;border:0;border-radius:16px;background:#fff;color:#0f172a;font:14px/1.5 system-ui,-apple-system,sans-serif;box-shadow:0 24px 48px rgba(2,6,23,.35) }
 .hono-decks-remote-qr::backdrop { background:rgba(2,6,23,.7) }
-.hono-decks-remote-qr svg { display:block;width:min(260px,70vw);height:auto;margin:0 auto 12px }
-.hono-decks-remote-qr p { margin:4px 0 }
-.hono-decks-remote-qr a { color:inherit;word-break:break-all;font-size:12px }
+.hono-decks-remote-qr header { display:flex;align-items:center;justify-content:space-between;margin-bottom:8px }
+.hono-decks-remote-qr h2 { margin:0;font-size:16px;font-weight:700 }
+.hono-decks-remote-qr header button { display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:#f1f5f9;color:#334155;font:inherit;font-size:18px;line-height:1;cursor:pointer }
+.hono-decks-remote-qr svg { display:block;width:min(220px,60vw);height:auto;margin:4px auto 8px }
+.hono-decks-remote-qr p { margin:0;text-align:center;font-size:13px;color:#475569;text-wrap:balance }
+.hono-decks-remote-qr-url { margin-top:16px;padding-top:14px;border-top:1px solid #e2e8f0 }
+.hono-decks-remote-qr-url span { display:block;margin-bottom:6px;font-size:12px;color:#64748b }
+.hono-decks-remote-qr-url div { display:flex;align-items:center;gap:8px;padding:6px 6px 6px 10px;border-radius:8px;background:#f1f5f9 }
+.hono-decks-remote-qr-url code { flex:1;min-width:0;font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;color:#0f172a;overflow-wrap:anywhere;user-select:all;-webkit-user-select:all }
+.hono-decks-remote-qr-url button { flex:none;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#0f172a;font:inherit;font-size:12px;cursor:pointer }
 `,
 );
 
@@ -88,7 +95,8 @@ export function remoteQrButton(messages: ReturnType<typeof remoteMessages> = REM
 /** A QR code for the remote control page. Render it outside the presenter toolbar. */
 export function remoteQrPopover(url: string, messages: ReturnType<typeof remoteMessages> = REMOTE_MESSAGES): string {
   const svg = renderSVG(url, { border: 2 }).replace("<svg ", `<svg role="img" aria-label="${escape(messages.qr)}" `);
-  return `<div id="hono-decks-remote-qr" class="hono-decks-remote-qr" popover>${svg}<p>${escape(messages.qrHint)}</p><p><a href="${escape(url)}">${escape(url)}</a></p></div>`;
+  // The URL is plain, selectable text with a copy button: following a link here would open the remote on the presenter's own screen.
+  return `<div id="hono-decks-remote-qr" class="hono-decks-remote-qr" popover role="dialog" aria-labelledby="hono-decks-remote-qr-title"><header><h2 id="hono-decks-remote-qr-title">${escape(messages.title)}</h2><button type="button" popovertarget="hono-decks-remote-qr" popovertargetaction="hide" aria-label="${escape(messages.close)}">&times;</button></header>${svg}<p>${escape(messages.qrHint)}</p><div class="hono-decks-remote-qr-url"><span>${escape(messages.urlLabel)}</span><div><code data-remote-url>${escape(url)}</code><button type="button" data-remote-copy>${escape(messages.copy)}</button></div></div></div>`;
 }
 
 export function remoteIndicator(
@@ -227,6 +235,12 @@ export function renderRemoteScript(
     frame?.addEventListener('load', () => { try { const doc = frame.contentDocument; doc?.addEventListener('keydown', pause, true); doc?.addEventListener('touchstart', pause, true); } catch {} if (following) apply(live); });
     showFollow();
   }
+  const copyButton = document.querySelector('[data-remote-copy]');
+  copyButton?.addEventListener('click', async () => {
+    const text = document.querySelector('[data-remote-url]')?.textContent || '';
+    try { await navigator.clipboard.writeText(text); copyButton.textContent = messages.copied; setTimeout(() => { copyButton.textContent = messages.copy; }, 1500); }
+    catch { const range = document.createRange(); const node = document.querySelector('[data-remote-url]'); if (node) { range.selectNodeContents(node); getSelection()?.removeAllRanges(); getSelection()?.addRange(range); } }
+  });
   if (mode === 'presenter') document.addEventListener('hono-decks:timer', event => {
     const detail = event.detail; if (!detail || !Number.isFinite(detail.elapsed)) return;
     lastTimer = { elapsed: Math.floor(detail.elapsed), running: Boolean(detail.running), duration: Number.isFinite(detail.duration) && detail.duration > 0 ? detail.duration : null, ...(detail.display ? { display: detail.display } : {}), at: epochNow() };
