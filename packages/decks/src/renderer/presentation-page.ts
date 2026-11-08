@@ -200,18 +200,22 @@ export async function renderPresenterPageAsync(input: {
           <div data-timer-remaining-box${duration && timerDisplay.remaining ? "" : " hidden"}><span>${escapeHtml(timerMessages.remaining)}</span><strong role="timer" aria-live="off" aria-label="${escapeHtml(timerMessages.remaining)}" data-timer-remaining></strong></div>
           <div class="hono-decks-presenter-timer-pace" data-timer-pace${duration && timerDisplay.pace ? "" : " hidden"}></div>
         </div>
-        <div class="hono-decks-presenter-timer-controls"><button type="button" data-timer-toggle title="${escapeHtml(timerMessages.shortcut)}">${escapeHtml(timerMessages.start)}</button><button type="button" data-timer-reset>${escapeHtml(timerMessages.reset)}</button><label class="hono-decks-presenter-timer-target"><span>${escapeHtml(timerMessages.target)}</span><input type="number" min="1" max="1440" step="any" inputmode="decimal" data-timer-target value="${duration ? String(Math.round((duration / 60) * 10) / 10) : ""}"><span>${escapeHtml(timerMessages.minutes)}</span></label><button type="button" data-timer-target-default hidden>${escapeHtml(timerMessages.targetDefault)}</button><details class="hono-decks-presenter-timer-display"><summary>${escapeHtml(timerMessages.display)}</summary>${(
-          [
-            ["pace", timerMessages.paceLabel],
-            ["remaining", timerMessages.remaining],
-            ["overtime", timerMessages.overtimeLabel],
-          ] as const
-        )
-          .map(
-            ([key, label]) =>
-              `<label><input type="checkbox" data-timer-show="${key}"${timerDisplay[key] ? " checked" : ""}>${escapeHtml(label)}</label>`,
+        <div class="hono-decks-presenter-timer-controls"><button type="button" data-timer-toggle title="${escapeHtml(timerMessages.shortcut)}">${escapeHtml(timerMessages.start)}</button><button type="button" data-timer-reset>${escapeHtml(timerMessages.reset)}</button></div>
+        <details class="hono-decks-presenter-timer-settings"><summary>${escapeHtml(timerMessages.settings)}</summary>
+          <div class="hono-decks-presenter-timer-target"><label><span>${escapeHtml(timerMessages.target)}</span><input type="number" min="1" max="1440" step="any" inputmode="decimal" data-timer-target value="${duration ? String(Math.round((duration / 60) * 10) / 10) : ""}"><span>${escapeHtml(timerMessages.minutes)}</span></label><button type="button" data-timer-target-default hidden>${escapeHtml(timerMessages.targetDefault)}</button></div>
+          <fieldset class="hono-decks-presenter-timer-display"><legend>${escapeHtml(timerMessages.display)}</legend>${(
+            [
+              ["pace", timerMessages.paceLabel],
+              ["remaining", timerMessages.remaining],
+              ["overtime", timerMessages.overtimeLabel],
+            ] as const
           )
-          .join("")}</details></div>
+            .map(
+              ([key, label]) =>
+                `<label><input type="checkbox" data-timer-show="${key}"${timerDisplay[key] ? " checked" : ""}>${escapeHtml(label)}</label>`,
+            )
+            .join("")}</fieldset>
+        </details>
       </section>
       <section class="hono-decks-presenter-next" data-hono-decks-presenter-next aria-label="${escapeHtml(messages.nextPreview)}">
         <h2>${escapeHtml(messages.next)}</h2>
@@ -296,17 +300,19 @@ body{margin:0;min-height:100vh;background:#050816;color:#eef2ff;font-family:Inte
 .hono-decks-presenter-timer-values [data-pace="ahead"]{color:var(--hono-decks-presenter-ahead,#86efac)}
 .hono-decks-presenter-timer-values [data-pace="behind"],.hono-decks-presenter-timer-values [data-over="true"]{color:var(--hono-decks-presenter-behind,#fda4af)}
 .hono-decks-presenter-timer-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px}
+.hono-decks-presenter-timer-controls button,.hono-decks-presenter-timer-settings button{font:inherit;font-size:14px;color:inherit;background:var(--hono-decks-presenter-button-background,#1e293b);border:1px solid var(--hono-decks-presenter-border,#64748b);border-radius:6px;padding:6px 12px;cursor:pointer}
+.hono-decks-presenter-timer-settings{margin-top:12px;border-top:1px solid rgba(148,163,184,.2);padding-top:8px;font-size:14px;color:var(--hono-decks-presenter-muted,#aabbd1)}
+.hono-decks-presenter-timer-settings summary{cursor:pointer;width:max-content;padding:2px 0}
+.hono-decks-presenter-timer-settings[open] summary{margin-bottom:10px}
+.hono-decks-presenter-timer-target{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.hono-decks-presenter-timer-target label{display:inline-flex;align-items:center;gap:6px}
+.hono-decks-presenter-timer-target input{box-sizing:border-box;width:5em;font:inherit;font-size:14px;color:var(--hono-decks-presenter-timer-color,#fff);background:var(--hono-decks-presenter-button-background,#1e293b);border:1px solid var(--hono-decks-presenter-border,#64748b);border-radius:6px;padding:5px 8px;font-variant-numeric:tabular-nums}
+.hono-decks-presenter-timer-target [data-timer-target-default]{font-size:13px;padding:5px 10px}
+.hono-decks-presenter-timer-display{display:flex;flex-wrap:wrap;gap:6px 16px;margin:10px 0 0;padding:0;border:0}
+.hono-decks-presenter-timer-display legend{float:left;width:100%;padding:0;margin-bottom:4px}
+.hono-decks-presenter-timer-display label{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;color:var(--hono-decks-presenter-timer-color,#fff)}
 .hono-decks-presenter-timer-pace{font-size:16px;font-weight:600}
 .hono-decks-presenter-timer-values [hidden]{display:none}
-.hono-decks-presenter-timer-target{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-size:14px;color:var(--hono-decks-presenter-muted,#aabbd1)}
-.hono-decks-presenter-timer-target input{box-sizing:border-box;width:5em;font:inherit;font-size:14px;color:var(--hono-decks-presenter-timer-color,#fff);background:var(--hono-decks-presenter-button-background,#1e293b);border:1px solid var(--hono-decks-presenter-border,#64748b);border-radius:6px;padding:5px 8px;font-variant-numeric:tabular-nums}.hono-decks-presenter-timer-controls button{font:inherit;font-size:14px;color:inherit;background:var(--hono-decks-presenter-button-background,#1e293b);border:1px solid var(--hono-decks-presenter-border,#64748b);border-radius:6px;padding:6px 12px;cursor:pointer}
-.hono-decks-presenter-timer-controls [data-timer-target-default]{font-size:13px;padding:5px 10px}
-.hono-decks-presenter-timer-display{position:relative;font-size:14px}
-.hono-decks-presenter-timer-display summary{cursor:pointer;list-style:none;border:1px solid var(--hono-decks-presenter-border,#64748b);border-radius:6px;padding:5px 10px;background:var(--hono-decks-presenter-button-background,#1e293b)}
-.hono-decks-presenter-timer-display summary::-webkit-details-marker{display:none}
-.hono-decks-presenter-timer-display[open] summary{border-color:#93c5fd}
-.hono-decks-presenter-timer-display label{display:flex;align-items:center;gap:6px;padding:4px 0;white-space:nowrap}
-.hono-decks-presenter-timer-display[open]>label:first-of-type{margin-top:6px}
 .hono-decks-presenter-no-next:not([hidden]){display:grid;place-items:center;aspect-ratio:16/9;margin:0;border-radius:6px;background:#020617;color:#93a4bd;font-size:14px}
 .hono-decks-presenter-notes article{white-space:pre-wrap;font-size:18px;line-height:1.6}
 @media (max-width:900px){.hono-decks-presenter{grid-template-columns:1fr;padding-bottom:72px}.hono-decks-presenter-panel{grid-template-rows:auto auto auto}}`,

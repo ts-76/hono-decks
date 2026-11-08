@@ -48,6 +48,7 @@ export interface DeckMessages {
   timerMinutes: string;
   timerTargetDefault: string;
   timerDisplay: string;
+  timerSettings: string;
   timerPaceLabel: string;
   timerOvertimeLabel: string;
   timerAppendix: string;
@@ -148,6 +149,7 @@ export const enMessages: DeckMessages = {
   timerMinutes: "min",
   timerTargetDefault: "Use default",
   timerDisplay: "Show",
+  timerSettings: "Settings",
   timerPaceLabel: "Pace",
   timerOvertimeLabel: "Overtime",
   timerAppendix: "Appendix",
@@ -247,6 +249,7 @@ export const jaMessages: DeckMessages = {
   timerMinutes: "分",
   timerTargetDefault: "既定に戻す",
   timerDisplay: "表示",
+  timerSettings: "設定",
   timerPaceLabel: "ペース",
   timerOvertimeLabel: "超過時間",
   timerAppendix: "付録",
@@ -348,6 +351,7 @@ export function timerMessages(messages: DeckMessages) {
     minutes: messages.timerMinutes,
     targetDefault: messages.timerTargetDefault,
     display: messages.timerDisplay,
+    settings: messages.timerSettings,
     paceLabel: messages.timerPaceLabel,
     overtimeLabel: messages.timerOvertimeLabel,
     appendix: messages.timerAppendix,
