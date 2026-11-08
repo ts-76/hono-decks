@@ -132,7 +132,9 @@ describe("decksRouter page surfaces", () => {
     expect(html).toContain("root.querySelectorAll(\"[data-action='next']\")");
     expect(html).toContain("root.querySelectorAll(\"[data-action='fullscreen']\")");
     expect(html).toContain('data-hono-decks-print-path="/slides/deck1/print"');
-    expect(html).toContain("if (event.metaKey || event.ctrlKey || event.altKey) return;");
+    expect(html).toContain('(event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "p"');
+    expect(html).toContain('printUrl.searchParams.set("autoprint", "1")');
+    expect(html).toContain("window.location.assign(printUrl)");
     expect(html).not.toContain("/edit");
     expect(html).not.toContain("/agent/chat");
     expect(html).not.toContain("/apply");

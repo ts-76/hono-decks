@@ -30,6 +30,7 @@ export const VIEWER_MESSAGES = {
   overview: "Open overview: O",
   toggleToc: "Toggle table of contents: T",
   fullscreen: "Toggle fullscreen: F",
+  print: "Open print view: Ctrl / Cmd + P",
   help: "Show shortcuts: ?",
 } as const;
 
@@ -581,6 +582,7 @@ function renderViewerExtras(
             ...(parts.meta.availablePages.overview ? [VIEWER_MESSAGES.overview] : []),
             ...(tocEnabled ? [VIEWER_MESSAGES.toggleToc] : []),
             VIEWER_MESSAGES.fullscreen,
+            ...(parts.meta.availablePages.print ? [VIEWER_MESSAGES.print] : []),
             VIEWER_MESSAGES.help,
           ].map((message) => jsx("li", { children: message })),
         }),

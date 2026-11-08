@@ -25,6 +25,7 @@ export function renderViewerScript(nonce?: string): string {
     const help = root.querySelector("[data-hono-decks-help]");
     const pendingOutput = root.querySelector("[data-hono-decks-pending-number]");
     const overviewPath = root.getAttribute("data-hono-decks-overview-path");
+    const printPath = root.getAttribute("data-hono-decks-print-path") || "";
     const autoHideDelay = Number(root.getAttribute("data-hono-decks-autohide"));
     let currentIndex = 0, slideCount = 1, pending = "", hideTimer, tocRestoreFocus, helpRestoreFocus, pointerOverStage = false;
 
@@ -148,13 +149,20 @@ export function renderViewerScript(nonce?: string): string {
     }
     function toggleToc(open = panel?.hidden) {
       if (!panel) return;
-      if (open) { tocRestoreFocus = document.activeElement; panel.hidden = false; tocButton?.setAttribute("aria-expanded", "true"); panel.querySelector("[aria-current], button")?.focus(); }
+      if (open) { tocRestoreFocus = document.activeElement; panel.hidden = false; tocButton?.setAttribute("aria-expanded", "true"); (panel.querySelector("[aria-current]") ?? panel.querySelector("[data-action='goTo']"))?.focus(); }
       else { panel.hidden = true; tocButton?.setAttribute("aria-expanded", "false"); tocRestoreFocus?.focus(); }
       activity();
     }
     function handleKeydown(event) {
       activity();
       if (event.defaultPrevented || help?.open) return;
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "p" && printPath) {
+        event.preventDefault();
+        const printUrl = new URL(printPath, window.location.href);
+        printUrl.searchParams.set("autoprint", "1");
+        window.location.assign(printUrl);
+        return;
+      }
       const target = event.target;
       if (target instanceof HTMLElement && (target.isContentEditable || target.closest("input,textarea,select,[role=textbox]"))) return;
       if (event.metaKey || event.ctrlKey || event.altKey) return;

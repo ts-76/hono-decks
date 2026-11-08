@@ -710,7 +710,8 @@ export function renderPresentationScript(nonce?: string): string {
         event.preventDefault();
         window.parent.postMessage({ type: "hono-decks:key", key: event.key, shiftKey: event.shiftKey, metaKey: event.metaKey, ctrlKey: event.ctrlKey, altKey: event.altKey }, window.location.origin);
       }
-      return;
+      // The viewer handles navigation; the presenter-notes toggle stays inside the slide document.
+      if (event.key !== "p") return;
     }
     if (event.metaKey || event.ctrlKey || event.altKey) return;
     if (target instanceof HTMLElement && (target.isContentEditable || target.closest("input,textarea,select,button,a[href],[role=textbox],[role=button],[role=slider]"))) return;
