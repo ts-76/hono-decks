@@ -118,4 +118,28 @@ describe("remote socket route", () => {
     ).text();
     expect(follower).not.toContain("hono-decks-remote-qr");
   });
+
+  it("renders a phone-first remote with notes, a slide list, and the talk duration", async () => {
+    const namespace = {} as DurableObjectNamespace;
+    const server = new Hono();
+    server.route(
+      "/slides",
+      decksRouter({
+        source: manifestDeckSource({ decks: [{ ...deck, slides: [{ ...deck.slides[0]!, notes: "Say hello" }] }] }),
+        presenter: { duration: "10m" },
+        document: { nonce: "n1" },
+        remote: { namespace: () => namespace, authorize: () => true },
+      }),
+    );
+    const html = await (await server.request("/slides/deck1/remote")).text();
+    expect(html).toContain('class="hono-decks-remote-notes"');
+    expect(html).toContain("Say hello");
+    expect(html).not.toContain("<details>");
+    expect(html).toContain('data-remote-goto="0" aria-current="true"');
+    expect(html).toContain("data-remote-remaining");
+    expect(html).toContain("const duration = 600");
+    expect(html).toContain("navigator.wakeLock");
+    expect(html).not.toMatch(/<[^>]+ style="/);
+    for (const tag of html.match(/<(?:style|script)\b[^>]*>/gi) ?? []) expect(tag).toContain('nonce="n1"');
+  });
 });

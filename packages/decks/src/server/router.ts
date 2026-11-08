@@ -1,3 +1,4 @@
+import { parseDuration } from "../deck/duration";
 import { renderRemotePage } from "./remote/ui";
 import { resolveMessages, type DeckMessageOverrides } from "../shared/messages";
 import { Hono } from "hono";
@@ -483,7 +484,9 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
     const mountPath = resolveMountPath(c.req.path, `/${slug}/remote`);
     const document = await resolveRouterDocument(c, options, "presenter", mountPath, deck);
     c.header("Cache-Control", "private, no-store");
-    return c.html(renderRemotePage(deck, document, options.messages));
+    const presenterDuration = options.presenter === false ? undefined : options.presenter?.duration;
+    const duration = presenterDuration === undefined ? deck.meta.duration : parseDuration(presenterDuration, "seconds");
+    return c.html(renderRemotePage(deck, document, options.messages, { duration }));
   });
 
   router.get("/:slug/remote/socket", async (c) => {

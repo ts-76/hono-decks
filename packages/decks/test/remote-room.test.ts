@@ -188,4 +188,25 @@ describe("remote room", () => {
       vi.useRealTimers();
     }
   });
+
+  it("relays the presenter timer to other presenter sockets with elapsed time advanced", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(100_000);
+      const { instance, data, connect } = room();
+      const presenter = connect("presenter");
+      const remote = connect("presenter");
+      const follower = connect("follower");
+      await instance.webSocketMessage(
+        presenter as unknown as WebSocket,
+        '{"type":"timer","elapsed":5000,"running":true}',
+      );
+      expect(data.get("timer")).toEqual({ elapsed: 5000, running: true, at: 100_000 });
+      expect(presenter.sent).toHaveLength(0);
+      expect(follower.sent).toHaveLength(0);
+      expect(JSON.parse(remote.sent[0]!)).toEqual({ type: "timer", elapsed: 5000, running: true });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

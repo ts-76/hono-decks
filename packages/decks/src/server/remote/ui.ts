@@ -1,6 +1,7 @@
 import { enMessages } from "../../shared/messages";
 import { resolveMessages, remoteMessages, formatMessage, type DeckMessageOverrides } from "../../shared/messages";
 import { renderSVG } from "uqr";
+import { formatTalkTime, talkPace } from "../../shared/talk-time";
 import type { CompiledDeck } from "../../deck/model";
 import { composeStylesheet, layer } from "../../renderer/style-layers";
 import { documentNonceAttribute, type ResolvedDeckDocument } from "../document";
@@ -10,13 +11,48 @@ export const REMOTE_MESSAGES = remoteMessages(enMessages);
 const style = layer(
   "components",
   `
-.hono-decks-remote { --hono-decks-remote-bg:#111827; --hono-decks-remote-fg:#fff; background:var(--hono-decks-remote-bg);color:var(--hono-decks-remote-fg);font:16px system-ui;min-height:100vh;margin:0;padding:1.5rem;box-sizing:border-box }
-.hono-decks-remote main { max-width:40rem;margin:auto;display:grid;gap:1.5rem }
-.hono-decks-remote h1,.hono-decks-remote h2,.hono-decks-remote p { margin:0 }
-.hono-decks-remote h2 { font-size:.9rem;opacity:.7;margin-bottom:.4rem }
-.hono-decks-remote-nav { display:grid;grid-template-columns:1fr 1fr;gap:1rem }
-.hono-decks-remote button { font:inherit;min-height:3rem;border:0;border-radius:.6rem;padding:1rem;cursor:pointer }
-.hono-decks-remote-nav button { min-height:6rem;font-size:1.25rem;font-weight:700 }
+.hono-decks-remote { --hono-decks-remote-bg:#0b1120;--hono-decks-remote-fg:#f8fafc;--hono-decks-remote-muted:#94a3b8;--hono-decks-remote-surface:#1e293b;--hono-decks-remote-accent:#2563eb;margin:0;background:var(--hono-decks-remote-bg);color:var(--hono-decks-remote-fg);font:16px/1.5 system-ui,-apple-system,sans-serif;-webkit-text-size-adjust:100% }
+.hono-decks-remote-app { box-sizing:border-box;height:100vh;height:100dvh;max-width:640px;margin:0 auto;display:grid;grid-template-rows:auto auto auto minmax(0,1fr) auto;gap:12px;padding:max(12px,env(safe-area-inset-top)) 16px max(12px,env(safe-area-inset-bottom)) }
+.hono-decks-remote-title { position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap }
+.hono-decks-remote-bar { display:flex;align-items:center;gap:12px;font-size:14px;font-variant-numeric:tabular-nums;min-width:0 }
+.hono-decks-remote-bar p { margin:0 }
+.hono-decks-remote-status { display:flex;align-items:center;gap:6px;color:var(--hono-decks-remote-muted) }
+@media (max-width:360px) { .hono-decks-remote-status { font-size:0;gap:0 } .hono-decks-remote-bar { gap:8px } }
+.hono-decks-remote-status::before { content:"";width:8px;height:8px;border-radius:50%;background:#f59e0b }
+.hono-decks-remote-status[data-state="connected"]::before { background:#22c55e }
+.hono-decks-remote-status[data-state="disconnected"]::before { background:#ef4444 }
+.hono-decks-remote-timer { margin-left:auto;display:flex;align-items:baseline;gap:8px;white-space:nowrap }
+.hono-decks-remote-timer strong { font-size:20px }
+.hono-decks-remote-timer [data-remote-elapsed][data-running="false"] { color:var(--hono-decks-remote-muted) }
+.hono-decks-remote [data-pace="ahead"] { color:#86efac }
+.hono-decks-remote [data-pace="behind"],.hono-decks-remote [data-over="true"] { color:#fda4af }
+.hono-decks-remote-progress { height:4px;border-radius:2px;background:rgba(148,163,184,.25);overflow:hidden }
+.hono-decks-remote-progress span { display:block;height:100%;width:calc(var(--hono-decks-remote-progress,0) * 100%);background:var(--hono-decks-remote-accent);transition:width .2s ease }
+.hono-decks-remote-slides { display:grid;gap:4px }
+.hono-decks-remote-slides p { margin:0;display:flex;align-items:baseline;gap:10px;min-width:0 }
+.hono-decks-remote-slides span { flex:none;min-width:4.5em;font-size:12px;color:var(--hono-decks-remote-muted) }
+.hono-decks-remote-slides strong,.hono-decks-remote-slides em { min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-style:normal }
+.hono-decks-remote-slides strong { font-size:18px }
+.hono-decks-remote-slides em { color:var(--hono-decks-remote-muted) }
+.hono-decks-remote-notes { margin:0;overflow:auto;overscroll-behavior:contain;border-top:1px solid rgba(148,163,184,.25);padding-top:12px;font-size:20px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere }
+.hono-decks-remote-notes[data-empty="true"] { font-size:16px;color:var(--hono-decks-remote-muted) }
+.hono-decks-remote-nav { display:grid;grid-template-columns:60px minmax(0,1fr) minmax(0,2fr);gap:10px }
+.hono-decks-remote-nav button,.hono-decks-remote-list button { font:inherit;color:inherit;border:0;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none }
+.hono-decks-remote-nav button { min-height:76px;border-radius:16px;background:var(--hono-decks-remote-surface);font-size:18px;font-weight:700 }
+.hono-decks-remote-nav [data-remote-command="next"] { background:var(--hono-decks-remote-accent);font-size:22px }
+.hono-decks-remote-nav button:active { transform:scale(.97) }
+.hono-decks-remote-nav button:disabled { opacity:.4;transform:none }
+.hono-decks-remote-nav svg { width:24px;height:24px;vertical-align:middle }
+.hono-decks-remote-list { box-sizing:border-box;width:100%;max-width:640px;max-height:80dvh;margin:auto auto 0;padding:16px 16px max(16px,env(safe-area-inset-bottom));border:0;border-radius:16px 16px 0 0;background:#0f172a;color:var(--hono-decks-remote-fg) }
+.hono-decks-remote-list::backdrop { background:rgba(2,6,23,.65) }
+.hono-decks-remote-list header { display:flex;align-items:center;justify-content:space-between;margin-bottom:8px }
+.hono-decks-remote-list h2 { margin:0;font-size:16px }
+.hono-decks-remote-list ol { list-style:none;margin:0;padding:0 }
+.hono-decks-remote-list li button { display:flex;gap:12px;width:100%;padding:12px;border-radius:10px;background:transparent;text-align:left;font-size:16px }
+.hono-decks-remote-list li button span { color:var(--hono-decks-remote-muted);font-variant-numeric:tabular-nums;min-width:1.5em;text-align:right }
+.hono-decks-remote-list li button[aria-current="true"] { background:var(--hono-decks-remote-surface) }
+.hono-decks-remote-list header button { padding:8px 12px;border-radius:8px;background:var(--hono-decks-remote-surface) }
+@media (prefers-reduced-motion:reduce) { .hono-decks-remote-nav button:active { transform:none } .hono-decks-remote-progress span { transition:none } }
 .hono-decks-live { position:fixed;left:12px;bottom:12px;z-index:40;display:flex;align-items:center;gap:.5rem;padding:.3rem .4rem .3rem .7rem;border-radius:999px;background:rgba(15,23,42,.86);color:#fff;font:13px/1.2 system-ui }
 .hono-decks-live > span:first-child { font-weight:700 }
 .hono-decks-live:not(:has(button)) { padding-right:.7rem }
@@ -66,14 +102,24 @@ export function renderRemotePage(
   deck: CompiledDeck,
   document: ResolvedDeckDocument,
   overrides?: DeckMessageOverrides,
+  options: { duration?: number } = {},
 ): string {
   const catalog = resolveMessages(document.lang, overrides);
   const messages = remoteMessages(catalog);
   const slides = deck.slides.map((slide, i) => ({
-    title: slide.meta.title || String(i + 1),
+    title: slide.meta.title || formatMessage(catalog.slide, { number: i + 1 }),
     notes: slide.notes ?? slide.meta.notes ?? "",
   }));
-  return `<!doctype html><html lang="${escape(document.lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(messages.title)}</title><style${documentNonceAttribute(document.nonce)}>${composeStylesheet({ layers: style })}</style>${document.head}</head><body class="hono-decks-remote"><main><h1>${escape(messages.title)}</h1><p data-remote-status role="status">${escape(messages.connecting)}</p><p data-remote-position>${escape(formatMessage(catalog.progressText, { current: 1, total: slides.length }))}</p><section><h2>${escape(messages.current)}</h2><p data-remote-current>${escape(slides[0]?.title ?? "")}</p></section><section><h2>${escape(messages.nextSlide)}</h2><p data-remote-next>${escape(slides[1]?.title ?? messages.noNext)}</p></section><nav class="hono-decks-remote-nav"><button type="button" data-remote-command="previous">${escape(messages.previous)}</button><button type="button" data-remote-command="next">${escape(messages.next)}</button></nav><details><summary>${escape(messages.notes)}</summary><p data-remote-notes>${escape(slides[0]?.notes || messages.noNotes)}</p></details></main>${renderRemoteScript("remote", document.nonce, true, slides, messages, catalog.progressText)}</body></html>`;
+  const icon = (d: string) =>
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
+  const list = slides
+    .map(
+      (slide, i) =>
+        `<li><button type="button" data-remote-goto="${i}"${i === 0 ? ' aria-current="true"' : ""}><span>${i + 1}</span>${escape(slide.title)}</button></li>`,
+    )
+    .join("");
+  const timer = `<p class="hono-decks-remote-timer"><strong data-remote-elapsed data-running="false" role="timer" aria-label="${escape(messages.elapsed)}">00:00</strong>${options.duration ? `<span data-remote-remaining aria-label="${escape(messages.remaining)}"></span><span data-remote-pace></span>` : ""}</p>`;
+  return `<!doctype html><html lang="${escape(document.lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b1120"><title>${escape(messages.title)}</title><style${documentNonceAttribute(document.nonce)}>${composeStylesheet({ layers: style })}</style>${document.head}</head><body class="hono-decks-remote"><main class="hono-decks-remote-app"><h1 class="hono-decks-remote-title">${escape(messages.title)}</h1><header class="hono-decks-remote-bar"><p class="hono-decks-remote-status" data-remote-status data-state="connecting" role="status">${escape(messages.connecting)}</p><p data-remote-position>${escape(formatMessage(catalog.progressText, { current: 1, total: slides.length }))}</p>${timer}</header><div class="hono-decks-remote-progress" aria-hidden="true"><span data-remote-progress></span></div><section class="hono-decks-remote-slides"><p><span>${escape(messages.current)}</span><strong data-remote-current>${escape(slides[0]?.title ?? "")}</strong></p><p><span>${escape(messages.nextSlide)}</span><em data-remote-next>${escape(slides[1]?.title ?? messages.noNext)}</em></p></section><section class="hono-decks-remote-notes" aria-label="${escape(messages.notes)}" data-remote-notes${slides[0]?.notes ? "" : ' data-empty="true"'}>${escape(slides[0]?.notes || messages.noNotes)}</section><nav class="hono-decks-remote-nav" aria-label="${escape(messages.title)}"><button type="button" data-remote-list-open aria-haspopup="dialog" aria-label="${escape(messages.slides)}" title="${escape(messages.slides)}">${icon("M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01")}</button><button type="button" data-remote-command="previous" aria-label="${escape(messages.previous)}" disabled>${icon("M15 18l-6-6 6-6")}</button><button type="button" data-remote-command="next" disabled>${escape(messages.next)} ${icon("M9 18l6-6-6-6")}</button></nav></main><dialog class="hono-decks-remote-list" data-remote-list aria-label="${escape(messages.slides)}"><header><h2>${escape(messages.slides)}</h2><button type="button" data-remote-list-close>${escape(messages.close)}</button></header><ol>${list}</ol></dialog>${renderRemoteScript("remote", document.nonce, true, slides, messages, catalog.progressText, options.duration)}</body></html>`;
 }
 
 export function renderRemoteScript(
@@ -83,17 +129,25 @@ export function renderRemoteScript(
   slides: Array<{ title: string; notes: string }> = [],
   messages: ReturnType<typeof remoteMessages> = REMOTE_MESSAGES,
   progressText = "{current} / {total}",
+  duration?: number,
 ): string {
   return `<script data-hono-decks-remote-runtime${documentNonceAttribute(nonce)}>
 (() => {
   const mode = ${json(mode)}, messages = ${json(messages)}, slides = ${json(slides)}, progressText = ${json(progressText)};
+  const duration = ${json(duration ?? null)}, talkPace = ${talkPace.toString()}, formatTime = ${formatTalkTime.toString()};
   const status = document.querySelector('[data-remote-status]'), toggle = document.querySelector('[data-remote-follow]');
   const frame = document.querySelector(mode === 'presenter' ? '[data-hono-decks-presenter-current] iframe' : '[data-hono-decks-viewer] iframe');
   const base = location.pathname.replace(/\\/(?:presenter|remote)\\/?$/, '');
   const url = new URL(base.replace(/\\/$/, '') + '/remote/socket', location.href);
   url.search = location.search; url.searchParams.set('role', mode === 'viewer' ? 'follower' : 'presenter');
   url.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  let socket, delay = 250, following = ${json(follow)}, live = null, last = null, roomEmpty = false;
+  let socket, delay = 250, following = ${json(follow)}, live = null, last = null, roomEmpty = false, lastTimer = null, timer = null, wakeLock = null;
+  let connected = false;
+  function updateButtons() {
+    const atStart = live && live.index === 0 && live.stepIndex === 0;
+    document.querySelectorAll('[data-remote-command],[data-remote-goto]').forEach(button => { button.disabled = !connected || (button.dataset.remoteCommand === 'previous' && Boolean(atStart)); });
+  }
+  function setStatus(state, text) { connected = state === 'connected'; if (status) { status.textContent = text; status.dataset.state = state; } updateButtons(); }
   function showFollow() { if (toggle) { toggle.textContent = following ? messages.stop : messages.follow; toggle.setAttribute('aria-pressed', String(following)); } }
   function command(action, index, stepIndex) { frame?.contentWindow?.postMessage({ type: 'hono-decks:command', action, index, stepIndex }, location.origin); }
   function apply(position) { if (frame && position) command('goTo', position.index, position.stepIndex); }
@@ -103,14 +157,37 @@ export function renderRemoteScript(
     const set = (selector, value) => { const node = document.querySelector(selector); if (node) node.textContent = value; };
     set('[data-remote-position]', progressText.replaceAll('{current}', String(position.index + 1)).replaceAll('{total}', String(slides.length)));
     set('[data-remote-current]', current?.title || ''); set('[data-remote-next]', next?.title || messages.noNext);
-    set('[data-remote-notes]', current?.notes || messages.noNotes);
+    const notes = document.querySelector('[data-remote-notes]');
+    if (notes) { notes.textContent = current?.notes || messages.noNotes; notes.dataset.empty = String(!current?.notes); notes.scrollTop = 0; }
+    document.querySelector('[data-remote-progress]')?.style.setProperty('--hono-decks-remote-progress', String((position.index + 1) / Math.max(slides.length, 1)));
+    document.querySelectorAll('[data-remote-goto]').forEach(button => { if (Number(button.dataset.remoteGoto) === position.index) button.setAttribute('aria-current', 'true'); else button.removeAttribute('aria-current'); });
+    updateButtons();
+    renderTimer();
+  }
+  function renderTimer() {
+    const elapsedNode = document.querySelector('[data-remote-elapsed]');
+    if (!elapsedNode) return;
+    const seconds = timer ? (timer.elapsed + (timer.running ? Date.now() - timer.receivedAt : 0)) / 1000 : 0;
+    elapsedNode.textContent = formatTime(seconds);
+    elapsedNode.dataset.running = String(Boolean(timer?.running));
+    elapsedNode.title = timer ? '' : messages.notStarted;
+    const remainingNode = document.querySelector('[data-remote-remaining]'), paceNode = document.querySelector('[data-remote-pace]');
+    if (!duration || !remainingNode || !paceNode) return;
+    const remaining = duration - seconds;
+    remainingNode.textContent = remaining < 0 ? messages.over + ' ' + formatTime(-remaining) : '-' + formatTime(remaining);
+    remainingNode.dataset.over = String(remaining < 0);
+    if (!timer || !live) { paceNode.textContent = ''; return; }
+    const pace = talkPace(seconds, duration, live.index, slides.length);
+    paceNode.dataset.pace = pace.state;
+    paceNode.textContent = pace.state === 'on' ? messages.onPace : (pace.state === 'ahead' ? messages.ahead : messages.behind) + ' ' + formatTime(pace.seconds);
   }
   function connect() {
-    if (status) status.textContent = messages.connecting;
+    setStatus('connecting', messages.connecting);
     socket = new WebSocket(url);
-    socket.onopen = () => { delay = 250; if (status) status.textContent = messages.connected; };
+    socket.onopen = () => { delay = 250; setStatus('connected', messages.connected); if (mode === 'presenter' && lastTimer) send({ type: 'timer', ...lastTimer, elapsed: lastTimer.elapsed + (lastTimer.running ? Date.now() - lastTimer.at : 0) }); };
     socket.onmessage = event => {
       let message; try { message = JSON.parse(event.data); } catch { return; }
+      if (message.type === 'timer' && mode === 'remote' && Number.isFinite(message.elapsed)) { timer = { elapsed: message.elapsed, running: Boolean(message.running), receivedAt: Date.now() }; renderTimer(); return; }
       if (message.type === 'empty') { roomEmpty = true; if (mode === 'presenter' && last) send({ type: 'state', ...last }); return; }
       if (message.type === 'state' && Number.isInteger(message.index) && Number.isInteger(message.stepIndex)) {
         roomEmpty = false;
@@ -119,7 +196,7 @@ export function renderRemoteScript(
         else if ((mode === 'viewer' && following) || (mode === 'presenter' && (!last || last.index !== message.index || last.stepIndex !== message.stepIndex))) apply(message);
       } else if (mode === 'presenter' && message.type === 'command' && ['next', 'previous'].includes(message.command)) command(message.command);
     };
-    socket.onclose = () => { if (status) status.textContent = messages.disconnected; setTimeout(connect, delay); delay = Math.min(delay * 2, 10000); };
+    socket.onclose = () => { setStatus('disconnected', messages.disconnected); setTimeout(connect, delay); delay = Math.min(delay * 2, 10000); };
     socket.onerror = () => socket.close();
   }
   function pause() { if (mode === 'viewer' && following) { following = false; showFollow(); } }
@@ -135,7 +212,27 @@ export function renderRemoteScript(
     frame?.addEventListener('load', () => { try { const doc = frame.contentDocument; doc?.addEventListener('keydown', pause, true); doc?.addEventListener('touchstart', pause, true); } catch {} if (following) apply(live); });
     showFollow();
   }
-  document.querySelectorAll('[data-remote-command]').forEach(button => button.addEventListener('click', () => send({ type: 'command', command: button.dataset.remoteCommand })));
+  if (mode === 'presenter') document.addEventListener('hono-decks:timer', event => {
+    const detail = event.detail; if (!detail || !Number.isFinite(detail.elapsed)) return;
+    lastTimer = { elapsed: Math.floor(detail.elapsed), running: Boolean(detail.running), at: Date.now() };
+    send({ type: 'timer', elapsed: lastTimer.elapsed, running: lastTimer.running });
+  });
+  function tap() { try { navigator.vibrate?.(12); } catch {} }
+  document.querySelectorAll('[data-remote-command]').forEach(button => button.addEventListener('click', () => { tap(); send({ type: 'command', command: button.dataset.remoteCommand }); }));
+  if (mode === 'remote') {
+    const list = document.querySelector('[data-remote-list]');
+    document.querySelector('[data-remote-list-open]')?.addEventListener('click', () => { list?.showModal(); list?.querySelector('[aria-current="true"]')?.scrollIntoView({ block: 'center' }); });
+    document.querySelector('[data-remote-list-close]')?.addEventListener('click', () => list?.close());
+    list?.addEventListener('click', event => { if (event.target === list) list.close(); });
+    document.querySelectorAll('[data-remote-goto]').forEach(button => button.addEventListener('click', () => { tap(); send({ type: 'command', command: 'goTo', index: Number(button.dataset.remoteGoto), stepIndex: 0 }); list?.close(); }));
+    // Keep the phone awake while the remote is visible; the lock is released when the page is hidden.
+    async function keepAwake() { try { if (!wakeLock && document.visibilityState === 'visible' && navigator.wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); } } catch {} }
+    document.addEventListener('visibilitychange', keepAwake);
+    document.addEventListener('pointerdown', keepAwake, { once: true });
+    keepAwake();
+    setInterval(renderTimer, 1000);
+    renderTimer();
+  }
   connect();
 })();
 </script>`;

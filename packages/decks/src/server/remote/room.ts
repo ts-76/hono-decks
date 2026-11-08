@@ -7,6 +7,12 @@ interface SocketAttachment {
   messages: number;
 }
 
+interface StoredTimer {
+  elapsed: number;
+  running: boolean;
+  at: number;
+}
+
 interface StoredPosition {
   index: number;
   stepIndex: number;
@@ -47,6 +53,8 @@ export class DeckRemoteRoom {
     await this.ctx.storage.put("slideCount", slideCount);
     // An empty room adopts the first presenter's position instead of resetting it to slide 1.
     server.send(JSON.stringify(position ? { type: "state", ...position } : { type: "empty" }));
+    const timer = role === "presenter" ? await this.ctx.storage.get<StoredTimer>("timer") : undefined;
+    if (timer) server.send(timerMessage(timer, Date.now()));
     return new Response(null, { status: 101, webSocket: client });
   }
 
@@ -64,6 +72,21 @@ export class DeckRemoteRoom {
     const slideCount = await this.ctx.storage.get<number>("slideCount");
     const message = parseRemoteMessage(input, slideCount ?? 0);
     if (!message) return;
+    if (message.type === "timer") {
+      // Followers never see the timer; it is shared between presenter and remote pages.
+      const timer = { elapsed: message.elapsed, running: message.running, at: now };
+      await this.ctx.storage.put("timer", timer);
+      for (const peer of this.ctx.getWebSockets("presenter")) {
+        if (peer !== socket) {
+          try {
+            peer.send(timerMessage(timer, now));
+          } catch {
+            /* A disconnected peer must not block the room. */
+          }
+        }
+      }
+      return;
+    }
     if (message.type === "command" && message.command !== "goTo") {
       for (const peer of this.ctx.getWebSockets("presenter")) {
         if (peer !== socket) {
@@ -116,4 +139,10 @@ export class DeckRemoteRoom {
     if (this.ctx.getWebSockets().some((peer) => peer !== closed)) return;
     await this.ctx.storage.setAlarm(Date.now() + this.idleTimeoutMs);
   }
+}
+
+/** Serializes the timer with its elapsed time advanced to `now`, so clients need no shared clock. */
+function timerMessage(timer: StoredTimer, now: number): string {
+  const elapsed = timer.elapsed + (timer.running ? Math.max(0, now - timer.at) : 0);
+  return JSON.stringify({ type: "timer", elapsed, running: timer.running });
 }
