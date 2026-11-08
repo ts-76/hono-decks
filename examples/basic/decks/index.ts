@@ -42,7 +42,6 @@ export const decks = createDecks<DecksEnv>({
   presenter: {
     enabled: ({ c, dev }) => dev || truthyBinding(c.env?.DECK_PRESENTER_ENABLED),
     viewerControl: {
-      label: "Presenter",
       icon: "presenter",
       attributes: { "data-sample-control": "presenter" },
     },
@@ -59,11 +58,11 @@ export const decks = createDecks<DecksEnv>({
     controls: {
       className: "sample-viewer-controls",
       itemClassName: "sample-viewer-control",
-      before: [
+      before: (context) => [
         {
           type: "link",
           href: "/",
-          label: "Home",
+          label: context.messages.home,
           icon: "home",
           attributes: { "data-sample-control": "home" },
         },
@@ -72,7 +71,7 @@ export const decks = createDecks<DecksEnv>({
         {
           type: "link",
           href: `${context.meta.paths.viewer}/about`,
-          label: "Details",
+          label: context.messages.details,
           icon: "details",
           attributes: { "data-sample-control": "details" },
         },

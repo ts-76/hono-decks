@@ -54,7 +54,7 @@ describe("deck overview page", () => {
     const enabled = await (await appFor().request("/slides/deck1")).text();
     expect(enabled).toContain('href="/slides/deck1/overview"');
     expect(enabled).toMatch(/<a[^>]*href="\/slides\/deck1\/overview"[^>]*data-hono-decks-overview-link/);
-    expect(enabled).toContain('aria-label="スライドの概要"');
+    expect(enabled).toContain('aria-label="スライド一覧"');
 
     const disabled = appFor({ pages: { overview: false } });
     expect((await disabled.request("/slides/deck1/overview")).status).toBe(404);

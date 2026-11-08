@@ -173,7 +173,7 @@ describe("decksRouter presenter and presentation surfaces", () => {
     expect(presenterHtml).not.toContain("hono-decks-presenter-control-text");
     expect(presenterHtml).toContain('d="M3 11l9-8 9 8"');
     expect(presenterHtml).toContain('d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"');
-    expect(presenterHtml).toContain('aria-label="スライド一覧"');
+    expect(presenterHtml).toContain('aria-label="デッキ一覧"');
     expect(presenterHtml).toContain('aria-label="ビューアー"');
     expect(presenterHtml).toContain('aria-label="投影画面"');
     expect(presenterHtml).toContain('data-action="previous"');
