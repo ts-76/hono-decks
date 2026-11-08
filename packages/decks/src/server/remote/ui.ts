@@ -21,7 +21,6 @@ const style = layer(
 .hono-decks-live > span:first-child { font-weight:700 }
 .hono-decks-live:not(:has(button)) { padding-right:.7rem }
 .hono-decks-live button { font:inherit;color:inherit;background:transparent;border:1px solid rgba(148,163,184,.45);border-radius:999px;padding:.25rem .65rem;cursor:pointer }
-.hono-decks-presenter-controls a.hono-decks-presenter-remote-link { width:auto;white-space:nowrap }
 .hono-decks-remote-qr { margin:auto;padding:20px;border:0;border-radius:12px;background:#fff;color:#0f172a;text-align:center;max-width:min(360px,calc(100vw - 32px));font:14px/1.5 system-ui }
 .hono-decks-remote-qr::backdrop { background:rgba(2,6,23,.7) }
 .hono-decks-remote-qr svg { display:block;width:min(260px,70vw);height:auto;margin:0 auto 12px }
