@@ -12,10 +12,20 @@ const deck = {
   slides: [{ title: "First", time: 60 }, { title: "Second" }, { title: "Third" }, { title: "Appendix", appendix: true }].map((meta, index) => ({ index, meta: { ...meta, layout: "default", meta: {} }, html: `<h1>${meta.title}</h1>`, notes: `Private note ${index + 1}`, components: [] })),
   assets: [], warnings: [],
 };
-app.route("/decks", decksRouter({ source: manifestDeckSource({ decks: [deck] }), presenter: { duration: "3m" }, remote: {
-  namespace: ({ c }) => c.env.ROOMS,
-  authorize: () => true,
-  // Behind a tunnel the Worker sees http; encode the public https URL in the QR code.
-  url: ({ c, url }) => (c.req.header("x-forwarded-proto") === "https" ? url.replace(/^http:/, "https:") : url),
-} }));
+app.route("/decks", decksRouter({
+  source: manifestDeckSource({ decks: [deck] }),
+  document: {
+    lang: ({ c }) => {
+      const requested = c.req.query("lang")?.trim().toLowerCase();
+      return requested === "en" || requested === "ja" ? requested : "ja";
+    },
+  },
+  presenter: { duration: "3m" },
+  remote: {
+    namespace: ({ c }) => c.env.ROOMS,
+    authorize: () => true,
+    // Behind a tunnel the Worker sees http; encode the public https URL in the QR code.
+    url: ({ c, url }) => (c.req.header("x-forwarded-proto") === "https" ? url.replace(/^http:/, "https:") : url),
+  },
+}));
 export default app;
