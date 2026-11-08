@@ -29,7 +29,11 @@ const style = layer(
 .hono-decks-remote-nav { display:grid;grid-template-columns:1fr 1fr;gap:1rem }
 .hono-decks-remote button { font:inherit;min-height:3rem;border:0;border-radius:.6rem;padding:1rem;cursor:pointer }
 .hono-decks-remote-nav button { min-height:6rem;font-size:1.25rem;font-weight:700 }
-.hono-decks-live { display:flex;align-items:center;gap:.5rem;padding:.5rem;font:14px system-ui }
+.hono-decks-live { position:fixed;left:12px;bottom:12px;z-index:40;display:flex;align-items:center;gap:.5rem;padding:.3rem .4rem .3rem .7rem;border-radius:999px;background:rgba(15,23,42,.86);color:#fff;font:13px/1.2 system-ui }
+.hono-decks-live > span:first-child { font-weight:700 }
+.hono-decks-live:not(:has(button)) { padding-right:.7rem }
+.hono-decks-live button { font:inherit;color:inherit;background:transparent;border:1px solid rgba(148,163,184,.45);border-radius:999px;padding:.25rem .65rem;cursor:pointer }
+.hono-decks-presenter-controls a.hono-decks-presenter-remote-link { width:auto;white-space:nowrap }
 `,
 );
 

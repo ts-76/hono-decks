@@ -199,7 +199,7 @@ export async function renderPresenterPageAsync(input: {
         <span data-hono-decks-presenter-position>1 / ${deck.slides.length}</span>
         <button type="button" data-action="next" title="Next slide" aria-label="Next slide">${renderControlIconHtml("next")}</button>
         <span data-hono-decks-presenter-connection>Connected</span>
-        ${input.remote ? `<a href="${escapeHtml(`${deckPath}/remote`)}">${REMOTE_MESSAGES.title}</a>` : ""}
+        ${input.remote ? `<a class="hono-decks-presenter-remote-link" href="${escapeHtml(`${deckPath}/remote`)}">${REMOTE_MESSAGES.title}</a>` : ""}
       </nav>
       <iframe title="${escapeHtml(presentationPageTitle(deck))}" src="${escapeHtml(projectionPath)}"></iframe>
     </section>

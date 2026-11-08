@@ -108,4 +108,16 @@ describe("remote room", () => {
       vi.useRealTimers();
     }
   });
+
+  it("answers reserved close codes with a normal closure", () => {
+    const { connect, instance } = room();
+    const socket = connect("follower");
+    const close = vi.spyOn(socket, "close");
+    instance.webSocketClose(socket as unknown as WebSocket, 1005, "");
+    instance.webSocketClose(socket as unknown as WebSocket, 4001, "bye");
+    expect(close.mock.calls).toEqual([
+      [1000, ""],
+      [4001, "bye"],
+    ]);
+  });
 });

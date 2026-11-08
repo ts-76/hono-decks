@@ -77,7 +77,12 @@ export class DeckRemoteRoom {
   }
 
   webSocketClose(socket: WebSocket, code: number, reason: string): void {
-    if (code !== 1006) socket.close(code, reason);
+    // 1005 and 1006 are reserved and cannot be sent back in a close frame.
+    try {
+      socket.close(code === 1005 || code === 1006 ? 1000 : code, reason);
+    } catch {
+      /* The socket is already closed. */
+    }
   }
 
   webSocketError(socket: WebSocket): void {
