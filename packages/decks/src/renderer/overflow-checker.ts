@@ -99,7 +99,7 @@ export function renderOverflowChecker(nonce?: string): string {
     });
     panel.hidden = !panel.childElementCount;
   }
-  new MutationObserver(schedule).observe(document.querySelector(".hono-decks-deck"), {subtree:true, childList:true, characterData:true, attributes:true, attributeFilter:["data-slide-state", "hidden"]});
+  new MutationObserver(schedule).observe(document.querySelector(".hono-decks-deck"), {subtree:true, childList:true, characterData:true, attributes:true, attributeFilter:["data-slide-state", "hidden", "style", "data-hono-decks-allow-overflow"]});
   window.addEventListener("resize", schedule);
   document.addEventListener("load", schedule, true);
   if (document.fonts) document.fonts.ready.then(schedule);
