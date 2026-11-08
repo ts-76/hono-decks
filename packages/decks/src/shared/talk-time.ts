@@ -1,21 +1,58 @@
 /**
- * Compares elapsed time with the time budget of the current slide. Each slide gets
- * an equal share of the duration; being anywhere inside the current slide's window
- * is on pace. Returns the distance to that window in seconds (positive = ahead).
+ * Compares elapsed time with the time budget of the current slide. `plan` lists the
+ * main slides' budgets in seconds (`null` = share the rest equally), or is a slide
+ * count for an equal split. Being anywhere inside the current slide's window is on
+ * pace. Returns the distance to that window in seconds, or `null` for appendix slides.
  * Embedded into the presenter and remote scripts with Function#toString, so keep it self-contained.
  */
 export function talkPace(
   elapsedSeconds: number,
   durationSeconds: number,
   slideIndex: number,
-  slideCount: number,
-): { state: "on" | "ahead" | "behind"; seconds: number } {
-  const perSlide = durationSeconds / Math.max(slideCount, 1);
-  const windowStart = perSlide * slideIndex;
-  const windowEnd = windowStart + perSlide;
+  plan: number | Array<number | null>,
+): { state: "on" | "ahead" | "behind"; seconds: number } | null {
+  const times: Array<number | null> =
+    typeof plan === "number" ? Array.from({ length: Math.max(plan, 1) }, () => null) : plan;
+  if (slideIndex < 0 || slideIndex >= times.length) return null;
+  let fixed = 0;
+  let shared = 0;
+  for (const time of times) {
+    if (time && time > 0) fixed += time;
+    else shared += 1;
+  }
+  const share = shared ? Math.max(0, durationSeconds - fixed) / shared : 0;
+  // No inner named functions: bundlers that keep names would wrap them in a helper
+  // that does not exist once this function is embedded with toString().
+  let windowStart = 0;
+  let windowEnd = 0;
+  for (let index = 0; index <= slideIndex; index += 1) {
+    const time = times[index] ?? null;
+    windowStart = windowEnd;
+    windowEnd += time && time > 0 ? time : share;
+  }
   if (elapsedSeconds < windowStart) return { state: "ahead", seconds: windowStart - elapsedSeconds };
   if (elapsedSeconds > windowEnd) return { state: "behind", seconds: elapsedSeconds - windowEnd };
   return { state: "on", seconds: 0 };
+}
+
+/** Budgets of the main slides for `talkPace`: slides before the first `appendix: true`. */
+export function talkPlan(slides: ReadonlyArray<{ meta: { time?: number; appendix?: boolean } }>): Array<number | null> {
+  const appendixStart = slides.findIndex((slide) => slide.meta.appendix);
+  const main = appendixStart === -1 ? slides : slides.slice(0, appendixStart);
+  return main.map((slide) => slide.meta.time ?? null);
+}
+
+/** Resolves which timer readouts are shown; every readout defaults to shown. */
+export function resolveTimerDisplay(
+  ...layers: Array<{ pace?: boolean; remaining?: boolean; overtime?: boolean } | undefined>
+): { pace: boolean; remaining: boolean; overtime: boolean } {
+  const display = { pace: true, remaining: true, overtime: true };
+  for (const layer of layers)
+    Object.assign(
+      display,
+      Object.fromEntries(Object.entries(layer ?? {}).filter(([, value]) => typeof value === "boolean")),
+    );
+  return display;
 }
 
 /** Formats seconds as mm:ss, or h:mm:ss from one hour. Embedded into the presenter and remote scripts. */

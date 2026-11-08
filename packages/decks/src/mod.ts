@@ -93,6 +93,7 @@ export type {
   DeckRequestContext,
   DeckSource,
   SlideFrontmatter,
+  TalkTimerDisplay,
   SlideTransition,
 } from "./deck/model";
 export { SLIDE_TRANSITIONS } from "./deck/model";

@@ -1,7 +1,7 @@
 import { enMessages } from "../../shared/messages";
 import { resolveMessages, remoteMessages, formatMessage, type DeckMessageOverrides } from "../../shared/messages";
 import { renderSVG } from "uqr";
-import { epochNow, formatTalkTime, talkPace } from "../../shared/talk-time";
+import { epochNow, formatTalkTime, resolveTimerDisplay, talkPace } from "../../shared/talk-time";
 import type { CompiledDeck } from "../../deck/model";
 import { composeStylesheet, layer } from "../../renderer/style-layers";
 import { documentNonceAttribute, type ResolvedDeckDocument } from "../document";
@@ -102,10 +102,15 @@ export function renderRemotePage(
   deck: CompiledDeck,
   document: ResolvedDeckDocument,
   overrides?: DeckMessageOverrides,
-  options: { duration?: number } = {},
+  options: {
+    duration?: number;
+    display?: { pace: boolean; remaining: boolean; overtime: boolean };
+    plan?: Array<number | null>;
+  } = {},
 ): string {
   const catalog = resolveMessages(document.lang, overrides);
   const messages = remoteMessages(catalog);
+  const display = options.display ?? resolveTimerDisplay();
   const slides = deck.slides.map((slide, i) => ({
     title: slide.meta.title || formatMessage(catalog.slide, { number: i + 1 }),
     notes: slide.notes ?? slide.meta.notes ?? "",
@@ -118,8 +123,8 @@ export function renderRemotePage(
         `<li><button type="button" data-remote-goto="${i}"${i === 0 ? ' aria-current="true"' : ""}><span>${i + 1}</span>${escape(slide.title)}</button></li>`,
     )
     .join("");
-  const timer = `<p class="hono-decks-remote-timer"><strong data-remote-elapsed data-running="false" role="timer" aria-label="${escape(messages.elapsed)}">00:00</strong><span data-remote-remaining aria-label="${escape(messages.remaining)}"${options.duration ? "" : " hidden"}></span><span data-remote-pace${options.duration ? "" : " hidden"}></span></p>`;
-  return `<!doctype html><html lang="${escape(document.lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b1120"><title>${escape(messages.title)}</title><style${documentNonceAttribute(document.nonce)}>${composeStylesheet({ layers: style })}</style>${document.head}</head><body class="hono-decks-remote"><main class="hono-decks-remote-app"><h1 class="hono-decks-remote-title">${escape(messages.title)}</h1><header class="hono-decks-remote-bar"><p class="hono-decks-remote-status" data-remote-status data-state="connecting" role="status">${escape(messages.connecting)}</p><p data-remote-position>${escape(formatMessage(catalog.progressText, { current: 1, total: slides.length }))}</p>${timer}</header><div class="hono-decks-remote-progress" aria-hidden="true"><span data-remote-progress></span></div><section class="hono-decks-remote-slides"><p><span>${escape(messages.current)}</span><strong data-remote-current>${escape(slides[0]?.title ?? "")}</strong></p><p><span>${escape(messages.nextSlide)}</span><em data-remote-next>${escape(slides[1]?.title ?? messages.noNext)}</em></p></section><section class="hono-decks-remote-notes" aria-label="${escape(messages.notes)}" data-remote-notes${slides[0]?.notes ? "" : ' data-empty="true"'}>${escape(slides[0]?.notes || messages.noNotes)}</section><nav class="hono-decks-remote-nav" aria-label="${escape(messages.title)}"><button type="button" data-remote-list-open aria-haspopup="dialog" aria-label="${escape(messages.slides)}" title="${escape(messages.slides)}">${icon("M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01")}</button><button type="button" data-remote-command="previous" aria-label="${escape(messages.previous)}" disabled>${icon("M15 18l-6-6 6-6")}</button><button type="button" data-remote-command="next" disabled>${escape(messages.next)} ${icon("M9 18l6-6-6-6")}</button></nav></main><dialog class="hono-decks-remote-list" data-remote-list aria-label="${escape(messages.slides)}"><header><h2>${escape(messages.slides)}</h2><button type="button" data-remote-list-close>${escape(messages.close)}</button></header><ol>${list}</ol></dialog>${renderRemoteScript("remote", document.nonce, true, slides, messages, catalog.progressText, options.duration)}</body></html>`;
+  const timer = `<p class="hono-decks-remote-timer"><strong data-remote-elapsed data-running="false" role="timer" aria-label="${escape(messages.elapsed)}">00:00</strong><span data-remote-remaining aria-label="${escape(messages.remaining)}"${options.duration && display.remaining ? "" : " hidden"}></span><span data-remote-pace${options.duration && display.pace ? "" : " hidden"}></span></p>`;
+  return `<!doctype html><html lang="${escape(document.lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b1120"><title>${escape(messages.title)}</title><style${documentNonceAttribute(document.nonce)}>${composeStylesheet({ layers: style })}</style>${document.head}</head><body class="hono-decks-remote"><main class="hono-decks-remote-app"><h1 class="hono-decks-remote-title">${escape(messages.title)}</h1><header class="hono-decks-remote-bar"><p class="hono-decks-remote-status" data-remote-status data-state="connecting" role="status">${escape(messages.connecting)}</p><p data-remote-position>${escape(formatMessage(catalog.progressText, { current: 1, total: slides.length }))}</p>${timer}</header><div class="hono-decks-remote-progress" aria-hidden="true"><span data-remote-progress></span></div><section class="hono-decks-remote-slides"><p><span>${escape(messages.current)}</span><strong data-remote-current>${escape(slides[0]?.title ?? "")}</strong></p><p><span>${escape(messages.nextSlide)}</span><em data-remote-next>${escape(slides[1]?.title ?? messages.noNext)}</em></p></section><section class="hono-decks-remote-notes" aria-label="${escape(messages.notes)}" data-remote-notes${slides[0]?.notes ? "" : ' data-empty="true"'}>${escape(slides[0]?.notes || messages.noNotes)}</section><nav class="hono-decks-remote-nav" aria-label="${escape(messages.title)}"><button type="button" data-remote-list-open aria-haspopup="dialog" aria-label="${escape(messages.slides)}" title="${escape(messages.slides)}">${icon("M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01")}</button><button type="button" data-remote-command="previous" aria-label="${escape(messages.previous)}" disabled>${icon("M15 18l-6-6 6-6")}</button><button type="button" data-remote-command="next" disabled>${escape(messages.next)} ${icon("M9 18l6-6-6-6")}</button></nav></main><dialog class="hono-decks-remote-list" data-remote-list aria-label="${escape(messages.slides)}"><header><h2>${escape(messages.slides)}</h2><button type="button" data-remote-list-close>${escape(messages.close)}</button></header><ol>${list}</ol></dialog>${renderRemoteScript("remote", document.nonce, true, slides, messages, catalog.progressText, { duration: options.duration, display, plan: options.plan ?? slides.map(() => null) })}</body></html>`;
 }
 
 export function renderRemoteScript(
@@ -129,12 +134,17 @@ export function renderRemoteScript(
   slides: Array<{ title: string; notes: string }> = [],
   messages: ReturnType<typeof remoteMessages> = REMOTE_MESSAGES,
   progressText = "{current} / {total}",
-  duration?: number,
+  talk: {
+    duration?: number;
+    display?: { pace: boolean; remaining: boolean; overtime: boolean };
+    plan?: Array<number | null>;
+  } = {},
 ): string {
   return `<script data-hono-decks-remote-runtime${documentNonceAttribute(nonce)}>
 (() => {
   const mode = ${json(mode)}, messages = ${json(messages)}, slides = ${json(slides)}, progressText = ${json(progressText)};
-  let duration = ${json(duration ?? null)};
+  let duration = ${json(talk.duration ?? null)}, display = ${json(talk.display ?? resolveTimerDisplay())};
+  const plan = ${json(talk.plan ?? slides.map(() => null))};
   const talkPace = ${talkPace.toString()}, formatTime = ${formatTalkTime.toString()}, epochNow = ${epochNow.toString()};
   const status = document.querySelector('[data-remote-status]'), toggle = document.querySelector('[data-remote-follow]');
   const frame = document.querySelector(mode === 'presenter' ? '[data-hono-decks-presenter-current] iframe' : '[data-hono-decks-viewer] iframe');
@@ -173,15 +183,18 @@ export function renderRemoteScript(
     elapsedNode.dataset.running = String(Boolean(timer?.running));
     elapsedNode.title = timer ? '' : messages.notStarted;
     const remainingNode = document.querySelector('[data-remote-remaining]'), paceNode = document.querySelector('[data-remote-pace]');
-    remainingNode?.toggleAttribute('hidden', !duration); paceNode?.toggleAttribute('hidden', !duration);
-    if (!duration || !remainingNode || !paceNode) return;
-    const remaining = duration - seconds;
-    remainingNode.textContent = remaining < 0 ? messages.over + ' ' + formatTime(-remaining) : '-' + formatTime(remaining);
-    remainingNode.dataset.over = String(remaining < 0);
+    const remaining = duration ? duration - seconds : 0, over = Boolean(duration) && remaining < 0;
+    const showRemaining = Boolean(duration) && (display.remaining || (over && display.overtime)), showPace = Boolean(duration) && display.pace;
+    remainingNode?.toggleAttribute('hidden', !showRemaining); paceNode?.toggleAttribute('hidden', !showPace);
+    if (showRemaining && remainingNode) {
+      remainingNode.textContent = over ? (display.overtime ? messages.over + ' ' + formatTime(-remaining) : formatTime(0)) : '-' + formatTime(remaining);
+      remainingNode.dataset.over = String(over && display.overtime);
+    }
+    if (!showPace || !paceNode) return;
     if (!timer || !live) { paceNode.textContent = ''; return; }
-    const pace = talkPace(seconds, duration, live.index, slides.length);
-    paceNode.dataset.pace = pace.state;
-    paceNode.textContent = pace.state === 'on' ? messages.onPace : (pace.state === 'ahead' ? messages.ahead : messages.behind) + ' ' + formatTime(pace.seconds);
+    const pace = talkPace(seconds, duration, live.index, plan);
+    paceNode.dataset.pace = pace ? pace.state : 'appendix';
+    paceNode.textContent = !pace ? messages.appendix : pace.state === 'on' ? messages.onPace : (pace.state === 'ahead' ? messages.ahead : messages.behind) + ' ' + formatTime(pace.seconds);
   }
   function connect() {
     setStatus('connecting', messages.connecting);
@@ -189,7 +202,7 @@ export function renderRemoteScript(
     socket.onopen = () => { delay = 250; setStatus('connected', messages.connected); if (mode === 'presenter' && lastTimer) send({ type: 'timer', ...lastTimer, elapsed: lastTimer.elapsed + (lastTimer.running ? epochNow() - lastTimer.at : 0) }); };
     socket.onmessage = event => {
       let message; try { message = JSON.parse(event.data); } catch { return; }
-      if (message.type === 'timer' && mode === 'remote' && Number.isFinite(message.elapsed)) { timer = { elapsed: message.elapsed, running: Boolean(message.running), receivedAt: epochNow() }; if ('duration' in message) duration = Number.isFinite(message.duration) && message.duration > 0 ? message.duration : null; renderTimer(); return; }
+      if (message.type === 'timer' && mode === 'remote' && Number.isFinite(message.elapsed)) { timer = { elapsed: message.elapsed, running: Boolean(message.running), receivedAt: epochNow() }; if ('duration' in message) duration = Number.isFinite(message.duration) && message.duration > 0 ? message.duration : null; if (message.display && typeof message.display === 'object') display = { ...display, ...message.display }; renderTimer(); return; }
       if (message.type === 'empty') { roomEmpty = true; if (mode === 'presenter' && last) send({ type: 'state', ...last }); return; }
       if (message.type === 'state' && Number.isInteger(message.index) && Number.isInteger(message.stepIndex)) {
         roomEmpty = false;
@@ -216,8 +229,8 @@ export function renderRemoteScript(
   }
   if (mode === 'presenter') document.addEventListener('hono-decks:timer', event => {
     const detail = event.detail; if (!detail || !Number.isFinite(detail.elapsed)) return;
-    lastTimer = { elapsed: Math.floor(detail.elapsed), running: Boolean(detail.running), duration: Number.isFinite(detail.duration) && detail.duration > 0 ? detail.duration : null, at: epochNow() };
-    send({ type: 'timer', elapsed: lastTimer.elapsed, running: lastTimer.running, duration: lastTimer.duration });
+    lastTimer = { elapsed: Math.floor(detail.elapsed), running: Boolean(detail.running), duration: Number.isFinite(detail.duration) && detail.duration > 0 ? detail.duration : null, ...(detail.display ? { display: detail.display } : {}), at: epochNow() };
+    send({ type: 'timer', elapsed: lastTimer.elapsed, running: lastTimer.running, duration: lastTimer.duration, ...(lastTimer.display ? { display: lastTimer.display } : {}) });
   });
   function tap() { try { navigator.vibrate?.(12); } catch {} }
   document.querySelectorAll('[data-remote-command]').forEach(button => button.addEventListener('click', () => { tap(); send({ type: 'command', command: button.dataset.remoteCommand }); }));

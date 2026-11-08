@@ -1,3 +1,5 @@
+import { resolveTimerDisplay, talkPlan } from "../shared/talk-time";
+import type { TalkTimerDisplay } from "../deck/model";
 import { parseDuration } from "../deck/duration";
 import { renderRemotePage } from "./remote/ui";
 import { resolveMessages, type DeckMessageOverrides } from "../shared/messages";
@@ -216,6 +218,8 @@ export interface DecksRouterPresenterOptions<E extends Env = any> {
   viewerControl?: boolean | DeckPresenterViewerControlOptions;
   /** Target duration in seconds, or a string such as 20m. */
   duration?: number | string;
+  /** Talk-timer readouts shown by default (pace, remaining, overtime); overrides the deck's `timer` frontmatter. */
+  timer?: TalkTimerDisplay;
 }
 
 export type DeckPresenterEnabledResolver<E extends Env = any> = (
@@ -486,7 +490,13 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
     c.header("Cache-Control", "private, no-store");
     const presenterDuration = options.presenter === false ? undefined : options.presenter?.duration;
     const duration = presenterDuration === undefined ? deck.meta.duration : parseDuration(presenterDuration, "seconds");
-    return c.html(renderRemotePage(deck, document, options.messages, { duration }));
+    const display = resolveTimerDisplay(
+      deck.meta.timer,
+      options.presenter === false ? undefined : options.presenter?.timer,
+    );
+    return c.html(
+      renderRemotePage(deck, document, options.messages, { duration, display, plan: talkPlan(deck.slides) }),
+    );
   });
 
   router.get("/:slug/remote/socket", async (c) => {
@@ -568,6 +578,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
           mountPath,
           presenterStateQuery: paginationQueryFromRequest(c),
           duration: options.presenter === false ? undefined : options.presenter?.duration,
+          timerDisplay: options.presenter === false ? undefined : options.presenter?.timer,
           ...(await resolvePresenterRemote(c, options.remote, slug)),
           style: options.style,
           components: options.components,

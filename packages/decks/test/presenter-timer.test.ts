@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vite-plus/test";
 import { Hono } from "hono";
-import { toDeckFrontmatter, addUnknownFrontmatterWarnings } from "../src/deck/frontmatter";
+import { toDeckFrontmatter, addUnknownFrontmatterWarnings, toSlideFrontmatter } from "../src/deck/frontmatter";
 import { formatTalkTime, talkPace } from "../src/renderer/presentation-page";
-import { epochNow, formatClock } from "../src/shared/talk-time";
+import { epochNow, formatClock, resolveTimerDisplay, talkPlan } from "../src/shared/talk-time";
 import { decksRouter } from "../src/server/router";
 import { manifestDeckSource } from "../src/source/manifest-source";
 import { deck } from "./support/router-fixtures";
@@ -108,5 +108,64 @@ describe("presenter duration", () => {
     expect(timedHtml).toContain("const configuredDuration = 90;");
     // The timer only starts from Start or T; navigation never starts it.
     expect(timedHtml).not.toContain("startTimer");
+  });
+
+  it("budgets slide time, shares the rest, and leaves appendix slides out of the pace", () => {
+    const plan = talkPlan([
+      { meta: { time: 60 } },
+      { meta: {} },
+      { meta: {} },
+      { meta: { appendix: true } },
+      { meta: {} },
+    ]);
+    expect(plan).toEqual([60, null, null]);
+    expect(talkPace(30, 180, 0, plan)).toEqual({ state: "on", seconds: 0 });
+    expect(talkPace(0, 180, 1, plan)).toEqual({ state: "ahead", seconds: 60 });
+    expect(talkPace(150, 180, 1, plan)).toEqual({ state: "behind", seconds: 30 });
+    expect(talkPace(130, 180, 2, plan)).toEqual({ state: "on", seconds: 0 });
+    expect(talkPace(10, 180, 3, plan)).toBeNull();
+    // Budgets beyond the target leave nothing to share but keep their own windows.
+    expect(talkPace(250, 180, 1, [200, null])).toEqual({ state: "behind", seconds: 50 });
+  });
+
+  it("reads slide time and appendix from frontmatter and resolves timer readouts", () => {
+    const warnings: CompileWarning[] = [];
+    expect(toSlideFrontmatter({ time: "3m", appendix: true }, warnings, { slideIndex: 2 })).toMatchObject({
+      time: 180,
+      appendix: true,
+      meta: {},
+    });
+    expect(toSlideFrontmatter({ time: 2 }, warnings, { slideIndex: 3 }).time).toBe(120);
+    toSlideFrontmatter({ time: "soon" }, warnings, { slideIndex: 4 });
+    expect(warnings).toEqual([expect.objectContaining({ code: "invalid-time", slideIndex: 4 })]);
+    const deckWarnings: CompileWarning[] = [];
+    expect(toDeckFrontmatter({ timer: { pace: false } }, deckWarnings).timer).toEqual({ pace: false });
+    toDeckFrontmatter({ timer: { pace: "no" } }, deckWarnings);
+    expect(deckWarnings).toEqual([expect.objectContaining({ code: "invalid-timer" })]);
+    expect(resolveTimerDisplay({ pace: false }, undefined, { overtime: false })).toEqual({
+      pace: false,
+      remaining: true,
+      overtime: false,
+    });
+  });
+
+  it("renders readout toggles from frontmatter and router defaults", async () => {
+    const app = new Hono();
+    app.route(
+      "/slides",
+      decksRouter({
+        source: manifestDeckSource({
+          decks: [{ ...deck, meta: { ...deck.meta, duration: 600, timer: { pace: false } } }],
+        }),
+        presenter: { timer: { overtime: false } },
+      }),
+    );
+    const html = await (await app.request("/slides/deck1/presenter")).text();
+    expect(html).toContain('<input type="checkbox" data-timer-show="pace">');
+    expect(html).toContain('<input type="checkbox" data-timer-show="remaining" checked>');
+    expect(html).toContain('<input type="checkbox" data-timer-show="overtime">');
+    expect(html).toContain('class="hono-decks-presenter-timer-pace" data-timer-pace hidden');
+    expect(html).toContain('"hono-decks:timer-display:"');
+    expect(html).not.toContain("__name");
   });
 });

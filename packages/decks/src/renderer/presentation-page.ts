@@ -1,4 +1,5 @@
-import { epochNow, formatClock, formatTalkTime, talkPace } from "../shared/talk-time";
+import { epochNow, formatClock, formatTalkTime, resolveTimerDisplay, talkPace, talkPlan } from "../shared/talk-time";
+import type { TalkTimerDisplay } from "../deck/model";
 import { enMessages } from "../shared/messages";
 import { parseDuration } from "../deck/duration";
 import { renderOverflowChecker } from "./overflow-checker";
@@ -132,6 +133,8 @@ export async function renderPresenterPageAsync(input: {
   mountPath: string;
   presenterStateQuery?: string;
   duration?: number | string;
+  /** Timer readouts shown by default; overrides the deck's `timer` frontmatter. */
+  timerDisplay?: TalkTimerDisplay;
   remote?: boolean;
   /** Absolute remote control URL encoded in the presenter's QR code. */
   remoteUrl?: string;
@@ -160,6 +163,8 @@ export async function renderPresenterPageAsync(input: {
   );
   const duration = input.duration === undefined ? deck.meta.duration : parseDuration(input.duration, "seconds");
   const timerMessages = resolveTimerMessages(messages);
+  const timerDisplay = resolveTimerDisplay(deck.meta.timer, input.timerDisplay);
+  const plan = talkPlan(deck.slides);
   const notes = deck.slides.map((slide) => slide.notes ?? slide.meta.notes);
 
   return `<!doctype html>
@@ -192,10 +197,21 @@ export async function renderPresenterPageAsync(input: {
         <div class="hono-decks-presenter-timer-values">
           <div><span>${escapeHtml(timerMessages.elapsed)}</span><strong role="timer" aria-live="off" aria-label="${escapeHtml(timerMessages.elapsed)}" data-timer-elapsed>00:00</strong></div>
           <div><span>${escapeHtml(timerMessages.clock)}</span><strong role="timer" aria-live="off" aria-label="${escapeHtml(timerMessages.clock)}" data-timer-clock></strong></div>
-          <div data-timer-remaining-box${duration ? "" : " hidden"}><span>${escapeHtml(timerMessages.remaining)}</span><strong role="timer" aria-live="off" aria-label="${escapeHtml(timerMessages.remaining)}" data-timer-remaining></strong></div>
-          <div class="hono-decks-presenter-timer-pace" data-timer-pace${duration ? "" : " hidden"}></div>
+          <div data-timer-remaining-box${duration && timerDisplay.remaining ? "" : " hidden"}><span>${escapeHtml(timerMessages.remaining)}</span><strong role="timer" aria-live="off" aria-label="${escapeHtml(timerMessages.remaining)}" data-timer-remaining></strong></div>
+          <div class="hono-decks-presenter-timer-pace" data-timer-pace${duration && timerDisplay.pace ? "" : " hidden"}></div>
         </div>
-        <div class="hono-decks-presenter-timer-controls"><button type="button" data-timer-toggle title="${escapeHtml(timerMessages.shortcut)}">${escapeHtml(timerMessages.start)}</button><button type="button" data-timer-reset>${escapeHtml(timerMessages.reset)}</button><label class="hono-decks-presenter-timer-target"><span>${escapeHtml(timerMessages.target)}</span><input type="number" min="1" max="1440" step="any" inputmode="decimal" data-timer-target value="${duration ? String(Math.round((duration / 60) * 10) / 10) : ""}"><span>${escapeHtml(timerMessages.minutes)}</span></label><button type="button" data-timer-target-default hidden>${escapeHtml(timerMessages.targetDefault)}</button></div>
+        <div class="hono-decks-presenter-timer-controls"><button type="button" data-timer-toggle title="${escapeHtml(timerMessages.shortcut)}">${escapeHtml(timerMessages.start)}</button><button type="button" data-timer-reset>${escapeHtml(timerMessages.reset)}</button><label class="hono-decks-presenter-timer-target"><span>${escapeHtml(timerMessages.target)}</span><input type="number" min="1" max="1440" step="any" inputmode="decimal" data-timer-target value="${duration ? String(Math.round((duration / 60) * 10) / 10) : ""}"><span>${escapeHtml(timerMessages.minutes)}</span></label><button type="button" data-timer-target-default hidden>${escapeHtml(timerMessages.targetDefault)}</button><details class="hono-decks-presenter-timer-display"><summary>${escapeHtml(timerMessages.display)}</summary>${(
+          [
+            ["pace", timerMessages.paceLabel],
+            ["remaining", timerMessages.remaining],
+            ["overtime", timerMessages.overtimeLabel],
+          ] as const
+        )
+          .map(
+            ([key, label]) =>
+              `<label><input type="checkbox" data-timer-show="${key}"${timerDisplay[key] ? " checked" : ""}>${escapeHtml(label)}</label>`,
+          )
+          .join("")}</details></div>
       </section>
       <section class="hono-decks-presenter-next" data-hono-decks-presenter-next aria-label="${escapeHtml(messages.nextPreview)}">
         <h2>${escapeHtml(messages.next)}</h2>
@@ -221,7 +237,7 @@ export async function renderPresenterPageAsync(input: {
     </aside>
   </main>
   ${input.remote ? `${remoteStyle(document.nonce)}${input.remoteUrl ? remoteQrPopover(input.remoteUrl, remoteMessages(messages)) : ""}${remoteIndicator(false, remoteMessages(messages))}${renderRemoteScript("presenter", document.nonce, true, [], remoteMessages(messages))}` : ""}
-  ${renderPresenterScript(deck.slides.length, deck.slug, duration, document.nonce, timerMessages, messages.progressText)}
+  ${renderPresenterScript(deck.slides.length, deck.slug, duration, document.nonce, timerMessages, messages.progressText, { plan, display: timerDisplay })}
 </body>
 </html>`;
 }
@@ -285,6 +301,12 @@ body{margin:0;min-height:100vh;background:#050816;color:#eef2ff;font-family:Inte
 .hono-decks-presenter-timer-target{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-size:14px;color:var(--hono-decks-presenter-muted,#aabbd1)}
 .hono-decks-presenter-timer-target input{box-sizing:border-box;width:5em;font:inherit;font-size:14px;color:var(--hono-decks-presenter-timer-color,#fff);background:var(--hono-decks-presenter-button-background,#1e293b);border:1px solid var(--hono-decks-presenter-border,#64748b);border-radius:6px;padding:5px 8px;font-variant-numeric:tabular-nums}.hono-decks-presenter-timer-controls button{font:inherit;font-size:14px;color:inherit;background:var(--hono-decks-presenter-button-background,#1e293b);border:1px solid var(--hono-decks-presenter-border,#64748b);border-radius:6px;padding:6px 12px;cursor:pointer}
 .hono-decks-presenter-timer-controls [data-timer-target-default]{font-size:13px;padding:5px 10px}
+.hono-decks-presenter-timer-display{position:relative;font-size:14px}
+.hono-decks-presenter-timer-display summary{cursor:pointer;list-style:none;border:1px solid var(--hono-decks-presenter-border,#64748b);border-radius:6px;padding:5px 10px;background:var(--hono-decks-presenter-button-background,#1e293b)}
+.hono-decks-presenter-timer-display summary::-webkit-details-marker{display:none}
+.hono-decks-presenter-timer-display[open] summary{border-color:#93c5fd}
+.hono-decks-presenter-timer-display label{display:flex;align-items:center;gap:6px;padding:4px 0;white-space:nowrap}
+.hono-decks-presenter-timer-display[open]>label:first-of-type{margin-top:6px}
 .hono-decks-presenter-no-next:not([hidden]){display:grid;place-items:center;aspect-ratio:16/9;margin:0;border-radius:6px;background:#020617;color:#93a4bd;font-size:14px}
 .hono-decks-presenter-notes article{white-space:pre-wrap;font-size:18px;line-height:1.6}
 @media (max-width:900px){.hono-decks-presenter{grid-template-columns:1fr;padding-bottom:72px}.hono-decks-presenter-panel{grid-template-rows:auto auto auto}}`,
@@ -307,6 +329,10 @@ function renderPresenterScript(
   nonce?: string,
   messages: ReturnType<typeof resolveTimerMessages> = PRESENTER_TIMER_MESSAGES,
   progressText = "{current} / {total}",
+  talk: { plan: Array<number | null>; display: Required<TalkTimerDisplay> } = {
+    plan: Array.from({ length: slideCount }, () => null),
+    display: resolveTimerDisplay(),
+  },
 ): string {
   return `<script${documentNonceAttribute(nonce)}>
 (() => {
@@ -319,6 +345,14 @@ function renderPresenterScript(
   const messages = ${JSON.stringify(messages).replaceAll("<", "\\u003c")};
   const progressText = ${JSON.stringify(progressText).replaceAll("<", "\\u003c")};
   const talkPace = ${talkPace.toString()};
+  const plan = ${JSON.stringify(talk.plan)};
+  const displayKey = ${JSON.stringify("hono-decks:timer-display:")} + ${JSON.stringify(slug).replaceAll("<", "\\u003c")};
+  const display = ${JSON.stringify(talk.display)};
+  try {
+    // Readout choices made on this page override the configured defaults for this tab.
+    const saved = JSON.parse(sessionStorage.getItem(displayKey) || "null");
+    if (saved && typeof saved === "object") for (const key of ["pace", "remaining", "overtime"]) if (typeof saved[key] === "boolean") display[key] = saved[key];
+  } catch (_) {}
   const durationKey = ${JSON.stringify("hono-decks:duration:")} + ${JSON.stringify(slug).replaceAll("<", "\\u003c")};
   const configuredDuration = ${JSON.stringify(duration ?? null)};
   let duration = configuredDuration;
@@ -340,7 +374,7 @@ function renderPresenterScript(
     if (saved && Number.isFinite(saved.elapsed) && saved.elapsed >= 0 && (saved.startedAt === null || Number.isFinite(saved.startedAt))) timer = saved;
   } catch (_) {}
   // The remote runtime relays this event so phones show the same timer.
-  function announceTimer() { document.dispatchEvent(new CustomEvent("hono-decks:timer", { detail: { elapsed: elapsed(), running: timer.startedAt !== null, duration } })); }
+  function announceTimer() { document.dispatchEvent(new CustomEvent("hono-decks:timer", { detail: { elapsed: elapsed(), running: timer.startedAt !== null, duration, display: { ...display } } })); }
   function saveTimer() { try { sessionStorage.setItem(storageKey, JSON.stringify(timer)); } catch (_) {} announceTimer(); }
   const epochNow = ${epochNow.toString()};
   const formatClock = ${formatClock.toString()};
@@ -352,15 +386,21 @@ function renderPresenterScript(
     if (elapsedNode) elapsedNode.textContent = formatTime(seconds);
     if (clockNode) clockNode.textContent = formatClock(document.documentElement.lang || undefined);
     if (toggle) toggle.textContent = timer.startedAt !== null ? messages.pause : timer.elapsed ? messages.resume : messages.start;
-    document.querySelector("[data-timer-remaining-box]")?.toggleAttribute("hidden", !duration);
-    paceNode?.toggleAttribute("hidden", !duration);
-    if (duration && remainingNode && paceNode) {
-      const remaining = duration - seconds;
-      remainingNode.textContent = remaining < 0 ? messages.over + " " + formatTime(-remaining) : formatTime(remaining);
-      remainingNode.dataset.over = String(remaining < 0);
-      const pace = talkPace(seconds, duration, currentIndex, ${slideCount || 1});
-      paceNode.dataset.pace = pace.state;
-      paceNode.textContent = pace.state === "on" ? messages.onPace : (pace.state === "ahead" ? messages.ahead : messages.behind) + " " + formatTime(pace.seconds);
+    const remaining = duration ? duration - seconds : 0;
+    const over = Boolean(duration) && remaining < 0;
+    // Hidden remaining time still appears once the talk runs over, unless overtime is hidden too.
+    const showRemaining = Boolean(duration) && (display.remaining || (over && display.overtime));
+    document.querySelector("[data-timer-remaining-box]")?.toggleAttribute("hidden", !showRemaining);
+    if (showRemaining && remainingNode) {
+      remainingNode.textContent = over ? (display.overtime ? messages.over + " " + formatTime(-remaining) : formatTime(0)) : formatTime(remaining);
+      remainingNode.dataset.over = String(over && display.overtime);
+    }
+    const showPace = Boolean(duration) && display.pace;
+    paceNode?.toggleAttribute("hidden", !showPace);
+    if (showPace && paceNode) {
+      const pace = talkPace(seconds, duration, currentIndex, plan);
+      paceNode.dataset.pace = pace ? pace.state : "appendix";
+      paceNode.textContent = !pace ? messages.appendix : pace.state === "on" ? messages.onPace : (pace.state === "ahead" ? messages.ahead : messages.behind) + " " + formatTime(pace.seconds);
     }
   }
   const targetInput = document.querySelector("[data-timer-target]");
@@ -376,6 +416,15 @@ function renderPresenterScript(
     durationOverridden = true;
     try { sessionStorage.setItem(durationKey, JSON.stringify({ seconds: duration })); } catch (_) {}
     showTarget(); renderTimer(); announceTimer();
+  });
+  document.querySelectorAll("[data-timer-show]").forEach((input) => {
+    const key = input.dataset.timerShow;
+    input.checked = display[key];
+    input.addEventListener("change", () => {
+      display[key] = input.checked;
+      try { sessionStorage.setItem(displayKey, JSON.stringify(display)); } catch (_) {}
+      renderTimer(); announceTimer();
+    });
   });
   targetDefault?.addEventListener("click", () => {
     duration = configuredDuration; durationOverridden = false;

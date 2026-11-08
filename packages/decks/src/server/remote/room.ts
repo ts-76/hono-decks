@@ -12,6 +12,7 @@ interface StoredTimer {
   elapsed: number;
   running: boolean;
   duration?: number | null;
+  display?: { pace: boolean; remaining: boolean; overtime: boolean };
   at: number;
 }
 
@@ -78,6 +79,7 @@ export class DeckRemoteRoom {
       // Followers never see the timer; it is shared between presenter and remote pages.
       const timer: StoredTimer = { elapsed: message.elapsed, running: message.running, at: now };
       if (message.duration !== undefined) timer.duration = message.duration;
+      if (message.display !== undefined) timer.display = message.display;
       await this.ctx.storage.put("timer", timer);
       for (const peer of this.ctx.getWebSockets("presenter")) {
         if (peer !== socket) {
@@ -152,5 +154,6 @@ function timerMessage(timer: StoredTimer, now: number): string {
     elapsed,
     running: timer.running,
     ...(timer.duration !== undefined ? { duration: timer.duration } : {}),
+    ...(timer.display !== undefined ? { display: timer.display } : {}),
   });
 }
