@@ -1,3 +1,4 @@
+import { parseDuration } from "../deck/duration";
 import type { CompiledDeck } from "../deck/model";
 import type { SlideComponentInput, SlideComponentRegistry } from "./jsx-renderer";
 import { renderCompiledDeck, renderCompiledDeckAsync, renderCompiledSlideAsync } from "./compiled-render";
@@ -7,6 +8,52 @@ import { basePresentationStyle } from "./presentation-style";
 import { composeStylesheet, layer } from "./style-layers";
 import { documentNonceAttribute } from "../server/document";
 import type { ResolvedDeckDocument } from "../server/document";
+
+export const PRESENTER_TIMER_MESSAGES = {
+  title: "Talk timer",
+  elapsed: "Elapsed",
+  clock: "Clock",
+  remaining: "Remaining",
+  start: "Start",
+  pause: "Pause",
+  resume: "Resume",
+  reset: "Reset",
+  onPace: "On pace",
+  ahead: "Ahead",
+  behind: "Behind",
+  over: "Over",
+  shortcut: "Start or pause timer (T)",
+} as const;
+
+/**
+ * Compares elapsed time with the time budget of the current slide. Each slide gets
+ * an equal share of the duration; being anywhere inside the current slide's window
+ * is on pace. Returns the distance to that window in seconds (positive = ahead).
+ * Embedded into the presenter script with Function#toString, so keep it self-contained.
+ */
+export function talkPace(
+  elapsedSeconds: number,
+  durationSeconds: number,
+  slideIndex: number,
+  slideCount: number,
+): { state: "on" | "ahead" | "behind"; seconds: number } {
+  const perSlide = durationSeconds / Math.max(slideCount, 1);
+  const windowStart = perSlide * slideIndex;
+  const windowEnd = windowStart + perSlide;
+  if (elapsedSeconds < windowStart) return { state: "ahead", seconds: windowStart - elapsedSeconds };
+  if (elapsedSeconds > windowEnd) return { state: "behind", seconds: elapsedSeconds - windowEnd };
+  return { state: "on", seconds: 0 };
+}
+
+/** Formats seconds as mm:ss, or h:mm:ss from one hour. Embedded into the presenter script. */
+export function formatTalkTime(totalSeconds: number): string {
+  const seconds = Math.floor(Math.abs(totalSeconds));
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const rest = seconds % 60;
+  const head = hours ? `${hours}:${String(minutes).padStart(2, "0")}` : String(minutes).padStart(2, "0");
+  return `${head}:${String(rest).padStart(2, "0")}`;
+}
 
 export function presentationPageTitle(deck: Pick<CompiledDeck, "slug" | "meta">): string {
   return deck.meta.title ?? deck.slug;
@@ -102,6 +149,7 @@ export async function renderPresenterPageAsync(input: {
   deck: CompiledDeck;
   mountPath: string;
   presenterStateQuery?: string;
+  duration?: number | string;
   style?: string;
   components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
   document?: ResolvedDeckDocument;
@@ -120,6 +168,8 @@ export async function renderPresenterPageAsync(input: {
       renderCompiledSlideAsync(slide, deck.assets, { components, deck, speakerNotes: false, slideState: "active" }),
     ),
   );
+  const duration = input.duration === undefined ? deck.meta.duration : parseDuration(input.duration, "seconds");
+  const messages = PRESENTER_TIMER_MESSAGES;
   const notes = deck.slides.map((slide) => slide.notes ?? slide.meta.notes);
 
   return `<!doctype html>
@@ -146,6 +196,15 @@ export async function renderPresenterPageAsync(input: {
       <iframe title="${escapeHtml(presentationPageTitle(deck))}" src="${escapeHtml(projectionPath)}"></iframe>
     </section>
     <aside class="hono-decks-presenter-panel" aria-label="Presenter panel">
+      <section class="hono-decks-presenter-timer" aria-label="${messages.title}">
+        <h2>${messages.title}</h2>
+        <div class="hono-decks-presenter-timer-values">
+          <div><span>${messages.elapsed}</span><strong role="timer" aria-live="off" aria-label="${messages.elapsed}" data-timer-elapsed>00:00</strong></div>
+          <div><span>${messages.clock}</span><strong role="timer" aria-live="off" aria-label="${messages.clock}" data-timer-clock></strong></div>
+          ${duration ? `<div><span>${messages.remaining}</span><strong role="timer" aria-live="off" aria-label="${messages.remaining}" data-timer-remaining></strong></div><div data-timer-pace></div>` : ""}
+        </div>
+        <div class="hono-decks-presenter-timer-controls"><button type="button" data-timer-toggle title="${messages.shortcut}">${messages.start}</button><button type="button" data-timer-reset>${messages.reset}</button></div>
+      </section>
       <section class="hono-decks-presenter-next" data-hono-decks-presenter-next aria-label="Next slide preview">
         <h2>Next slide</h2>
         <div class="hono-decks-presenter-preview-list">
@@ -169,7 +228,7 @@ export async function renderPresenterPageAsync(input: {
       </section>
     </aside>
   </main>
-  ${renderPresenterScript(deck.slides.length, document.nonce)}
+  ${renderPresenterScript(deck.slides.length, deck.slug, duration, document.nonce)}
 </body>
 </html>`;
 }
@@ -219,12 +278,18 @@ body{margin:0;min-height:100vh;background:#050816;color:#eef2ff;font-family:Inte
 .hono-decks-presenter-controls a *,.hono-decks-presenter-controls button *{pointer-events:none;cursor:pointer}
 .hono-decks-control-icon{width:16px;height:16px;flex:0 0 auto;stroke:currentColor;pointer-events:none}
 .hono-decks-presenter-current iframe{width:100%;aspect-ratio:16/9;border:0;border-radius:8px;background:#000}
-.hono-decks-presenter-panel{display:grid;grid-template-rows:auto 1fr;gap:16px}
-.hono-decks-presenter-next,.hono-decks-presenter-notes{min-width:0;border:1px solid rgba(148,163,184,.28);border-radius:8px;background:rgba(15,23,42,.78);padding:12px}
-.hono-decks-presenter-next h2,.hono-decks-presenter-notes h2{margin:0 0 8px;font-size:16px;color:#93c5fd}
+.hono-decks-presenter-panel{display:grid;grid-template-rows:auto auto 1fr;gap:16px}
+.hono-decks-presenter-timer,.hono-decks-presenter-next,.hono-decks-presenter-notes{min-width:0;border:1px solid rgba(148,163,184,.28);border-radius:8px;background:rgba(15,23,42,.78);padding:12px}
+.hono-decks-presenter-timer h2,.hono-decks-presenter-next h2,.hono-decks-presenter-notes h2{margin:0 0 8px;font-size:16px;color:#93c5fd}
+.hono-decks-presenter-timer-values{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:end}
+.hono-decks-presenter-timer-values div{display:grid;gap:4px}.hono-decks-presenter-timer-values span{font-size:12px;color:var(--hono-decks-presenter-muted,#aabbd1)}
+.hono-decks-presenter-timer-values strong{font-size:22px;font-variant-numeric:tabular-nums;color:var(--hono-decks-presenter-timer-color,#fff)}
+.hono-decks-presenter-timer-values [data-pace="ahead"]{color:var(--hono-decks-presenter-ahead,#86efac)}
+.hono-decks-presenter-timer-values [data-pace="behind"],.hono-decks-presenter-timer-values [data-over="true"]{color:var(--hono-decks-presenter-behind,#fda4af)}
+.hono-decks-presenter-timer-controls{display:flex;gap:8px;margin-top:12px}.hono-decks-presenter-timer-controls button{font:inherit;font-size:14px;color:inherit;background:var(--hono-decks-presenter-button-background,#1e293b);border:1px solid var(--hono-decks-presenter-border,#64748b);border-radius:6px;padding:6px 12px;cursor:pointer}
 .hono-decks-presenter-no-next:not([hidden]){display:grid;place-items:center;aspect-ratio:16/9;margin:0;border-radius:6px;background:#020617;color:#93a4bd;font-size:14px}
 .hono-decks-presenter-notes article{white-space:pre-wrap;font-size:18px;line-height:1.6}
-@media (max-width:900px){.hono-decks-presenter{grid-template-columns:1fr}.hono-decks-presenter-panel{grid-template-rows:auto auto}}`,
+@media (max-width:900px){.hono-decks-presenter{grid-template-columns:1fr}.hono-decks-presenter-panel{grid-template-rows:auto auto auto}}`,
     ),
     layer(
       "runtime",
@@ -236,7 +301,7 @@ body:not([data-overview-mode]) .hono-decks-presenter-preview .slide{position:abs
   ].join("\n");
 }
 
-function renderPresenterScript(slideCount: number, nonce?: string): string {
+function renderPresenterScript(slideCount: number, slug: string, duration: number | undefined, nonce?: string): string {
   return `<script${documentNonceAttribute(nonce)}>
 (() => {
   const root = document.querySelector("[data-hono-decks-presenter]");
@@ -245,11 +310,56 @@ function renderPresenterScript(slideCount: number, nonce?: string): string {
   const notes = Array.from(document.querySelectorAll("[data-hono-decks-presenter-note]"));
   const noNext = document.querySelector("[data-hono-decks-presenter-no-next]");
   const position = document.querySelector("[data-hono-decks-presenter-position]");
+  const messages = ${JSON.stringify(PRESENTER_TIMER_MESSAGES)};
+  const talkPace = ${talkPace.toString()};
+  const duration = ${JSON.stringify(duration ?? null)};
+  const storageKey = ${JSON.stringify("hono-decks:timer:")} + ${JSON.stringify(slug).replaceAll("<", "\\u003c")};
+  const elapsedNode = document.querySelector("[data-timer-elapsed]");
+  const clockNode = document.querySelector("[data-timer-clock]");
+  const remainingNode = document.querySelector("[data-timer-remaining]");
+  const paceNode = document.querySelector("[data-timer-pace]");
+  const toggle = document.querySelector("[data-timer-toggle]");
+  let timer = { elapsed: 0, startedAt: null };
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(storageKey) || "null");
+    if (saved && Number.isFinite(saved.elapsed) && saved.elapsed >= 0 && (saved.startedAt === null || Number.isFinite(saved.startedAt))) timer = saved;
+  } catch (_) {}
+  function saveTimer() { try { sessionStorage.setItem(storageKey, JSON.stringify(timer)); } catch (_) {} }
+  function elapsed() { return timer.elapsed + (timer.startedAt === null ? 0 : Math.max(0, Date.now() - timer.startedAt)); }
+  const formatTime = ${formatTalkTime.toString()};
+  function renderTimer() {
+    const seconds = elapsed() / 1000;
+    if (elapsedNode) elapsedNode.textContent = formatTime(seconds);
+    if (clockNode) clockNode.textContent = new Date().toLocaleTimeString();
+    if (toggle) toggle.textContent = timer.startedAt !== null ? messages.pause : timer.elapsed ? messages.resume : messages.start;
+    if (duration && remainingNode && paceNode) {
+      const remaining = duration - seconds;
+      remainingNode.textContent = remaining < 0 ? messages.over + " " + formatTime(-remaining) : formatTime(remaining);
+      remainingNode.dataset.over = String(remaining < 0);
+      const pace = talkPace(seconds, duration, currentIndex, ${slideCount || 1});
+      paceNode.dataset.pace = pace.state;
+      paceNode.textContent = pace.state === "on" ? messages.onPace : (pace.state === "ahead" ? messages.ahead : messages.behind) + " " + formatTime(pace.seconds);
+    }
+  }
+  function startTimer() { if (timer.startedAt === null && timer.elapsed === 0) { timer.startedAt = Date.now(); saveTimer(); renderTimer(); } }
+  toggle?.addEventListener("click", () => {
+    if (timer.startedAt === null) timer.startedAt = Date.now();
+    else { timer.elapsed = elapsed(); timer.startedAt = null; }
+    saveTimer(); renderTimer();
+  });
+  document.querySelector("[data-timer-reset]")?.addEventListener("click", () => { timer = { elapsed: 0, startedAt: null }; saveTimer(); renderTimer(); });
+  document.addEventListener("keydown", (event) => {
+    if (event.key.toLowerCase() === "t" && !event.repeat && !event.ctrlKey && !event.metaKey && !event.altKey && !/^(INPUT|TEXTAREA|SELECT)$/.test(event.target?.tagName) && !event.target?.isContentEditable) { event.preventDefault(); toggle?.click(); }
+  });
+  let ticker = null;
+  function updateTicker() { if (ticker !== null) clearInterval(ticker); ticker = null; if (!document.hidden) { renderTimer(); ticker = setInterval(renderTimer, 1000); } }
+  document.addEventListener("visibilitychange", updateTicker);
   const DESIGN_WIDTH = 1920;
   const DESIGN_HEIGHT = 1080;
   let projectionWindow = null;
   let currentIndex = 0;
   let currentStepIndex = 0;
+  let receivedState = false;
 
   function fitPresenterPreview(preview) {
     const slide = preview?.querySelector(".slide");
@@ -281,6 +391,7 @@ function renderPresenterScript(slideCount: number, nonce?: string): string {
       note.hidden = Number(note.getAttribute("data-slide-index")) !== index;
     });
     fitVisiblePresenterPreviews();
+    renderTimer();
   }
 
   function writePresenterPaginationState() {
@@ -292,6 +403,7 @@ function renderPresenterScript(slideCount: number, nonce?: string): string {
   }
 
   function sendCommand(action) {
+    if (action === "next" || action === "previous" || action === "goTo") startTimer();
     const message = { type: "hono-decks:command", action };
     frame?.contentWindow?.postMessage(message, window.location.origin);
     if (projectionWindow?.closed) projectionWindow = null;
@@ -322,6 +434,7 @@ function renderPresenterScript(slideCount: number, nonce?: string): string {
     }, 250);
   }
 
+  updateTicker();
   fitVisiblePresenterPreviews();
   window.addEventListener("resize", fitVisiblePresenterPreviews);
   document.querySelectorAll("[data-action='previous']").forEach((button) => {
@@ -342,6 +455,8 @@ function renderPresenterScript(slideCount: number, nonce?: string): string {
     if (event.source !== frame?.contentWindow) projectionWindow = event.source;
     if (Number.isInteger(message.index)) {
       const stepIndex = Number.isInteger(message.stepIndex) ? message.stepIndex : 0;
+      if (receivedState && (message.index !== currentIndex || stepIndex !== currentStepIndex)) startTimer();
+      receivedState = true;
       const alreadyCurrent = message.index === currentIndex && stepIndex === currentStepIndex;
       show(message.index, stepIndex);
       if (!alreadyCurrent) syncProjectionState(event.source, message.index, stepIndex);

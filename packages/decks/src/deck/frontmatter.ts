@@ -1,3 +1,4 @@
+import { parseDuration } from "./duration";
 import { CompileError, SLIDE_TRANSITIONS } from "./model";
 import type { CompiledDeck, DeckFrontmatter, SlideFrontmatter, SlideTransition } from "./model";
 
@@ -66,6 +67,15 @@ export function toDeckFrontmatter(attrs: Record<string, unknown>, warnings: Comp
   deck.assets = takeStringOrStringArray(meta, "assets");
   deck.draft = takeBoolean(meta, "draft");
   deck.presenter = takeBoolean(meta, "presenter");
+  if ("duration" in meta) {
+    deck.duration = parseDuration(meta.duration, "minutes");
+    if (deck.duration === undefined)
+      warnings.push({
+        code: "invalid-duration",
+        message: `Invalid duration value "${formatFrontmatterValue(meta.duration)}"; ignoring it.`,
+      });
+    delete meta.duration;
+  }
 
   const tags = meta.tags;
   if (Array.isArray(tags)) {

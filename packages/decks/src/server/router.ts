@@ -189,6 +189,8 @@ export type DeckDevResolver<E extends Env = any> = (input: DeckDevResolverInput<
 export interface DecksRouterPresenterOptions<E extends Env = any> {
   enabled?: boolean | DeckPresenterEnabledResolver<E>;
   viewerControl?: boolean | DeckPresenterViewerControlOptions;
+  /** Target duration in seconds, or a string such as 20m. */
+  duration?: number | string;
 }
 
 export type DeckPresenterEnabledResolver<E extends Env = any> = (
@@ -493,6 +495,7 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
           deck,
           mountPath,
           presenterStateQuery: paginationQueryFromRequest(c),
+          duration: options.presenter === false ? undefined : options.presenter?.duration,
           style: options.style,
           components: options.components,
           document,

@@ -47,7 +47,9 @@ transition: slide-left
 - Clearer ownership
 ```
 
-Deck frontmatter supports `title`, `description`, `author`, `date`, `tags`, `theme`, `transition`, `transitionDuration`, `transitionEasing`, `assets`, `draft`, and `presenter`.
+Deck frontmatter supports `title`, `description`, `author`, `date`, `tags`, `theme`, `transition`, `transitionDuration`, `transitionEasing`, `assets`, `draft`, `presenter`, and `duration`.
+
+Set `duration: 20m` for a presenter timer target; `1h30m`, `90s`, and numeric minutes are supported. Runtime `presenter.duration` overrides it using seconds for numbers or the same strings. Press `T` to start or pause.
 
 Slide frontmatter supports `title`, `layout`, `class`, `notes`, `background`, `transition`, `transitionDuration`, and `transitionEasing`. Unknown keys are preserved in `meta` and produce a compile warning.
 
