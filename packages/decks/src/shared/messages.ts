@@ -26,6 +26,8 @@ export interface DeckMessages {
   remoteConnecting: string;
   remoteConnected: string;
   remoteDisconnected: string;
+  remoteQr: string;
+  remoteQrHint: string;
 
   timerTitle: string;
   timerElapsed: string;
@@ -115,6 +117,8 @@ export const enMessages: DeckMessages = {
   remoteConnecting: "Connecting",
   remoteConnected: "Connected",
   remoteDisconnected: "Disconnected",
+  remoteQr: "Show remote control QR code",
+  remoteQrHint: "Scan with your phone to open the remote control.",
 
   timerTitle: "Talk timer",
   timerElapsed: "Elapsed",
@@ -203,6 +207,8 @@ export const jaMessages: DeckMessages = {
   remoteConnecting: "接続中",
   remoteConnected: "接続済み",
   remoteDisconnected: "切断",
+  remoteQr: "リモート操作のQRコードを表示",
+  remoteQrHint: "スマートフォンで読み取ると、リモート操作の画面が開きます。",
 
   timerTitle: "発表タイマー",
   timerElapsed: "経過時間",
@@ -330,5 +336,7 @@ export function remoteMessages(messages: DeckMessages) {
     connecting: messages.remoteConnecting,
     connected: messages.remoteConnected,
     disconnected: messages.remoteDisconnected,
+    qr: messages.remoteQr,
+    qrHint: messages.remoteQrHint,
   };
 }

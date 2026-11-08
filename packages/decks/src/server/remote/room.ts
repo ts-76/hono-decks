@@ -13,9 +13,18 @@ interface StoredPosition {
   updatedAt: number;
 }
 
-/** A room must only be reached through an application Worker that authenticates its requests. */
+/**
+ * A room must only be reached through an application Worker that authenticates its requests.
+ *
+ * Rooms hibernate between messages, so an idle room costs nothing but its stored position.
+ * When the last socket disconnects, an alarm deletes all storage after `idleTimeoutMs`
+ * unless someone reconnects first; a room with no storage leaves nothing behind.
+ */
 export class DeckRemoteRoom {
-  constructor(private readonly ctx: DurableObjectState) {}
+  /** How long a room with no connections keeps its position. Override in a subclass. */
+  protected idleTimeoutMs = 60 * 60 * 1000;
+
+  constructor(protected readonly ctx: DurableObjectState) {}
 
   async fetch(request: Request): Promise<Response> {
     if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket")
@@ -29,13 +38,15 @@ export class DeckRemoteRoom {
     const [client, server] = Object.values(pair);
     server.serializeAttachment({ role, slideCount, windowStart: 0, messages: 0 } satisfies SocketAttachment);
     this.ctx.acceptWebSocket(server, [role]);
+    await this.ctx.storage.deleteAlarm();
     let position = await this.ctx.storage.get<StoredPosition>("position");
-    if (!position || position.index >= slideCount) {
+    if (position && position.index >= slideCount) {
       position = { index: 0, stepIndex: 0, updatedAt: Date.now() };
       await this.ctx.storage.put("position", position);
     }
     await this.ctx.storage.put("slideCount", slideCount);
-    server.send(JSON.stringify({ type: "state", ...position }));
+    // An empty room adopts the first presenter's position instead of resetting it to slide 1.
+    server.send(JSON.stringify(position ? { type: "state", ...position } : { type: "empty" }));
     return new Response(null, { status: 101, webSocket: client });
   }
 
@@ -76,16 +87,33 @@ export class DeckRemoteRoom {
     }
   }
 
-  webSocketClose(socket: WebSocket, code: number, reason: string): void {
+  async webSocketClose(socket: WebSocket, code: number, reason: string): Promise<void> {
     // 1005 and 1006 are reserved and cannot be sent back in a close frame.
     try {
       socket.close(code === 1005 || code === 1006 ? 1000 : code, reason);
     } catch {
       /* The socket is already closed. */
     }
+    await this.scheduleCleanup(socket);
   }
 
-  webSocketError(socket: WebSocket): void {
-    socket.close(1000, "WebSocket error");
+  async webSocketError(socket: WebSocket): Promise<void> {
+    try {
+      socket.close(1000, "WebSocket error");
+    } catch {
+      /* The socket is already closed. */
+    }
+    await this.scheduleCleanup(socket);
+  }
+
+  /** Deletes the room's storage once nobody has been connected for `idleTimeoutMs`. */
+  async alarm(): Promise<void> {
+    if (this.ctx.getWebSockets().length > 0) return;
+    await this.ctx.storage.deleteAll();
+  }
+
+  private async scheduleCleanup(closed: WebSocket): Promise<void> {
+    if (this.ctx.getWebSockets().some((peer) => peer !== closed)) return;
+    await this.ctx.storage.setAlarm(Date.now() + this.idleTimeoutMs);
   }
 }

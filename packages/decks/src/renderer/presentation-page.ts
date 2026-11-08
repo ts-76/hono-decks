@@ -1,7 +1,7 @@
 import { enMessages } from "../shared/messages";
 import { parseDuration } from "../deck/duration";
 import { renderOverflowChecker } from "./overflow-checker";
-import { renderRemoteScript, remoteIndicator, remoteStyle } from "../server/remote/ui";
+import { renderRemoteScript, remoteIndicator, remoteQrButton, remoteQrPopover, remoteStyle } from "../server/remote/ui";
 import {
   resolveMessages,
   formatMessage,
@@ -160,6 +160,8 @@ export async function renderPresenterPageAsync(input: {
   presenterStateQuery?: string;
   duration?: number | string;
   remote?: boolean;
+  /** Absolute remote control URL encoded in the presenter's QR code. */
+  remoteUrl?: string;
   style?: string;
   components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
   document?: ResolvedDeckDocument;
@@ -207,7 +209,7 @@ export async function renderPresenterPageAsync(input: {
         <span data-hono-decks-presenter-position>${escapeHtml(formatMessage(messages.progressText, { current: 1, total: deck.slides.length }))}</span>
         <button type="button" data-action="next" title="${escapeHtml(messages.next)}" aria-label="${escapeHtml(messages.next)}">${renderControlIconHtml("next")}</button>
         <span data-hono-decks-presenter-connection>${escapeHtml(messages.connected)}</span>
-        ${input.remote ? `<a class="hono-decks-presenter-remote-link" href="${escapeHtml(`${deckPath}/remote`)}">${escapeHtml(remoteMessages(messages).title)}</a>` : ""}
+        ${input.remote ? `<a class="hono-decks-presenter-remote-link" href="${escapeHtml(`${deckPath}/remote`)}">${escapeHtml(remoteMessages(messages).title)}</a>${input.remoteUrl ? remoteQrButton(remoteMessages(messages)) : ""}` : ""}
       </nav>
       <iframe title="${escapeHtml(presentationPageTitle(deck))}" src="${escapeHtml(projectionPath)}"></iframe>
     </section>
@@ -244,7 +246,7 @@ export async function renderPresenterPageAsync(input: {
       </section>
     </aside>
   </main>
-  ${input.remote ? `${remoteStyle(document.nonce)}${remoteIndicator(false, remoteMessages(messages))}${renderRemoteScript("presenter", document.nonce, true, [], remoteMessages(messages))}` : ""}
+  ${input.remote ? `${remoteStyle(document.nonce)}${input.remoteUrl ? remoteQrPopover(input.remoteUrl, remoteMessages(messages)) : ""}${remoteIndicator(false, remoteMessages(messages))}${renderRemoteScript("presenter", document.nonce, true, [], remoteMessages(messages))}` : ""}
   ${renderPresenterScript(deck.slides.length, deck.slug, duration, document.nonce, timerMessages, messages.progressText)}
 </body>
 </html>`;

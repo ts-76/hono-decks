@@ -1,5 +1,6 @@
 import { enMessages } from "../../shared/messages";
 import { resolveMessages, remoteMessages, formatMessage, type DeckMessageOverrides } from "../../shared/messages";
+import { renderSVG } from "uqr";
 import type { CompiledDeck } from "../../deck/model";
 import { composeStylesheet, layer } from "../../renderer/style-layers";
 import { documentNonceAttribute, type ResolvedDeckDocument } from "../document";
@@ -21,6 +22,11 @@ const style = layer(
 .hono-decks-live:not(:has(button)) { padding-right:.7rem }
 .hono-decks-live button { font:inherit;color:inherit;background:transparent;border:1px solid rgba(148,163,184,.45);border-radius:999px;padding:.25rem .65rem;cursor:pointer }
 .hono-decks-presenter-controls a.hono-decks-presenter-remote-link { width:auto;white-space:nowrap }
+.hono-decks-remote-qr { margin:auto;padding:20px;border:0;border-radius:12px;background:#fff;color:#0f172a;text-align:center;max-width:min(360px,calc(100vw - 32px));font:14px/1.5 system-ui }
+.hono-decks-remote-qr::backdrop { background:rgba(2,6,23,.7) }
+.hono-decks-remote-qr svg { display:block;width:min(260px,70vw);height:auto;margin:0 auto 12px }
+.hono-decks-remote-qr p { margin:4px 0 }
+.hono-decks-remote-qr a { color:inherit;word-break:break-all;font-size:12px }
 `,
 );
 
@@ -39,6 +45,17 @@ function json(value: unknown): string {
 export function remoteStyle(nonce?: string): string {
   return `<style${documentNonceAttribute(nonce)}>${style}</style>`;
 }
+/** A presenter-only button that toggles `remoteQrPopover` through the Popover API, without script. */
+export function remoteQrButton(messages: ReturnType<typeof remoteMessages> = REMOTE_MESSAGES): string {
+  return `<button type="button" class="hono-decks-presenter-remote-qr" popovertarget="hono-decks-remote-qr" title="${escape(messages.qr)}" aria-label="${escape(messages.qr)}">QR</button>`;
+}
+
+/** A QR code for the remote control page. Render it outside the presenter toolbar. */
+export function remoteQrPopover(url: string, messages: ReturnType<typeof remoteMessages> = REMOTE_MESSAGES): string {
+  const svg = renderSVG(url, { border: 2 }).replace("<svg ", `<svg role="img" aria-label="${escape(messages.qr)}" `);
+  return `<div id="hono-decks-remote-qr" class="hono-decks-remote-qr" popover>${svg}<p>${escape(messages.qrHint)}</p><p><a href="${escape(url)}">${escape(url)}</a></p></div>`;
+}
+
 export function remoteIndicator(
   follower = true,
   messages: ReturnType<typeof remoteMessages> = REMOTE_MESSAGES,
@@ -77,7 +94,7 @@ export function renderRemoteScript(
   const url = new URL(base.replace(/\\/$/, '') + '/remote/socket', location.href);
   url.search = location.search; url.searchParams.set('role', mode === 'viewer' ? 'follower' : 'presenter');
   url.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  let socket, delay = 250, following = ${json(follow)}, live = null, last = null;
+  let socket, delay = 250, following = ${json(follow)}, live = null, last = null, roomEmpty = false;
   function showFollow() { if (toggle) { toggle.textContent = following ? messages.stop : messages.follow; toggle.setAttribute('aria-pressed', String(following)); } }
   function command(action, index, stepIndex) { frame?.contentWindow?.postMessage({ type: 'hono-decks:command', action, index, stepIndex }, location.origin); }
   function apply(position) { if (frame && position) command('goTo', position.index, position.stepIndex); }
@@ -95,7 +112,9 @@ export function renderRemoteScript(
     socket.onopen = () => { delay = 250; if (status) status.textContent = messages.connected; };
     socket.onmessage = event => {
       let message; try { message = JSON.parse(event.data); } catch { return; }
+      if (message.type === 'empty') { roomEmpty = true; if (mode === 'presenter' && last) send({ type: 'state', ...last }); return; }
       if (message.type === 'state' && Number.isInteger(message.index) && Number.isInteger(message.stepIndex)) {
+        roomEmpty = false;
         live = message;
         if (mode === 'remote') showPosition(message);
         else if ((mode === 'viewer' && following) || (mode === 'presenter' && (!last || last.index !== message.index || last.stepIndex !== message.stepIndex))) apply(message);
@@ -108,7 +127,7 @@ export function renderRemoteScript(
   if (mode === 'presenter') window.addEventListener('message', event => {
     if (event.origin !== location.origin || event.source !== frame?.contentWindow || event.data?.type !== 'hono-decks:state') return;
     const { index, stepIndex } = event.data; if (!Number.isInteger(index) || !Number.isInteger(stepIndex)) return;
-    last = { index, stepIndex }; if (live && (live.index !== index || live.stepIndex !== stepIndex)) send({ type: 'state', index, stepIndex });
+    last = { index, stepIndex }; if (live ? live.index !== index || live.stepIndex !== stepIndex : roomEmpty) send({ type: 'state', index, stepIndex });
   });
   if (mode === 'viewer') {
     toggle?.addEventListener('click', () => { following = !following; showFollow(); if (following) apply(live); });
