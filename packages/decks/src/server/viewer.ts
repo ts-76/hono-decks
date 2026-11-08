@@ -19,6 +19,21 @@ import { composeStylesheet } from "../renderer/style-layers";
 import { createDeckPaths, type DeckPaths } from "./paths";
 import { documentNonceAttribute, resolveDeckDocument, type DeckDocumentOptions } from "./document";
 
+export const VIEWER_MESSAGES = {
+  toc: "Table of contents",
+  close: "Close",
+  shortcuts: "Keyboard shortcuts",
+  next: "Next slide: Right arrow, Space, Page Down",
+  previous: "Previous slide: Left arrow, Shift + Space, Page Up",
+  firstLast: "First / last slide: Home / End",
+  jump: "Jump to slide: type a number and press Enter; Escape clears it",
+  overview: "Open overview: O",
+  toggleToc: "Toggle table of contents: T",
+  fullscreen: "Toggle fullscreen: F",
+  print: "Open print view: Ctrl / Cmd + P",
+  help: "Show shortcuts: ?",
+} as const;
+
 export interface DeckViewerOptions<E extends Env = any> {
   controls?: false | DeckViewerControlsOptions;
   openGraph?: boolean | DeckViewerOpenGraphOptions;
@@ -82,6 +97,7 @@ export type DeckViewerControlKey =
   | "position"
   | "next"
   | "fullscreen"
+  | "toc"
   | "overview"
   | "print"
   | "exportPdf"
@@ -105,6 +121,8 @@ export interface DeckViewerControlsOptions {
    * edge, the "n / total" count, or both. @default "bar"
    */
   progress?: DeckViewerProgressStyle;
+  /** Hide idle viewer controls while the pointer is over the stage (default: true). */
+  autoHide?: boolean;
 }
 
 export type DeckViewerControlsItemsResolver = (
@@ -132,6 +150,7 @@ export interface DeckViewerControlDefaults {
   position: DeckViewerDefaultControlItem;
   next: DeckViewerDefaultControlItem;
   fullscreen: DeckViewerDefaultControlItem;
+  toc: DeckViewerDefaultControlItem;
   overview: DeckViewerDefaultControlItem | null;
   print: DeckViewerDefaultControlItem | null;
   exportPdf: DeckViewerDefaultControlItem | null;
@@ -295,6 +314,8 @@ export async function createDeckViewerEmbed(input: DeckViewerEmbedOptions): Prom
     "data-hono-decks-viewer": true,
     "data-hono-decks-embed": true,
     "data-deck-slug": parts.slug,
+    "data-hono-decks-autohide": autoHideDelay(input.controls),
+    ...(parts.meta.availablePages.overview ? { "data-hono-decks-overview-path": parts.meta.paths.overview } : {}),
     ...(parts.meta.availablePages.print ? { "data-hono-decks-print-path": parts.meta.paths.print } : {}),
     "aria-label": parts.title,
     children: [
@@ -303,6 +324,7 @@ export async function createDeckViewerEmbed(input: DeckViewerEmbedOptions): Prom
         children: [parts.frame.content, parts.controls?.content],
       }),
       input.toc ? parts.toc.content : null,
+      renderViewerExtras(parts, input.controls),
     ],
   });
   const rootHtml = await renderJsxValue(root);
@@ -347,6 +369,8 @@ export async function renderDeckViewerPage<E extends Env = any>(input: {
   const content = jsx("main", {
     "data-hono-decks-viewer": true,
     "data-deck-slug": parts.slug,
+    "data-hono-decks-autohide": autoHideDelay(input.viewer?.controls),
+    ...(parts.meta.availablePages.overview ? { "data-hono-decks-overview-path": parts.meta.paths.overview } : {}),
     ...(parts.meta.availablePages.print ? { "data-hono-decks-print-path": parts.meta.paths.print } : {}),
     ...(customContent ? { "aria-label": parts.title } : { "aria-labelledby": "hono-decks-viewer-title" }),
     children: customContent ?? [
@@ -364,6 +388,7 @@ export async function renderDeckViewerPage<E extends Env = any>(input: {
         class: "hono-decks-viewer-shell",
         children: [parts.frame.content, parts.controls?.content],
       }),
+      renderViewerExtras(parts, input.viewer?.controls),
     ],
   });
   const viewerHead =
@@ -514,6 +539,59 @@ function renderViewerControls(options: DeckViewerControlsOptions, context: DeckV
   });
 }
 
+function autoHideDelay(options: false | DeckViewerControlsOptions | undefined): string {
+  if (options === false || options?.autoHide === false) return "0";
+  return "2500";
+}
+
+function renderViewerExtras(
+  parts: DeckViewerParts,
+  options: false | DeckViewerControlsOptions | undefined,
+): DeckRenderable {
+  const tocEnabled = options !== false && !options?.hidden?.includes("toc");
+  return [
+    tocEnabled
+      ? jsx("aside", {
+          class: "hono-decks-toc-panel",
+          "data-hono-decks-toc-panel": true,
+          "aria-label": VIEWER_MESSAGES.toc,
+          hidden: true,
+          children: [
+            jsx("button", { type: "button", "data-hono-decks-toc-close": true, children: VIEWER_MESSAGES.close }),
+            parts.toc.content,
+          ],
+        })
+      : null,
+    jsx("output", {
+      class: "hono-decks-pending-number",
+      "data-hono-decks-pending-number": true,
+      "aria-live": "polite",
+    }),
+    jsx("dialog", {
+      class: "hono-decks-shortcuts",
+      "data-hono-decks-help": true,
+      "aria-label": VIEWER_MESSAGES.shortcuts,
+      children: [
+        jsx("h2", { children: VIEWER_MESSAGES.shortcuts }),
+        jsx("ul", {
+          children: [
+            VIEWER_MESSAGES.next,
+            VIEWER_MESSAGES.previous,
+            VIEWER_MESSAGES.firstLast,
+            VIEWER_MESSAGES.jump,
+            ...(parts.meta.availablePages.overview ? [VIEWER_MESSAGES.overview] : []),
+            ...(tocEnabled ? [VIEWER_MESSAGES.toggleToc] : []),
+            VIEWER_MESSAGES.fullscreen,
+            ...(parts.meta.availablePages.print ? [VIEWER_MESSAGES.print] : []),
+            VIEWER_MESSAGES.help,
+          ].map((message) => jsx("li", { children: message })),
+        }),
+        jsx("button", { type: "button", "data-hono-decks-help-close": true, children: VIEWER_MESSAGES.close }),
+      ],
+    }),
+  ];
+}
+
 function renderViewerToc(slides: DeckTocItem[]): DeckRenderable {
   return jsx("nav", {
     class: "hono-decks-viewer-toc",
@@ -526,7 +604,7 @@ function renderViewerToc(slides: DeckTocItem[]): DeckRenderable {
             type: "button",
             "data-action": "goTo",
             "data-slide-index": String(slide.index),
-            children: slide.label,
+            children: `${slide.index + 1}. ${slide.label}`,
           }),
         }),
       ),
@@ -538,7 +616,7 @@ function renderViewerTocHtml(slides: DeckTocItem[]): string {
   const items = slides
     .map(
       (slide) =>
-        `<li><button type="button" data-action="goTo" data-slide-index="${slide.index}">${escapeHtml(slide.label)}</button></li>`,
+        `<li><button type="button" data-action="goTo" data-slide-index="${slide.index}">${slide.index + 1}. ${escapeHtml(slide.label)}</button></li>`,
     )
     .join("");
   return `<nav class="hono-decks-viewer-toc" data-hono-decks-toc aria-label="Slide navigation"><ol>${items}</ol></nav>`;
@@ -563,6 +641,7 @@ function buildViewerControlDefaults(context: DeckViewerControlsContext): DeckVie
     position: { type: "default", key: "position" },
     next: { type: "default", key: "next" },
     fullscreen: { type: "default", key: "fullscreen" },
+    toc: { type: "default", key: "toc" },
     overview: context.meta.availablePages.overview ? { type: "default", key: "overview" } : null,
     print: context.meta.availablePages.print ? { type: "default", key: "print" } : null,
     exportPdf: context.meta.availableExports.pdf ? { type: "default", key: "exportPdf" } : null,
@@ -581,6 +660,7 @@ function resolveViewerControlItems(
     defaults.position,
     defaults.next,
     defaults.fullscreen,
+    defaults.toc,
     defaults.overview,
     defaults.print,
     defaults.exportPdf,
@@ -683,6 +763,8 @@ function renderDefaultViewerControlItem(
       return renderIconButton("next", item, itemProps);
     case "fullscreen":
       return renderIconButton("fullscreen", item, itemProps);
+    case "toc":
+      return renderIconButton("toc", item, itemProps);
     case "overview":
       return jsx("a", {
         ...itemProps,
@@ -729,7 +811,7 @@ function renderDefaultViewerControlItem(
 }
 
 function renderIconButton(
-  action: Extract<DeckViewerControlKey, "previous" | "next" | "fullscreen">,
+  action: Extract<DeckViewerControlKey, "previous" | "next" | "fullscreen" | "toc">,
   item: DeckViewerDefaultControlItem,
   itemProps: Record<string, string | boolean>,
 ): DeckRenderable {
@@ -740,6 +822,7 @@ function renderIconButton(
     type: "button",
     "data-action": action,
     "data-hono-decks-navigation-control": action,
+    ...(action === "toc" ? { "aria-expanded": "false" } : {}),
     ...(item.label === undefined ? { "aria-label": label, title: label } : {}),
     children: item.label ?? renderControlIcon(iconName),
   });
@@ -755,6 +838,8 @@ function controlIconNameForKey(key: DeckViewerControlKey): DeckControlIconName {
       return "next";
     case "fullscreen":
       return "fullscreen";
+    case "toc":
+      return "toc";
     case "overview":
       return "overview";
     case "print":

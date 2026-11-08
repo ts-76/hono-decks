@@ -52,7 +52,7 @@ describe("decksRouter external embeds and browser export", () => {
     expect(html).toContain('data-custom-embed="true"');
     expect(html).toContain('class="hono-decks-embedded-viewer product-tour"');
     expect(html).toContain(".product-tour{isolation:isolate}");
-    expect(html).not.toContain("data-hono-decks-viewer-controls");
+    expect(html).not.toContain('data-hono-decks-viewer-controls="true"');
     for (const tag of html.match(/<(?:style|script)\b[^>]*>/gi) ?? []) {
       expect(tag).toContain('nonce="embed-nonce"');
     }

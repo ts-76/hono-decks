@@ -49,7 +49,7 @@ Normally, set unused surfaces to `false` in the `pages` option of `createDecks()
 
 Resolver functions run per request, so they can also check authentication or environment bindings.
 
-Disabling `print` also removes the print button from the default viewer and external embed. Cmd / Ctrl + P then uses the browser's native print behavior instead of opening the dedicated route. Links added explicitly by your application are left unchanged.
+Disabling `print` also removes the print button from the default viewer and external embed. Cmd / Ctrl + P uses the browser's native print behavior. Links added explicitly by your application are left unchanged.
 
 </section>
 
@@ -78,3 +78,6 @@ The viewer, presentation, and presenter screens share the slide position as `?sl
 For external iframe use, continue to [security](/docs/security?lang=en) and allow explicit origins. Use the [API reference](/api?lang=en) when you need a specific option.
 
 </section>
+
+
+The viewer supports Left / Right, Page Up / Page Down, Space / Shift + Space, Home, and End for navigation. Press `F` for fullscreen, `O` for the overview when enabled, `T` for the table of contents, and `?` for shortcut help. The table of contents button opens a slide list; Escape closes the panel or help. Controls hide after about 2.5 seconds of inactivity over the slide and reappear on activity. Set `viewer.controls.autoHide: false` to keep them visible.

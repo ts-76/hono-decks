@@ -684,9 +684,36 @@ export function renderPresentationScript(nonce?: string): string {
   }
   bindSlideClicks();
 
+  let lastViewerActivity = 0;
+  function forwardViewerActivity() {
+    const now = Date.now();
+    if (now - lastViewerActivity < 100) return;
+    try {
+      if (!window.frameElement?.closest("[data-hono-decks-viewer]")) return;
+      lastViewerActivity = now;
+      window.parent.postMessage({ type: "hono-decks:activity", pointer: true }, window.location.origin);
+    } catch {}
+  }
+  document.addEventListener("pointermove", forwardViewerActivity, { passive: true });
+  document.addEventListener("touchstart", forwardViewerActivity, { passive: true });
+
   document.addEventListener("keydown", (event) => {
-    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
+    if (event.defaultPrevented) return;
     const target = event.target;
+    let viewerFrame = false;
+    try { viewerFrame = window.frameElement?.closest("[data-hono-decks-viewer]") != null; } catch {}
+    if (viewerFrame) {
+      window.parent.postMessage({ type: "hono-decks:activity" }, window.location.origin);
+      if (target instanceof HTMLElement && (target.isContentEditable || target.closest("input,textarea,select,[role=textbox]"))) return;
+      if (target instanceof HTMLElement && target.closest("button,a[href],[role=button],[role=slider]") && event.key === " ") return;
+      if ((!event.metaKey && !event.ctrlKey && !event.altKey && (/^[0-9]$/.test(event.key) || ["ArrowRight", "ArrowLeft", " ", "PageDown", "PageUp", "Home", "End", "Enter", "Escape", "f", "o", "t", "?"].includes(event.key)))) {
+        event.preventDefault();
+        window.parent.postMessage({ type: "hono-decks:key", key: event.key, shiftKey: event.shiftKey, metaKey: event.metaKey, ctrlKey: event.ctrlKey, altKey: event.altKey }, window.location.origin);
+      }
+      // The viewer handles navigation; the presenter-notes toggle stays inside the slide document.
+      if (event.key !== "p") return;
+    }
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
     if (target instanceof HTMLElement && (target.isContentEditable || target.closest("input,textarea,select,button,a[href],[role=textbox],[role=button],[role=slider]"))) return;
     if (["ArrowRight", "ArrowLeft", " "].includes(event.key)) event.preventDefault();
     if (event.key === "ArrowRight" || event.key === " ") handleCommand("next");

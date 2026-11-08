@@ -27,9 +27,37 @@ function viewerProgressRules(scope: string): string {
   ].join("\n");
 }
 
+function viewerExtrasStyle(): string {
+  return [
+    layer(
+      "components",
+      `
+.hono-decks-toc-panel,.hono-decks-shortcuts{background:var(--hono-decks-panel-background,#0f172a);color:var(--hono-decks-panel-color,#eef2ff);border:1px solid var(--hono-decks-panel-border,#475569);padding:1rem;box-sizing:border-box}
+.hono-decks-toc-panel button,.hono-decks-shortcuts button{font:inherit;color:inherit;background:transparent;border:1px solid var(--hono-decks-panel-border,#475569);border-radius:.4rem;padding:.5rem;cursor:pointer}
+.hono-decks-viewer-toc ol{padding:0;list-style:none}.hono-decks-viewer-toc li{margin:.25rem 0}.hono-decks-viewer-toc li button{text-align:left;width:100%;border-color:transparent}.hono-decks-viewer-toc [aria-current]{background:var(--hono-decks-panel-current,#334155)}
+.hono-decks-pending-number{background:var(--hono-decks-panel-background,#0f172a);color:var(--hono-decks-panel-color,#eef2ff);border-radius:.4rem;padding:.3rem .6rem}.hono-decks-pending-number:empty{display:none}
+.hono-decks-shortcuts::backdrop{background:rgba(0,0,0,.65)}
+`,
+    ),
+    layer(
+      "runtime",
+      `
+[data-hono-decks-viewer]{position:relative}
+.hono-decks-toc-panel{position:absolute;z-index:8;right:0;top:0;bottom:0;width:min(22rem,85%);overflow:auto}
+.hono-decks-toc-panel[hidden]{display:none}
+.hono-decks-pending-number{position:absolute;z-index:7;right:1rem;top:1rem}
+.hono-decks-viewer-controls,.hono-decks-mobile-navigation,.hono-decks-live{transition:opacity .2s ease}
+[data-hono-decks-controls-hidden] .hono-decks-viewer-controls,[data-hono-decks-controls-hidden] .hono-decks-mobile-navigation,body:has([data-hono-decks-controls-hidden]) .hono-decks-live{opacity:0;pointer-events:none}
+@media (prefers-reduced-motion:reduce){.hono-decks-viewer-controls,.hono-decks-mobile-navigation,.hono-decks-live{transition:none}}
+`,
+    ),
+  ].join("\n");
+}
+
 /** Layered stylesheet for the standalone viewer page. */
 export function baseViewerStyle(): string {
   return [
+    viewerExtrasStyle(),
     layer(
       "components",
       `
@@ -85,6 +113,7 @@ ${viewerViewportRule()}
 export function embeddedViewerStyle(): string {
   const root = "[data-hono-decks-viewer][data-hono-decks-embed]";
   return [
+    viewerExtrasStyle(),
     layer(
       "components",
       `
