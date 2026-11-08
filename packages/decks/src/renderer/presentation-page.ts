@@ -195,7 +195,7 @@ export async function renderPresenterPageAsync(input: {
           <div data-timer-remaining-box${duration ? "" : " hidden"}><span>${escapeHtml(timerMessages.remaining)}</span><strong role="timer" aria-live="off" aria-label="${escapeHtml(timerMessages.remaining)}" data-timer-remaining></strong></div>
           <div class="hono-decks-presenter-timer-pace" data-timer-pace${duration ? "" : " hidden"}></div>
         </div>
-        <div class="hono-decks-presenter-timer-controls"><button type="button" data-timer-toggle title="${escapeHtml(timerMessages.shortcut)}">${escapeHtml(timerMessages.start)}</button><button type="button" data-timer-reset>${escapeHtml(timerMessages.reset)}</button><label class="hono-decks-presenter-timer-target"><span>${escapeHtml(timerMessages.target)}</span><input type="number" min="1" max="1440" step="any" inputmode="decimal" data-timer-target value="${duration ? String(Math.round((duration / 60) * 10) / 10) : ""}"><span>${escapeHtml(timerMessages.minutes)}</span></label></div>
+        <div class="hono-decks-presenter-timer-controls"><button type="button" data-timer-toggle title="${escapeHtml(timerMessages.shortcut)}">${escapeHtml(timerMessages.start)}</button><button type="button" data-timer-reset>${escapeHtml(timerMessages.reset)}</button><label class="hono-decks-presenter-timer-target"><span>${escapeHtml(timerMessages.target)}</span><input type="number" min="1" max="1440" step="any" inputmode="decimal" data-timer-target value="${duration ? String(Math.round((duration / 60) * 10) / 10) : ""}"><span>${escapeHtml(timerMessages.minutes)}</span></label><button type="button" data-timer-target-default hidden>${escapeHtml(timerMessages.targetDefault)}</button></div>
       </section>
       <section class="hono-decks-presenter-next" data-hono-decks-presenter-next aria-label="${escapeHtml(messages.nextPreview)}">
         <h2>${escapeHtml(messages.next)}</h2>
@@ -284,6 +284,7 @@ body{margin:0;min-height:100vh;background:#050816;color:#eef2ff;font-family:Inte
 .hono-decks-presenter-timer-values [hidden]{display:none}
 .hono-decks-presenter-timer-target{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-size:14px;color:var(--hono-decks-presenter-muted,#aabbd1)}
 .hono-decks-presenter-timer-target input{box-sizing:border-box;width:5em;font:inherit;font-size:14px;color:var(--hono-decks-presenter-timer-color,#fff);background:var(--hono-decks-presenter-button-background,#1e293b);border:1px solid var(--hono-decks-presenter-border,#64748b);border-radius:6px;padding:5px 8px;font-variant-numeric:tabular-nums}.hono-decks-presenter-timer-controls button{font:inherit;font-size:14px;color:inherit;background:var(--hono-decks-presenter-button-background,#1e293b);border:1px solid var(--hono-decks-presenter-border,#64748b);border-radius:6px;padding:6px 12px;cursor:pointer}
+.hono-decks-presenter-timer-controls [data-timer-target-default]{font-size:13px;padding:5px 10px}
 .hono-decks-presenter-no-next:not([hidden]){display:grid;place-items:center;aspect-ratio:16/9;margin:0;border-radius:6px;background:#020617;color:#93a4bd;font-size:14px}
 .hono-decks-presenter-notes article{white-space:pre-wrap;font-size:18px;line-height:1.6}
 @media (max-width:900px){.hono-decks-presenter{grid-template-columns:1fr;padding-bottom:72px}.hono-decks-presenter-panel{grid-template-rows:auto auto auto}}`,
@@ -319,11 +320,13 @@ function renderPresenterScript(
   const progressText = ${JSON.stringify(progressText).replaceAll("<", "\\u003c")};
   const talkPace = ${talkPace.toString()};
   const durationKey = ${JSON.stringify("hono-decks:duration:")} + ${JSON.stringify(slug).replaceAll("<", "\\u003c")};
-  let duration = ${JSON.stringify(duration ?? null)};
+  const configuredDuration = ${JSON.stringify(duration ?? null)};
+  let duration = configuredDuration;
+  let durationOverridden = false;
   try {
     // A target typed on this page overrides the configured duration for this tab.
     const saved = JSON.parse(sessionStorage.getItem(durationKey) || "null");
-    if (saved && (saved.seconds === null || (Number.isFinite(saved.seconds) && saved.seconds > 0))) duration = saved.seconds;
+    if (saved && (saved.seconds === null || (Number.isFinite(saved.seconds) && saved.seconds > 0))) { duration = saved.seconds; durationOverridden = true; }
   } catch (_) {}
   const storageKey = ${JSON.stringify("hono-decks:timer:")} + ${JSON.stringify(slug).replaceAll("<", "\\u003c")};
   const elapsedNode = document.querySelector("[data-timer-elapsed]");
@@ -361,14 +364,24 @@ function renderPresenterScript(
     }
   }
   const targetInput = document.querySelector("[data-timer-target]");
-  if (targetInput) targetInput.value = duration ? String(Math.round((duration / 60) * 10) / 10) : "";
+  const targetDefault = document.querySelector("[data-timer-target-default]");
+  function showTarget() {
+    if (targetInput) targetInput.value = duration ? String(Math.round((duration / 60) * 10) / 10) : "";
+    if (targetDefault) targetDefault.hidden = !durationOverridden || duration === configuredDuration;
+  }
+  showTarget();
   targetInput?.addEventListener("change", () => {
     const minutes = Number.parseFloat(targetInput.value);
     duration = Number.isFinite(minutes) && minutes > 0 ? Math.min(Math.round(minutes * 60), 86400) : null;
+    durationOverridden = true;
     try { sessionStorage.setItem(durationKey, JSON.stringify({ seconds: duration })); } catch (_) {}
-    renderTimer(); announceTimer();
+    showTarget(); renderTimer(); announceTimer();
   });
-  function startTimer() { if (timer.startedAt === null && timer.elapsed === 0) { timer.startedAt = epochNow(); saveTimer(); renderTimer(); } }
+  targetDefault?.addEventListener("click", () => {
+    duration = configuredDuration; durationOverridden = false;
+    try { sessionStorage.removeItem(durationKey); } catch (_) {}
+    showTarget(); renderTimer(); announceTimer(); targetInput?.focus();
+  });
   toggle?.addEventListener("click", () => {
     if (timer.startedAt === null) timer.startedAt = epochNow();
     else { timer.elapsed = elapsed(); timer.startedAt = null; }
@@ -386,7 +399,6 @@ function renderPresenterScript(
   let projectionWindow = null;
   let currentIndex = 0;
   let currentStepIndex = 0;
-  let receivedState = false;
 
   function fitPresenterPreview(preview) {
     const slide = preview?.querySelector(".slide");
@@ -430,7 +442,6 @@ function renderPresenterScript(
   }
 
   function sendCommand(action) {
-    if (action === "next" || action === "previous" || action === "goTo") startTimer();
     const message = { type: "hono-decks:command", action };
     frame?.contentWindow?.postMessage(message, window.location.origin);
     if (projectionWindow?.closed) projectionWindow = null;
@@ -482,8 +493,6 @@ function renderPresenterScript(
     if (event.source !== frame?.contentWindow) projectionWindow = event.source;
     if (Number.isInteger(message.index)) {
       const stepIndex = Number.isInteger(message.stepIndex) ? message.stepIndex : 0;
-      if (receivedState && (message.index !== currentIndex || stepIndex !== currentStepIndex)) startTimer();
-      receivedState = true;
       const alreadyCurrent = message.index === currentIndex && stepIndex === currentStepIndex;
       show(message.index, stepIndex);
       if (!alreadyCurrent) syncProjectionState(event.source, message.index, stepIndex);

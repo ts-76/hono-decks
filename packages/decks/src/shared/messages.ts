@@ -46,6 +46,7 @@ export interface DeckMessages {
   timerShortcut: string;
   timerTarget: string;
   timerMinutes: string;
+  timerTargetDefault: string;
 
   viewerToc: string;
   viewerClose: string;
@@ -141,6 +142,7 @@ export const enMessages: DeckMessages = {
   timerShortcut: "Start or pause timer (T)",
   timerTarget: "Target",
   timerMinutes: "min",
+  timerTargetDefault: "Use default",
 
   viewerToc: "Table of contents",
   viewerClose: "Close",
@@ -235,6 +237,7 @@ export const jaMessages: DeckMessages = {
   timerShortcut: "タイマーを開始 / 一時停止 (T)",
   timerTarget: "目標時間",
   timerMinutes: "分",
+  timerTargetDefault: "既定に戻す",
 
   viewerToc: "目次",
   viewerClose: "閉じる",
@@ -331,6 +334,7 @@ export function timerMessages(messages: DeckMessages) {
     shortcut: messages.timerShortcut,
     target: messages.timerTarget,
     minutes: messages.timerMinutes,
+    targetDefault: messages.timerTargetDefault,
   };
 }
 
