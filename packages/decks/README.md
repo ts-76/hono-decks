@@ -589,7 +589,7 @@ The presentation prepares images and CSS backgrounds for the next slide, reuses 
 
 ## Presenter timer
 
-Set `duration: 20m` in deck frontmatter for a target (also `1h30m`, `90s`, or a number of minutes). Override it with `createDecks({ presenter: { duration: 1200 } })`, in seconds, or use the same string syntax. The timer starts on navigation or with Start; press `T` to start or pause it. Reset clears it. The presenter tab retains its elapsed and paused state across reloads. With a target, the timer also shows the remaining time and your pace: each slide gets an equal share of the duration, and the timer says whether you are on pace, ahead, or behind that share.
+Set `duration: 20m` in deck frontmatter for a target (also `1h30m`, `90s`, or a number of minutes). Override it with `createDecks({ presenter: { duration: 1200 } })`, in seconds, or use the same string syntax. The timer starts on navigation or with Start; press `T` to start or pause it. Reset clears it. Type a target in minutes next to the timer controls to set or change it for that presenter tab (it overrides the configured duration, survives reloads, and is relayed to the remote); clear the field to remove it. The presenter tab retains its elapsed and paused state across reloads. With a target, the timer also shows the remaining time and your pace: each slide gets an equal share of the duration, and the timer says whether you are on pace, ahead, or behind that share.
 
 ## Development overflow warnings
 

@@ -192,9 +192,10 @@ export async function renderPresenterPageAsync(input: {
         <div class="hono-decks-presenter-timer-values">
           <div><span>${escapeHtml(timerMessages.elapsed)}</span><strong role="timer" aria-live="off" aria-label="${escapeHtml(timerMessages.elapsed)}" data-timer-elapsed>00:00</strong></div>
           <div><span>${escapeHtml(timerMessages.clock)}</span><strong role="timer" aria-live="off" aria-label="${escapeHtml(timerMessages.clock)}" data-timer-clock></strong></div>
-          ${duration ? `<div><span>${escapeHtml(timerMessages.remaining)}</span><strong role="timer" aria-live="off" aria-label="${escapeHtml(timerMessages.remaining)}" data-timer-remaining></strong></div><div data-timer-pace></div>` : ""}
+          <div data-timer-remaining-box${duration ? "" : " hidden"}><span>${escapeHtml(timerMessages.remaining)}</span><strong role="timer" aria-live="off" aria-label="${escapeHtml(timerMessages.remaining)}" data-timer-remaining></strong></div>
+          <div class="hono-decks-presenter-timer-pace" data-timer-pace${duration ? "" : " hidden"}></div>
         </div>
-        <div class="hono-decks-presenter-timer-controls"><button type="button" data-timer-toggle title="${escapeHtml(timerMessages.shortcut)}">${escapeHtml(timerMessages.start)}</button><button type="button" data-timer-reset>${escapeHtml(timerMessages.reset)}</button></div>
+        <div class="hono-decks-presenter-timer-controls"><button type="button" data-timer-toggle title="${escapeHtml(timerMessages.shortcut)}">${escapeHtml(timerMessages.start)}</button><button type="button" data-timer-reset>${escapeHtml(timerMessages.reset)}</button><label class="hono-decks-presenter-timer-target"><span>${escapeHtml(timerMessages.target)}</span><input type="number" min="1" max="1440" step="any" inputmode="decimal" data-timer-target value="${duration ? String(Math.round((duration / 60) * 10) / 10) : ""}"><span>${escapeHtml(timerMessages.minutes)}</span></label></div>
       </section>
       <section class="hono-decks-presenter-next" data-hono-decks-presenter-next aria-label="${escapeHtml(messages.nextPreview)}">
         <h2>${escapeHtml(messages.next)}</h2>
@@ -278,14 +279,19 @@ body{margin:0;min-height:100vh;background:#050816;color:#eef2ff;font-family:Inte
 .hono-decks-presenter-timer-values strong{font-size:22px;font-variant-numeric:tabular-nums;color:var(--hono-decks-presenter-timer-color,#fff)}
 .hono-decks-presenter-timer-values [data-pace="ahead"]{color:var(--hono-decks-presenter-ahead,#86efac)}
 .hono-decks-presenter-timer-values [data-pace="behind"],.hono-decks-presenter-timer-values [data-over="true"]{color:var(--hono-decks-presenter-behind,#fda4af)}
-.hono-decks-presenter-timer-controls{display:flex;gap:8px;margin-top:12px}.hono-decks-presenter-timer-controls button{font:inherit;font-size:14px;color:inherit;background:var(--hono-decks-presenter-button-background,#1e293b);border:1px solid var(--hono-decks-presenter-border,#64748b);border-radius:6px;padding:6px 12px;cursor:pointer}
+.hono-decks-presenter-timer-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px}
+.hono-decks-presenter-timer-pace{font-size:16px;font-weight:600}
+.hono-decks-presenter-timer-values [hidden]{display:none}
+.hono-decks-presenter-timer-target{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-size:14px;color:var(--hono-decks-presenter-muted,#aabbd1)}
+.hono-decks-presenter-timer-target input{box-sizing:border-box;width:5em;font:inherit;font-size:14px;color:var(--hono-decks-presenter-timer-color,#fff);background:var(--hono-decks-presenter-button-background,#1e293b);border:1px solid var(--hono-decks-presenter-border,#64748b);border-radius:6px;padding:5px 8px;font-variant-numeric:tabular-nums}.hono-decks-presenter-timer-controls button{font:inherit;font-size:14px;color:inherit;background:var(--hono-decks-presenter-button-background,#1e293b);border:1px solid var(--hono-decks-presenter-border,#64748b);border-radius:6px;padding:6px 12px;cursor:pointer}
 .hono-decks-presenter-no-next:not([hidden]){display:grid;place-items:center;aspect-ratio:16/9;margin:0;border-radius:6px;background:#020617;color:#93a4bd;font-size:14px}
 .hono-decks-presenter-notes article{white-space:pre-wrap;font-size:18px;line-height:1.6}
-@media (max-width:900px){.hono-decks-presenter{grid-template-columns:1fr}.hono-decks-presenter-panel{grid-template-rows:auto auto auto}}`,
+@media (max-width:900px){.hono-decks-presenter{grid-template-columns:1fr;padding-bottom:72px}.hono-decks-presenter-panel{grid-template-rows:auto auto auto}}`,
     ),
     layer(
       "runtime",
       `
+@media (max-width:900px){html:has(.hono-decks-presenter),html:has(.hono-decks-presenter) body{height:auto;min-height:100%;overflow:auto;background:#050816}}
 .hono-decks-presenter-preview{position:relative;aspect-ratio:16/9;overflow:hidden;border-radius:6px;background:#020617}
 body:not([data-overview-mode]) .hono-decks-presenter-preview .slide{position:absolute;inset:0 auto auto 0;width:var(--hono-decks-width);height:var(--hono-decks-height);aspect-ratio:16/9;max-width:none;transform-origin:left top;transition:none!important}
 .hono-decks-presenter-preview .hono-decks-slide-content{transform-origin:top left}`,
@@ -312,7 +318,13 @@ function renderPresenterScript(
   const messages = ${JSON.stringify(messages).replaceAll("<", "\\u003c")};
   const progressText = ${JSON.stringify(progressText).replaceAll("<", "\\u003c")};
   const talkPace = ${talkPace.toString()};
-  const duration = ${JSON.stringify(duration ?? null)};
+  const durationKey = ${JSON.stringify("hono-decks:duration:")} + ${JSON.stringify(slug).replaceAll("<", "\\u003c")};
+  let duration = ${JSON.stringify(duration ?? null)};
+  try {
+    // A target typed on this page overrides the configured duration for this tab.
+    const saved = JSON.parse(sessionStorage.getItem(durationKey) || "null");
+    if (saved && (saved.seconds === null || (Number.isFinite(saved.seconds) && saved.seconds > 0))) duration = saved.seconds;
+  } catch (_) {}
   const storageKey = ${JSON.stringify("hono-decks:timer:")} + ${JSON.stringify(slug).replaceAll("<", "\\u003c")};
   const elapsedNode = document.querySelector("[data-timer-elapsed]");
   const clockNode = document.querySelector("[data-timer-clock]");
@@ -325,7 +337,7 @@ function renderPresenterScript(
     if (saved && Number.isFinite(saved.elapsed) && saved.elapsed >= 0 && (saved.startedAt === null || Number.isFinite(saved.startedAt))) timer = saved;
   } catch (_) {}
   // The remote runtime relays this event so phones show the same timer.
-  function announceTimer() { document.dispatchEvent(new CustomEvent("hono-decks:timer", { detail: { elapsed: elapsed(), running: timer.startedAt !== null } })); }
+  function announceTimer() { document.dispatchEvent(new CustomEvent("hono-decks:timer", { detail: { elapsed: elapsed(), running: timer.startedAt !== null, duration } })); }
   function saveTimer() { try { sessionStorage.setItem(storageKey, JSON.stringify(timer)); } catch (_) {} announceTimer(); }
   const epochNow = ${epochNow.toString()};
   const formatClock = ${formatClock.toString()};
@@ -337,6 +349,8 @@ function renderPresenterScript(
     if (elapsedNode) elapsedNode.textContent = formatTime(seconds);
     if (clockNode) clockNode.textContent = formatClock(document.documentElement.lang || undefined);
     if (toggle) toggle.textContent = timer.startedAt !== null ? messages.pause : timer.elapsed ? messages.resume : messages.start;
+    document.querySelector("[data-timer-remaining-box]")?.toggleAttribute("hidden", !duration);
+    paceNode?.toggleAttribute("hidden", !duration);
     if (duration && remainingNode && paceNode) {
       const remaining = duration - seconds;
       remainingNode.textContent = remaining < 0 ? messages.over + " " + formatTime(-remaining) : formatTime(remaining);
@@ -346,6 +360,14 @@ function renderPresenterScript(
       paceNode.textContent = pace.state === "on" ? messages.onPace : (pace.state === "ahead" ? messages.ahead : messages.behind) + " " + formatTime(pace.seconds);
     }
   }
+  const targetInput = document.querySelector("[data-timer-target]");
+  if (targetInput) targetInput.value = duration ? String(Math.round((duration / 60) * 10) / 10) : "";
+  targetInput?.addEventListener("change", () => {
+    const minutes = Number.parseFloat(targetInput.value);
+    duration = Number.isFinite(minutes) && minutes > 0 ? Math.min(Math.round(minutes * 60), 86400) : null;
+    try { sessionStorage.setItem(durationKey, JSON.stringify({ seconds: duration })); } catch (_) {}
+    renderTimer(); announceTimer();
+  });
   function startTimer() { if (timer.startedAt === null && timer.elapsed === 0) { timer.startedAt = epochNow(); saveTimer(); renderTimer(); } }
   toggle?.addEventListener("click", () => {
     if (timer.startedAt === null) timer.startedAt = epochNow();
