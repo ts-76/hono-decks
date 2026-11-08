@@ -47,6 +47,10 @@ export interface DeckMessages {
   timerTarget: string;
   timerMinutes: string;
   timerTargetDefault: string;
+  timerDisplay: string;
+  timerPaceLabel: string;
+  timerOvertimeLabel: string;
+  timerAppendix: string;
 
   viewerToc: string;
   viewerClose: string;
@@ -143,6 +147,10 @@ export const enMessages: DeckMessages = {
   timerTarget: "Target",
   timerMinutes: "min",
   timerTargetDefault: "Use default",
+  timerDisplay: "Show",
+  timerPaceLabel: "Pace",
+  timerOvertimeLabel: "Overtime",
+  timerAppendix: "Appendix",
 
   viewerToc: "Table of contents",
   viewerClose: "Close",
@@ -238,6 +246,10 @@ export const jaMessages: DeckMessages = {
   timerTarget: "目標時間",
   timerMinutes: "分",
   timerTargetDefault: "既定に戻す",
+  timerDisplay: "表示",
+  timerPaceLabel: "ペース",
+  timerOvertimeLabel: "超過時間",
+  timerAppendix: "付録",
 
   viewerToc: "目次",
   viewerClose: "閉じる",
@@ -335,6 +347,10 @@ export function timerMessages(messages: DeckMessages) {
     target: messages.timerTarget,
     minutes: messages.timerMinutes,
     targetDefault: messages.timerTargetDefault,
+    display: messages.timerDisplay,
+    paceLabel: messages.timerPaceLabel,
+    overtimeLabel: messages.timerOvertimeLabel,
+    appendix: messages.timerAppendix,
   };
 }
 
@@ -365,5 +381,6 @@ export function remoteMessages(messages: DeckMessages) {
     ahead: messages.timerAhead,
     behind: messages.timerBehind,
     over: messages.timerOver,
+    appendix: messages.timerAppendix,
   };
 }

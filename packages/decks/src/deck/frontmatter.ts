@@ -1,6 +1,6 @@
 import { parseDuration } from "./duration";
 import { CompileError, SLIDE_TRANSITIONS } from "./model";
-import type { CompiledDeck, DeckFrontmatter, SlideFrontmatter, SlideTransition } from "./model";
+import type { CompiledDeck, DeckFrontmatter, SlideFrontmatter, SlideTransition, TalkTimerDisplay } from "./model";
 
 export interface FrontmatterParseResult {
   attrs: Record<string, unknown>;
@@ -23,7 +23,15 @@ export function readFrontmatter(source: string): FrontmatterParseResult {
 }
 
 /** Slide-only keys allowed in the opening frontmatter; they apply to the first slide. */
-export const FIRST_SLIDE_FRONTMATTER_KEYS = ["layout", "class", "notes", "background", "image", "image-alt"] as const;
+export const FIRST_SLIDE_FRONTMATTER_KEYS = [
+  "layout",
+  "class",
+  "notes",
+  "background",
+  "image",
+  "image-alt",
+  "time",
+] as const;
 
 /**
  * Splits the opening frontmatter into deck metadata and first-slide metadata, so
@@ -76,6 +84,24 @@ export function toDeckFrontmatter(attrs: Record<string, unknown>, warnings: Comp
       });
     delete meta.duration;
   }
+  if ("timer" in meta) {
+    const timer = meta.timer;
+    const keys = ["pace", "remaining", "overtime"] as const;
+    if (
+      timer &&
+      typeof timer === "object" &&
+      !Array.isArray(timer) &&
+      Object.entries(timer).every(([key, value]) => keys.includes(key as never) && typeof value === "boolean")
+    ) {
+      deck.timer = { ...(timer as TalkTimerDisplay) };
+    } else {
+      warnings.push({
+        code: "invalid-timer",
+        message: `Invalid timer value "${formatFrontmatterValue(timer)}"; expected booleans for pace, remaining, and overtime.`,
+      });
+    }
+    delete meta.timer;
+  }
 
   const tags = meta.tags;
   if (Array.isArray(tags)) {
@@ -122,6 +148,18 @@ export function toSlideFrontmatter(
     transitionEasing: takeTransitionEasing(meta, warnings, input.slideIndex) ?? input.fallbackTransitionEasing,
     meta,
   };
+  if ("time" in meta) {
+    slide.time = parseDuration(meta.time, "minutes");
+    if (slide.time === undefined)
+      warnings.push({
+        code: "invalid-time",
+        message: `Invalid time value "${formatFrontmatterValue(meta.time)}"; ignoring it.`,
+        slideIndex: input.slideIndex,
+      });
+    delete meta.time;
+  }
+  const appendix = takeBoolean(meta, "appendix");
+  if (appendix !== undefined) slide.appendix = appendix;
 
   return slide;
 }

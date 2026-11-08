@@ -221,4 +221,15 @@ describe("remote room", () => {
     expect(data.get("timer")).toMatchObject({ duration: 900 });
     expect(JSON.parse(remote.sent[0]!)).toEqual({ type: "timer", elapsed: 0, running: false, duration: 900 });
   });
+
+  it("relays the presenter's readout choices", async () => {
+    const { instance, connect } = room();
+    const presenter = connect("presenter");
+    const remote = connect("presenter");
+    await instance.webSocketMessage(
+      presenter as unknown as WebSocket,
+      '{"type":"timer","elapsed":0,"running":false,"display":{"pace":false,"remaining":true,"overtime":true}}',
+    );
+    expect(JSON.parse(remote.sent[0]!).display).toEqual({ pace: false, remaining: true, overtime: true });
+  });
 });

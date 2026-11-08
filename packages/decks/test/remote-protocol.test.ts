@@ -56,4 +56,19 @@ describe("remote message validation", () => {
       expect(parseRemoteMessage(`{"type":"timer","elapsed":0,"running":false,"duration":${duration}}`, 2)).toBeNull();
     }
   });
+
+  it("accepts the presenter's readout choices on the timer", () => {
+    expect(
+      parseRemoteMessage(
+        '{"type":"timer","elapsed":0,"running":false,"display":{"pace":false,"remaining":true,"overtime":false}}',
+        2,
+      ),
+    ).toEqual({
+      type: "timer",
+      elapsed: 0,
+      running: false,
+      display: { pace: false, remaining: true, overtime: false },
+    });
+    expect(parseRemoteMessage('{"type":"timer","elapsed":0,"running":false,"display":{"pace":false}}', 2)).toBeNull();
+  });
 });

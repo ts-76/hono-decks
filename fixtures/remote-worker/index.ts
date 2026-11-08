@@ -8,7 +8,8 @@ const app = new Hono<{ Bindings: { ROOMS: DurableObjectNamespace } }>();
 const deck = {
   slug: "demo", sourcePath: "demo.mdx", kind: "directory" as const,
   meta: { title: "Remote demo", draft: false, meta: {} },
-  slides: ["First", "Second", "Third"].map((title, index) => ({ index, meta: { title, layout: "default", meta: {} }, html: `<h1>${title}</h1>`, notes: `Private note ${index + 1}`, components: [] })),
+  // First has a 1-minute budget, Second and Third share the rest, and Appendix is outside the pace.
+  slides: [{ title: "First", time: 60 }, { title: "Second" }, { title: "Third" }, { title: "Appendix", appendix: true }].map((meta, index) => ({ index, meta: { ...meta, layout: "default", meta: {} }, html: `<h1>${meta.title}</h1>`, notes: `Private note ${index + 1}`, components: [] })),
   assets: [], warnings: [],
 };
 app.route("/decks", decksRouter({ source: manifestDeckSource({ decks: [deck] }), presenter: { duration: "3m" }, remote: {

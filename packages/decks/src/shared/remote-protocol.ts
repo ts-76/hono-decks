@@ -10,6 +10,8 @@ export interface RemoteTimer {
   running: boolean;
   /** Target talk length in seconds set on the presenter page; `null` clears it. */
   duration?: number | null;
+  /** Readouts the presenter chose to show. */
+  display?: { pace: boolean; remaining: boolean; overtime: boolean };
 }
 
 export type RemoteMessage =
@@ -34,19 +36,23 @@ export function parseRemoteMessage(input: unknown, slideCount: number): RemoteMe
     const { elapsed, running } = message;
     if (typeof running !== "boolean" || typeof elapsed !== "number" || !Number.isFinite(elapsed)) return null;
     if (elapsed < 0 || elapsed > 7 * 24 * 60 * 60 * 1000) return null;
-    const { duration } = message;
-    if (duration === undefined) return { type: "timer", elapsed: Math.floor(elapsed), running };
-    if (
-      duration !== null &&
-      (typeof duration !== "number" || !Number.isFinite(duration) || duration <= 0 || duration > 86400)
-    )
-      return null;
-    return {
-      type: "timer",
-      elapsed: Math.floor(elapsed),
-      running,
-      duration: duration === null ? null : Math.round(duration),
-    };
+    const timer: RemoteTimer = { elapsed: Math.floor(elapsed), running };
+    const { duration, display } = message;
+    if (duration !== undefined) {
+      if (
+        duration !== null &&
+        (typeof duration !== "number" || !Number.isFinite(duration) || duration <= 0 || duration > 86400)
+      )
+        return null;
+      timer.duration = duration === null ? null : Math.round(duration);
+    }
+    if (display !== undefined) {
+      if (!display || typeof display !== "object") return null;
+      const { pace, remaining, overtime } = display as Record<string, unknown>;
+      if (typeof pace !== "boolean" || typeof remaining !== "boolean" || typeof overtime !== "boolean") return null;
+      timer.display = { pace, remaining, overtime };
+    }
+    return { type: "timer", ...timer };
   }
   if (message.type === "command" && (message.command === "next" || message.command === "previous")) {
     return { type: "command", command: message.command };
