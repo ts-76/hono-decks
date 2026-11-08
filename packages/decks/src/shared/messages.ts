@@ -28,7 +28,7 @@ export interface DeckMessages {
   remoteDisconnected: string;
   remoteQr: string;
   remoteQrHint: string;
-  remoteUrlLabel: string;
+  remoteOpenHere: string;
   remoteCopy: string;
   remoteCopied: string;
   remoteSlides: string;
@@ -132,8 +132,8 @@ export const enMessages: DeckMessages = {
   remoteDisconnected: "Disconnected",
   remoteQr: "Show remote control QR code",
   remoteQrHint: "Scan with your phone to open the remote control.",
-  remoteUrlLabel: "Or open this URL on another device",
-  remoteCopy: "Copy",
+  remoteOpenHere: "Open in this browser",
+  remoteCopy: "Copy URL",
   remoteCopied: "Copied",
   remoteSlides: "Slides",
   remoteNotStarted: "Timer not started",
@@ -235,8 +235,8 @@ export const jaMessages: DeckMessages = {
   remoteDisconnected: "切断",
   remoteQr: "リモート操作のQRコードを表示",
   remoteQrHint: "スマートフォンで読み取ると、リモート操作の画面が開きます。",
-  remoteUrlLabel: "ほかの端末で開く場合のURL",
-  remoteCopy: "コピー",
+  remoteOpenHere: "このブラウザで開く",
+  remoteCopy: "URLをコピー",
   remoteCopied: "コピーしました",
   remoteSlides: "スライド一覧",
   remoteNotStarted: "タイマー未開始",
@@ -385,7 +385,7 @@ export function remoteMessages(messages: DeckMessages) {
     disconnected: messages.remoteDisconnected,
     qr: messages.remoteQr,
     qrHint: messages.remoteQrHint,
-    urlLabel: messages.remoteUrlLabel,
+    openHere: messages.remoteOpenHere,
     copy: messages.remoteCopy,
     copied: messages.remoteCopied,
     slides: messages.remoteSlides,

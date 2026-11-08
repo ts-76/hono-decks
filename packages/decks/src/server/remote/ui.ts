@@ -64,11 +64,11 @@ const style = layer(
 .hono-decks-remote-qr header button { display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:#f1f5f9;color:#334155;font:inherit;font-size:18px;line-height:1;cursor:pointer }
 .hono-decks-remote-qr svg { display:block;width:min(220px,60vw);height:auto;margin:4px auto 8px }
 .hono-decks-remote-qr p { margin:0;text-align:center;font-size:13px;color:#475569;text-wrap:balance }
-.hono-decks-remote-qr-url { margin-top:16px;padding-top:14px;border-top:1px solid #e2e8f0 }
-.hono-decks-remote-qr-url span { display:block;margin-bottom:6px;font-size:12px;color:#64748b }
-.hono-decks-remote-qr-url div { display:flex;align-items:center;gap:8px;padding:6px 6px 6px 10px;border-radius:8px;background:#f1f5f9 }
-.hono-decks-remote-qr-url code { flex:1;min-width:0;font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;color:#0f172a;overflow-wrap:anywhere;user-select:all;-webkit-user-select:all }
-.hono-decks-remote-qr-url button { flex:none;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#0f172a;font:inherit;font-size:12px;cursor:pointer }
+.hono-decks-remote-qr-actions { display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid #e2e8f0 }
+.hono-decks-remote-qr-actions a,.hono-decks-remote-qr-actions button { flex:1 1 auto;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:6px 10px;white-space:nowrap;border-radius:8px;font:inherit;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer }
+.hono-decks-remote-qr-actions a { border:0;background:#0f172a;color:#fff }
+.hono-decks-remote-qr-actions button { border:1px solid #cbd5e1;background:#fff;color:#0f172a }
+.hono-decks-remote-qr-actions svg { width:14px;height:14px;margin:0 }
 `,
 );
 
@@ -95,8 +95,10 @@ export function remoteQrButton(messages: ReturnType<typeof remoteMessages> = REM
 /** A QR code for the remote control page. Render it outside the presenter toolbar. */
 export function remoteQrPopover(url: string, messages: ReturnType<typeof remoteMessages> = REMOTE_MESSAGES): string {
   const svg = renderSVG(url, { border: 2 }).replace("<svg ", `<svg role="img" aria-label="${escape(messages.qr)}" `);
-  // The URL is plain, selectable text with a copy button: following a link here would open the remote on the presenter's own screen.
-  return `<div id="hono-decks-remote-qr" class="hono-decks-remote-qr" popover role="dialog" aria-labelledby="hono-decks-remote-qr-title"><header><h2 id="hono-decks-remote-qr-title">${escape(messages.title)}</h2><button type="button" popovertarget="hono-decks-remote-qr" popovertargetaction="hide" aria-label="${escape(messages.close)}">&times;</button></header>${svg}<p>${escape(messages.qrHint)}</p><div class="hono-decks-remote-qr-url"><span>${escape(messages.urlLabel)}</span><div><code data-remote-url>${escape(url)}</code><button type="button" data-remote-copy>${escape(messages.copy)}</button></div></div></div>`;
+  // Opening the remote on this computer is a labelled link in a new tab, so the presenter page stays open.
+  const external =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>';
+  return `<div id="hono-decks-remote-qr" class="hono-decks-remote-qr" popover role="dialog" aria-labelledby="hono-decks-remote-qr-title"><header><h2 id="hono-decks-remote-qr-title">${escape(messages.title)}</h2><button type="button" popovertarget="hono-decks-remote-qr" popovertargetaction="hide" aria-label="${escape(messages.close)}">&times;</button></header>${svg}<p>${escape(messages.qrHint)}</p><div class="hono-decks-remote-qr-actions"><a href="${escape(url)}" target="_blank" rel="noopener" data-remote-url>${escape(messages.openHere)}${external}</a><button type="button" data-remote-copy>${escape(messages.copy)}</button></div></div>`;
 }
 
 export function remoteIndicator(
@@ -237,9 +239,10 @@ export function renderRemoteScript(
   }
   const copyButton = document.querySelector('[data-remote-copy]');
   copyButton?.addEventListener('click', async () => {
-    const text = document.querySelector('[data-remote-url]')?.textContent || '';
-    try { await navigator.clipboard.writeText(text); copyButton.textContent = messages.copied; setTimeout(() => { copyButton.textContent = messages.copy; }, 1500); }
-    catch { const range = document.createRange(); const node = document.querySelector('[data-remote-url]'); if (node) { range.selectNodeContents(node); getSelection()?.removeAllRanges(); getSelection()?.addRange(range); } }
+    const text = document.querySelector('[data-remote-url]')?.href || '';
+    try { await navigator.clipboard.writeText(text); copyButton.textContent = messages.copied; }
+    catch { window.prompt(messages.copy, text); }
+    setTimeout(() => { copyButton.textContent = messages.copy; }, 1500);
   });
   if (mode === 'presenter') document.addEventListener('hono-decks:timer', event => {
     const detail = event.detail; if (!detail || !Number.isFinite(detail.elapsed)) return;
