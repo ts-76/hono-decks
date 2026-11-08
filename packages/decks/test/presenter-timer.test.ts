@@ -35,8 +35,8 @@ describe("presenter duration", () => {
     app.route("/b", decksRouter({ source, presenter: { duration: "90s" } }));
     const a = await (await app.request("/a/deck1/presenter")).text();
     const b = await (await app.request("/b/deck1/presenter")).text();
-    expect(a).toContain("let duration = 1200;");
-    expect(b).toContain("let duration = 90;");
+    expect(a).toContain("const configuredDuration = 1200;");
+    expect(b).toContain("const configuredDuration = 90;");
     expect(b).toContain('role="timer" aria-live="off"');
     expect(b).toContain("const formatTime = function formatTalkTime(");
     expect(formatTalkTime(65)).toBe("01:05");
@@ -104,5 +104,9 @@ describe("presenter duration", () => {
     const timedHtml = await (await timed.request("/slides/deck1/presenter")).text();
     expect(timedHtml).toContain('data-timer-target value="1.5"');
     expect(timedHtml).toContain("<div data-timer-remaining-box>");
+    expect(timedHtml).toContain('<button type="button" data-timer-target-default hidden>既定に戻す</button>');
+    expect(timedHtml).toContain("const configuredDuration = 90;");
+    // The timer only starts from Start or T; navigation never starts it.
+    expect(timedHtml).not.toContain("startTimer");
   });
 });
