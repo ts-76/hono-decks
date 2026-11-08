@@ -209,4 +209,16 @@ describe("remote room", () => {
       vi.useRealTimers();
     }
   });
+
+  it("keeps and relays the target duration set on the presenter page", async () => {
+    const { instance, data, connect } = room();
+    const presenter = connect("presenter");
+    const remote = connect("presenter");
+    await instance.webSocketMessage(
+      presenter as unknown as WebSocket,
+      '{"type":"timer","elapsed":0,"running":false,"duration":900}',
+    );
+    expect(data.get("timer")).toMatchObject({ duration: 900 });
+    expect(JSON.parse(remote.sent[0]!)).toEqual({ type: "timer", elapsed: 0, running: false, duration: 900 });
+  });
 });

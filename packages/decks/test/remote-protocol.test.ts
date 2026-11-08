@@ -41,4 +41,19 @@ describe("remote message validation", () => {
       expect(parseRemoteMessage(input, 2)).toBeNull();
     }
   });
+
+  it("accepts an optional target duration on the timer", () => {
+    expect(parseRemoteMessage('{"type":"timer","elapsed":0,"running":false,"duration":600.4}', 2)).toEqual({
+      type: "timer",
+      elapsed: 0,
+      running: false,
+      duration: 600,
+    });
+    expect(parseRemoteMessage('{"type":"timer","elapsed":0,"running":false,"duration":null}', 2)).toMatchObject({
+      duration: null,
+    });
+    for (const duration of ["0", "-5", "100000", '"10m"']) {
+      expect(parseRemoteMessage(`{"type":"timer","elapsed":0,"running":false,"duration":${duration}}`, 2)).toBeNull();
+    }
+  });
 });

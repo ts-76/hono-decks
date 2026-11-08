@@ -35,8 +35,8 @@ describe("presenter duration", () => {
     app.route("/b", decksRouter({ source, presenter: { duration: "90s" } }));
     const a = await (await app.request("/a/deck1/presenter")).text();
     const b = await (await app.request("/b/deck1/presenter")).text();
-    expect(a).toContain("const duration = 1200;");
-    expect(b).toContain("const duration = 90;");
+    expect(a).toContain("let duration = 1200;");
+    expect(b).toContain("let duration = 90;");
     expect(b).toContain('role="timer" aria-live="off"');
     expect(b).toContain("const formatTime = function formatTalkTime(");
     expect(formatTalkTime(65)).toBe("01:05");
@@ -83,5 +83,26 @@ describe("presenter duration", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("renders a target input and hides remaining time and pace until a target is set", async () => {
+    const app = new Hono();
+    app.route("/slides", decksRouter({ source: manifestDeckSource({ decks: [deck] }), document: { lang: "ja" } }));
+    const html = await (await app.request("/slides/deck1/presenter")).text();
+    expect(html).toContain(
+      '<input type="number" min="1" max="1440" step="any" inputmode="decimal" data-timer-target value="">',
+    );
+    expect(html).toContain("<div data-timer-remaining-box hidden>");
+    expect(html).toContain("data-timer-pace hidden");
+    expect(html).toContain("目標時間");
+    expect(html).toContain('"hono-decks:duration:"');
+    const timed = new Hono();
+    timed.route(
+      "/slides",
+      decksRouter({ source: manifestDeckSource({ decks: [deck] }), presenter: { duration: "90s" } }),
+    );
+    const timedHtml = await (await timed.request("/slides/deck1/presenter")).text();
+    expect(timedHtml).toContain('data-timer-target value="1.5"');
+    expect(timedHtml).toContain("<div data-timer-remaining-box>");
   });
 });

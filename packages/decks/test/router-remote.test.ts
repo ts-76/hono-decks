@@ -137,7 +137,7 @@ describe("remote socket route", () => {
     expect(html).not.toContain("<details>");
     expect(html).toContain('data-remote-goto="0" aria-current="true"');
     expect(html).toContain("data-remote-remaining");
-    expect(html).toContain("const duration = 600");
+    expect(html).toContain("let duration = 600");
     expect(html).toContain("navigator.wakeLock");
     expect(html).not.toMatch(/<[^>]+ style="/);
     for (const tag of html.match(/<(?:style|script)\b[^>]*>/gi) ?? []) expect(tag).toContain('nonce="n1"');

@@ -11,6 +11,7 @@ interface SocketAttachment {
 interface StoredTimer {
   elapsed: number;
   running: boolean;
+  duration?: number | null;
   at: number;
 }
 
@@ -75,7 +76,8 @@ export class DeckRemoteRoom {
     if (!message) return;
     if (message.type === "timer") {
       // Followers never see the timer; it is shared between presenter and remote pages.
-      const timer = { elapsed: message.elapsed, running: message.running, at: now };
+      const timer: StoredTimer = { elapsed: message.elapsed, running: message.running, at: now };
+      if (message.duration !== undefined) timer.duration = message.duration;
       await this.ctx.storage.put("timer", timer);
       for (const peer of this.ctx.getWebSockets("presenter")) {
         if (peer !== socket) {
@@ -145,5 +147,10 @@ export class DeckRemoteRoom {
 /** Serializes the timer with its elapsed time advanced to `now`, so clients need no shared clock. */
 function timerMessage(timer: StoredTimer, now: number): string {
   const elapsed = timer.elapsed + (timer.running ? Math.max(0, now - timer.at) : 0);
-  return JSON.stringify({ type: "timer", elapsed, running: timer.running });
+  return JSON.stringify({
+    type: "timer",
+    elapsed,
+    running: timer.running,
+    ...(timer.duration !== undefined ? { duration: timer.duration } : {}),
+  });
 }
