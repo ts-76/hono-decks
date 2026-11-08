@@ -1,4 +1,4 @@
-import { formatTalkTime, talkPace } from "../shared/talk-time";
+import { epochNow, formatClock, formatTalkTime, talkPace } from "../shared/talk-time";
 import { enMessages } from "../shared/messages";
 import { parseDuration } from "../deck/duration";
 import { renderOverflowChecker } from "./overflow-checker";
@@ -327,13 +327,15 @@ function renderPresenterScript(
   // The remote runtime relays this event so phones show the same timer.
   function announceTimer() { document.dispatchEvent(new CustomEvent("hono-decks:timer", { detail: { elapsed: elapsed(), running: timer.startedAt !== null } })); }
   function saveTimer() { try { sessionStorage.setItem(storageKey, JSON.stringify(timer)); } catch (_) {} announceTimer(); }
-  function elapsed() { return timer.elapsed + (timer.startedAt === null ? 0 : Math.max(0, Date.now() - timer.startedAt)); }
+  const epochNow = ${epochNow.toString()};
+  const formatClock = ${formatClock.toString()};
+  function elapsed() { return timer.elapsed + (timer.startedAt === null ? 0 : Math.max(0, epochNow() - timer.startedAt)); }
   announceTimer();
   const formatTime = ${formatTalkTime.toString()};
   function renderTimer() {
     const seconds = elapsed() / 1000;
     if (elapsedNode) elapsedNode.textContent = formatTime(seconds);
-    if (clockNode) clockNode.textContent = new Date().toLocaleTimeString();
+    if (clockNode) clockNode.textContent = formatClock(document.documentElement.lang || undefined);
     if (toggle) toggle.textContent = timer.startedAt !== null ? messages.pause : timer.elapsed ? messages.resume : messages.start;
     if (duration && remainingNode && paceNode) {
       const remaining = duration - seconds;
@@ -344,9 +346,9 @@ function renderPresenterScript(
       paceNode.textContent = pace.state === "on" ? messages.onPace : (pace.state === "ahead" ? messages.ahead : messages.behind) + " " + formatTime(pace.seconds);
     }
   }
-  function startTimer() { if (timer.startedAt === null && timer.elapsed === 0) { timer.startedAt = Date.now(); saveTimer(); renderTimer(); } }
+  function startTimer() { if (timer.startedAt === null && timer.elapsed === 0) { timer.startedAt = epochNow(); saveTimer(); renderTimer(); } }
   toggle?.addEventListener("click", () => {
-    if (timer.startedAt === null) timer.startedAt = Date.now();
+    if (timer.startedAt === null) timer.startedAt = epochNow();
     else { timer.elapsed = elapsed(); timer.startedAt = null; }
     saveTimer(); renderTimer();
   });

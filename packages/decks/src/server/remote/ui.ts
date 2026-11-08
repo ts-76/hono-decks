@@ -1,7 +1,7 @@
 import { enMessages } from "../../shared/messages";
 import { resolveMessages, remoteMessages, formatMessage, type DeckMessageOverrides } from "../../shared/messages";
 import { renderSVG } from "uqr";
-import { formatTalkTime, talkPace } from "../../shared/talk-time";
+import { epochNow, formatTalkTime, talkPace } from "../../shared/talk-time";
 import type { CompiledDeck } from "../../deck/model";
 import { composeStylesheet, layer } from "../../renderer/style-layers";
 import { documentNonceAttribute, type ResolvedDeckDocument } from "../document";
@@ -134,7 +134,7 @@ export function renderRemoteScript(
   return `<script data-hono-decks-remote-runtime${documentNonceAttribute(nonce)}>
 (() => {
   const mode = ${json(mode)}, messages = ${json(messages)}, slides = ${json(slides)}, progressText = ${json(progressText)};
-  const duration = ${json(duration ?? null)}, talkPace = ${talkPace.toString()}, formatTime = ${formatTalkTime.toString()};
+  const duration = ${json(duration ?? null)}, talkPace = ${talkPace.toString()}, formatTime = ${formatTalkTime.toString()}, epochNow = ${epochNow.toString()};
   const status = document.querySelector('[data-remote-status]'), toggle = document.querySelector('[data-remote-follow]');
   const frame = document.querySelector(mode === 'presenter' ? '[data-hono-decks-presenter-current] iframe' : '[data-hono-decks-viewer] iframe');
   const base = location.pathname.replace(/\\/(?:presenter|remote)\\/?$/, '');
@@ -167,7 +167,7 @@ export function renderRemoteScript(
   function renderTimer() {
     const elapsedNode = document.querySelector('[data-remote-elapsed]');
     if (!elapsedNode) return;
-    const seconds = timer ? (timer.elapsed + (timer.running ? Date.now() - timer.receivedAt : 0)) / 1000 : 0;
+    const seconds = timer ? (timer.elapsed + (timer.running ? epochNow() - timer.receivedAt : 0)) / 1000 : 0;
     elapsedNode.textContent = formatTime(seconds);
     elapsedNode.dataset.running = String(Boolean(timer?.running));
     elapsedNode.title = timer ? '' : messages.notStarted;
@@ -184,10 +184,10 @@ export function renderRemoteScript(
   function connect() {
     setStatus('connecting', messages.connecting);
     socket = new WebSocket(url);
-    socket.onopen = () => { delay = 250; setStatus('connected', messages.connected); if (mode === 'presenter' && lastTimer) send({ type: 'timer', ...lastTimer, elapsed: lastTimer.elapsed + (lastTimer.running ? Date.now() - lastTimer.at : 0) }); };
+    socket.onopen = () => { delay = 250; setStatus('connected', messages.connected); if (mode === 'presenter' && lastTimer) send({ type: 'timer', ...lastTimer, elapsed: lastTimer.elapsed + (lastTimer.running ? epochNow() - lastTimer.at : 0) }); };
     socket.onmessage = event => {
       let message; try { message = JSON.parse(event.data); } catch { return; }
-      if (message.type === 'timer' && mode === 'remote' && Number.isFinite(message.elapsed)) { timer = { elapsed: message.elapsed, running: Boolean(message.running), receivedAt: Date.now() }; renderTimer(); return; }
+      if (message.type === 'timer' && mode === 'remote' && Number.isFinite(message.elapsed)) { timer = { elapsed: message.elapsed, running: Boolean(message.running), receivedAt: epochNow() }; renderTimer(); return; }
       if (message.type === 'empty') { roomEmpty = true; if (mode === 'presenter' && last) send({ type: 'state', ...last }); return; }
       if (message.type === 'state' && Number.isInteger(message.index) && Number.isInteger(message.stepIndex)) {
         roomEmpty = false;
@@ -214,7 +214,7 @@ export function renderRemoteScript(
   }
   if (mode === 'presenter') document.addEventListener('hono-decks:timer', event => {
     const detail = event.detail; if (!detail || !Number.isFinite(detail.elapsed)) return;
-    lastTimer = { elapsed: Math.floor(detail.elapsed), running: Boolean(detail.running), at: Date.now() };
+    lastTimer = { elapsed: Math.floor(detail.elapsed), running: Boolean(detail.running), at: epochNow() };
     send({ type: 'timer', elapsed: lastTimer.elapsed, running: lastTimer.running });
   });
   function tap() { try { navigator.vibrate?.(12); } catch {} }
