@@ -22,6 +22,28 @@ export function remarkDeckSyntax(input: { linkCardMetadata?: Map<string, LinkCar
   };
 }
 
+/** Split only a top-level marker paragraph; code and nested JSX remain untouched. */
+export function remarkTwoColumns() {
+  return (tree: MarkdownNode) => {
+    const children = tree.children ?? [];
+    const split = children.findIndex(
+      (node) =>
+        node.type === "paragraph" &&
+        node.children?.length === 1 &&
+        node.children[0]?.type === "text" &&
+        node.children[0]?.value === "::right::",
+    );
+    if (split < 0) return;
+    const column = (content: MarkdownNode[]): MarkdownNode => ({
+      type: "mdxJsxFlowElement",
+      name: "div",
+      attributes: [{ type: "mdxJsxAttribute", name: "className", value: "hono-decks-column" }],
+      children: content,
+    });
+    tree.children = [column(children.slice(0, split)), column(children.slice(split + 1))];
+  };
+}
+
 export function remarkCodeHighlight() {
   return async (tree: MarkdownNode) => {
     await highlightMarkdownNode(tree);

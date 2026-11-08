@@ -86,6 +86,7 @@ decks.paths("welcome");
   viewer,
   render,
   print,
+  overview,
   presentation,
   presenter,
   embed,
@@ -237,6 +238,27 @@ decks/product/
 - `components/index.tsx`: server component
 - `components/client/index.tsx`: browser で hydrate する island component
 
+## 既定スタイルを拡張する
+
+hono-decks の既定の見た目は、2つのカスケードレイヤーにまとめています。`@layer hono-decks.base` はトークン・ページの既定値・スライド内の文字組み、`@layer hono-decks.components` は組み込みコンポーネントとビューアー・発表者画面・オーバービューの見た目です。レイヤー内のセレクターはすべて `:where()` で包んでいるため、詳細度は0です。`theme.css`、デッキのコンポーネントが出力する CSS、ルーターの `style` オプション、`viewer.style`、埋め込み先ページの CSS など、レイヤー外のルールであれば、`!important` やセレクターの追加なしに既定値を上書きできます。
+
+```css
+/* decks/product/theme.css: 単純なセレクターで十分です */
+code {
+  border-radius: 999px;
+}
+```
+
+ビューアーはスライドの進捗を、スライド下端の高さ4pxのバーで表示します。現在の位置は `role="progressbar"` の値と、画面には表示しないテキストで支援技術に伝えます。`viewer.controls.progress` に `"count"` を指定すると「n / total」の数字表示、`"both"` でバーと数字の両方になります(既定は `"bar"`)。バーの色は `--hono-decks-viewer-progress-color` と `--hono-decks-viewer-progress-track` で変えられ、`viewer.controls.hidden: ["position"]` で進捗表示を非表示にできます。
+
+スライドの重ね合わせ・切り替え・段階表示・キャンバスの拡大縮小・印刷レイアウトなど、動作に必要なルールはレイヤーに入れず、従来の詳細度のまま出力します。そのため、テーマに `.slide { position: relative; }` のような指定があっても表示の仕組みは壊れません。これらは `--hono-decks-transition-duration`、`--hono-decks-transition-easing`、`[data-fire-effect]` の `--fire-*` などのカスタムプロパティで調整します。
+
+アプリ側の CSS もレイヤーを使っている場合(Tailwind CSS v4 など)は、hono-decks のスタイルより前にレイヤーの順序を宣言し、アプリのレイヤーを後ろに置いてください。
+
+```css
+@layer hono-decks, theme, base, components, utilities;
+```
+
 ## Embed / export / print
 
 外部 iframe は `embed` オプションで明示的に有効化し、`frameAncestors` に埋め込み元 origin を列挙します。
@@ -254,6 +276,10 @@ PDF/PNG は Cloudflare Browser Rendering binding を `browser: ({ c }) => c.env.
 
 Viewer 上の `Cmd + P` / `Ctrl + P` は print route へ移動し、すべての slide を印刷対象にします。
 
+## スライドのオーバービュー
+
+`/:slug/overview` は、デッキのテーマのまま全スライドをサムネイルのグリッドで表示します。サムネイルを選ぶとそのスライドからビューアーで開き、ビューアーのグリッドボタンからは現在のスライドを強調した状態でオーバービューを開けます。`pages: { overview: false }` で無効化でき、ボタンだけを隠す場合は `viewer.controls.hidden: ["overview"]` を指定します。
+
 ## Build-time OGP images
 
 `viewer.openGraph` を有効にすると、viewer は `decks.paths(slug).ogImage` を使って Open Graph / Twitter Card の絶対URLを出力します。画像生成ライブラリは core へ含めていません。
@@ -265,6 +291,19 @@ createDecks({
 ```
 
 `examples/ogp` は Satori と resvg を example だけの依存として追加し、frontmatter から 1200×630 PNG をビルド時に生成して Workers Static Assets で配信するレシピです。Browser Rendering binding は不要です。`build.ogpCacheFile` はスライド内 LinkCard 用の外部メタデータキャッシュであり、この share image 生成とは別機能です。
+
+### X(Twitter)の Player Card
+
+`twitterPlayer` を指定すると、ポスト内でスライドを再生できる Player Card を出力します。カードはデッキの `embed` ルートを参照するため、`embed` も有効にしてください。hono-decks はそのルートの `frame-ancestors` に X のオリジンを自動で追加します。配信は HTTPS が必須です。
+
+```ts
+createDecks({
+  embed: {},
+  viewer: { openGraph: { twitterPlayer: true } }, // または { width: 1280, height: 720 }
+});
+```
+
+X は Player Card の公式ドキュメントを公開しておらず、挙動が変わる可能性があります。[2026年10月の公開検証](https://thehouse.game/updates/2026-10-22-interactive-x-embeds)では、通常のポストは承認の手続きなしに Web 版でインライン表示されました。一方、X のモバイルアプリでは埋め込み URL がアプリ内ブラウザで開き、X の記事(Articles)ではプレーヤーが動きませんでした。画像だけを表示する環境もあるため、`ogImage` も用意しておいてください。X はカードを URL 単位でキャッシュします。タグを変えた後は、クエリ文字列を付けるなど別の URL で共有すると反映を確認できます。
 
 ## Public entries
 
@@ -395,3 +434,60 @@ Viteは仮想モジュールを利用し、既存の `hono-decks compile` はフ
 `HONO_MARKDOWN_PACKAGE`に共通パッケージのtarballを指定し、`node scripts/verify-vite-init.mjs`で実行できます。
 
 プレゼンテーションは次の1枚の画像・CSS背景画像を先読みし、デコード済みのリソースを同じ画面内で再利用します。背景画像の保持数には上限を設け、データ節約モードでは自動先読みを控えます。埋め込みローカルアセットの既定値はETagによる再検証（`public, max-age=0, must-revalidate`）です。明示的なキャッシュ設定は維持し、開発時のアセット応答は `no-store` にします。
+
+## プレゼンタータイマー
+
+デッキのフロントマターに `duration: 20m` を指定すると、発表時間の目安を表示します。`1h30m`、`90s`、分単位の数値も使えます。`createDecks({ presenter: { duration: 1200 } })` で上書きできます。こちらの数値は秒単位で、同じ文字列形式も使えます。タイマーは自動では開始しません。発表を始めるときに開始ボタンか `T` キーで開始し、`T` キーで一時停止し、Reset でリセットします。タイマー下の「設定」を開いて目標時間(分)を入力すると、その発表者タブでの目標時間を設定・変更できます。設定値より優先され、再読み込み後も保持され、リモート操作の画面にも反映されます。空にすると目標時間を外します。「既定に戻す」で設定値に戻せます。経過時間と一時停止状態はプレゼンターのタブを再読み込みしても保持されます。目標時間がある場合は、残り時間とペースも表示します。ペースは、現在のスライドに割り当てた時間と比べて、予定どおり・先行・遅れのどれかを示します。スライドのフロントマターに `time: 3m`(`duration` と同じ書式)を書くと、そのスライドの持ち時間を指定できます。指定のないスライドは残りの時間を等分します。付録の最初のスライドに `appendix: true` を書くと、そのスライドと以降のスライドをペースの計算から外します。表示する項目は、デッキのフロントマターの `timer: { pace: false, remaining: false, overtime: false }` か、`createDecks()` の `presenter: { timer: { ... } }` で既定値を決められます。発表者画面ではタイマー下の「設定」の「表示」からタブ単位で切り替えられ、リモート操作の画面にも反映されます。残り時間を非表示にしても、超過時間を表示する設定なら発表時間を超えた時点で超過時間を表示します。超過時間を非表示にすると、残り時間は 00:00 で止まります。
+
+## 開発中のはみ出し警告
+
+開発時は表示中のスライドを検査し、1920 × 1080 のキャンバスからはみ出す要素や、`overflow: hidden` / `clip` で切れる内容を警告パネルと枠線で示します。スライドの切り替え、画面サイズ変更、画像・フォントの読み込み、ライブ更新後に再検査します。意図的にはみ出す要素に `data-hono-decks-allow-overflow` を付けると、その子要素も検査対象外になります。装飾用の `aria-hidden="true"` の領域も除外します。スクロール可能な領域は切り取り境界として扱い、影などの視覚効果は測定しません。本番・印刷ページには検査処理を含めません。
+
+## 標準レイアウト
+
+スライドの `layout` には `default`、`cover`、`statement` に加えて `two-cols`、`image-left`、`image-right`、`section`、`quote`、`center` を指定できます。MDX の `two-cols` では、空行で囲んだ `::right::` を単独行に書くと、前後が左右の列になります。
+
+~~~mdx
+---
+layout: two-cols
+---
+## 左
+
+左の内容
+
+::right::
+
+## 右
+
+右の内容
+~~~
+
+画像レイアウトでは `image: ./assets/photo.jpg` または画像 URL を指定し、必要なら `image-alt: 画像の説明` を追加します。省略時は装飾画像として扱います。`section` は見出しと副題、`quote` は引用と出典に使えます。`center` は上下左右を中央揃えにし、`statement` は上下のみ中央揃えにします。テーマの `--hono-decks-column-gap`、`--hono-decks-image-width`、`--hono-decks-image-radius` で調整できます。列の区切りは MDX で利用できます。
+
+## 別の端末からの操作と追従
+
+Cloudflare Workers では `hono-decks/remote` を使ってライブ同期を有効にできます。Worker から `DeckRemoteRoom` をエクスポートし、Durable Object の binding と `remote.namespace`、`remote.authorize` を設定します。ルーム名の初期値はデッキの slug です。`session` で変更でき、`follow: false` にすると閲覧者は追従を停止した状態で開始します。発表者画面と `/:slug/remote` から操作でき、許可された閲覧者は発表位置への追従を停止・再開できます。Next と Previous の処理には発表者画面を開いておいてください。
+
+リモート操作の画面は、スマートフォンを片手で使うことを想定しています。発表者ノートを画面いっぱいに表示し、親指の届く下部に大きな「次へ」と「前へ」、任意のスライドへ移動できるスライド一覧を置きます。上部には接続状態、発表位置、経過時間を表示し、発表時間を設定していれば残り時間とペースも表示します。タイマーは発表者画面の発表タイマーに連動します(開始・一時停止・リセットは発表者画面で行います)。時刻は利用できる環境では Temporal API(`Temporal.Now`)から取得し、未対応の環境では `Date.now()` を使います。Workers では `temporal` 互換性フラグで有効になります(互換性日付 2026-12-01 以降は既定で有効)。各端末は自分の時計で経過時間だけを測るため、発表者画面・ルーム・スマートフォンの時計のずれは表示に影響しません。表示中は Screen Wake Lock API で画面のスリープを防ぎ、対応端末ではタップ時に短く振動します。
+
+発表者画面の操作バーには **QR** ボタンがあります。押すと `/:slug/remote` の絶対 URL(`lang` などのクエリは維持)を QR コードとリンクで表示し、スマートフォンで読み取るだけでリモート操作の画面を開けます。スマートフォン側も同じ発表者の認可を通る必要があります。Cookie でログインする構成では、`remote.url({ c, slug, url })` で有効期限の短い署名付きリンクを返してください。スマートフォンから `localhost` には接続できないため、開発中はこのフックで LAN のアドレスやトンネルのホストに置き換えられます。
+
+ルームは WebSocket Hibernation API を使うため、通信のないルームはメモリから退避され、実行時間の課金は発生しません。保存するのは現在の発表位置だけです。最後の接続が閉じるとアラームを設定し、1 時間以内に再接続がなければルームのストレージをすべて削除します。削除後は何も残りません。時間はサブクラスで変更できます(`class Room extends DeckRemoteRoom { idleTimeoutMs = 10 * 60 * 1000 }`)。位置が保存されていないルームでは、スライド 1 に戻さず最初に接続した発表者の位置を引き継ぎます。
+
+WebSocket の接続ごとに認可します。presenter は操作でき、follower が受け取るのは位置情報だけです。リモコン画面には発表者だけに許可するノートが含まれ、ソケットには位置とコマンドだけを送ります。メッセージは検証し、1 KB と接続ごとの送信頻度を制限します。異なるオリジンからのブラウザー接続は拒否します。remote の認可はデッキ全体の保護ではありません。発表者画面などノートを含む経路も別途保護してください。HTTPS と安全なセッション Cookie を使い、認証済みコンテンツをキャッシュしないようにします。CSP の `connect-src` には必要に応じて `wss:` または `ws:` を許可してください。同一オリジンはブラウザーによっては `'self'` で許可されます。binding、migration、認可の例はレシピを参照してください。
+
+
+ビューアーでは、左右矢印、Page Up / Page Down、Space / Shift + Space、Home、End でスライドを移動できます。`F` で全画面、`O` でオーバービュー（有効な場合）、`T` で目次、`?` でショートカット一覧を開きます。目次ボタンからスライドを選択でき、Esc で目次やヘルプを閉じます。スライド上で約2.5秒操作がないとコントロールが隠れ、操作すると再表示されます。常に表示するには `viewer.controls.autoHide: false` を指定します。
+
+## UIの言語と文言
+
+標準UIの言語は解決済みの `document.lang` に従います（画面別の設定も適用され、既定値は `ja`）。`ja-JP` などは日本語、それ以外は英語を使用します。実行時オプションで言語ごとに文言を上書きできます。
+
+```ts
+createDecks({
+  document: { lang: "ja" },
+  messages: { ja: { previous: "戻る" }, en: { previous: "Back" } },
+});
+```
+
+`slidePosition` と `progressText` には `{current}` と `{total}`、`slideCount` と `slideCountOne` には `{count}` を指定できます。ビューアーの操作では既存の `viewer.controls.labels` が優先されます。独自画面向けに `DeckMessages`、`resolveMessages`、`formatMessage` も公開しています。

@@ -1,5 +1,6 @@
+import { parseDuration } from "./duration";
 import { CompileError, SLIDE_TRANSITIONS } from "./model";
-import type { CompiledDeck, DeckFrontmatter, SlideFrontmatter, SlideTransition } from "./model";
+import type { CompiledDeck, DeckFrontmatter, SlideFrontmatter, SlideTransition, TalkTimerDisplay } from "./model";
 
 export interface FrontmatterParseResult {
   attrs: Record<string, unknown>;
@@ -22,7 +23,15 @@ export function readFrontmatter(source: string): FrontmatterParseResult {
 }
 
 /** Slide-only keys allowed in the opening frontmatter; they apply to the first slide. */
-export const FIRST_SLIDE_FRONTMATTER_KEYS = ["layout", "class", "notes", "background"] as const;
+export const FIRST_SLIDE_FRONTMATTER_KEYS = [
+  "layout",
+  "class",
+  "notes",
+  "background",
+  "image",
+  "image-alt",
+  "time",
+] as const;
 
 /**
  * Splits the opening frontmatter into deck metadata and first-slide metadata, so
@@ -66,6 +75,33 @@ export function toDeckFrontmatter(attrs: Record<string, unknown>, warnings: Comp
   deck.assets = takeStringOrStringArray(meta, "assets");
   deck.draft = takeBoolean(meta, "draft");
   deck.presenter = takeBoolean(meta, "presenter");
+  if ("duration" in meta) {
+    deck.duration = parseDuration(meta.duration, "minutes");
+    if (deck.duration === undefined)
+      warnings.push({
+        code: "invalid-duration",
+        message: `Invalid duration value "${formatFrontmatterValue(meta.duration)}"; ignoring it.`,
+      });
+    delete meta.duration;
+  }
+  if ("timer" in meta) {
+    const timer = meta.timer;
+    const keys = ["pace", "remaining", "overtime"] as const;
+    if (
+      timer &&
+      typeof timer === "object" &&
+      !Array.isArray(timer) &&
+      Object.entries(timer).every(([key, value]) => keys.includes(key as never) && typeof value === "boolean")
+    ) {
+      deck.timer = { ...(timer as TalkTimerDisplay) };
+    } else {
+      warnings.push({
+        code: "invalid-timer",
+        message: `Invalid timer value "${formatFrontmatterValue(timer)}"; expected booleans for pace, remaining, and overtime.`,
+      });
+    }
+    delete meta.timer;
+  }
 
   const tags = meta.tags;
   if (Array.isArray(tags)) {
@@ -96,6 +132,8 @@ export function toSlideFrontmatter(
     className: takeString(meta, "class") ?? input.fallbackClassName,
     notes: takeString(meta, "notes"),
     background: takeString(meta, "background"),
+    image: takeString(meta, "image"),
+    imageAlt: takeString(meta, "image-alt"),
     transition:
       takeKnownStringWithWarning(
         meta,
@@ -110,6 +148,18 @@ export function toSlideFrontmatter(
     transitionEasing: takeTransitionEasing(meta, warnings, input.slideIndex) ?? input.fallbackTransitionEasing,
     meta,
   };
+  if ("time" in meta) {
+    slide.time = parseDuration(meta.time, "minutes");
+    if (slide.time === undefined)
+      warnings.push({
+        code: "invalid-time",
+        message: `Invalid time value "${formatFrontmatterValue(meta.time)}"; ignoring it.`,
+        slideIndex: input.slideIndex,
+      });
+    delete meta.time;
+  }
+  const appendix = takeBoolean(meta, "appendix");
+  if (appendix !== undefined) slide.appendix = appendix;
 
   return slide;
 }
@@ -136,6 +186,14 @@ export function splitSlideSources(source: string): string[] {
   let cursor = 0;
 
   while (cursor < lines.length) {
+    const codeFenceEnd = findCodeFenceEnd(lines, cursor);
+    if (codeFenceEnd !== undefined) {
+      // `---` inside fenced code (YAML samples, diffs) is content, not a separator.
+      current.push(...lines.slice(cursor, codeFenceEnd + 1));
+      cursor = codeFenceEnd + 1;
+      continue;
+    }
+
     if (isFence(lines[cursor])) {
       if (looksLikeFrontmatterFence(lines, cursor) && findFrontmatterEnd(lines, cursor) === -1) {
         throw new CompileError("Frontmatter block is not closed.", "frontmatter-unclosed");
@@ -169,6 +227,22 @@ export function splitSlideSources(source: string): string[] {
   }
 
   return slides;
+}
+
+/**
+ * Returns the closing line of a fenced code block opening at `start`, or
+ * undefined when `start` does not open one. An unclosed fence runs to the end,
+ * matching CommonMark.
+ */
+export function findCodeFenceEnd(lines: string[], start: number): number | undefined {
+  const open = /^ {0,3}(`{3,}|~{3,})/.exec(lines[start] ?? "");
+  if (!open) return undefined;
+  const marker = open[1]!;
+  const close = new RegExp(`^ {0,3}${marker[0] === "`" ? "`" : "~"}{${marker.length},}[ \\t]*$`);
+  for (let index = start + 1; index < lines.length; index += 1) {
+    if (close.test(lines[index]!)) return index;
+  }
+  return lines.length - 1;
 }
 
 function parseFrontmatterAttrs(source: string): Record<string, unknown> {

@@ -18,6 +18,15 @@ Browser Renderingを使わず、`compileDecks()`が返すデッキ情報からSa
 
 `viewer.openGraph`を有効にすると、`decks.paths(slug).ogImage`（既定では`/decks/:slug/og.png`）の絶対URLを使ったOpen Graph / Twitter Cardタグを生成します。PNGはWrangler Static Assetsへ保存します。
 
+Xのポスト内でスライドを再生させる場合は、`viewer.openGraph.twitterPlayer`を指定し、`embed`も有効にします。Player Cardは`/:slug/embed`を表示し、hono-decksがそのルートの`frame-ancestors`にXのオリジンを追加します。XはPlayer Cardの公式ドキュメントを公開していません。[2026年10月の公開検証](https://thehouse.game/updates/2026-10-22-interactive-x-embeds)では、Web版の通常のポストは承認なしでインライン表示され、モバイルアプリでは埋め込みURLがアプリ内ブラウザで開き、記事(Articles)ではプレーヤーが動きませんでした。画像の生成も続けてください。
+
+```ts
+export const decks = createDecks({
+  embed: {},
+  viewer: { openGraph: { twitterPlayer: true } },
+})
+```
+
 <Callout title={"フォントをビルド対象に含める"}>
 
 SatoriはTTF / OTF / WOFFを扱えますが、WOFF2には対応していません。日本語を描画する場合は、日本語の文字を含むフォントファイルを同梱し、そのディレクトリを`wrangler.jsonc`の`build.watch_dir`にも追加します。
@@ -67,5 +76,53 @@ Bearerトークンを使う場合は`vars`へ直書きせず、Wranglerのsecret
 [Cloudflare Browser Run Quick Actionsを確認する →](https://developers.cloudflare.com/browser-run/quick-actions/)
 
 [Browser Runを組み込んだサンプルを見る →](https://github.com/ts-76/hono-decks/tree/main/examples/basic)
+
+</section>
+
+<section id={"remote-control"}>
+
+## 別の端末からの操作と追従
+
+Worker のエントリから `DeckRemoteRoom` をエクスポートし、binding と migration を追加します。信頼済みヘッダーを外部に公開せず、ルーター経由でアクセスしてください。
+
+```ts
+export { DeckRemoteRoom } from "hono-decks/remote";
+```
+
+```jsonc
+{
+  "durable_objects": { "bindings": [{ "name": "ROOMS", "class_name": "DeckRemoteRoom" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["DeckRemoteRoom"] }]
+}
+```
+
+例えば、ランダムな発表者トークンを `wrangler secret put PRESENTER_TOKEN` で保存します。認証後、アプリから HttpOnly・Secure・SameSite=Strict の `presenter` Cookie を発行できます。秘密値をソースや `vars` に書かないでください。次の例は、HTTPS 経由で Cookie を発行済みであることを前提とします。発表者画面などノートを含む経路も別途保護してください。
+
+```ts
+import { getCookie } from "hono/cookie";
+import { createDecks } from "#decks";
+
+type AppEnv = { Bindings: { ROOMS: DurableObjectNamespace; PRESENTER_TOKEN: string } };
+const presenterAllowed = (c: import("hono").Context<AppEnv>) => {
+  const actual = new TextEncoder().encode(getCookie(c, "presenter") ?? "");
+  const expected = new TextEncoder().encode(c.env.PRESENTER_TOKEN ?? "");
+  return expected.length > 0 && actual.length === expected.length && crypto.subtle.timingSafeEqual(actual, expected);
+};
+export const decks = createDecks<AppEnv>({
+  presenter: { enabled: ({ c }) => presenterAllowed(c) },
+  remote: {
+    namespace: ({ c }) => c.env.ROOMS,
+    authorize: ({ c, role }) => role === "follower" || presenterAllowed(c),
+  },
+});
+```
+
+この例では閲覧者はライブ位置を見ることができます。presenter 権限は信頼できる人だけに付与してください。発表者は操作でき、リモコン画面にはノートが含まれます。ソケットはノートを送信せず、メッセージを検証し、1 KB と接続ごとの頻度を制限します。`remote.authorize` は印刷など他の経路を保護しません。HTTPS を使い、CSP の `connect-src` で同一オリジンの WebSocket を許可してください（ブラウザーに応じて `'self'` または `wss:`/`ws:`）。Next と Previous の処理には発表者画面が必要です。`fixtures/remote-worker` は全員を許可するローカル試験専用です。
+
+リモート操作の画面は、スマートフォンを片手で使うことを想定しています。発表者ノートを画面いっぱいに表示し、親指の届く下部に大きな「次へ」と「前へ」、任意のスライドへ移動できるスライド一覧を置きます。上部には接続状態、発表位置、経過時間を表示し、発表時間を設定していれば残り時間とペースも表示します。タイマーは発表者画面の発表タイマーに連動します(開始・一時停止・リセットは発表者画面で行います)。時刻は利用できる環境では Temporal API(`Temporal.Now`)から取得し、未対応の環境では `Date.now()` を使います。Workers では `temporal` 互換性フラグで有効になります(互換性日付 2026-12-01 以降は既定で有効)。各端末は自分の時計で経過時間だけを測るため、発表者画面・ルーム・スマートフォンの時計のずれは表示に影響しません。表示中は Screen Wake Lock API で画面のスリープを防ぎ、対応端末ではタップ時に短く振動します。
+
+発表者画面の操作バーには **QR** ボタンがあります。押すと `/:slug/remote` の絶対 URL(`lang` などのクエリは維持)を QR コードとリンクで表示し、スマートフォンで読み取るだけでリモート操作の画面を開けます。スマートフォン側も同じ発表者の認可を通る必要があります。Cookie でログインする構成では、`remote.url({ c, slug, url })` で有効期限の短い署名付きリンクを返してください。スマートフォンから `localhost` には接続できないため、開発中はこのフックで LAN のアドレスやトンネルのホストに置き換えられます。
+
+ルームは WebSocket Hibernation API を使うため、通信のないルームはメモリから退避され、実行時間の課金は発生しません。保存するのは現在の発表位置だけです。最後の接続が閉じるとアラームを設定し、1 時間以内に再接続がなければルームのストレージをすべて削除します。削除後は何も残りません。時間はサブクラスで変更できます(`class Room extends DeckRemoteRoom { idleTimeoutMs = 10 * 60 * 1000 }`)。位置が保存されていないルームでは、スライド 1 に戻さず最初に接続した発表者の位置を引き継ぎます。
 
 </section>

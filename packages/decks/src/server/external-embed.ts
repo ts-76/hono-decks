@@ -1,6 +1,8 @@
+import { resolveMessages, type DeckMessageOverrides } from "../shared/messages";
 import type { Context, Env } from "hono";
 import type { CompiledDeck } from "../deck/model";
 import type { DeckRenderable, MaybePromise } from "../renderer/compiled-render";
+import { composeStylesheet, layer } from "../renderer/style-layers";
 import { renderJsxValue } from "../renderer/jsx-renderer";
 import {
   documentNonceAttribute,
@@ -50,7 +52,10 @@ export async function renderDeckExternalEmbedResponse<E extends Env>(input: {
   context: DeckExternalEmbedContext<E>;
   options: DeckExternalEmbedOptions<E>;
   document?: DeckDocumentOptions<E>;
+  messages?: DeckMessageOverrides;
   availablePages?: Partial<DeckViewerAvailablePages>;
+  /** Origins added to `frameAncestors`, such as X when a Player Card is enabled. */
+  additionalFrameAncestors?: readonly string[];
 }): Promise<Response> {
   const { c, deck, slug, mountPath } = input.context;
   const enabled = input.options.enabled;
@@ -70,6 +75,7 @@ export async function renderDeckExternalEmbedResponse<E extends Env>(input: {
     input.document,
     input.options.document,
   );
+  const messages = resolveMessages(document.lang, input.messages);
   const viewerOptions =
     typeof input.options.viewer === "function" ? await input.options.viewer(input.context) : input.options.viewer;
   const controls: false | DeckViewerControlsOptions =
@@ -80,10 +86,10 @@ export async function renderDeckExternalEmbedResponse<E extends Env>(input: {
               type: "link" as const,
               key: "open-viewer",
               href: context.meta.paths.viewer,
-              label: "Open full viewer in new tab",
+              label: messages.openViewer,
               icon: "external-link" as const,
               attributes: {
-                "aria-label": "Open full viewer in new tab",
+                "aria-label": messages.openViewer,
                 "data-hono-decks-viewer-link": true,
                 target: "_blank",
                 rel: "noreferrer",
@@ -99,6 +105,7 @@ export async function renderDeckExternalEmbedResponse<E extends Env>(input: {
     controls,
     availablePages: input.availablePages,
     nonce: document.nonce,
+    messages,
   });
   const renderInput = { ...input.context, viewer, document };
   const body = input.options.render ? await input.options.render(renderInput) : viewer.embed;
@@ -118,7 +125,10 @@ export async function renderDeckExternalEmbedResponse<E extends Env>(input: {
   headers.delete("x-frame-options");
   headers.set(
     "content-security-policy",
-    withFrameAncestors(headers.get("content-security-policy"), normalizeFrameAncestors(frameAncestorsValue)),
+    withFrameAncestors(
+      headers.get("content-security-policy"),
+      normalizeFrameAncestors(frameAncestorsValue, input.additionalFrameAncestors),
+    ),
   );
   return new Response(response.body, {
     status: response.status,
@@ -144,15 +154,15 @@ async function renderExternalEmbedDocument(input: {
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   ${robots}
   <title>${escapeHtml(input.title)}</title>
-  <style id="hono-decks-external-embed-css"${nonceAttribute}>${externalEmbedPageStyle()}${input.pageStyle ?? ""}</style>
+  <style id="hono-decks-external-embed-css"${nonceAttribute}>${composeStylesheet({ layers: externalEmbedPageStyle(), app: input.pageStyle })}</style>
   ${input.document.head}
 </head>
 <body>${input.body}</body>
 </html>`;
 }
 
-function normalizeFrameAncestors(value: string | string[] | undefined): string[] {
-  const values = Array.isArray(value) ? value : (value?.split(/[\s,]+/) ?? []);
+function normalizeFrameAncestors(value: string | string[] | undefined, additional: readonly string[] = []): string[] {
+  const values = [...(Array.isArray(value) ? value : (value?.split(/[\s,]+/) ?? [])), ...additional];
   const ancestors = new Set<string>(["'self'"]);
 
   for (const candidate of values) {
@@ -160,10 +170,17 @@ function normalizeFrameAncestors(value: string | string[] | undefined): string[]
     if (!token || token === "'self'") continue;
     if (token === "*") return ["*"];
     if (token === "'none'") return ["'none'"];
+    // CSP host wildcards (https://*.example.com) cover wrapper frames on subdomains.
+    if (/^https:\/\/\*\.(?:[a-z0-9-]+\.)+[a-z]{2,}$/i.test(token)) {
+      ancestors.add(token.toLowerCase());
+      continue;
+    }
 
     try {
       const url = new URL(token);
-      if ((url.protocol === "https:" || url.protocol === "http:") && !url.username && !url.password) {
+      // A literal "*" host (https://*) would allow every site; only the explicit wildcard form above widens.
+      const literalHost = !url.hostname.includes("*");
+      if ((url.protocol === "https:" || url.protocol === "http:") && !url.username && !url.password && literalHost) {
         ancestors.add(url.origin);
       }
     } catch {
@@ -184,8 +201,10 @@ function withFrameAncestors(currentPolicy: string | null, ancestors: string[]): 
 }
 
 function externalEmbedPageStyle(): string {
-  return `:root{color-scheme:dark;background:#050816}html,body{width:100%;height:100%;margin:0;overflow:hidden}body{min-height:100vh}@supports (height:100dvh){body{min-height:100dvh}}.hono-decks-embedded-viewer{width:100%;height:100%;min-height:0;overflow:hidden}.hono-decks-embedded-viewer .hono-decks-viewer-shell{position:relative;height:100%;grid-template-rows:minmax(0,1fr);overflow:hidden}.hono-decks-embedded-viewer .hono-decks-viewport{width:min(100%,calc(100vh * 16 / 9));max-height:100%}@supports (height:100dvh){.hono-decks-embedded-viewer .hono-decks-viewport{width:min(100%,calc(100dvh * 16 / 9))}}.hono-decks-embedded-viewer .hono-decks-viewer-controls{bottom:max(.25rem,env(safe-area-inset-bottom,0px));z-index:4}`;
+  return `${layer("base", ":root{color-scheme:dark;background:#050816}")}${layer("runtime", EXTERNAL_EMBED_PAGE_RUNTIME)}`;
 }
+
+const EXTERNAL_EMBED_PAGE_RUNTIME = `html,body{width:100%;height:100%;margin:0;overflow:hidden}body{min-height:100vh}@supports (height:100dvh){body{min-height:100dvh}}.hono-decks-embedded-viewer{width:100%;height:100%;min-height:0;overflow:hidden}.hono-decks-embedded-viewer .hono-decks-viewer-shell{position:relative;height:100%;grid-template-rows:minmax(0,1fr);overflow:hidden}.hono-decks-embedded-viewer .hono-decks-viewport{width:min(100%,calc(100vh * 16 / 9));max-height:100%}@supports (height:100dvh){.hono-decks-embedded-viewer .hono-decks-viewport{width:min(100%,calc(100dvh * 16 / 9))}}.hono-decks-embedded-viewer .hono-decks-viewer-controls{bottom:max(.25rem,env(safe-area-inset-bottom,0px));z-index:4}`;
 
 function escapeHtml(value: string): string {
   return value

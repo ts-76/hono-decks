@@ -4,7 +4,7 @@ Use this route when writing or correcting `deck.mdx` or an adapter-backed `deck.
 
 ## Basic deck structure
 
-The first frontmatter block describes the deck. Each following `---` boundary starts a slide; a slide may immediately include its own frontmatter.
+The first frontmatter block describes the deck. Each following `---` boundary starts a slide; a slide may immediately include its own frontmatter. Use `***`, `___`, or `<hr />` for a horizontal rule inside a slide. `---` inside fenced code stays code.
 
 ```mdx
 ---
@@ -47,7 +47,9 @@ transition: slide-left
 - Clearer ownership
 ```
 
-Deck frontmatter supports `title`, `description`, `author`, `date`, `tags`, `theme`, `transition`, `transitionDuration`, `transitionEasing`, `assets`, `draft`, and `presenter`.
+Deck frontmatter supports `title`, `description`, `author`, `date`, `tags`, `theme`, `transition`, `transitionDuration`, `transitionEasing`, `assets`, `draft`, `presenter`, and `duration`.
+
+Set `duration: 20m` for a presenter timer target; `1h30m`, `90s`, and numeric minutes are supported. Runtime `presenter.duration` overrides it using seconds for numbers or the same strings. Press `T` to start or pause.
 
 Slide frontmatter supports `title`, `layout`, `class`, `notes`, `background`, `transition`, `transitionDuration`, and `transitionEasing`. Unknown keys are preserved in `meta` and produce a compile warning.
 
@@ -202,3 +204,24 @@ Client props may contain only strings, finite numbers, booleans, `null`, arrays,
 - Split long lists, large tables, and multi-screen code into multiple slides.
 - Add useful alt text to images and titles to embeds.
 - Confirm the application build or development compiler succeeds after syntax changes and resolve warnings.
+
+## Built-in layouts
+
+Set `layout` in slide frontmatter to `two-cols`, `image-left`, `image-right`, `section`, `quote`, or `center`, in addition to `default`, `cover`, and `statement`. In an MDX `two-cols` slide, put `::right::` on its own line with blank lines around it. Content before and after it forms the two columns.
+
+~~~mdx
+---
+layout: two-cols
+---
+## Left
+
+First column
+
+::right::
+
+## Right
+
+Second column
+~~~
+
+For image layouts, set `image: ./assets/photo.jpg` or a remote URL and optionally `image-alt: Description`. An omitted alt makes the image decorative. Use a heading and subtitle for `section`, or a Markdown blockquote followed by attribution for `quote`. `center` centers content horizontally and vertically; `statement` only centers vertically. Adjust `--hono-decks-column-gap`, `--hono-decks-image-width`, and `--hono-decks-image-radius` in a theme. The column marker is supported in MDX decks.

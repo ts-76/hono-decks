@@ -248,6 +248,7 @@ const paths = decks.paths("product");
 paths.viewer;       // /decks/product
 paths.render;       // /decks/product/render
 paths.print;        // /decks/product/print
+paths.overview;     // /decks/product/overview
 paths.presentation; // /decks/product/presentation
 paths.presenter;    // /decks/product/presenter
 paths.embed;        // /decks/product/embed
@@ -382,6 +383,27 @@ decks/product/
 
 <code>components/index.tsx</code> contains server-side JSX components. <code>components/client/index.tsx</code> contains components hydrated in the browser. <code>theme.css</code> applies only to that deck. Without a theme, slides use a white background and dark text. Customize `--hono-decks-background` and `--hono-decks-color` together in `theme.css`. Use `px` or `rem` within the fixed 1920 × 1080 canvas; viewport units change the composition when browser zoom changes. Local images are detected during compilation and rewritten to public URLs based on the mount path and deck slug.
 
+## Extending the default styles
+
+hono-decks keeps its default look in two cascade layers, `@layer hono-decks.base` (tokens, page defaults, slide typography) and `@layer hono-decks.components` (built-in components, viewer, presenter, and overview chrome). Every selector in them is wrapped in `:where()`, so it has zero specificity. Any unlayered rule overrides the defaults without `!important` or longer selectors: your `theme.css`, CSS emitted by deck components, the router `style` option, `viewer.style`, or host page styles.
+
+~~~css
+/* decks/product/theme.css: a plain selector is enough */
+code {
+  border-radius: 999px;
+}
+~~~
+
+The viewer shows slide progress as a 4px bar along the bottom edge of the slide, with the exact position kept as `role="progressbar"` values and visually hidden text for assistive technology. Set `viewer.controls.progress` to `"count"` for the `n / total` badge or `"both"` for the badge above the bar (default `"bar"`). Recolor the bar with `--hono-decks-viewer-progress-color` and `--hono-decks-viewer-progress-track`, or hide progress with `viewer.controls.hidden: ["position"]`.
+
+Runtime rules stay unlayered with their usual specificity: slide stacking, transitions, step reveals, fitting the canvas, and print layout. A theme rule such as `.slide { position: relative; }` therefore cannot break presentation mechanics. Tune them through custom properties instead, such as `--hono-decks-transition-duration`, `--hono-decks-transition-easing`, and the `--fire-*` variables on `[data-fire-effect]`.
+
+If your own styles are also layered (for example Tailwind CSS v4), declare the order before any hono-decks styles load so your layers come after it:
+
+~~~css
+@layer hono-decks, theme, base, components, utilities;
+~~~
+
 ## Embedding
 
 Use <code>createDeckViewerEmbed()</code> to embed multiple decks into the same document. This high-level helper builds an iframe viewer, controls, and a table of contents from a <code>CompiledDeck</code> already loaded by the application.
@@ -426,6 +448,23 @@ Override <code>imagePath</code> with a resolver when images are served from a se
 Image generation is intentionally not part of the core package. The <code>examples/ogp</code> recipe uses the deck metadata returned by <code>compileDecks()</code> from <code>hono-decks/node</code> to Satori and resvg, then stores 1200 by 630 PNG files in Workers Static Assets. Satori and resvg are example-only dependencies, and the recipe does not require Browser Rendering. Satori accepts TTF, OTF, and WOFF fonts but not WOFF2, so the build script must receive a font file that covers the target language.
 
 <code>build.ogpCacheFile</code> stores external site metadata used by <code>@[card](...)</code>. It is separate from the viewer's share image.
+
+## Slide overview
+
+`/:slug/overview` shows every slide as a thumbnail in a responsive grid, using the deck's theme. Each thumbnail opens the viewer at that slide, and the viewer's grid button opens the overview with the current slide highlighted. Disable it with `pages: { overview: false }`, or hide only the button with `viewer.controls.hidden: ["overview"]`.
+
+### X (Twitter) Player Card
+
+Set `twitterPlayer` to let posts play the deck inline. The card points at the deck's `embed` route, so enable `embed` too; hono-decks then allows X's origins in that route's `frame-ancestors`. The player must be served over HTTPS.
+
+~~~ts
+createDecks({
+  embed: {},
+  viewer: { openGraph: { twitterPlayer: true } }, // or { width: 1280, height: 720 }
+});
+~~~
+
+X no longer publishes Player Card documentation, so behavior can change. In a [public test from October 2026](https://thehouse.game/updates/2026-10-22-interactive-x-embeds), regular posts played the embed inline on the web without any approval step, X's mobile apps opened the embed URL in a web view instead, and X Articles did not run the player. Keep `ogImage` meaningful for clients that show only the image. X caches cards per URL; after changing tags, share a new URL (for example with a query string) to see the update.
 
 ## Public entries
 
@@ -547,3 +586,60 @@ Markdown checks without Void, set `HONO_MARKDOWN_PACKAGE` to the common tarball
 and run `node scripts/verify-vite-init.mjs`.
 
 The presentation prepares images and CSS backgrounds for the next slide, reuses decoded resources within the document, and bounds background-image retention. Data Saver disables speculative preparation. Default embedded local assets use ETag revalidation (`public, max-age=0, must-revalidate`); explicit cache policies remain unchanged. Development asset responses use `no-store`.
+
+## Presenter timer
+
+Set `duration: 20m` in deck frontmatter for a target (also `1h30m`, `90s`, or a number of minutes). Override it with `createDecks({ presenter: { duration: 1200 } })`, in seconds, or use the same string syntax. The timer never starts by itself: press Start or `T` when the talk begins, and `T` again to pause it. Reset clears it. Open **Settings** below the timer and type a target in minutes to set or change it for that presenter tab (it overrides the configured duration, survives reloads, and is relayed to the remote); clear the field to remove it. **Use default** restores the configured duration. The presenter tab retains its elapsed and paused state across reloads. With a target, the timer also shows the remaining time and your pace against the current slide's share of the target (on pace, ahead, or behind). Give a slide its own budget with `time: 3m` in its frontmatter (same syntax as `duration`); slides without one share the rest equally. Put `appendix: true` on the first appendix slide to leave it and every later slide out of the pace. Choose which readouts appear with `timer: { pace: false, remaining: false, overtime: false }` in deck frontmatter or `presenter: { timer: { ... } }` in `createDecks()`, and toggle them for a presenter tab under **Settings** → **Show**; the remote follows. With remaining time hidden, it still appears once the talk runs over unless overtime is hidden too; with overtime hidden, remaining time stops at 00:00.
+
+## Development overflow warnings
+
+In development, the active slide is checked for elements outside the 1920 × 1080 canvas and for content clipped by `overflow: hidden` or `clip`. Findings appear in a warning panel and the affected elements are outlined. Checks rerun after slide changes, resizing, image and font loading, and live updates. Add `data-hono-decks-allow-overflow` to an intentionally overflowing element to exclude its subtree. Decorative `aria-hidden="true"` subtrees are also ignored. Scrollable containers are treated as clipping boundaries; visual effects such as shadows are not measured. Production and print pages omit the checker.
+
+## Built-in layouts
+
+Set `layout` in slide frontmatter to `two-cols`, `image-left`, `image-right`, `section`, `quote`, or `center`, in addition to `default`, `cover`, and `statement`. In an MDX `two-cols` slide, put `::right::` on its own line with blank lines around it. Content before and after it forms the two columns.
+
+~~~mdx
+---
+layout: two-cols
+---
+## Left
+
+First column
+
+::right::
+
+## Right
+
+Second column
+~~~
+
+For image layouts, set `image: ./assets/photo.jpg` or a remote URL and optionally `image-alt: Description`. An omitted alt makes the image decorative. Use a heading and subtitle for `section`, or a Markdown blockquote followed by attribution for `quote`. `center` centers content horizontally and vertically; `statement` only centers vertically. Adjust `--hono-decks-column-gap`, `--hono-decks-image-width`, and `--hono-decks-image-radius` in a theme. The column marker is supported in MDX decks.
+
+## Cross-device presentation control
+
+Cloudflare Workers can opt into live rooms with `hono-decks/remote`. Export `DeckRemoteRoom` from the Worker, bind it as a Durable Object, and configure `remote.namespace` and `remote.authorize`. The default room name is the deck slug; `session` can select another stable room, and `follow: false` starts viewers with follow paused. The presenter page and `/:slug/remote` control the presentation; authorized viewers receive position updates and can stop or resume following. Keep a presenter page open to process Next and Previous commands.
+
+The remote page is built for one-handed use on a phone: speaker notes fill the screen, a large Next button sits in the thumb zone beside Previous and a slide list for jumping anywhere, and the header shows the connection, position, elapsed time, and, with a talk duration, the remaining time and pace. The timer follows the presenter page's talk timer (start, pause, and reset it there). Time is read through the Temporal API (`Temporal.Now`) where available and falls back to `Date.now()`; in Workers, enable it with the `temporal` compatibility flag (on by default from compatibility date 2026-12-01). Each device only measures durations on its own clock, so clock differences between the presenter, the room, and the phone do not affect the display. While visible, the remote keeps the screen awake with the Screen Wake Lock API and vibrates briefly on taps where supported.
+
+The presenter toolbar shows a **QR** button. It opens a QR code and a link for the absolute `/:slug/remote` URL (keeping query parameters such as `lang`), so a phone can open the remote control by scanning it. The phone must pass the same presenter authorization; for cookie-based sign-in, return a short-lived signed link from `remote.url({ c, slug, url })`. The same hook can swap the host for a LAN address or tunnel during development, because a phone cannot reach `localhost`.
+
+Rooms use the WebSocket Hibernation API, so an idle room is evicted from memory and incurs no duration charges. The only stored data is the current position. When the last connection closes, the room schedules an alarm; if nobody reconnects within an hour, it deletes all of its storage, leaving nothing behind. Change the timeout by subclassing (`class Room extends DeckRemoteRoom { idleTimeoutMs = 10 * 60 * 1000 }`). A room with no stored position adopts the first presenter's slide instead of resetting the talk to slide 1.
+
+Authorization is required on every WebSocket connection. Presenter access grants control; follower access grants live position only. The remote page includes speaker notes and requires presenter authorization; the socket carries only positions and commands. Messages are validated, capped at 1 KB, and rate-limited per socket. The socket route rejects cross-origin browser requests. Protect the presenter and other routes that expose notes separately; remote authorization does not protect the whole deck. Use HTTPS, secure session cookies, and `Cache-Control: no-store` for authenticated content. Include `wss:` or `ws:` as appropriate in CSP `connect-src` (same-origin WebSockets can be covered by `'self'`, depending on browser support). See the remote recipe for the binding, migration, and authorization example.
+
+
+The viewer supports Left / Right, Page Up / Page Down, Space / Shift + Space, Home, and End for navigation. Press `F` for fullscreen, `O` for the overview when enabled, `T` for the table of contents, and `?` for shortcut help. The table of contents button opens a slide list; Escape closes the panel or help. Controls hide after about 2.5 seconds of inactivity over the slide and reappear on activity. Set `viewer.controls.autoHide: false` to keep them visible.
+
+## UI language and messages
+
+Built-in UI uses the resolved document language (`document.lang`, including surface overrides; the default is `ja`). Japanese language tags such as `ja-JP` use Japanese; other languages use English. Override individual messages per locale in runtime options:
+
+```ts
+createDecks({
+  document: { lang: "ja" },
+  messages: { ja: { previous: "戻る" }, en: { previous: "Back" } },
+});
+```
+
+Templates such as `slidePosition` and `progressText` accept `{current}` and `{total}`; `slideCount` and `slideCountOne` accept `{count}`. Existing `viewer.controls.labels` take precedence for viewer controls. `DeckMessages`, `resolveMessages`, and `formatMessage` are exported for custom surfaces.

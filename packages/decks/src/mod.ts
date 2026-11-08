@@ -1,3 +1,4 @@
+export { VIEWER_MESSAGES } from "./server/viewer";
 export { defineDecksConfig } from "./server/define-decks";
 export type {
   ConfiguredDecks,
@@ -8,7 +9,7 @@ export type {
 } from "./server/define-decks";
 export { createDeckPaths } from "./server/paths";
 export type { DeckPaths } from "./server/paths";
-export { createDeckViewerEmbed } from "./server/router";
+export { createDeckViewerEmbed, X_PLAYER_FRAME_ANCESTORS } from "./server/router";
 export type {
   DeckBrowserRunBinding,
   DeckBrowserRunPdfOptions,
@@ -30,6 +31,8 @@ export type {
   DeckIndexPageOptions,
   DeckIndexRenderInput,
   DeckPageMeta,
+  DeckRemoteNamespace,
+  DeckRemoteOptions,
   DeckPresenterEnabledInput,
   DeckPresenterEnabledResolver,
   DeckPresenterViewerControlOptions,
@@ -57,9 +60,11 @@ export type {
   DeckViewerOpenGraphInput,
   DeckViewerOpenGraphOptions,
   DeckViewerPart,
+  DeckViewerProgressStyle,
   DeckViewerParts,
   DeckViewerRenderControlItem,
   DeckViewerRenderInput,
+  DeckViewerTwitterPlayerOptions,
   DecksClientOptions,
   DecksRouterExtension,
   DecksRouterPagesOptions,
@@ -88,6 +93,7 @@ export type {
   DeckRequestContext,
   DeckSource,
   SlideFrontmatter,
+  TalkTimerDisplay,
   SlideTransition,
 } from "./deck/model";
 export { SLIDE_TRANSITIONS } from "./deck/model";
@@ -102,3 +108,6 @@ export type {
   SlideComponentRegistry,
 } from "./renderer/compiled-render";
 export type { DeckControlIconName } from "./renderer/control-icons";
+
+export { resolveMessages, formatMessage, enMessages, jaMessages } from "./shared/messages";
+export type { DeckMessages, DeckMessageOverrides } from "./shared/messages";

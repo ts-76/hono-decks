@@ -20,4 +20,6 @@ export {
   renderCompiledSlide,
   renderCompiledSlideAsync,
 } from "./renderer/compiled-render";
+export { renderDeckOverviewPageAsync } from "./renderer/overview-page";
+export type { RenderDeckOverviewPageInput } from "./renderer/overview-page";
 export { controlIconLabel, renderControlIcon, renderControlIconHtml } from "./renderer/control-icons";

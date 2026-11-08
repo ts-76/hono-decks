@@ -158,7 +158,8 @@ export function honoDecks(options: HonoDecksViteOptions = {}): Plugin {
       if (id === HONOX_ENTRY) return HONOX_MODULE;
       if (!id.startsWith(MODULE_PREFIX)) return null;
       const path = id.slice(MODULE_PREFIX.length);
-      const code = modules.get(path);
+      // Slide bodies are emitted as .js; Vite may request them by their .ts twin from a TS importer.
+      const code = modules.get(path) ?? modules.get(path.replace(/\.ts$/, ".js"));
       if (code === undefined) return null;
       // Virtual IDs do not have a physical TS file for Vite's normal TS loader.
       // Strip types here; authored TSX and all imports still go through Vite.
@@ -236,7 +237,7 @@ const PUBLIC_MODULE_PREFIX = "virtual:hono-decks/module/";
 const MODULE_PREFIX = "\0hono-decks:module:";
 
 function findModule(modules: Map<string, string>, path: string): string | undefined {
-  return [path, path.replace(/\.js$/, ".ts"), path + ".ts", path + "/index.ts"].find((candidate) =>
+  return [path, path.replace(/\.js$/, ".ts"), path + ".ts", path + ".js", path + "/index.ts"].find((candidate) =>
     modules.has(candidate),
   );
 }

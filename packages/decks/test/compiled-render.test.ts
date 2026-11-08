@@ -65,7 +65,7 @@ describe("compiled deck rendering", () => {
   });
 
   it("fails explicitly for a build summary mistakenly passed as a runtime slide", async () => {
-    const summary = { index: 0, meta: { meta: {} }, modulePath: "generated/slide-0.ts" };
+    const summary = { index: 0, meta: { meta: {} }, modulePath: "generated/slide-0.js" };
     expect(() => renderCompiledSlide(summary as never)).toThrow("compileDecks() returns build information only");
     await expect(renderCompiledSlideAsync(summary as never)).rejects.toThrow(
       "compileDecks() returns build information only",
@@ -239,7 +239,7 @@ describe("compiled deck rendering", () => {
 
     expect(html).toContain("data-hono-decks-fire");
     expect(html).toContain('data-fire-effect="fade-up"');
-    expect(html).toContain("[data-fire-effect=fade-up]{--fire-transform:translateY(.85rem)}");
+    expect(html).toContain(":where([data-fire-effect=fade-up]){--fire-transform:translateY(.85rem)}");
     expect(html).toContain("@media (prefers-reduced-motion: reduce)");
   });
 
@@ -310,7 +310,7 @@ describe("compiled deck rendering", () => {
       };
       const mixedHtml = await render({ deck: mixed, mountPath: "/decks", printPreview: true });
       expect(mixedHtml).toContain(
-        '<aside class="hono-decks-warnings" tabindex="0" aria-label="Deck warnings"><p>Other warning</p></aside>',
+        '<aside class="hono-decks-warnings" tabindex="0" aria-label="スライドの警告"><p>Other warning</p></aside>',
       );
       expect(mixedHtml).not.toContain("asset existence cannot be verified");
     }
@@ -327,7 +327,7 @@ describe("compiled deck rendering", () => {
       style: ".router-escape-hatch{color:magenta}",
     } as Parameters<typeof renderCompiledDeckPage>[0]);
 
-    const baseIndex = html.indexOf(":root{color-scheme:light");
+    const baseIndex = html.indexOf(":where(:root){color-scheme:light");
     const deckThemeIndex = html.indexOf(".deck-local-theme{color:cyan}");
     const routerStyleIndex = html.indexOf(".router-escape-hatch{color:magenta}");
 
@@ -483,7 +483,8 @@ describe("compiled deck rendering", () => {
     expect(html).toContain(
       ".hono-decks-deck{display:grid;gap:1rem;width:var(--hono-decks-width);height:var(--hono-decks-height)",
     );
-    expect(html).toContain(".slide{box-sizing:border-box;aspect-ratio:16/9");
+    expect(html).toContain(":where(.slide){box-sizing:border-box;background:var(--hono-decks-background)");
+    expect(html).toContain(".slide{aspect-ratio:16/9;overflow:hidden}");
     expect(html).toContain('<div class="hono-decks-slide-content">');
     expect(html).not.toContain(".hono-decks-stage{width:100vw;height:100vh;overflow:hidden;background:");
     expect(html).not.toContain(".slide{box-sizing:border-box;aspect-ratio:16/9;border:");
@@ -503,7 +504,7 @@ describe("compiled deck rendering", () => {
 
   it("provides an opaque light default canvas without viewport-dependent content sizing", () => {
     const html = renderCompiledDeckPage({ deck: { ...deck, themeStyle: undefined }, mountPath: "/decks" });
-    expect(html).toContain(":root{color-scheme:light");
+    expect(html).toContain(":where(:root){color-scheme:light");
     expect(html).toContain("--hono-decks-background:#fff");
     expect(html).toContain("--hono-decks-color:#172033");
     expect(html).toContain("background:var(--hono-decks-background);color:var(--hono-decks-color);padding:1.8rem");
@@ -516,7 +517,7 @@ describe("compiled deck rendering", () => {
 
     expect(html).toContain("@page{size:A4 portrait;margin:12mm}");
     expect(html).toContain("@media print{");
-    expect(html).toContain(":root{color-scheme:light;color:#000");
+    expect(html).toContain("@media print{:where(:root){color-scheme:light;color:#000}");
     expect(html).toContain("html,body{width:auto;height:auto;overflow:visible}");
     expect(html).toContain(".hono-decks-stage{display:block;width:auto;height:auto;overflow:visible}");
     expect(html).not.toContain("body[data-hono-decks-print-preview]{min-height:100vh;overflow:auto;background:");
@@ -531,12 +532,12 @@ describe("compiled deck rendering", () => {
       ".hono-decks-deck{display:grid;grid-template-columns:1fr;grid-auto-rows:var(--hono-decks-print-slot-height);gap:var(--hono-decks-print-gap);width:calc(var(--hono-decks-print-slot-height) * 16 / 9);height:auto;margin:0 auto;transform:none!important}",
     );
     expect(html).toContain(
-      ".slide{position:relative;width:100%;max-width:100%;height:var(--hono-decks-print-slot-height);aspect-ratio:16/9;justify-self:center;align-self:center;padding:0;page-break-after:auto;break-after:auto;break-inside:avoid;box-shadow:none;transition:none!important;transform:none!important}",
+      ".slide{position:relative;width:100%;max-width:100%;height:var(--hono-decks-print-slot-height);aspect-ratio:16/9;justify-self:center;align-self:center;page-break-after:auto;break-after:auto;break-inside:avoid;transition:none!important;transform:none!important}",
     );
     expect(html).toContain("body:not([data-overview-mode]) .slide{position:relative}");
     expect(html).toContain(".slide.layout-cover,.slide.layout-statement{display:block}");
     expect(html).toContain(
-      ".hono-decks-slide-content{position:absolute;inset:0 auto auto 0;width:var(--hono-decks-width);height:var(--hono-decks-height);box-sizing:border-box;padding:1.8rem;zoom:var(--hono-decks-print-scale);overflow:hidden}",
+      ".hono-decks-slide-content{position:absolute;inset:0 auto auto 0;width:var(--hono-decks-width);height:var(--hono-decks-height);box-sizing:border-box;zoom:var(--hono-decks-print-scale);overflow:hidden}",
     );
     expect(html).toContain(".slide:nth-of-type(3n):not(:last-child){page-break-after:always;break-after:page}");
     expect(html).toContain("body:not([data-overview-mode]) .slide[hidden]{display:block!important}");
@@ -705,7 +706,7 @@ describe("compiled deck rendering", () => {
     expect(html).toContain("--hono-decks-card-background:#f1f5f9");
     expect(html).toContain("--hono-decks-border-color:#cbd5e1");
     expect(html).toContain(
-      ".hono-decks-link-card-anchor{display:grid;grid-template-columns:minmax(9rem,32%) minmax(0,1fr);gap:.75rem;align-items:stretch;border:1px solid var(--hono-decks-border-color);border-radius:8px;background:var(--hono-decks-card-background);padding:1rem;color:inherit;text-decoration:none}",
+      ":where(.hono-decks-link-card-anchor){display:grid;grid-template-columns:minmax(9rem,32%) minmax(0,1fr);gap:.75rem;align-items:stretch;border:1px solid var(--hono-decks-border-color);border-radius:8px;background:var(--hono-decks-card-background);padding:1rem;color:inherit;text-decoration:none}",
     );
     expect(html).toContain('class="hono-decks-link-card"');
   });
@@ -810,7 +811,7 @@ describe("compiled deck rendering", () => {
     expect(html).toContain('class="hono-decks-embed-frame"');
     expect(html).toContain('data-component="EmbedFrame"');
     expect(html).toContain('data-provider="youtube"');
-    expect(html).toContain(".hono-decks-embed-viewport{width:min(100%,72rem);overflow:hidden}");
+    expect(html).toContain(":where(.hono-decks-embed-viewport){width:min(100%,72rem);overflow:hidden}");
     expect(html).not.toContain(".hono-decks-embed-viewport{width:min(100%,72rem);overflow:hidden;border:");
     expect(html).toContain('style="aspect-ratio:16 / 9"');
     expect(html).toContain('src="https://www.youtube.com/embed/dQw4w9WgXcQ"');

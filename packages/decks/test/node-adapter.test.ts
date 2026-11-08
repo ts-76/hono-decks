@@ -127,7 +127,7 @@ describe("Node filesystem deck adapter", () => {
         resolveOgp,
       });
 
-      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.ts"), "utf8");
+      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.js"), "utf8");
       expect(resolveOgp).not.toHaveBeenCalled();
       expect(slideOutput).toContain('title: "Cached Hono Docs"');
       expect(slideOutput).toContain('description: "Cached docs description."');
@@ -175,7 +175,7 @@ describe("Node filesystem deck adapter", () => {
         resolveOgp,
       });
 
-      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.ts"), "utf8");
+      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.js"), "utf8");
       const cacheOutput = JSON.parse(await readFile(join(cwd, "decks", "ogp-cache.json"), "utf8"));
       expect(resolveOgp).toHaveBeenCalledWith("https://hono.dev/docs/");
       expect(slideOutput).toContain('title: "Fresh Hono Docs"');
@@ -283,7 +283,7 @@ export function Counter() {
       expect(output).toContain("withClientComponentIds(Components_0");
       expect(output).toMatch(/"Counter": "Counter__deck1_[a-z0-9]+"/);
 
-      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.ts"), "utf8");
+      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.js"), "utf8");
       expect(slideOutput).toContain('from "hono/jsx/jsx-runtime"');
       expect(slideOutput).toContain('src: "/slides/deck1/assets/my%20image%231.svg"');
       expect(slideOutput).toContain('src: "/slides/deck1/assets/plain.svg"');
@@ -498,7 +498,7 @@ Visible generated content.
       const output = await readFile(join(cwd, "src", "generated", "decks.ts"), "utf8");
       expect(output).toContain('notes: "Mention the projection route.\\n\\nRemind yourself to open presenter view."');
 
-      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.ts"), "utf8");
+      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.js"), "utf8");
       expect(slideOutput).toContain("Visible generated content.");
       expect(slideOutput).not.toContain("Mention the projection route.");
       expect(slideOutput).not.toContain("Remind yourself to open presenter view.");
@@ -815,7 +815,7 @@ https://hono.dev/
         mountPath: "/slides",
       });
 
-      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.ts"), "utf8");
+      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.js"), "utf8");
       expect(slideOutput).toContain("_components.table");
       expect(slideOutput).toContain('class: "task-list-item"');
       expect(slideOutput).toContain("_components.del");
@@ -850,7 +850,7 @@ title: Deck One
         mountPath: "/slides",
       });
 
-      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.ts"), "utf8");
+      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.js"), "utf8");
       expect(slideOutput.match(/"data-hono-decks-fire": "true"/g)).toHaveLength(2);
       expect(slideOutput.match(/"data-fire-effect": "fade-up"/g)).toHaveLength(2);
       expect(slideOutput).toContain("First reveal");
@@ -887,7 +887,7 @@ title: Deck One
         mountPath: "/slides",
       });
 
-      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.ts"), "utf8");
+      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.js"), "utf8");
       expect(slideOutput.match(/"data-hono-decks-fire": "true"/g)).toHaveLength(4);
       expect(slideOutput.match(/"data-fire-at": "2"/g)).toHaveLength(2);
       expect(slideOutput.match(/"data-fire-at": "3"/g)).toHaveLength(2);
@@ -1007,7 +1007,7 @@ title: Deck One
         mountPath: "/slides",
       });
 
-      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.ts"), "utf8");
+      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.js"), "utf8");
       expect(slideOutput.match(/_jsx\(Fire/g)).toHaveLength(2);
       expect(slideOutput).toContain('effect: "scale"');
       expect(slideOutput).toContain('at: "2"');
@@ -1194,7 +1194,7 @@ The slide stays 16:9.
             : undefined,
       });
 
-      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.ts"), "utf8");
+      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "deck1", "slide-0.js"), "utf8");
       expect(slideOutput).toContain("EmbedFrame");
       expect(slideOutput).toContain('provider: "youtube"');
       expect(slideOutput).toContain('src: "https://www.youtube.com/embed/dQw4w9WgXcQ"');

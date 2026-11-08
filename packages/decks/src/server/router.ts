@@ -1,9 +1,15 @@
+import { resolveTimerDisplay, talkPlan } from "../shared/talk-time";
+import type { TalkTimerDisplay } from "../deck/model";
+import { parseDuration } from "../deck/duration";
+import { renderRemotePage } from "./remote/ui";
+import { resolveMessages, type DeckMessageOverrides } from "../shared/messages";
 import { Hono } from "hono";
 import type { Context, Env, MiddlewareHandler } from "hono";
 import { raw } from "hono/html";
 import { renderCompiledDeckPageAsync } from "../renderer/compiled-render";
 import type { DeckRenderable, MaybePromise } from "../renderer/compiled-render";
 import { renderJsxValue } from "../renderer/jsx-renderer";
+import { renderDeckOverviewPageAsync } from "../renderer/overview-page";
 import { renderPresenterPageAsync } from "../renderer/presentation-page";
 import { RenderError } from "../deck/model";
 import type { CompiledDeck, DeckEntry, DeckSource } from "../deck/model";
@@ -19,6 +25,8 @@ import {
 import {
   createDeckViewerParts,
   renderDeckViewerPage,
+  resolveTwitterPlayerOptions,
+  X_PLAYER_FRAME_ANCESTORS,
   type DeckViewerAvailablePages,
   type DeckViewerControlItem,
   type DeckViewerControlSlotItems,
@@ -61,7 +69,7 @@ export type {
   DeckExternalEmbedRenderInput,
   DeckExternalEmbedViewerOptions,
 } from "./external-embed";
-export { createDeckViewerEmbed, createDeckViewerParts } from "./viewer";
+export { createDeckViewerEmbed, createDeckViewerParts, X_PLAYER_FRAME_ANCESTORS } from "./viewer";
 export type {
   DeckViewerEmbed,
   DeckViewerEmbedOptions,
@@ -83,9 +91,11 @@ export type {
   DeckViewerOpenGraphInput,
   DeckViewerOpenGraphOptions,
   DeckViewerPart,
+  DeckViewerProgressStyle,
   DeckViewerParts,
   DeckViewerRenderControlItem,
   DeckViewerRenderInput,
+  DeckViewerTwitterPlayerOptions,
 } from "./viewer";
 
 export interface DecksRouterExtension<E extends Env = any> {
@@ -114,11 +124,33 @@ export interface DecksRouterOptions<E extends Env = any> {
   components?: SlideComponentRegistry | Record<string, SlideComponentInput>;
   client?: DecksClientOptions;
   document?: DeckDocumentOptions<E>;
+  messages?: DeckMessageOverrides;
   pages?: DecksRouterPagesOptions<E>;
   embed?: false | DeckExternalEmbedOptions<E>;
   viewer?: DeckViewerOptions<E>;
   presenter?: false | DecksRouterPresenterOptions<E>;
   export?: false | DeckExportOptions<E>;
+  remote?: DeckRemoteOptions<E>;
+}
+
+/** Structural binding shape accepted from a Cloudflare Durable Object namespace. */
+export interface DeckRemoteNamespace {
+  idFromName(name: string): any;
+  get(id: any): { fetch(request: Request): Promise<Response> };
+}
+
+/** Application-owned authorization and Durable Object binding for live rooms. */
+export interface DeckRemoteOptions<E extends Env = any> {
+  namespace(input: { c: Context<E> }): DeckRemoteNamespace | undefined;
+  authorize(input: { c: Context<E>; slug: string; role: "presenter" | "follower" }): MaybePromise<boolean>;
+  session?(input: { c: Context<E>; slug: string }): string;
+  follow?: boolean;
+  /**
+   * Rewrites the remote control URL shown as a QR code on the presenter page, for
+   * example to use a LAN or tunnel host in development or to append a short-lived
+   * sign-in token. Receives the absolute same-origin URL.
+   */
+  url?(input: { c: Context<E>; slug: string; url: string }): MaybePromise<string>;
 }
 
 /** Client island script delivery. */
@@ -131,7 +163,7 @@ export interface DecksClientOptions {
   bundle?: string;
 }
 
-export type DeckRouteSurface = "index" | "viewer" | "render" | "print" | "presentation" | "presenter";
+export type DeckRouteSurface = "index" | "viewer" | "render" | "print" | "overview" | "presentation" | "presenter";
 
 export interface DeckRouteSurfaceInput<E extends Env = any> {
   c: Context<E>;
@@ -168,6 +200,8 @@ export interface DecksRouterPagesOptions<E extends Env = any> {
   viewer?: DeckRouteEnabled<E>;
   render?: DeckRouteEnabled<E>;
   print?: DeckRouteEnabled<E>;
+  /** Grid of slide thumbnails at `/:slug/overview`. */
+  overview?: DeckRouteEnabled<E>;
   presentation?: DeckRouteEnabled<E>;
   presenter?: DeckRouteEnabled<E>;
 }
@@ -182,6 +216,10 @@ export type DeckDevResolver<E extends Env = any> = (input: DeckDevResolverInput<
 export interface DecksRouterPresenterOptions<E extends Env = any> {
   enabled?: boolean | DeckPresenterEnabledResolver<E>;
   viewerControl?: boolean | DeckPresenterViewerControlOptions;
+  /** Target duration in seconds, or a string such as 20m. */
+  duration?: number | string;
+  /** Talk-timer readouts shown by default (pace, remaining, overtime); overrides the deck's `timer` frontmatter. */
+  timer?: TalkTimerDisplay;
 }
 
 export type DeckPresenterEnabledResolver<E extends Env = any> = (
@@ -218,12 +256,18 @@ export interface DeckContextOptions<E extends Env = any> {
   source: DeckSource<E>;
   dev?: boolean | DeckDevResolver<E>;
   mountPath?: string;
-  pages?: Pick<DecksRouterPagesOptions<E>, "print">;
+  pages?: Pick<DecksRouterPagesOptions<E>, "print" | "overview">;
   viewer?: Pick<DeckViewerOptions<E>, "controls" | "openGraph">;
 }
 
 export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>): Hono<E> {
   const router = new Hono<E>();
+  const twitterPlayer = resolveTwitterPlayerOptions(options.viewer?.openGraph);
+  if (twitterPlayer && !options.embed) {
+    throw new Error(
+      "hono-decks: viewer.openGraph.twitterPlayer needs the embed option, because the X Player Card frames /:slug/embed. Add embed: {} to the router options.",
+    );
+  }
   const configuredMount = options.mountPath === undefined ? undefined : normalizeMountPath(options.mountPath);
 
   if (configuredMount !== undefined) {
@@ -257,9 +301,10 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
       return c.notFound();
     }
     const indexOptions = options.pages?.index === false ? undefined : options.pages?.index;
-    const title = await resolveIndexTitle(indexOptions?.title, pageInput);
+    let title = await resolveIndexTitle(indexOptions?.title, pageInput);
     const document = await resolveRouterDocument(c, options, "index", mountPath, undefined, title);
-    const defaultContentHtml = renderDeckIndexContent(decks, mountPath);
+    if (!indexOptions?.title) title = resolveMessages(document.lang, options.messages).indexTitle;
+    const defaultContentHtml = renderDeckIndexContent(decks, mountPath, title);
     const defaultContent = raw(defaultContentHtml);
     const content = indexOptions?.render
       ? await renderJsxValue(indexOptions.render({ ...pageInput, title, document, defaultContent }))
@@ -320,8 +365,11 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
           style: options.style,
           components: options.components,
           clientEntry,
+          dev,
           liveReloadPath: dev ? options.liveReloadPath : undefined,
+          speakerNotes: options.remote ? false : undefined,
           document,
+          messages: options.messages,
         }),
       );
     } catch (error) {
@@ -352,6 +400,38 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
           components: options.components,
           printPreview: true,
           document,
+          messages: options.messages,
+        }),
+      );
+    } catch (error) {
+      const message =
+        error instanceof RenderError
+          ? error.message
+          : `Render failed in ${deck.sourcePath}: ${formatErrorMessage(error)}`;
+      return c.text(message, 500);
+    }
+  });
+
+  router.get("/:slug/overview", async (c) => {
+    const slug = c.req.param("slug");
+    const deck = await options.source.getCompiledDeck(c, slug);
+    const dev = await isDevEnabled(c, options);
+    if (!deck || (!dev && deck.meta.draft)) return c.notFound();
+    const mountPath = resolveMountPath(c.req.path, `/${slug}/overview`);
+    if (!(await isPageSurfaceEnabled(options, { c, surface: "overview", mountPath, dev, deck, slug }))) {
+      return c.notFound();
+    }
+    try {
+      const document = await resolveRouterDocument(c, options, "overview", mountPath, deck);
+      return c.html(
+        await renderDeckOverviewPageAsync({
+          deck,
+          viewerPath: createDeckPaths(mountPath, slug).viewer,
+          currentSlide: positiveIntegerParam(c.req.query("slide") ?? null),
+          style: options.style,
+          components: options.components,
+          document,
+          messages: options.messages,
         }),
       );
     } catch (error) {
@@ -390,10 +470,55 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
         context: { c, deck, slug, mountPath },
         options: embedOptions,
         document: options.document,
+        messages: options.messages,
         availablePages,
+        additionalFrameAncestors: twitterPlayer ? X_PLAYER_FRAME_ANCESTORS : undefined,
       });
     });
   }
+
+  router.get("/:slug/remote", async (c) => {
+    const remote = options.remote;
+    if (!remote || !remote.namespace({ c })) return c.notFound();
+    const slug = c.req.param("slug");
+    const deck = await options.source.getCompiledDeck(c, slug);
+    const dev = await isDevEnabled(c, options);
+    if (!deck || (!dev && deck.meta.draft)) return c.notFound();
+    if (!(await remote.authorize({ c, slug, role: "presenter" }))) return c.text("Forbidden", 403);
+    const mountPath = resolveMountPath(c.req.path, `/${slug}/remote`);
+    const document = await resolveRouterDocument(c, options, "presenter", mountPath, deck);
+    c.header("Cache-Control", "private, no-store");
+    const presenterDuration = options.presenter === false ? undefined : options.presenter?.duration;
+    const duration = presenterDuration === undefined ? deck.meta.duration : parseDuration(presenterDuration, "seconds");
+    const display = resolveTimerDisplay(
+      deck.meta.timer,
+      options.presenter === false ? undefined : options.presenter?.timer,
+    );
+    return c.html(
+      renderRemotePage(deck, document, options.messages, { duration, display, plan: talkPlan(deck.slides) }),
+    );
+  });
+
+  router.get("/:slug/remote/socket", async (c) => {
+    const remote = options.remote;
+    const namespace = remote?.namespace({ c });
+    if (!remote || !namespace) return c.notFound();
+    const slug = c.req.param("slug");
+    const deck = await options.source.getCompiledDeck(c, slug);
+    if (!deck || (!(await isDevEnabled(c, options)) && deck.meta.draft)) return c.notFound();
+    if (c.req.header("upgrade")?.toLowerCase() !== "websocket") return c.text("Upgrade required", 426);
+    const role = c.req.query("role");
+    if (role !== "presenter" && role !== "follower") return c.text("Forbidden", 403);
+    const origin = c.req.header("origin");
+    if ((origin && origin !== new URL(c.req.url).origin) || !(await remote.authorize({ c, slug, role }))) {
+      return c.text("Forbidden", 403);
+    }
+    const headers = new Headers(c.req.raw.headers);
+    headers.set("X-Hono-Decks-Role", role);
+    headers.set("X-Hono-Decks-Slide-Count", String(deck.slides.length));
+    const request = new Request(c.req.raw, { headers });
+    return namespace.get(namespace.idFromName(remote.session?.({ c, slug }) ?? slug)).fetch(request);
+  });
 
   router.get("/:slug/presentation", async (c) => {
     const slug = c.req.param("slug");
@@ -417,8 +542,10 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
           components: options.components,
           clientEntry,
           speakerNotes: false,
+          dev,
           liveReloadPath: dev ? options.liveReloadPath : undefined,
           document,
+          messages: options.messages,
         }),
       );
     } catch (error) {
@@ -444,14 +571,19 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
     }
     try {
       const document = await resolveRouterDocument(c, options, "presenter", mountPath, deck);
+      c.header("Cache-Control", "private, no-store");
       return c.html(
         await renderPresenterPageAsync({
           deck,
           mountPath,
           presenterStateQuery: paginationQueryFromRequest(c),
+          duration: options.presenter === false ? undefined : options.presenter?.duration,
+          timerDisplay: options.presenter === false ? undefined : options.presenter?.timer,
+          ...(await resolvePresenterRemote(c, options.remote, slug)),
           style: options.style,
           components: options.components,
           document,
+          messages: options.messages,
         }),
       );
     } catch (error) {
@@ -479,6 +611,10 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
         deck,
         mountPath,
         viewerStateQuery: paginationQueryFromRequest(c),
+        remote:
+          options.remote?.namespace({ c }) && (await options.remote.authorize({ c, slug, role: "follower" }))
+            ? { follow: options.remote.follow !== false }
+            : undefined,
         viewer: {
           ...options.viewer,
           controls: await resolveViewerControls(c, options, deck, slug, mountPath),
@@ -486,6 +622,8 @@ export function decksRouter<E extends Env = any>(options: DecksRouterOptions<E>)
         availablePages,
         exportOptions: options.export,
         document: options.document,
+        messages: options.messages,
+        twitterPlayer: Boolean(options.embed),
       }),
     );
   });
@@ -554,6 +692,7 @@ async function resolveViewerAvailablePages<E extends Env>(
 ): Promise<DeckViewerAvailablePages> {
   return {
     print: await isPageSurfaceEnabled(options, { c, surface: "print", mountPath, dev, deck, slug }),
+    overview: await isPageSurfaceEnabled(options, { c, surface: "overview", mountPath, dev, deck, slug }),
   };
 }
 
@@ -617,7 +756,7 @@ async function resolvePresenterViewerControl<E extends Env>(
       type: "link",
       key: control.key ?? "presenter",
       href: presenterPath,
-      label: control.label ?? "Presenter",
+      label: control.label ?? "",
       icon: control.icon ?? "presenter",
       className: control.className,
       attributes: control.attributes,
@@ -631,11 +770,10 @@ function mergeControlSlotItems(
   item: Exclude<DeckViewerControlItem, null | false | undefined>,
   placement: "before" | "after",
 ): DeckViewerControlSlotItems {
-  if (!slot) return [item];
-  if (Array.isArray(slot)) return placement === "before" ? [item, ...slot] : [...slot, item];
   return (context) => {
-    const items = slot(context);
-    return placement === "before" ? [item, ...items] : [...items, item];
+    const items = !slot ? [] : Array.isArray(slot) ? slot : slot(context);
+    const localized = item.type === "link" && item.label === "" ? { ...item, label: context.messages.presenter } : item;
+    return placement === "before" ? [localized, ...items] : [...items, localized];
   };
 }
 
@@ -666,7 +804,11 @@ async function isPresenterEnabled<E extends Env>(
   );
 }
 
-function renderDeckIndexContent(decks: Awaited<ReturnType<DeckSource["listDecks"]>>, mountPath: string): string {
+function renderDeckIndexContent(
+  decks: Awaited<ReturnType<DeckSource["listDecks"]>>,
+  mountPath: string,
+  title: string,
+): string {
   const basePath = mountPath.replace(/\/$/, "");
   const items = decks
     .map((deck) => {
@@ -678,7 +820,7 @@ function renderDeckIndexContent(decks: Awaited<ReturnType<DeckSource["listDecks"
     .join("");
 
   return `<main>
-    <h1>Hono Decks</h1>
+    <h1>${escapeHtml(title)}</h1>
     <ul>${items}</ul>
   </main>`;
 }
@@ -749,4 +891,18 @@ function escapeHtml(value: string): string {
 function formatErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   return String(error);
+}
+
+async function resolvePresenterRemote<E extends Env>(
+  c: Context<E>,
+  remote: DeckRemoteOptions<E> | undefined,
+  slug: string,
+): Promise<{ remote: boolean; remoteUrl?: string }> {
+  if (!remote?.namespace({ c }) || !(await remote.authorize({ c, slug, role: "presenter" }))) return { remote: false };
+  const url = new URL(c.req.url);
+  url.pathname = url.pathname.replace(/\/presenter\/?$/, "/remote");
+  url.searchParams.delete("slide");
+  url.searchParams.delete("step");
+  const absolute = url.toString();
+  return { remote: true, remoteUrl: remote.url ? await remote.url({ c, slug, url: absolute }) : absolute };
 }

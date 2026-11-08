@@ -31,8 +31,12 @@ describe("hono-decks CLI", () => {
       expect(output).toContain('"publicPath": "/slides/intro/assets/hero.png"');
       expect(output).toContain('import Slide_1_0 from "./decks/intro/slide-0";');
 
-      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "intro", "slide-0.ts"), "utf8");
+      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "intro", "slide-0.js"), "utf8");
       expect(slideOutput).toContain('from "hono/jsx/jsx-runtime"');
+      expect(slideOutput).not.toContain("@ts-nocheck");
+      const slideTypes = await readFile(join(cwd, "src", "generated", "decks", "intro", "slide-0.d.ts"), "utf8");
+      expect(slideTypes).toContain('declare const render: NonNullable<CompiledSlide["render"]>;');
+      expect(slideTypes).toContain("export default render;");
 
       const clientOutput = await readFile(join(cwd, "src", "generated", "client-entry.ts"), "utf8");
       expect(clientOutput).toBe('export const decksClientEntry = "";\n');
@@ -79,7 +83,7 @@ describe("hono-decks CLI", () => {
       expect(routerOutput).toContain("componentRegistry: withClientComponentIds(Components_1, {})");
       expect(routerOutput).toContain("export function createDecks");
 
-      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "intro", "slide-0.ts"), "utf8");
+      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "intro", "slide-0.js"), "utf8");
       expect(slideOutput).toContain("{Badge} = _components");
       expect(slideOutput).toContain("_jsx(Badge");
     } finally {
@@ -115,7 +119,7 @@ describe("hono-decks CLI", () => {
       });
 
       expect(result.exitCode).toBe(0);
-      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "intro", "slide-0.ts"), "utf8");
+      const slideOutput = await readFile(join(cwd, "src", "generated", "decks", "intro", "slide-0.js"), "utf8");
       expect(slideOutput).toContain('title: "Cached Hono Docs"');
       expect(slideOutput).toContain('description: "Cached docs description."');
     } finally {

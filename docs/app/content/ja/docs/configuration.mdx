@@ -96,3 +96,7 @@ Viteでは`honoDecks()`を追加し、Wranglerではカスタムビルドに`hon
 [defineDecksConfigのAPIを見る →](/api?lang=ja#define-decks-config)
 
 </section>
+
+## UIの文言
+
+解決済みの `document.lang` が `ja` や `ja-JP` の場合は日本語、それ以外は英語を使用します。既定値は `ja` です。`createDecks({ messages: { ja: { previous: "戻る" }, en: { previous: "Back" } } })` で言語ごとに文言を上書きできます。ビューアーの操作では `viewer.controls.labels` が優先されます。`slidePosition` と `progressText` には `{current}` と `{total}`、`slideCount` と `slideCountOne` には `{count}` を使います。

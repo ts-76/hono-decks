@@ -3,7 +3,15 @@ import type { CompiledDeck } from "../deck/model";
 import type { DeckRenderable, MaybePromise } from "../renderer/compiled-render";
 import { renderJsxValue } from "../renderer/jsx-renderer";
 
-export type DeckDocumentSurface = "index" | "viewer" | "render" | "print" | "presentation" | "presenter" | "embed";
+export type DeckDocumentSurface =
+  | "index"
+  | "viewer"
+  | "render"
+  | "print"
+  | "overview"
+  | "presentation"
+  | "presenter"
+  | "embed";
 
 export interface DeckDocumentRenderInput<E extends Env = any> {
   c: Context<E>;

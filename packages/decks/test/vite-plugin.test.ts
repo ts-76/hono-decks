@@ -127,8 +127,10 @@ describe("honoDecks Vite plugin", () => {
       });
 
       expect(await readModule("src/generated/decks.ts")).toContain("/@hono-decks/events");
-      const initial = await readModule("src/generated/decks/intro/slide-0.ts");
+      const initial = await readModule("src/generated/decks/intro/slide-0.js");
       expect(initial).toContain("Initial title");
+      // Vite can request a .js slide by its .ts twin when the importer is TypeScript.
+      expect(await readModule("src/generated/decks/intro/slide-0.ts")).toContain("Initial title");
       expect(await readFile(join(cwd, "src/generated/decks.ts"), "utf8").catch(() => null)).toBe(null);
       const resolveId = plugin.resolveId as Function;
       expect(await resolveId("virtual:hono-decks")).toBe("\0hono-decks:entry");
@@ -166,7 +168,7 @@ describe("honoDecks Vite plugin", () => {
       const deckPath = join(cwd, "decks", "intro", "deck.mdx");
       await writeFile(deckPath, "# Updated title\n", "utf8");
       watcher.emit("change", deckPath);
-      await waitFor(async () => (await readModule("src/generated/decks/intro/slide-0.ts")).includes("Updated title"));
+      await waitFor(async () => (await readModule("src/generated/decks/intro/slide-0.js")).includes("Updated title"));
       await waitFor(() => writes.length === 2);
       expect(events).toEqual(["client:invalidate", "worker:invalidate", "worker:reload"]);
       expect(writes).toEqual([": connected\n\n", "event: deck:updated\ndata: {}\n\n"]);
@@ -176,11 +178,11 @@ describe("honoDecks Vite plugin", () => {
       await waitFor(() => errors.length > 0);
       expect(ws.fullReloads).toBe(0);
       expect(writes).toHaveLength(2);
-      expect(await readModule("src/generated/decks/intro/slide-0.ts")).toContain("Updated title");
+      expect(await readModule("src/generated/decks/intro/slide-0.js")).toContain("Updated title");
 
       await writeFile(deckPath, "# Recovered title\n", "utf8");
       watcher.emit("change", deckPath);
-      await waitFor(async () => (await readModule("src/generated/decks/intro/slide-0.ts")).includes("Recovered title"));
+      await waitFor(async () => (await readModule("src/generated/decks/intro/slide-0.js")).includes("Recovered title"));
       await waitFor(() => writes.length === 3);
 
       const nextRoot = join(cwd, "presentations");
@@ -197,7 +199,7 @@ describe("honoDecks Vite plugin", () => {
         "utf8",
       );
       watcher.emit("change", configPath);
-      await waitFor(async () => (await readModule("src/generated/decks/next/slide-0.ts")).includes("Configured root"));
+      await waitFor(async () => (await readModule("src/generated/decks/next/slide-0.js")).includes("Configured root"));
       await waitFor(() => writes.length === 4);
       expect(watcher.added).toContain(nextRoot);
       expect(watcher.added).not.toContain(join(cwd, "decks"));

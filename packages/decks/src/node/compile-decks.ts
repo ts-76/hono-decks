@@ -7,7 +7,7 @@ import { emitModuleDecksRouter } from "../generator/mdx/emit";
 import { compileMarkdownDecks } from "./markdown-decks";
 import { loadMarkdownAdapter } from "./markdown-adapter";
 import type { DecksBuildConfig } from "../server/define-decks";
-import { compileMdxModuleDecks } from "../generator/mdx-module-generator";
+import { compileMdxModuleDecks, SLIDE_MODULE_DECLARATION } from "../generator/mdx-module-generator";
 import type { DeckThemeStyleEntry, LinkCardOgpMetadata } from "../generator/mdx-module-generator";
 import { emitDeckComponentRegistryModule } from "../generator/component-registry";
 import type { ResolvedDeckComponentExport } from "../generator/component-registry";
@@ -140,7 +140,10 @@ export async function compileDeckModules(input: CompileDecksInput): Promise<Deck
     liveReloadPath: input.liveReloadPath,
   });
   const files: GeneratedFile[] = generated.decks.flatMap((deck) =>
-    deck.slideModules.map((slide) => ({ path: join(input.cwd, slide.path), content: slide.code })),
+    deck.slideModules.flatMap((slide) => [
+      { path: join(input.cwd, slide.path), content: slide.code },
+      { path: join(input.cwd, slide.path.replace(/\.js$/, ".d.ts")), content: SLIDE_MODULE_DECLARATION },
+    ]),
   );
   files.push(
     { path: join(input.cwd, out, "decks.ts"), content: routerModule },

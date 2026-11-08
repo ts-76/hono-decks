@@ -2,9 +2,10 @@ import { unified } from "unified";
 import remarkGfm from "remark-gfm";
 import remarkMdx from "remark-mdx";
 import remarkParse from "remark-parse";
+import { findCodeFenceEnd } from "../deck/frontmatter";
 import type { Slide, SlideBlock, SlideDeck, SlideNode, SlidePropValue, TableAlign } from "../shared/types";
 
-const slideSeparator = /^---\s*$/m;
+const slideSeparator = /^---\s*$/;
 
 type MarkdownNode = {
   type: string;
@@ -101,7 +102,7 @@ export function parseDeck(markdown: string, options: ParseDeckOptions = {}): Sli
 
 export function parseDeckWithWarnings(markdown: string, options: ParseDeckOptions = {}): ParsedDeckWithWarnings {
   const normalized = markdown.replace(/\r\n/g, "\n").trim();
-  const chunks = normalized.length > 0 ? normalized.split(slideSeparator) : [""];
+  const chunks = normalized.length > 0 ? splitOutsideCodeFences(normalized) : [""];
   const parsedSlides = chunks
     .map((chunk, index) => parseSlide(chunk.trim(), index, (options.firstSlideIndex ?? 0) + index))
     .filter(({ slide }) => slide.raw.length > 0 || slide.blocks.length > 0 || slide.nodes.length > 0);
@@ -110,6 +111,23 @@ export function parseDeckWithWarnings(markdown: string, options: ParseDeckOption
     slides: parsedSlides.map(({ slide }) => slide),
     warnings: parsedSlides.flatMap(({ warnings }) => warnings),
   };
+}
+
+/** Splits on `---` separator lines that are not inside fenced code blocks. */
+function splitOutsideCodeFences(markdown: string): string[] {
+  const lines = markdown.split("\n");
+  const chunks: string[][] = [[]];
+  for (let index = 0; index < lines.length; index += 1) {
+    const fenceEnd = findCodeFenceEnd(lines, index);
+    if (fenceEnd !== undefined) {
+      chunks.at(-1)!.push(...lines.slice(index, fenceEnd + 1));
+      index = fenceEnd;
+      continue;
+    }
+    if (slideSeparator.test(lines[index]!)) chunks.push([]);
+    else chunks.at(-1)!.push(lines[index]!);
+  }
+  return chunks.map((chunk) => chunk.join("\n"));
 }
 
 function parseSlide(source: string, index: number, deckIndex: number): ParsedSlide {

@@ -62,6 +62,7 @@ Satori accepts TTF, OTF, and WOFF fonts, but not WOFF2. Bundle fonts that cover 
 ## Separate concepts
 
 - `viewer.openGraph`: emits social metadata for the viewer
+- `viewer.openGraph.twitterPlayer`: switches the X card to a Player Card that frames `/:slug/embed`; requires `embed` and HTTPS; X has no published contract (observed Oct 2026: inline on web, web view on mobile apps, player not working in X Articles)
 - `decks.paths(slug).ogImage`: canonical image output/serving path
 - `build.ogpCacheFile`: caches external page metadata for `@[card](...)`; it does not generate the deck share image
 

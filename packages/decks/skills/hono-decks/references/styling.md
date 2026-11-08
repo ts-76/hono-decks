@@ -18,7 +18,7 @@ The base root font size is 32px. Treat that as body copy, not a value to shrink 
 
 Without a theme, slides use an opaque white background and dark text. Set `--hono-decks-background` and the foreground tokens together to customize the palette. The surrounding viewer has its own dark chrome; it does not set the slide colors.
 
-The base CSS is followed by the deck's `theme.css`, then the route's `style` option. Per-slide background metadata is applied inline. Existing `.slide { background: ... }` rules continue to override the default background.
+Default styles live in `@layer hono-decks.base` and `@layer hono-decks.components` with `:where()` selectors (zero specificity), so plain selectors in `theme.css`, deck component CSS, or the route's `style` option override them without `!important`. Runtime mechanics (slide stacking, transitions, step reveals, canvas fitting, print layout) stay unlayered with normal specificity; adjust them through `--hono-decks-transition-*` and `--fire-*` variables instead of overriding their selectors. The viewer's slide progress is a 4px bar on the slide's bottom edge by default (`viewer.controls.progress: "bar" | "count" | "both"`); recolor it with `--hono-decks-viewer-progress-color` and `--hono-decks-viewer-progress-track`. Per-slide background metadata is applied inline. If the app's own CSS is layered (Tailwind v4), declare `@layer hono-decks, ...;` first so app layers win.
 
 Use `px` or `rem` for content dimensions. Avoid `vw`, `vh`, and viewport media queries inside slides: those measure the browser or iframe, not the 1920 × 1080 canvas, and change the composition when the browser zooms. The same content dimensions are used for presentation and print.
 
@@ -159,3 +159,28 @@ Inspect every slide in the viewer and check:
 - Fire states remain understandable at each reveal step
 - print preview contains every slide and does not depend on live embeds
 - custom motion has a reduced-motion fallback
+
+### Development overflow warnings
+
+In development, the active slide is checked for elements outside the 1920 × 1080 canvas and for content clipped by `overflow: hidden` or `clip`. Findings appear in a warning panel and the affected elements are outlined. Checks rerun after slide changes, resizing, image and font loading, and live updates. Add `data-hono-decks-allow-overflow` to an intentionally overflowing element to exclude its subtree. Decorative `aria-hidden="true"` subtrees are also ignored. Scrollable containers are treated as clipping boundaries; visual effects such as shadows are not measured. Production and print pages omit the checker.
+
+## Built-in layouts
+
+Set `layout` in slide frontmatter to `two-cols`, `image-left`, `image-right`, `section`, `quote`, or `center`, in addition to `default`, `cover`, and `statement`. In an MDX `two-cols` slide, put `::right::` on its own line with blank lines around it. Content before and after it forms the two columns.
+
+~~~mdx
+---
+layout: two-cols
+---
+## Left
+
+First column
+
+::right::
+
+## Right
+
+Second column
+~~~
+
+For image layouts, set `image: ./assets/photo.jpg` or a remote URL and optionally `image-alt: Description`. An omitted alt makes the image decorative. Use a heading and subtitle for `section`, or a Markdown blockquote followed by attribution for `quote`. `center` centers content horizontally and vertically; `statement` only centers vertically. Adjust `--hono-decks-column-gap`, `--hono-decks-image-width`, and `--hono-decks-image-radius` in a theme. The column marker is supported in MDX decks.

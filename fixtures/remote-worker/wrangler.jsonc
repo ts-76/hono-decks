@@ -1,0 +1,8 @@
+{
+  "name": "hono-decks-remote-local-fixture",
+  "main": "index.ts",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["temporal"],
+  "durable_objects": { "bindings": [{ "name": "ROOMS", "class_name": "DeckRemoteRoom" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["DeckRemoteRoom"] }]
+}

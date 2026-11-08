@@ -14,7 +14,7 @@ Use the Markdown, MDX, and deck-specific syntax supported by the compiler.
 
 Use `decks/<slug>/deck.mdx`. The directory name becomes the URL slug, so `decks/launch/deck.mdx` appears at `/decks/launch`.
 
-The opening `---` block contains deck metadata. Later separators start new slides, so a bare `---` cannot be used as a thematic break inside a slide.
+The opening `---` block contains deck metadata. Later `---` lines start new slides. For a horizontal rule inside a slide, write `***`, `___`, or `<hr />`. A `---` line inside a fenced code block, such as a YAML sample, stays part of the code.
 
 <CodeBlock filename={"decks/launch/deck.mdx"} language={"mdx"} code={"---\ntitle: Hono at the edge\ntransition: fade\n---\n\n# Hono at the edge\n\n---\ntitle: Runtime boundary\nlayout: statement\n---\n\nNode for I/O. Hono for routes."} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
 
@@ -73,16 +73,18 @@ title: Interactive slide
 
 Opening frontmatter applies to the deck. Frontmatter immediately after a slide separator applies only to that slide. Unknown keys remain in meta but produce a warning.
 
-<DefinitionList items={[{term: <>{"Deck"}</>, description: <><code>{"title"}</code>{", "}<code>{"description"}</code>{", "}<code>{"author"}</code>{", "}<code>{"tags"}</code>{", "}<code>{"date"}</code>{", "}<code>{"theme"}</code>{", "}<code>{"transition"}</code>{", "}<code>{"transitionDuration"}</code>{", "}<code>{"transitionEasing"}</code>{", "}<code>{"draft"}</code>{", "}<code>{"assets"}</code>{", "}<code>{"presenter"}</code></>},
-{term: <>{"Slide"}</>, description: <><code>{"title"}</code>{", "}<code>{"layout"}</code>{", "}<code>{"class"}</code>{", "}<code>{"notes"}</code>{", "}<code>{"background"}</code>{", "}<code>{"transition"}</code>{", "}<code>{"transitionDuration"}</code>{", "}<code>{"transitionEasing"}</code></>},
+<DefinitionList items={[{term: <>{"Deck"}</>, description: <><code>{"title"}</code>{", "}<code>{"description"}</code>{", "}<code>{"author"}</code>{", "}<code>{"tags"}</code>{", "}<code>{"date"}</code>{", "}<code>{"theme"}</code>{", "}<code>{"transition"}</code>{", "}<code>{"transitionDuration"}</code>{", "}<code>{"transitionEasing"}</code>{", "}<code>{"draft"}</code>{", "}<code>{"assets"}</code>{", "}<code>{"presenter"}</code>{", "}<code>{"duration"}</code>{", "}<code>{"timer"}</code></>},
+{term: <>{"Slide"}</>, description: <><code>{"title"}</code>{", "}<code>{"layout"}</code>{", "}<code>{"class"}</code>{", "}<code>{"notes"}</code>{", "}<code>{"background"}</code>{", "}<code>{"image"}</code>{", "}<code>{"image-alt"}</code>{", "}<code>{"time"}</code>{", "}<code>{"appendix"}</code>{", "}<code>{"transition"}</code>{", "}<code>{"transitionDuration"}</code>{", "}<code>{"transitionEasing"}</code></>},
 {term: <>{"Transitions"}</>, description: <><code>{"none"}</code>{", "}<code>{"fade"}</code>{", "}<code>{"fade-out"}</code>{", "}<code>{"slide-left"}</code>{", "}<code>{"slide-right"}</code>{", "}<code>{"slide-up"}</code>{", "}<code>{"slide-down"}</code>{", "}<code>{"view-transition"}</code></>},
-{term: <>{"Layouts"}</>, description: <><code>{"default"}</code>{", centered "}<code>{"cover"}</code>{", and centered "}<code>{"statement"}</code>{" are built in. A custom name becomes a "}<code>{"layout-<name>"}</code>{" class that can be styled in "}<code>{"theme.css"}</code>{"."}</>}]} />
+{term: <>{"Layouts"}</>, description: <><code>{"default"}</code>{", centered "}<code>{"cover"}</code>{", and centered "}<code>{"statement"}</code>{" are built in alongside two-cols, image-left, image-right, section, quote, and center. A custom name becomes a "}<code>{"layout-<name>"}</code>{" class that can be styled in "}<code>{"theme.css"}</code>{"."}</>}]} />
 
 <Callout title={"Start with title only"}>
 
 Write the content first, then add `layout` or `transition` only where they clarify the presentation.
 
 </Callout>
+
+Built-in layouts include `two-cols`, `image-left`, `image-right`, `section`, `quote`, and `center`. In MDX, separate two columns with a standalone `::right::` paragraph. Image layouts accept `image` and optional `image-alt`; without alt the image is decorative.
 
 </section>
 
@@ -107,6 +109,8 @@ Use `fire="scale"` on a component and `effect="scale"` with `:::fire`. Built-ins
 </section>
 
 <section id={"notes"}>
+
+`duration: 20m` sets the presenter timer target; `1h30m`, `90s`, and numeric minutes are also supported. `presenter.duration` overrides it at runtime (numeric seconds or the same strings). Press `T` to start or pause the timer.
 
 ## Add notes for the presenter
 
@@ -156,6 +160,8 @@ Place `theme.css` beside `deck.mdx` to style only that deck. Start with the prov
 
 <CodeBlock filename={"decks/welcome/theme.css"} language={"css"} code={"/* decks/welcome/theme.css */\n:root {\n  --hono-decks-accent-color: #ff5b1a;\n}\n\n.slide h1 {\n  text-wrap: balance;\n}"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
 
+hono-decks keeps its default styles in `@layer hono-decks.base` and `@layer hono-decks.components`, with every selector wrapped in `:where()`. Plain selectors in `theme.css` therefore override them without `!important`. Slide stacking, transitions, step reveals, and print layout stay outside the layers so a theme cannot break them; adjust those through variables such as `--hono-decks-transition-duration` and `--fire-*`.
+
 </section>
 
 <section id={"verify"}>
@@ -165,6 +171,10 @@ Place `theme.css` beside `deck.mdx` to style only that deck. Start with the prov
 <CodeBlock filename={"Terminal"} language={"bash"} code={"npm run dev"} copyLabel={"Copy code"} copiedLabel={"Copied"} errorLabel={"Copy failed"} />
 
 While the configured Vite or Wrangler `dev` command is running, saved deck sources are recompiled automatically. With Vite, supported content edits preserve the presentation and island state; client code edits or unsafe updates reload the presentation iframe and reset island state while retaining the viewer and slide/step. Direct Wrangler live reload follows Wrangler behavior. Use `npx hono-decks compile` when checking the CLI/file compiler separately. Compile errors identify the source file and slide number.
+
+### Development overflow warnings
+
+In development, the active slide is checked for elements outside the 1920 × 1080 canvas and for content clipped by `overflow: hidden` or `clip`. Findings appear in a warning panel and the affected elements are outlined. Checks rerun after slide changes, resizing, image and font loading, and live updates. Add `data-hono-decks-allow-overflow` to an intentionally overflowing element to exclude its subtree. Decorative `aria-hidden="true"` subtrees are also ignored. Scrollable containers are treated as clipping boundaries; visual effects such as shadows are not measured. Production and print pages omit the checker.
 
 After the deck renders, continue to [routes and UI](/docs/routing?lang=en) for public surfaces or [configuration](/docs/configuration?lang=en) for bindings and R2.
 

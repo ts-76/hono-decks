@@ -9,7 +9,6 @@ export default defineConfig({
       ".beads/**",
       ".claude/**",
       ".codex/**",
-      ".impeccable/**",
       ".captures/**",
       "examples/void/**",
       "fixtures/**",
@@ -26,6 +25,7 @@ export default defineConfig({
     ignorePatterns: [
       // Installed and checked independently by the consumer verification scripts.
       "fixtures/void-markdown/**",
+      "fixtures/remote-worker/**",
       "examples/void/**",
       "fixtures/hono-vite/**",
       "fixtures/honox-vite/**",
@@ -33,7 +33,6 @@ export default defineConfig({
       ".beads/**",
       ".claude/**",
       ".codex/**",
-      ".impeccable/**",
       ".captures/**",
       "**/dist/**",
       "**/dist-dry-run/**",

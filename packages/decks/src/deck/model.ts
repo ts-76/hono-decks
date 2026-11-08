@@ -30,7 +30,21 @@ export interface DeckFrontmatter {
   draft?: boolean;
   assets?: string | string[];
   presenter?: boolean;
+  /** Target talk duration in seconds. */
+  duration?: number;
+  /** Which talk-timer readouts the presenter page and remote show by default. */
+  timer?: TalkTimerDisplay;
   meta: Record<string, unknown>;
+}
+
+/** Talk-timer readouts that can be hidden. Omitted values default to shown. */
+export interface TalkTimerDisplay {
+  /** On pace / ahead / behind. */
+  pace?: boolean;
+  /** Time left until the target. */
+  remaining?: boolean;
+  /** Time past the target; when hidden, remaining time stops at 00:00. */
+  overtime?: boolean;
 }
 
 export interface SlideFrontmatter {
@@ -39,6 +53,12 @@ export interface SlideFrontmatter {
   className?: string;
   notes?: string;
   background?: string;
+  image?: string;
+  imageAlt?: string;
+  /** Talk time budgeted for this slide, in seconds. Other main slides share the rest. */
+  time?: number;
+  /** Marks the first appendix slide; it and every later slide are left out of the pace. */
+  appendix?: boolean;
   transition?: SlideTransition;
   transitionDuration?: string;
   transitionEasing?: string;

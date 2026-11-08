@@ -1,3 +1,4 @@
+import { enMessages, type DeckMessages } from "../shared/messages";
 import { jsx } from "hono/jsx/jsx-runtime";
 import type { DeckRenderable } from "./compiled-render";
 
@@ -12,6 +13,8 @@ export type DeckControlIconName =
   | "fullscreen"
   | "external-link"
   | "print"
+  | "toc"
+  | "overview"
   | "details"
   | "export-pdf"
   | "export-png";
@@ -35,34 +38,38 @@ export function renderControlIconHtml(name: DeckControlIconName, className = "ho
   return `<svg class="${className}" data-hono-decks-control-icon viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${controlIconPathHtml(name)}</svg>`;
 }
 
-export function controlIconLabel(name: DeckControlIconName): string {
+export function controlIconLabel(name: DeckControlIconName, messages: DeckMessages = enMessages): string {
   switch (name) {
     case "deck-list":
-      return "Deck list";
+      return messages.deckList;
     case "home":
-      return "Home";
+      return messages.home;
     case "viewer":
-      return "Viewer";
+      return messages.viewer;
     case "projection":
-      return "Projection";
+      return messages.projection;
     case "presenter":
-      return "Presenter";
+      return messages.presenter;
     case "previous":
-      return "Previous slide";
+      return messages.previous;
     case "next":
-      return "Next slide";
+      return messages.next;
     case "fullscreen":
-      return "Toggle fullscreen";
+      return messages.fullscreen;
     case "external-link":
-      return "Open link in new tab";
+      return messages.externalLink;
     case "print":
-      return "Print view";
+      return messages.print;
+    case "toc":
+      return messages.toc;
+    case "overview":
+      return messages.overview;
     case "details":
-      return "Details";
+      return messages.details;
     case "export-pdf":
-      return "Export PDF";
+      return messages.exportPdf;
     case "export-png":
-      return "Export PNG";
+      return messages.exportPng;
   }
 }
 
@@ -88,6 +95,10 @@ function controlIconPathHtml(name: DeckControlIconName): string {
       return '<path d="M15 3h6v6" /><path d="M10 14 21 3" /><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />';
     case "print":
       return '<path d="M6 9V3h12v6" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><path d="M6 14h12v7H6z" />';
+    case "toc":
+      return '<path d="M8 6h13M8 12h13M8 18h13" /><path d="M3 6h1M3 12h1M3 18h1" />';
+    case "overview":
+      return '<rect x="3" y="4" width="8" height="6" rx="1" /><rect x="13" y="4" width="8" height="6" rx="1" /><rect x="3" y="14" width="8" height="6" rx="1" /><rect x="13" y="14" width="8" height="6" rx="1" />';
     case "details":
       return '<circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 8h.01" />';
     case "export-pdf":
@@ -138,6 +149,15 @@ function controlIconPaths(name: DeckControlIconName): DeckRenderable[] {
         jsx("path", { d: "M6 9V3h12v6" }),
         jsx("path", { d: "M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" }),
         jsx("path", { d: "M6 14h12v7H6z" }),
+      ];
+    case "toc":
+      return [jsx("path", { d: "M8 6h13M8 12h13M8 18h13" }), jsx("path", { d: "M3 6h1M3 12h1M3 18h1" })];
+    case "overview":
+      return [
+        jsx("rect", { x: "3", y: "4", width: "8", height: "6", rx: "1" }),
+        jsx("rect", { x: "13", y: "4", width: "8", height: "6", rx: "1" }),
+        jsx("rect", { x: "3", y: "14", width: "8", height: "6", rx: "1" }),
+        jsx("rect", { x: "13", y: "14", width: "8", height: "6", rx: "1" }),
       ];
     case "details":
       return [

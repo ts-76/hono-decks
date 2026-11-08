@@ -505,8 +505,8 @@ describe("sample Worker app", () => {
     expect(html).toContain('data-filename="worker.ts"');
     expect(html).toContain('data-highlight="2"');
     expect(html).toContain('<figcaption class="hono-decks-code-caption">worker.ts</figcaption>');
-    expect(html).toContain(".slide pre{max-width:100%;overflow:auto");
-    expect(html).toContain(".slide code{font-family:");
+    expect(html).toContain(":where(.slide pre){max-width:100%;overflow:auto");
+    expect(html).toContain(":where(.slide code){font-family:");
   });
 
   it("renders motion examples with CSS animation and client island animation hooks", async () => {
