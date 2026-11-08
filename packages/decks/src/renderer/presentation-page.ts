@@ -45,6 +45,16 @@ export function talkPace(
   return { state: "on", seconds: 0 };
 }
 
+/** Formats seconds as mm:ss, or h:mm:ss from one hour. Embedded into the presenter script. */
+export function formatTalkTime(totalSeconds: number): string {
+  const seconds = Math.floor(Math.abs(totalSeconds));
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const rest = seconds % 60;
+  const head = hours ? `${hours}:${String(minutes).padStart(2, "0")}` : String(minutes).padStart(2, "0");
+  return `${head}:${String(rest).padStart(2, "0")}`;
+}
+
 export function presentationPageTitle(deck: Pick<CompiledDeck, "slug" | "meta">): string {
   return deck.meta.title ?? deck.slug;
 }
@@ -316,11 +326,7 @@ function renderPresenterScript(slideCount: number, slug: string, duration: numbe
   } catch (_) {}
   function saveTimer() { try { sessionStorage.setItem(storageKey, JSON.stringify(timer)); } catch (_) {} }
   function elapsed() { return timer.elapsed + (timer.startedAt === null ? 0 : Math.max(0, Date.now() - timer.startedAt)); }
-  function formatTime(seconds) {
-    seconds = Math.floor(Math.abs(seconds));
-    const hours = Math.floor(seconds / 3600), minutes = Math.floor(seconds % 3600 / 60), secs = seconds % 60;
-    return (hours ? hours + ":" + String(minutes).padStart(2, "0") : String(minutes).padStart(2, "0")) + ":" + String(secs).padStart(2, "0");
-  }
+  const formatTime = ${formatTalkTime.toString()};
   function renderTimer() {
     const seconds = elapsed() / 1000;
     if (elapsedNode) elapsedNode.textContent = formatTime(seconds);

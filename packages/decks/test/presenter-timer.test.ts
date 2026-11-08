@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import { Hono } from "hono";
 import { toDeckFrontmatter, addUnknownFrontmatterWarnings } from "../src/deck/frontmatter";
-import { talkPace } from "../src/renderer/presentation-page";
+import { formatTalkTime, talkPace } from "../src/renderer/presentation-page";
 import { decksRouter } from "../src/server/router";
 import { manifestDeckSource } from "../src/source/manifest-source";
 import { deck } from "./support/router-fixtures";
@@ -37,12 +37,10 @@ describe("presenter duration", () => {
     expect(a).toContain("const duration = 1200;");
     expect(b).toContain("const duration = 90;");
     expect(b).toContain('role="timer" aria-live="off"');
-    const formatSource = b.match(/  function formatTime\(seconds\) \{[\s\S]*?\n  \}/)?.[0];
-    expect(formatSource).toBeDefined();
-    const format = new Function(`${formatSource}; return formatTime;`)() as (seconds: number) => string;
-    expect(format(65)).toBe("01:05");
-    expect(format(3661)).toBe("1:01:01");
-    expect(format(-90)).toBe("01:30");
+    expect(b).toContain("const formatTime = function formatTalkTime(");
+    expect(formatTalkTime(65)).toBe("01:05");
+    expect(formatTalkTime(3661)).toBe("1:01:01");
+    expect(formatTalkTime(-90)).toBe("01:30");
   });
 
   it("judges pace against the current slide's share of the duration", () => {
