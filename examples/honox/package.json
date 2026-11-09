@@ -18,14 +18,14 @@
     "honox": "0.1.62"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20261102.1",
+    "@cloudflare/workers-types": "^5.20261104.1",
     "@hono/vite-build": "^1.11.1",
     "@hono/vite-dev-server": "^0.26.1",
     "@types/node": "^26.6.4",
     "typescript": "^7.0.2",
     "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0",
-    "vite-plus": "1.4.0",
-    "wrangler": "^4.156.2"
+    "vite-plus": "1.5.0",
+    "wrangler": "^4.158.0"
   },
   "packageManager": "bun@1.3.13"
 }

@@ -15,10 +15,10 @@
     "hono": "^4.13.16",
     "hono-decks": "workspace:*",
     "honox": "0.1.62",
-    "honoxpress": "0.4.0"
+    "honoxpress": "0.6.6"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20261102.1",
+    "@cloudflare/workers-types": "^5.20261104.1",
     "@hono/vite-build": "^1.11.1",
     "@hono/vite-dev-server": "^0.26.1",
     "@mdx-js/rollup": "3.1.1",
@@ -28,6 +28,6 @@
     "typescript": "^7.0.2",
     "vite": "catalog:",
     "vite-plus": "catalog:",
-    "wrangler": "^4.156.2"
+    "wrangler": "^4.158.0"
   }
 }
