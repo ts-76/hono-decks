@@ -88,7 +88,7 @@
     "check": "bun run typecheck && bun run test && bun run test:dist && bun run skills:validate"
   },
   "dependencies": {
-    "@babel/parser": "^8.1.0",
+    "@babel/parser": "^8.1.2",
     "@mdx-js/mdx": "^3.1.1",
     "esbuild": "^0.28.2",
     "remark-directive": "^4.0.0",
@@ -101,13 +101,13 @@
   },
   "devDependencies": {
     "@tanstack/intent": "^0.5.5",
-    "hono": "^4.13.16",
+    "hono": "^4.13.18",
     "honox": "0.1.62",
     "vite": "catalog:",
     "vite-plus": "catalog:"
   },
   "peerDependencies": {
-    "hono": "^4.13.16",
+    "hono": "^4.13.18",
     "vite": "^6.0.0 || ^7.0.0 || ^8.0.0"
   },
   "peerDependenciesMeta": {
