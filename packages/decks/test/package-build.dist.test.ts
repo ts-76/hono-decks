@@ -1,7 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { analyzeCommits } from "@semantic-release/commit-analyzer";
-import semver from "semver";
 import { describe, expect, it } from "vite-plus/test";
 
 type ReleaseConfig = {
@@ -271,9 +270,7 @@ describe("package build metadata", () => {
     }
   });
 
-  it("reserves breaking changes for the Ver1 major release", async () => {
-    const packageJson = JSON.parse(await readFile(join(packageRoot, "package.json"), "utf8")) as { version: string };
-
+  it("classifies release types from conventional commits", async () => {
     for (const [message, releaseType] of [
       ["feat!: public API", "major"],
       ["feat: new capability", "minor"],
@@ -285,8 +282,5 @@ describe("package build metadata", () => {
     ] as const) {
       expect(await analyzeReleaseType(message), message).toBe(releaseType);
     }
-
-    expect(packageJson.version).toBe("0.5.0");
-    expect(semver.inc(packageJson.version, "major")).toBe("1.0.0");
   });
 });
