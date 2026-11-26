@@ -28,6 +28,8 @@ npm run build
 
 For a new app, `@latest` selects the current published release. To reproduce a setup, replace it with the exact version you have verified. Upgrading from 1.x? See the [migration guide](https://github.com/ts-76/hono-decks/blob/main/MIGRATION.md).
 
+The app's Hono version must satisfy `^4.13.16`. The Vite integration supports Vite 6, 7, and 8.
+
 Both modes preserve the existing Vite config while adding automatic compilation,
 create `hono-decks.config.ts`, `src/decks.ts`, and a sample
 `decks/welcome/deck.mdx`. Generated code stays in Vite virtual modules and is not written to disk.

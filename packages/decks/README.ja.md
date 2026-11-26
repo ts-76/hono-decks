@@ -28,6 +28,8 @@ npm run build
 
 新規導入では`@latest`で現在の公開版を選びます。同じ環境を再現する場合は、動作確認したバージョンを明示してください。1.x からの移行は[移行ガイド](https://github.com/ts-76/hono-decks/blob/main/MIGRATION.md#日本語)を参照してください。
 
+アプリの Hono は `^4.13.16` が必要です。Vite 連携は Vite 6、7、8 に対応します。
+
 どちらも、既存の Vite 設定を保持して自動コンパイルを登録し、
 `hono-decks.config.ts`、`src/decks.ts`、サンプルの
 `decks/welcome/deck.mdx` を作ります。生成ファイルがない状態からでも
